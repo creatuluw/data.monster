@@ -23,24 +23,6 @@
     "chrome-devtools": {
       "type": "local",
       "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
-    },
-    "worker-lrs": {
-      "type": "local",
-      "command": ["node", ".worker/.mcp/dist/index.js"],
-      "enabled": true
-    },
-    "db-lxs.pippeloi.nl": {
-      "type": "local",
-      "command": ["npx", "-y", "mcp-postgres-server"],
-      "environment": {
-        "PG_HOST": "nozomi.proxy.rlwy.net",
-        "PG_PORT": "46891",
-        "PG_USER": "postgres",
-        "PG_PASSWORD": "ZLBBxLZJhBqlLXKMbEeqYCoDZliTrmZX",
-        "PG_DATABASE": "railway"
-      },
-      "enabled": true,
-      "timeout": 5000
     }
   },
   "permission": {

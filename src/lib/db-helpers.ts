@@ -154,7 +154,7 @@ export async function runQuery(sql: string, page: number = 1, pageSize: number =
 	const db = await getDb();
 	const conn = await db.connect();
 
-	const trimmed = sql.trim();
+	const trimmed = sql.trim().replace(/;+\s*$/, '');
 	const lower = trimmed.toLowerCase();
 	const isMutation =
 		lower.startsWith('insert') ||
@@ -188,7 +188,7 @@ export async function runQuery(sql: string, page: number = 1, pageSize: number =
 
 	const safePageSize = Math.min(Math.max(pageSize, 1), 100);
 	const offset = (page - 1) * safePageSize;
-	const pagedSql = `${trimmed} LIMIT ${safePageSize} OFFSET ${offset}`;
+	const pagedSql = `SELECT * FROM (${trimmed}) as _paged LIMIT ${safePageSize} OFFSET ${offset}`;
 
 	const result = await conn.query(pagedSql);
 	const columns = result.schema.fields.map((f: any) => f.name);

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "zai-coding-plan/glm-5.1",
+  "autoupdate": true,
+  "instructions": [
+    ".davia/davia-documentation.md",
+    ".worker/.mcp/mcp-instructions.md"
+  ],
+  "mcp": {
+    "time-server": {
+      "type": "remote",
+      "url": "https://mcp.time.mcpcentral.io"
+    },
+    "sequential-thinking": {
+      "type": "local",
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "enabled": true
+    },
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+    },
+    "worker-lrs": {
+      "type": "local",
+      "command": ["node", ".worker/.mcp/dist/index.js"],
+      "enabled": true
+    },
+    "db-lxs.pippeloi.nl": {
+      "type": "local",
+      "command": ["npx", "-y", "mcp-postgres-server"],
+      "environment": {
+        "PG_HOST": "nozomi.proxy.rlwy.net",
+        "PG_PORT": "46891",
+        "PG_USER": "postgres",
+        "PG_PASSWORD": "ZLBBxLZJhBqlLXKMbEeqYCoDZliTrmZX",
+        "PG_DATABASE": "railway"
+      },
+      "enabled": true,
+      "timeout": 5000
+    }
+  },
+  "permission": {
+    "skill": {
+      "*": "allow"
+    }
+  }
+}

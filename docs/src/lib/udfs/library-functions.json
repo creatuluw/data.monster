@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Library UDFs that ship with warphead.dev - automatically loaded on app initialization",
+  "version": "1.0.0",
+  "functions": [
+    {
+      "function_name": "safe_divide",
+      "parameters": "numerator DOUBLE, denominator DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "CASE WHEN denominator = 0 THEN 0 ELSE numerator / denominator END",
+      "description": "Prevents division by zero errors. Returns 0 when denominator is 0.",
+      "category": "math",
+      "examples": [
+        "safe_divide(100, 5) → 20.0",
+        "safe_divide(100, 0) → 0.0"
+      ]
+    },
+    {
+      "function_name": "revenue",
+      "parameters": "quantity DOUBLE, price DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "quantity * price",
+      "description": "Calculates revenue from quantity and price.",
+      "category": "business",
+      "examples": [
+        "revenue(10, 99.99) → 999.90"
+      ]
+    },
+    {
+      "function_name": "full_name",
+      "parameters": "first VARCHAR, last VARCHAR",
+      "return_type": "VARCHAR",
+      "function_body": "first || ' ' || last",
+      "description": "Combines first and last name with space.",
+      "category": "string",
+      "examples": [
+        "full_name('John', 'Doe') → 'John Doe'"
+      ]
+    },
+    {
+      "function_name": "discount_price",
+      "parameters": "price DOUBLE, discount_pct DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "price * (1 - discount_pct / 100)",
+      "description": "Calculates price after discount percentage.",
+      "category": "business",
+      "examples": [
+        "discount_price(100, 20) → 80.0",
+        "discount_price(250.50, 15) → 212.925"
+      ]
+    },
+    {
+      "function_name": "age_group",
+      "parameters": "age INTEGER",
+      "return_type": "VARCHAR",
+      "function_body": "CASE WHEN age < 18 THEN 'Child' WHEN age < 65 THEN 'Adult' ELSE 'Senior' END",
+      "description": "Categorizes age into groups.",
+      "category": "categorization",
+      "examples": [
+        "age_group(15) → 'Child'",
+        "age_group(30) → 'Adult'",
+        "age_group(70) → 'Senior'"
+      ]
+    },
+    {
+      "function_name": "profit_margin",
+      "parameters": "revenue DOUBLE, cost DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "(revenue - cost) / revenue * 100",
+      "description": "Calculates profit margin percentage.",
+      "category": "business",
+      "examples": [
+        "profit_margin(100, 60) → 40.0",
+        "profit_margin(250, 150) → 40.0"
+      ]
+    },
+    {
+      "function_name": "autonumber",
+      "parameters": "input_text VARCHAR",
+      "return_type": "BIGINT",
+      "function_body": "ABS(hash(input_text))",
+      "description": "Generates a consistent positive numeric ID from a string.",
+      "category": "hash",
+      "examples": [
+        "autonumber('customer_123') → always returns same number",
+        "autonumber('product_456') → always returns same number"
+      ]
+    },
+    {
+      "function_name": "auto_id",
+      "parameters": "input_text VARCHAR",
+      "return_type": "VARCHAR",
+      "function_body": "SUBSTRING(MD5(input_text), 1, 8)",
+      "description": "Generates a consistent 8-character hexadecimal ID from a string.",
+      "category": "hash",
+      "examples": [
+        "auto_id('customer_123') → '3e4f5a6b'",
+        "auto_id('customer_123') → always returns '3e4f5a6b'"
+      ]
+    },
+    {
+      "function_name": "quarter_year",
+      "parameters": "date_val DATE",
+      "return_type": "VARCHAR",
+      "function_body": "'Q' || QUARTER(date_val) || ' ' || YEAR(date_val)",
+      "description": "Format date as 'Q1 2024' style string.",
+      "category": "date",
+      "examples": [
+        "quarter_year('2024-03-15') → 'Q1 2024'",
+        "quarter_year('2024-07-20') → 'Q3 2024'"
+      ]
+    },
+    {
+      "function_name": "days_since",
+      "parameters": "past_date DATE",
+      "return_type": "INTEGER",
+      "function_body": "DATE_DIFF('day', past_date, CURRENT_DATE)",
+      "description": "Calculate number of days from past date to today.",
+      "category": "date",
+      "examples": [
+        "days_since('2024-01-01') → depends on current date"
+      ]
+    },
+    {
+      "function_name": "is_weekend",
+      "parameters": "date_val DATE",
+      "return_type": "BOOLEAN",
+      "function_body": "DAYOFWEEK(date_val) IN (0, 6)",
+      "description": "Returns true if the date falls on Saturday or Sunday.",
+      "category": "date",
+      "examples": [
+        "is_weekend('2024-10-26') → true (if Saturday)",
+        "is_weekend('2024-10-28') → false (if Monday)"
+      ]
+    },
+    {
+      "function_name": "format_percentage",
+      "parameters": "value DOUBLE, decimals INTEGER",
+      "return_type": "VARCHAR",
+      "function_body": "ROUND(value * 100, decimals)::VARCHAR || '%'",
+      "description": "Formats a decimal value as a percentage string.",
+      "category": "formatting",
+      "examples": [
+        "format_percentage(0.1234, 2) → '12.34%'",
+        "format_percentage(0.5, 0) → '50%'"
+      ]
+    },
+    {
+      "function_name": "format_currency",
+      "parameters": "amount DOUBLE",
+      "return_type": "VARCHAR",
+      "function_body": "'$' || FORMAT('{:,.2f}', amount)",
+      "description": "Formats a number as US currency with dollar sign.",
+      "category": "formatting",
+      "examples": [
+        "format_currency(1234.56) → '$1,234.56'",
+        "format_currency(999.99) → '$999.99'"
+      ]
+    },
+    {
+      "function_name": "clean_text",
+      "parameters": "text VARCHAR",
+      "return_type": "VARCHAR",
+      "function_body": "TRIM(LOWER(REGEXP_REPLACE(text, '\\s+', ' ', 'g')))",
+      "description": "Cleans text by trimming whitespace, converting to lowercase, and normalizing multiple spaces to single space.",
+      "category": "string",
+      "examples": [
+        "clean_text('  Hello   World  ') → 'hello world'"
+      ]
+    },
+    {
+      "function_name": "initials",
+      "parameters": "first VARCHAR, last VARCHAR",
+      "return_type": "VARCHAR",
+      "function_body": "UPPER(SUBSTRING(first, 1, 1)) || UPPER(SUBSTRING(last, 1, 1))",
+      "description": "Creates initials from first and last name.",
+      "category": "string",
+      "examples": [
+        "initials('John', 'Doe') → 'JD'",
+        "initials('mary', 'smith') → 'MS'"
+      ]
+    },
+    {
+      "function_name": "safe_percentage",
+      "parameters": "part DOUBLE, total DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "CASE WHEN total = 0 THEN 0 ELSE (part / total) * 100 END",
+      "description": "Calculates percentage with zero-division safety. Returns 0 when total is 0.",
+      "category": "math",
+      "examples": [
+        "safe_percentage(25, 100) → 25.0",
+        "safe_percentage(50, 0) → 0.0"
+      ]
+    },
+    {
+      "function_name": "clamp",
+      "parameters": "value DOUBLE, min_val DOUBLE, max_val DOUBLE",
+      "return_type": "DOUBLE",
+      "function_body": "GREATEST(min_val, LEAST(max_val, value))",
+      "description": "Constrains a value between minimum and maximum bounds.",
+      "category": "math",
+      "examples": [
+        "clamp(150, 0, 100) → 100",
+        "clamp(-10, 0, 100) → 0",
+        "clamp(50, 0, 100) → 50"
+      ]
+    },
+    {
+      "function_name": "status_label",
+      "parameters": "value DOUBLE, threshold DOUBLE",
+      "return_type": "VARCHAR",
+      "function_body": "CASE WHEN value >= threshold THEN '✓ Good' WHEN value >= threshold * 0.5 THEN '⚠ Warning' ELSE '✗ Poor' END",
+      "description": "Returns a status label based on threshold comparison.",
+      "category": "categorization",
+      "examples": [
+        "status_label(90, 80) → '✓ Good'",
+        "status_label(50, 80) → '⚠ Warning'",
+        "status_label(20, 80) → '✗ Poor'"
+      ]
+    },
+    {
+      "function_name": "fuzzy_match_score",
+      "parameters": "str1 VARCHAR, str2 VARCHAR",
+      "return_type": "DOUBLE",
+      "function_body": "1.0 - (LEVENSHTEIN(LOWER(str1), LOWER(str2))::DOUBLE / GREATEST(LENGTH(str1), LENGTH(str2)))",
+      "description": "Calculates similarity score between two strings.",
+      "category": "string",
+      "examples": [
+        "fuzzy_match_score('hello', 'hello') → 1.0",
+        "fuzzy_match_score('hello', 'helo') → ~0.8"
+      ]
+    }
+  ]
+}
+

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Pre-defined business metrics for the sales data model initialization",
+  "version": "1.0.0",
+  "metrics": [
+    {
+      "slug": "total-revenue",
+      "metric_name": "Total Revenue",
+      "formula": "SUM(net_revenue)",
+      "source_table": "fact_sales",
+      "description": "Sum of all net revenue (after discounts) from completed sales transactions.",
+      "tags": "sales, revenue, kpi",
+      "notes": "This is the primary revenue metric. It excludes cancelled and pending orders."
+    },
+    {
+      "slug": "total-profit",
+      "metric_name": "Total Profit",
+      "formula": "SUM(profit)",
+      "source_table": "fact_sales",
+      "description": "Total profit calculated as net revenue minus total cost of goods sold.",
+      "tags": "sales, profit, kpi",
+      "notes": "Key profitability indicator. Shows actual margin after costs and discounts."
+    },
+    {
+      "slug": "avg-order-value",
+      "metric_name": "Average Order Value",
+      "formula": "safe_divide(SUM(net_revenue), COUNT(DISTINCT transaction_id))",
+      "source_table": "fact_sales",
+      "description": "Average revenue per transaction using safe division to avoid errors.",
+      "tags": "sales, average, kpi",
+      "notes": "Uses safe_divide UDF to handle edge cases. Excludes cancelled orders."
+    },
+    {
+      "slug": "total-units-sold",
+      "metric_name": "Total Units Sold",
+      "formula": "SUM(quantity)",
+      "source_table": "fact_sales",
+      "description": "Total number of product units sold across all transactions.",
+      "tags": "sales, volume, inventory",
+      "notes": "Useful for inventory planning and volume analysis."
+    },
+    {
+      "slug": "avg-profit-margin",
+      "metric_name": "Average Profit Margin %",
+      "formula": "safe_percentage(SUM(profit), SUM(net_revenue))",
+      "source_table": "fact_sales",
+      "description": "Average profit margin percentage using safe calculation to prevent division by zero.",
+      "tags": "profitability, margin, kpi",
+      "notes": "Uses safe_percentage UDF. Shows overall business profitability health."
+    },
+    {
+      "slug": "order-count",
+      "metric_name": "Order Count",
+      "formula": "COUNT(DISTINCT transaction_id)",
+      "source_table": "fact_sales",
+      "description": "Total number of unique sales transactions.",
+      "tags": "sales, count, volume",
+      "notes": "Useful for understanding sales velocity and customer purchase frequency."
+    }
+  ],
+  "usage_notes": {
+    "loading": "These metrics can be loaded into the system using the create_metric Tauri command",
+    "filtering": "All metrics can be filtered using the optional filters parameter when executing",
+    "dimensions": "Combine these metrics with dimensions from dim_customers, dim_products, or dim_time for detailed analysis",
+    "relationships": "The system will automatically build JOIN paths between fact_sales and dimension tables"
+  }
+}
+

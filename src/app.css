@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-display: 'Sora', sans-serif;
+	--font-body: 'Manrope', sans-serif;
+
+	--color-sage-50: oklch(0.97 0.01 155);
+	--color-sage-100: oklch(0.94 0.02 155);
+	--color-sage-200: oklch(0.88 0.03 155);
+	--color-sage-300: oklch(0.78 0.05 155);
+	--color-sage-400: oklch(0.65 0.07 155);
+	--color-sage-500: oklch(0.55 0.08 155);
+	--color-sage-600: oklch(0.45 0.09 155);
+	--color-sage-700: oklch(0.35 0.08 155);
+	--color-sage-800: oklch(0.25 0.06 155);
+	--color-sage-900: oklch(0.18 0.04 155);
+
+	--color-copper-50: oklch(0.96 0.02 50);
+	--color-copper-100: oklch(0.92 0.04 45);
+	--color-copper-200: oklch(0.82 0.07 40);
+	--color-copper-300: oklch(0.72 0.10 35);
+	--color-copper-400: oklch(0.64 0.13 30);
+	--color-copper-500: oklch(0.58 0.15 25);
+	--color-copper-600: oklch(0.50 0.14 20);
+
+	--color-sand-50: oklch(0.985 0.003 80);
+	--color-sand-100: oklch(0.965 0.005 80);
+	--color-sand-200: oklch(0.925 0.007 80);
+	--color-sand-300: oklch(0.875 0.009 80);
+	--color-sand-400: oklch(0.72 0.010 80);
+	--color-sand-500: oklch(0.55 0.012 80);
+	--color-sand-600: oklch(0.40 0.012 80);
+	--color-sand-700: oklch(0.30 0.010 80);
+	--color-sand-800: oklch(0.22 0.008 80);
+	--color-sand-900: oklch(0.16 0.006 80);
+}
+
+html {
+	font-family: var(--font-body);
+	color: var(--color-sand-800);
+	background-color: var(--color-sand-50);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+	font-family: var(--font-display);
+}
+
+::selection {
+	background-color: var(--color-sage-200);
+	color: var(--color-sage-900);
+}
+
+textarea {
+	font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}

@@ -1,0 +1,62 @@
+{"token":"--color-accent","value":"oklch(0.69 0.16 41)","category":"color","subcategory":"accent","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-accent-light","value":"oklch(0.78 0.09 41)","category":"color","subcategory":"accent","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-accent-dark","value":"oklch(0.44 0.14 41)","category":"color","subcategory":"accent","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-accent-muted","value":"oklch(0.93 0.03 41)","category":"color","subcategory":"accent","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-surface","value":"oklch(0.98 0.003 250)","category":"color","subcategory":"surface","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-surface-raised","value":"oklch(0.96 0.005 250)","category":"color","subcategory":"surface","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-surface-sunken","value":"oklch(0.935 0.006 250)","category":"color","subcategory":"surface","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-text","value":"oklch(0.14 0.01 250)","category":"color","subcategory":"text","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-text-secondary","value":"oklch(0.4 0.012 250)","category":"color","subcategory":"text","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-text-tertiary","value":"oklch(0.58 0.01 250)","category":"color","subcategory":"text","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-text-on-accent","value":"oklch(0.97 0.005 250)","category":"color","subcategory":"text","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-border","value":"oklch(0.86 0.006 250)","category":"color","subcategory":"border","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-border-strong","value":"oklch(0.72 0.012 250)","category":"color","subcategory":"border","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-grid","value":"oklch(0.9 0.004 250)","category":"color","subcategory":"grid","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-success","value":"oklch(0.68 0.14 160)","category":"color","subcategory":"semantic","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-warning","value":"oklch(0.76 0.13 80)","category":"color","subcategory":"semantic","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--color-danger","value":"oklch(0.58 0.17 22)","category":"color","subcategory":"semantic","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--font-display","value":"\"Source Serif 4\", serif","category":"typography","subcategory":"font-family","type":"font","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--font-body","value":"\"Manrope\", sans-serif","category":"typography","subcategory":"font-family","type":"font","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--font-mono","value":"\"Courier New\", Courier, monospace","category":"typography","subcategory":"font-family","type":"font","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-xs","value":"0.6875rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-sm","value":"0.8125rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-base","value":"1rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-md","value":"1.25rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-lg","value":"1.563rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-xl","value":"1.953rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-2xl","value":"2.441rem","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-3xl","value":"clamp(2.8rem, 5.5vw, 3.815rem)","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--text-4xl","value":"clamp(3.2rem, 7vw, 5.06rem)","category":"typography","subcategory":"font-size","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--leading-tight","value":"1.08","category":"typography","subcategory":"line-height","type":"unitless","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--leading-snug","value":"1.25","category":"typography","subcategory":"line-height","type":"unitless","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--leading-normal","value":"1.6","category":"typography","subcategory":"line-height","type":"unitless","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--leading-relaxed","value":"1.8","category":"typography","subcategory":"line-height","type":"unitless","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-1","value":"0.25rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-2","value":"0.5rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-3","value":"0.75rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-4","value":"1rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-6","value":"1.5rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-8","value":"2rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-12","value":"3rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-16","value":"4rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--space-24","value":"6rem","category":"spacing","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-xs","value":"2px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-sm","value":"3px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-md","value":"4px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-lg","value":"6px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-xl","value":"10px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--radius-full","value":"9999px","category":"radius","subcategory":"scale","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--shadow-sm","value":"0 1px 2px oklch(0.22 0.005 250 / 0.07)","category":"shadow","subcategory":"elevation","type":"shadow","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--shadow-md","value":"0 2px 8px oklch(0.22 0.005 250 / 0.09)","category":"shadow","subcategory":"elevation","type":"shadow","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--shadow-lg","value":"0 6px 24px oklch(0.22 0.005 250 / 0.12)","category":"shadow","subcategory":"elevation","type":"shadow","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--ease-out-expo","value":"cubic-bezier(0.16, 1, 0.3, 1)","category":"motion","subcategory":"easing","type":"easing","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--ease-out-quart","value":"cubic-bezier(0.25, 1, 0.5, 1)","category":"motion","subcategory":"easing","type":"easing","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--ease-industrial","value":"cubic-bezier(0.22, 0.61, 0.36, 1)","category":"motion","subcategory":"easing","type":"easing","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--duration-fast","value":"120ms","category":"motion","subcategory":"duration","type":"duration","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--duration-base","value":"250ms","category":"motion","subcategory":"duration","type":"duration","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--duration-slow","value":"450ms","category":"motion","subcategory":"duration","type":"duration","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--duration-enter","value":"600ms","category":"motion","subcategory":"duration","type":"duration","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--max-width","value":"72rem","category":"layout","subcategory":"container","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--gutter","value":"clamp(1rem, 3vw, 2rem)","category":"layout","subcategory":"container","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--grid-color","value":"oklch(0.9 0.004 250 / 0.35)","category":"layout","subcategory":"grid","type":"color","source":"design-system.html","seed":"DS2-GLACIER-7742"}
+{"token":"--grid-spacing","value":"24px","category":"layout","subcategory":"grid","type":"size","source":"design-system.html","seed":"DS2-GLACIER-7742"}

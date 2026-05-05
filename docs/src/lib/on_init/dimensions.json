@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Pre-defined dimensions for the sales data model initialization",
+  "version": "1.0.0",
+  "dimensions": [
+    {
+      "slug": "customer-name",
+      "dimension_name": "Customer Name",
+      "field_name": "customer_name",
+      "source_table": "dim_customers",
+      "description": "Full name of the customer organization",
+      "tags": "customer, identity",
+      "notes": "Primary customer identifier for grouping and filtering sales data"
+    },
+    {
+      "slug": "customer-segment",
+      "dimension_name": "Customer Segment",
+      "field_name": "customer_segment",
+      "source_table": "dim_customers",
+      "description": "Business segment classification: Enterprise, Corporate, or Small Business",
+      "tags": "customer, classification, segmentation",
+      "notes": "Useful for segment-level analysis and targeted reporting"
+    },
+    {
+      "slug": "region",
+      "dimension_name": "Region",
+      "field_name": "region",
+      "source_table": "dim_customers",
+      "description": "Geographic region: North America, Europe, Asia Pacific, or Latin America",
+      "tags": "geography, location, region",
+      "notes": "Key dimension for geographic performance analysis"
+    },
+    {
+      "slug": "product-name",
+      "dimension_name": "Product Name",
+      "field_name": "product_name",
+      "source_table": "dim_products",
+      "description": "Full product name and description",
+      "tags": "product, inventory",
+      "notes": "Detailed product-level analysis dimension"
+    },
+    {
+      "slug": "product-category",
+      "dimension_name": "Product Category",
+      "field_name": "category",
+      "source_table": "dim_products",
+      "description": "Top-level product category: Electronics, Furniture, or Office Supplies",
+      "tags": "product, classification, hierarchy",
+      "notes": "High-level product grouping for strategic analysis"
+    },
+    {
+      "slug": "order-year",
+      "dimension_name": "Order Year",
+      "field_name": "year",
+      "source_table": "dim_time",
+      "description": "Calendar year of the order",
+      "tags": "time, date, year",
+      "notes": "Year-over-year comparison and trending"
+    },
+    {
+      "slug": "quarter-year",
+      "dimension_name": "Quarter Year",
+      "field_name": "quarter_year",
+      "source_table": "dim_time",
+      "description": "Formatted quarter and year (e.g., 'Q1 2024')",
+      "tags": "time, date, quarter",
+      "notes": "Quarterly performance tracking using the quarter_year UDF"
+    }
+  ],
+  "usage_notes": {
+    "loading": "These dimensions can be loaded into the system using the create_dimension Tauri command",
+    "combining": "Dimensions can be combined with metrics to create flexible reports and visualizations",
+    "relationships": "The system automatically resolves JOIN paths between dimension tables and fact tables",
+    "hierarchies": "Natural hierarchies exist: Region > City, Category > Sub-Category, Year > Quarter > Month"
+  }
+}
+

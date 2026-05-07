@@ -1,5 +1,4 @@
-import { getDb } from '$lib/duckdb';
-import { runQuery, type PagedQueryResult } from '$lib/db-helpers';
+import { runPagedQuery, type PagedQueryResult, executeQuery, getSettings } from '$lib/db-operations';
 
 export interface ChatMessage {
 	id: string;
@@ -18,6 +17,18 @@ export interface QueryEntry {
 	messageRefId: string;
 }
 
+export interface PlanOption {
+	id: string;
+	label: string;
+	description: string;
+}
+
+export interface AnalysisPlan {
+	messageId: string;
+	options: PlanOption[];
+	userQuestion: string;
+}
+
 class AnalystState {
 	selectedTables = $state<string[]>([]);
 	messages = $state<ChatMessage[]>([]);
@@ -25,10 +36,35 @@ class AnalystState {
 	streaming = $state(false);
 	streamingContent = $state('');
 	activeQueryId = $state<string | null>(null);
+	pendingPlan = $state<AnalysisPlan | null>(null);
+	selectedPlanOptions = $state<Set<string>>(new Set());
+	customPlanOption = $state('');
 
 	private abortController: AbortController | null = null;
 	private extractedIndex = 0;
 	private pendingMessageId = '';
+
+	apiUrl = $state('');
+	apiKey = $state('');
+	apiModel = $state('');
+
+	private initialized = false;
+
+	async init() {
+		if (this.initialized) return;
+		this.initialized = true;
+		try {
+			const settings = await getSettings();
+			if (settings.llmApiUrl) this.apiUrl = settings.llmApiUrl as string;
+			else this.apiUrl = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+			if (settings.llmApiKey) this.apiKey = settings.llmApiKey as string;
+			if (settings.llmModel) this.apiModel = settings.llmModel as string;
+			else this.apiModel = 'glm-5';
+		} catch {
+			this.apiUrl = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
+			this.apiModel = 'glm-5';
+		}
+	}
 
 	get currentQuery(): QueryEntry | null {
 		if (this.activeQueryId) {
@@ -44,12 +80,87 @@ class AnalystState {
 		this.activeQueryId = id;
 	}
 
+	stop() {
+		if (this.abortController) {
+			this.abortController.abort();
+		}
+	}
+
+	togglePlanOption(optionId: string) {
+		const next = new Set(this.selectedPlanOptions);
+		if (next.has(optionId)) {
+			next.delete(optionId);
+		} else {
+			next.add(optionId);
+		}
+		this.selectedPlanOptions = next;
+	}
+
+	selectAllPlanOptions() {
+		if (!this.pendingPlan) return;
+		this.selectedPlanOptions = new Set(this.pendingPlan.options.map((o) => o.id));
+	}
+
+	deselectAllPlanOptions() {
+		this.selectedPlanOptions = new Set();
+	}
+
+	async proceedWithPlan() {
+		if (!this.pendingPlan) return;
+
+		const selected = this.pendingPlan.options
+			.filter((o) => this.selectedPlanOptions.has(o.id))
+			.map((o) => `- **${o.label}**: ${o.description}`);
+
+		const custom = this.customPlanOption.trim();
+
+		let instruction = `Proceed with the following analyses:\n${selected.join('\n')}`;
+		if (custom) {
+			instruction += `\n\nAdditionally, analyze this: ${custom}`;
+		}
+		instruction += `\n\nDo NOT present another plan. Go straight into the Question → Query → Analysis → Conclusion format for each selected analysis.`;
+
+		this.pendingPlan = null;
+		this.selectedPlanOptions = new Set();
+		this.customPlanOption = '';
+		await this.sendMessage(instruction);
+	}
+
+	private parseAndSetPlan(content: string, messageId: string) {
+		const match = content.match(/<!-- plan:json\s*([\s\S]*?)\s*-->/);
+		if (!match) return;
+
+		try {
+			const raw = JSON.parse(match[1]);
+			if (!Array.isArray(raw) || raw.length < 3) return;
+
+			const userMsg = [...this.messages].reverse().find((m) => m.role === 'user');
+			const options: PlanOption[] = raw.map((item: { label?: string; description?: string }, i: number) => ({
+				id: `plan-${i}`,
+				label: item.label ?? `Option ${i + 1}`,
+				description: item.description ?? ''
+			}));
+
+			this.pendingPlan = {
+				messageId,
+				options,
+				userQuestion: userMsg?.content ?? ''
+			};
+			this.selectedPlanOptions = new Set(options.map((o) => o.id));
+		} catch {
+			// invalid JSON, ignore
+		}
+	}
+
 	clear() {
 		this.messages = [];
 		this.queries = [];
 		this.streamingContent = '';
 		this.activeQueryId = null;
 		this.extractedIndex = 0;
+		this.pendingPlan = null;
+		this.selectedPlanOptions = new Set();
+		this.customPlanOption = '';
 	}
 
 	addUserMessage(content: string) {
@@ -60,27 +171,27 @@ class AnalystState {
 	}
 
 	async getTableSchemas(): Promise<string> {
-		const db = await getDb();
-		const conn = await db.connect();
 		const schemas: string[] = [];
 
 		for (const tableName of this.selectedTables) {
 			try {
-				const descResult = await conn.query(`DESCRIBE "${tableName}"`);
-				const columns = descResult
-					.toArray()
-					.map((row: any) => `  ${row.column_name} ${row.column_type}`);
+				const descResult = await executeQuery(`DESCRIBE "${tableName}"`);
+				const columns = 'data' in descResult
+					? descResult.data.map((row: unknown[]) => `  ${row[0]} ${row[1]}`)
+					: [];
 
-				const countResult = await conn.query(`SELECT COUNT(*) as cnt FROM "${tableName}"`);
-				const rowCount = Number(countResult.toArray()[0].cnt);
+				const countResult = await executeQuery(`SELECT COUNT(*) as cnt FROM "${tableName}"`);
+				const rowCount = 'data' in countResult && countResult.data.length > 0
+					? Number(countResult.data[0][0])
+					: 0;
 
-				const sampleResult = await conn.query(`SELECT * FROM "${tableName}" LIMIT 3`);
-				const sampleCols = sampleResult.schema.fields.map((f: any) => f.name);
-				const sampleRows = sampleResult
-					.toArray()
-					.map((row: any) =>
-						sampleCols.map((col: string) => String(row[col] ?? 'NULL')).join(' | ')
-					);
+				const sampleResult = await executeQuery(`SELECT * FROM "${tableName}" LIMIT 3`);
+				const sampleCols = 'columns' in sampleResult ? sampleResult.columns : [];
+				const sampleRows = 'data' in sampleResult
+					? sampleResult.data.map((row: unknown[]) =>
+						row.map((v: unknown) => String(v ?? 'NULL')).join(' | ')
+					)
+					: [];
 
 				let info = `Table "${tableName}" (${rowCount.toLocaleString()} rows):\n${columns.join('\n')}`;
 				if (sampleRows.length > 0) {
@@ -92,7 +203,6 @@ class AnalystState {
 			}
 		}
 
-		conn.close();
 		return schemas.join('\n\n');
 	}
 
@@ -112,6 +222,9 @@ Instructions:
 
 Response format — for EACH analysis step, follow this exact structure:
 
+### Question [QN]
+Restate the specific question from the user that this step is answering. Use an incrementing number starting at 1 (e.g. "### Question [Q1]", "### Question [Q2]") so it matches the query tabs in the editor panel.
+
 ### Query
 Present the SQL in a \`\`\`sql code block.
 
@@ -121,7 +234,16 @@ Describe what the query found and key observations from the results.
 ### Conclusion
 Summarize the key insight or finding from this step.
 
-When running multiple queries, repeat this Query → Analysis → Conclusion pattern for each one.
+**IMPORTANT — Planning for complex questions:**
+If the user's question requires 3 or more distinct analyses/queries, you MUST first present an analysis plan using this exact format BEFORE writing any SQL:
+
+<!-- plan:json [{"label": "Short label", "description": "What this analysis investigates"}, {"label": "Another label", "description": "What this other analysis investigates"}, ...] -->
+
+After the plan block, briefly explain each option to the user in plain text. Do NOT include any SQL queries yet. The user will select which analyses to proceed with.
+
+For questions that need only 1 or 2 queries, skip the plan and go directly into the Question → Query → Analysis → Conclusion format.
+
+When running multiple queries, repeat this Question → Query → Analysis → Conclusion pattern for each one.
 After all analysis steps, provide a brief overall summary of findings.
 Be direct, insightful, and focus on what the data tells us.
 Always generate at least one SQL query per user message.`;
@@ -131,6 +253,8 @@ Always generate at least one SQL query per user message.`;
 		if (this.streaming && this.abortController) {
 			this.abortController.abort();
 		}
+
+		await this.init();
 
 		this.addUserMessage(content);
 		this.streaming = true;
@@ -149,10 +273,18 @@ Always generate at least one SQL query per user message.`;
 		this.abortController = new AbortController();
 
 		try {
-			const response = await fetch('/api/analyst', {
+			const response = await fetch(this.apiUrl, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ messages: apiMessages }),
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${this.apiKey}`
+				},
+				body: JSON.stringify({
+					model: this.apiModel,
+					messages: apiMessages,
+					stream: true,
+					temperature: 0.6
+				}),
 				signal: this.abortController.signal
 			});
 
@@ -204,9 +336,23 @@ Always generate at least one SQL query per user message.`;
 						timestamp: Date.now()
 					}
 				];
+				this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
 			}
 		} catch (e) {
-			if ((e as Error).name !== 'AbortError') {
+			if ((e as Error).name === 'AbortError') {
+				if (this.streamingContent) {
+					this.messages = [
+						...this.messages,
+						{
+							id: this.pendingMessageId,
+							role: 'assistant',
+							content: this.streamingContent,
+							timestamp: Date.now()
+						}
+					];
+					this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
+				}
+			} else {
 				this.messages = [
 					...this.messages,
 					{
@@ -237,7 +383,7 @@ Always generate at least one SQL query per user message.`;
 			const queryId = crypto.randomUUID();
 			const t0 = performance.now();
 			try {
-				const result = await runQuery(sql, 1, 100);
+				const result = await runPagedQuery(sql, 1, 100);
 				const queryTime = performance.now() - t0;
 				const entry: QueryEntry = {
 					id: queryId,
@@ -273,7 +419,7 @@ Always generate at least one SQL query per user message.`;
 
 		const t0 = performance.now();
 		try {
-			const result = await runQuery(newSql, 1, 100);
+			const result = await runPagedQuery(newSql, 1, 100);
 			const queryTime = performance.now() - t0;
 			const updated: QueryEntry = {
 				...this.queries[idx],

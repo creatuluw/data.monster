@@ -4,11 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "npx tauri dev",
+    "dev:frontend": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.4",
@@ -16,6 +18,7 @@
     "@sveltejs/kit": "^2.57.0",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@tailwindcss/vite": "^4.2.4",
+    "@tauri-apps/cli": "^2.11.1",
     "svelte": "^5.55.2",
     "svelte-check": "^4.4.6",
     "tailwindcss": "^4.2.4",
@@ -23,7 +26,9 @@
     "vite": "^8.0.7"
   },
   "dependencies": {
-    "@duckdb/duckdb-wasm": "1.33.1-dev45.0",
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "lucide-svelte": "^1.0.1",
     "marked": "^18.0.3"
   }
 }

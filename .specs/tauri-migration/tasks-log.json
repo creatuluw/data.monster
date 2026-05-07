@@ -1,0 +1,191 @@
+[
+  {
+    "task_id": "setup-001",
+    "title": "Scaffold src-tauri/ with Cargo.toml, tauri.conf.json, build.rs, capabilities",
+    "summary": "Created full Tauri v2 scaffold: Cargo.toml (duckdb bundled, tauri-plugin-dialog/shell, serde, chrono, uuid), tauri.conf.json (Data Monster, devUrl localhost:5173), build.rs, capabilities/default.json (core, dialog, shell), icons copied from reference project. Stub command modules created for all 8 command files + utils + models. cargo check passes cleanly.",
+    "is_working": false,
+    "timestamp": "2026-05-07T18:27:03Z",
+    "notes": "Used Value::Text not Value::Varchar for DuckDB 1.10502. Adapted from docs/src-tauri/ reference. Removed unneeded deps (reqwest, futures-util, tokio, walkdir, regex, tauri-plugin-screenshots).",
+    "decisions_made": "Minimal deps — only what Data Monster needs. Port 5173 for SvelteKit dev server. Product name 'Data Monster', identifier 'com.data-monster.app'."
+  },
+  {
+    "task_id": "setup-002",
+    "title": "Create Rust state, main.rs, lib.rs, and module structure",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-001",
+    "title": "Implement initialize_duckdb with workspace folder and d8a_monster_ schema",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-002",
+    "title": "Implement choose_workspace_folder and workspace persistence",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-003",
+    "title": "Implement file loading commands (CSV, Parquet, JSON) with workspace data folder",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-004",
+    "title": "Implement folder management commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-005",
+    "title": "Implement execute_query and cancel_query commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-006",
+    "title": "Implement table management commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-007",
+    "title": "Implement table labels (tags and groups) commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-008",
+    "title": "Implement saved queries commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-009",
+    "title": "Implement utility modules (metadata_helpers, formatting, types)",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-001",
+    "title": "Replace DuckDB WASM with Tauri invoke layer",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-002",
+    "title": "Update app store to use Tauri commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-003",
+    "title": "Update layout with workspace initialization flow",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-004",
+    "title": "Update connect flow to use Tauri file dialog and load commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-005",
+    "title": "Update query page to use Tauri execute_query",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-006",
+    "title": "Update TableOverview with tags/groups from Tauri commands",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "frontend-007",
+    "title": "Update table detail and analyst stores for Tauri",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "cleanup-001",
+    "title": "Remove DuckDB WASM, IndexedDB persistence, and localStorage dependencies",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "edge-001",
+    "title": "Handle WAL corruption and locked database scenarios",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "edge-002",
+    "title": "Handle missing or moved workspace folder",
+    "summary": "",
+    "is_working": false,
+    "timestamp": null,
+    "notes": "",
+    "decisions_made": ""
+  }
+]

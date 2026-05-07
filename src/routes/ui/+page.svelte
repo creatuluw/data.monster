@@ -15,6 +15,7 @@
 	import SearchAhead from '$lib/components/ds/SearchAhead.svelte';
 	import Toast from '$lib/components/ds/Toast.svelte';
 	import Motion from '$lib/components/ds/Motion.svelte';
+	import Icons from '$lib/components/ds/Icons.svelte';
 	import Principles from '$lib/components/ds/Principles.svelte';
 	import Footer from '$lib/components/ds/Footer.svelte';
 
@@ -90,6 +91,10 @@
 
 	<hr class="divider-dashed" />
 
+	<Icons />
+
+	<hr class="divider-dashed" />
+
 	<Principles />
 
 	<hr class="divider" style="margin-top: var(--space-16)" />
@@ -131,83 +136,12 @@
 		overflow-x: clip;
 	}
 
-	:global(.ds-page) {
-		--color-accent: oklch(0.69 0.16 41);
-		--color-accent-light: oklch(0.78 0.09 41);
-		--color-accent-dark: oklch(0.44 0.14 41);
-		--color-accent-muted: oklch(0.93 0.03 41);
-
-		--color-surface: #ffffff;
-		--color-surface-raised: oklch(0.96 0.005 250);
-		--color-surface-sunken: oklch(0.935 0.006 250);
-
-		--color-text: oklch(0.14 0.01 250);
-		--color-text-secondary: oklch(0.4 0.012 250);
-		--color-text-tertiary: oklch(0.58 0.01 250);
-		--color-text-on-accent: oklch(0.97 0.005 250);
-
-		--color-border: oklch(0.86 0.006 250);
-		--color-border-strong: oklch(0.72 0.012 250);
-		--color-grid: oklch(0.9 0.004 250);
-
-		--color-success: oklch(0.68 0.14 160);
-		--color-warning: oklch(0.76 0.13 80);
-		--color-danger: oklch(0.58 0.17 22);
-
-		--font-display: "Source Serif 4", serif;
-		--font-body: "Manrope", sans-serif;
-		--font-mono: "Courier New", Courier, monospace;
-
-		--text-xs: 0.6875rem;
-		--text-sm: 0.8125rem;
-		--text-base: 1rem;
-		--text-md: 1.25rem;
-		--text-lg: 1.563rem;
-		--text-xl: 1.953rem;
-		--text-2xl: 2.441rem;
-		--text-3xl: clamp(2.8rem, 5.5vw, 3.815rem);
-		--text-4xl: clamp(3.2rem, 7vw, 5.06rem);
-
-		--leading-tight: 1.08;
-		--leading-snug: 1.25;
-		--leading-normal: 1.6;
-		--leading-relaxed: 1.8;
-
-		--space-1: 0.25rem;
-		--space-2: 0.5rem;
-		--space-3: 0.75rem;
-		--space-4: 1rem;
-		--space-6: 1.5rem;
-		--space-8: 2rem;
-		--space-12: 3rem;
-		--space-16: 4rem;
-		--space-24: 6rem;
-
-		--radius-xs: 2px;
-		--radius-sm: 3px;
-		--radius-md: 4px;
-		--radius-lg: 6px;
-		--radius-xl: 10px;
-		--radius-full: 9999px;
-
-		--shadow-sm: 0 1px 2px oklch(0.22 0.005 250 / 0.07);
-		--shadow-md: 0 2px 8px oklch(0.22 0.005 250 / 0.09);
-		--shadow-lg: 0 6px 24px oklch(0.22 0.005 250 / 0.12);
-
-		--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-		--ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
-		--ease-industrial: cubic-bezier(0.22, 0.61, 0.36, 1);
-		--duration-fast: 120ms;
-		--duration-base: 250ms;
-		--duration-slow: 450ms;
-		--duration-enter: 600ms;
-
-		--max-width: 72rem;
-		--gutter: clamp(1rem, 3vw, 2rem);
-
+	:global(:root) {
 		--grid-color: oklch(0.9 0.004 250 / 0.35);
 		--grid-spacing: 24px;
+	}
 
+	:global(.ds-page) {
 		font-family: var(--font-body);
 		font-size: var(--text-base);
 		line-height: var(--leading-normal);

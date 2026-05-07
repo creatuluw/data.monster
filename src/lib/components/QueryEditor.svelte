@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PagedQueryResult } from '$lib/db-helpers';
+	import type { PagedQueryResult } from '$lib/db-operations';
 
 	let {
 		onrun,
@@ -26,7 +26,6 @@
 	let sql = $state('');
 	let saveTableName = $state('');
 
-	// Sync with parent's initialSql changes
 	$effect(() => {
 		if (initialSql) {
 			sql = initialSql;
@@ -63,86 +62,78 @@
 	}
 
 	function formatCell(value: unknown): string {
-		if (value === null || value === undefined) return '—';
+		if (value === null || value === undefined) return '\u2014';
 		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	}
 </script>
 
-<div class="flex flex-col gap-4">
-	<!-- Editor -->
-	<div>
-		<div class="flex items-center justify-between">
-			<h2 class="font-display text-sm font-semibold text-sand-700">Query editor</h2>
-			<button
-				onclick={() => sql.trim() && onrun(sql, 1, pageSize)}
-				disabled={!sql.trim() || loading}
-				class="rounded-md bg-sage-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-sage-700 disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				{loading ? 'Running...' : 'Run'}
-			</button>
-		</div>
-		<textarea
-			bind:value={sql}
-			onkeydown={(e) => {
-				handleKeydown(e);
-				handleTab(e);
-			}}
-			placeholder="SELECT * FROM ..."
-			rows="6"
-			class="mt-2 w-full resize-none rounded-lg border border-sand-200 bg-white px-4 py-3 text-sm leading-relaxed text-sand-800 shadow-sm transition-colors placeholder:text-sand-300 focus:border-sage-400 focus:outline-none focus:ring-2 focus:ring-sage-200"
-		></textarea>
-		<span class="text-xs text-sand-400">Ctrl+Enter to run</span>
+<div class="editor">
+	<div class="editor-header">
+		<h2 class="editor-title">Query editor</h2>
+		<button
+			onclick={() => sql.trim() && onrun(sql, 1, pageSize)}
+			disabled={!sql.trim() || loading}
+			class="btn btn-primary"
+		>
+			{loading ? 'Running...' : 'Run'}
+		</button>
 	</div>
 
-	<!-- Loading spinner -->
+	<textarea
+		bind:value={sql}
+		onkeydown={(e) => {
+			handleKeydown(e);
+			handleTab(e);
+		}}
+		placeholder="SELECT * FROM ..."
+		rows="6"
+		class="editor-textarea"
+	></textarea>
+	<span class="editor-hint">Ctrl+Enter to run</span>
+
 	{#if loading}
-		<div class="flex items-center justify-center rounded-lg border border-sand-200 bg-white py-16">
-			<svg class="h-5 w-5 animate-spin text-sage-500" viewBox="0 0 24 24" fill="none">
+		<div class="editor-loading">
+			<svg class="spinner" viewBox="0 0 24 24" fill="none" style="color: var(--color-accent);">
 				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
 				<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
 			</svg>
-			<span class="ml-2 text-sm text-sand-400">Running query...</span>
+			<span class="editor-hint">Running query...</span>
 		</div>
 	{/if}
 
-	<!-- Error -->
 	{#if error}
-		<div class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+		<div class="editor-error">{error}</div>
 	{/if}
 
-	<!-- Results -->
 	{#if !loading && result && result.columns.length > 0}
-		<div>
-			<div class="mb-2 flex items-center gap-2">
-				<h3 class="font-display text-sm font-semibold text-sand-700">{result.isMutation ? 'Result' : 'Preview'}</h3>
+		<div class="editor-results">
+			<div class="results-header">
+				<h3 class="editor-title" style="font-size: var(--text-sm);">
+					{result.isMutation ? 'Result' : 'Preview'}
+				</h3>
 				{#if queryTime > 0}
-					<span class="text-xs text-sand-400">{queryTime.toFixed(0)}ms</span>
+					<span class="tag tag-default">{queryTime.toFixed(0)}ms</span>
 				{/if}
-				{#if !result.isMutation}
-					<span class="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] font-medium text-sage-700">
-						{result.rows.length} of {result.totalRows.toLocaleString()} rows
-					</span>
-				{:else}
-					<span class="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] font-medium text-sage-700">
-						{result.rows.length} rows
-					</span>
-				{/if}
+				<span class="tag tag-accent">
+					{result.rows.length} of {result.totalRows.toLocaleString()} rows
+				</span>
 			</div>
-			<div class="overflow-x-auto rounded-lg border border-sand-200 bg-white">
-				<table class="w-full text-left text-sm">
+
+			<div class="results-table-wrap">
+				<table class="data-table">
 					<thead>
-						<tr class="border-b border-sand-200 bg-sand-50">
+						<tr>
 							{#each result.columns as col}
-								<th class="whitespace-nowrap px-4 py-3 font-semibold text-sand-600">{col}</th>
+								<th>{col}</th>
 							{/each}
 						</tr>
 					</thead>
 					<tbody>
 						{#each result.rows as row}
-							<tr class="border-b border-sand-100 transition-colors hover:bg-sage-50/40">
+							<tr>
 								{#each result.columns as col}
-									<td class="max-w-[300px] truncate px-4 py-2.5 text-sand-700">{formatCell(row[col])}</td>
+									<td>{formatCell(row[col])}</td>
 								{/each}
 							</tr>
 						{/each}
@@ -150,49 +141,146 @@
 				</table>
 			</div>
 
-			<!-- Pagination -->
 			{#if !result.isMutation && result.totalPages > 1}
-				<div class="mt-2 flex items-center justify-center gap-3">
+				<div class="pagination">
 					<button
 						onclick={() => onrun(sql, result.page - 1, pageSize)}
 						disabled={result.page <= 1}
-						class="rounded-md px-3 py-1 text-sm font-medium text-sand-600 transition-colors hover:bg-sand-100 disabled:cursor-not-allowed disabled:opacity-40"
+						class="btn btn-ghost btn-sm"
 					>
-						← prev
+						&larr; prev
 					</button>
-					<span class="text-xs text-sand-400">Page {result.page} of {result.totalPages}</span>
+					<span class="editor-hint">Page {result.page} of {result.totalPages}</span>
 					<button
 						onclick={() => onrun(sql, result.page + 1, pageSize)}
 						disabled={result.page >= result.totalPages}
-						class="rounded-md px-3 py-1 text-sm font-medium text-sand-600 transition-colors hover:bg-sand-100 disabled:cursor-not-allowed disabled:opacity-40"
+						class="btn btn-ghost btn-sm"
 					>
-						next →
+						next &rarr;
 					</button>
 				</div>
 			{/if}
 		</div>
 	{/if}
 
-	<!-- Ingest / Save as table -->
 	{#if onsaveastable}
-		<div class="flex items-center gap-3 border-t border-sand-200 pt-4">
-			<div class="flex items-center gap-2">
-				<label for="save-table-name" class="text-sm text-sand-400">Table name:</label>
+		<div class="ingest-row">
+			<div class="field" style="flex-direction: row; align-items: center; gap: var(--space-3);">
+				<label for="save-table-name" class="field-label" style="margin: 0; font-size: var(--text-xs);">Table name:</label>
 				<input
 					id="save-table-name"
 					type="text"
 					bind:value={saveTableName}
 					placeholder="table_name"
-					class="rounded-md border border-sand-200 bg-white px-3 py-1.5 text-sm text-sand-800 outline-none focus:border-sage-400 focus:ring-2 focus:ring-sage-200"
+					class="input"
 				/>
 			</div>
 			<button
 				onclick={handleIngest}
 				disabled={!saveTableName.trim()}
-				class="rounded-lg bg-copper-400 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-copper-500 disabled:cursor-not-allowed disabled:opacity-40"
+				class="btn btn-primary"
 			>
-				Ingest as table →
+				Ingest as table &rarr;
 			</button>
 		</div>
 	{/if}
 </div>
+
+<style>
+	.editor {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.editor-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.editor-title {
+		font-family: var(--font-display);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.editor-textarea {
+		width: 100%;
+		resize: none;
+		padding: var(--space-4);
+		border: 1px solid var(--color-border-strong);
+		background: var(--color-surface);
+		border-radius: var(--radius-xs);
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		line-height: var(--leading-relaxed);
+		color: var(--color-text);
+		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+	}
+
+	.editor-textarea::placeholder {
+		color: var(--color-text-tertiary);
+	}
+
+	.editor-textarea:focus {
+		outline: none;
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 2px var(--color-accent-muted);
+	}
+
+	.editor-hint {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		color: var(--color-text-tertiary);
+		letter-spacing: 0.04em;
+	}
+
+	.editor-loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-16) 0;
+		gap: var(--space-3);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+	}
+
+	.editor-error {
+		padding: var(--space-3) var(--space-4);
+		background: oklch(0.95 0.03 22);
+		border: 1px solid oklch(0.9 0.04 22);
+		border-radius: var(--radius-xs);
+		font-size: var(--text-sm);
+		color: oklch(0.38 0.12 22);
+	}
+
+	.results-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-bottom: var(--space-2);
+	}
+
+	.results-table-wrap {
+		overflow-x: auto;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+	}
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-3);
+	}
+
+	.ingest-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+		border-top: 1px dashed var(--color-border);
+	}
+</style>

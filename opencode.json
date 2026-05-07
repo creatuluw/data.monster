@@ -23,6 +23,14 @@
     "chrome-devtools": {
       "type": "local",
       "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+    },
+    "zai-mcp-server": {
+      "type": "local",
+      "command": ["npx", "-y", "@z_ai/mcp-server"],
+      "environment": {
+        "Z_AI_API_KEY": "5b2479064b644e10a67885a7724ab968.ImNqPPbcnfavLkE9",
+        "Z_AI_MODE": "ZAI"
+      }
     }
   },
   "permission": {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PreviewData, ColumnOverride } from '$lib/db-helpers';
+	import type { PreviewData, ColumnOverride } from '$lib/db-operations';
 
 	let {
 		data,
@@ -14,7 +14,7 @@
 	const TYPE_OPTIONS = ['VARCHAR', 'INTEGER', 'BIGINT', 'DOUBLE', 'BOOLEAN', 'DATE', 'TIMESTAMP'];
 
 	function formatCell(value: unknown): string {
-		if (value === null || value === undefined) return '—';
+		if (value === null || value === undefined) return '\u2014';
 		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	}
@@ -63,51 +63,38 @@
 	}
 </script>
 
-<div class="flex flex-col gap-6">
-	<!-- Header -->
-	<div class="flex items-center gap-3">
-		<h2 class="font-display text-lg font-bold text-sand-800">{data.sourceName ?? 'Preview'}</h2>
-		<span class="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] font-medium text-sage-700">
-			{data.totalRows.toLocaleString()} rows
-		</span>
+<div class="preview">
+	<div class="preview-header">
+		<h2 class="preview-title">{data.sourceName ?? 'Preview'}</h2>
+		<span class="tag tag-accent">{data.totalRows.toLocaleString()} rows</span>
 	</div>
 
-	<!-- Preview table with inline type selectors and enable toggles -->
-	<div class="overflow-x-auto rounded-lg border border-sand-200 bg-white">
-		<table class="w-full text-left text-sm">
+	<div class="preview-table-wrap">
+		<table class="data-table">
 			<thead>
-				<!-- Enable toggle row -->
-				<tr class="border-b border-sand-100 bg-sand-50">
+				<tr class="toggle-row">
 					{#each data.columns as col}
 						{@const on = isEnabled(col)}
-						<th class="whitespace-nowrap px-4 pt-3 pb-1">
+						<th class="toggle-cell">
 							<button
 								onclick={() => toggleEnabled(col)}
-								class="flex items-center gap-1 text-[11px] transition-colors {on ? 'text-sage-600' : 'text-sand-300 line-through'}"
+								class="toggle-btn {on ? 'is-on' : 'is-off'}"
 								title={on ? 'Click to exclude column' : 'Click to include column'}
 							>
-								<svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-									{#if on}
-										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-									{:else}
-										<path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-									{/if}
-								</svg>
 								{on ? 'on' : 'off'}
 							</button>
 						</th>
 					{/each}
 				</tr>
-				<!-- Type selector row -->
-				<tr class="border-b border-sand-100 bg-sand-50">
+				<tr class="type-row">
 					{#each data.columns as col}
 						{@const on = isEnabled(col)}
-						<th class="whitespace-nowrap px-4 pb-1">
+						<th class="type-cell">
 							<select
 								value={getOverrideType(col)}
 								onchange={(e) => setOverrideType(col, (e.target as HTMLSelectElement).value)}
 								disabled={!on}
-								class="rounded border border-sand-200 bg-white px-1.5 py-0.5 text-[11px] text-sand-600 shadow-sm focus:border-sage-400 focus:outline-none focus:ring-1 focus:ring-sage-200 {isTypeChanged(col) ? 'border-copper-300 text-copper-700' : ''} {!on ? 'opacity-30' : ''}"
+								class="type-select {isTypeChanged(col) ? 'is-changed' : ''} {!on ? 'is-disabled' : ''}"
 							>
 								{#each TYPE_OPTIONS as opt}
 									<option value={opt} selected={getOverrideType(col) === opt}>{opt}</option>
@@ -116,17 +103,16 @@
 						</th>
 					{/each}
 				</tr>
-				<!-- Column name row (editable) -->
-				<tr class="border-b border-sand-200 bg-sand-50">
+				<tr class="name-row">
 					{#each data.columns as col}
 						{@const on = isEnabled(col)}
-						<th class="whitespace-nowrap px-4 pb-3">
+						<th class="name-cell">
 							<input
 								type="text"
 								value={getNewName(col)}
 								onchange={(e) => setNewName(col, (e.target as HTMLInputElement).value)}
 								disabled={!on}
-								class="w-full min-w-[60px] bg-transparent font-semibold text-sand-600 outline-none focus:text-sand-800 {!on ? 'opacity-30 line-through' : ''}"
+								class="name-input {!on ? 'is-disabled' : ''}"
 							/>
 						</th>
 					{/each}
@@ -134,10 +120,10 @@
 			</thead>
 			<tbody>
 				{#each data.rows as row}
-					<tr class="border-b border-sand-100 transition-colors hover:bg-sage-50/40">
+					<tr>
 						{#each data.columns as col}
 							{@const on = isEnabled(col)}
-							<td class="max-w-[300px] truncate px-4 py-2.5 text-sand-700 {!on ? 'opacity-30' : ''}">{formatCell(row[col])}</td>
+							<td class={!on ? 'is-disabled' : ''}>{formatCell(row[col])}</td>
 						{/each}
 					</tr>
 				{/each}
@@ -145,13 +131,127 @@
 		</table>
 	</div>
 
-	<!-- Next step -->
-	<div class="flex items-center justify-end">
-		<button
-			onclick={onnext}
-			class="rounded-lg bg-copper-400 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-copper-500"
-		>
-			Write table query →
+	<div class="preview-footer">
+		<button onclick={onnext} class="btn btn-primary">
+			Write table query &rarr;
 		</button>
 	</div>
 </div>
+
+<style>
+	.preview {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-6);
+	}
+
+	.preview-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.preview-title {
+		font-family: var(--font-display);
+		font-size: var(--text-lg);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: var(--color-text);
+	}
+
+	.preview-table-wrap {
+		overflow-x: auto;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+	}
+
+	.toggle-row,
+	.type-row,
+	.name-row {
+		background: var(--color-surface-raised);
+	}
+
+	.toggle-row {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.type-row {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.name-row {
+		border-bottom: 1px solid var(--color-border-strong);
+	}
+
+	.toggle-cell,
+	.type-cell,
+	.name-cell {
+		white-space: nowrap;
+		padding: var(--space-2) var(--space-4);
+	}
+
+	.toggle-btn {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		letter-spacing: 0.06em;
+		background: none;
+		border: none;
+		cursor: pointer;
+		transition: color var(--duration-fast) ease;
+	}
+
+	.toggle-btn.is-on {
+		color: var(--color-accent);
+	}
+
+	.toggle-btn.is-off {
+		color: var(--color-text-tertiary);
+		text-decoration: line-through;
+	}
+
+	.type-select {
+		padding: 1px var(--space-1);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		border-radius: var(--radius-xs);
+		font-family: var(--font-mono);
+		font-size: 9px;
+		color: var(--color-text-secondary);
+		transition: border-color var(--duration-fast) ease;
+	}
+
+	.type-select.is-changed {
+		border-color: var(--color-accent);
+		color: var(--color-accent-dark);
+	}
+
+	.type-select.is-disabled {
+		opacity: 0.3;
+	}
+
+	.name-input {
+		border: none;
+		background: transparent;
+		font-family: var(--font-body);
+		font-weight: 600;
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+		outline: none;
+		min-width: 60px;
+		width: 100%;
+	}
+
+	.name-input.is-disabled {
+		opacity: 0.3;
+		text-decoration: line-through;
+	}
+
+	.is-disabled {
+		opacity: 0.3;
+	}
+
+	.preview-footer {
+		display: flex;
+		justify-content: flex-end;
+	}
+</style>

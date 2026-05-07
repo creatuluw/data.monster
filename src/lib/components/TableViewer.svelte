@@ -1,6 +1,4 @@
 <script lang="ts">
-	import type { QueryResult } from '$lib/db-helpers';
-
 	let {
 		result,
 		tableName = '',
@@ -8,108 +6,141 @@
 		totalPages = 1,
 		onpagechange,
 		onquerytable,
-		oneditsource,
-		ondroptable,
-		hasRecipe = false
+		ondroptable
 	}: {
-		result: QueryResult & { totalRows: number };
+		result: { columns: string[]; rows: Record<string, unknown>[]; totalRows: number };
 		tableName?: string;
 		page?: number;
 		totalPages?: number;
 		onpagechange?: (page: number) => void;
 		onquerytable?: () => void;
-		oneditsource?: () => void;
 		ondroptable?: () => void;
-		hasRecipe?: boolean;
 	} = $props();
 
 	function formatCell(value: unknown): string {
-		if (value === null || value === undefined) return '—';
+		if (value === null || value === undefined) return '\u2014';
 		if (typeof value === 'object') return JSON.stringify(value);
 		return String(value);
 	}
 </script>
 
-<div class="flex flex-col gap-4">
-	<!-- Header -->
-	<div class="flex items-center gap-3">
-		<h2 class="font-display text-lg font-bold text-sand-800">{tableName}</h2>
-		<span class="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] font-medium text-sage-700">
-			{result.totalRows.toLocaleString()} rows
-		</span>
+<div class="viewer">
+	<div class="viewer-header">
+		<h2 class="viewer-title">{tableName}</h2>
+		<span class="tag tag-accent">{result.totalRows.toLocaleString()} rows</span>
 	</div>
 
-	<!-- Data table -->
-	<div class="overflow-x-auto rounded-lg border border-sand-200 bg-white">
-		<table class="w-full text-left text-sm">
+	<div class="viewer-table-wrap">
+		<table class="data-table">
 			<thead>
-				<tr class="border-b border-sand-200 bg-sand-50">
+				<tr>
 					{#each result.columns as col}
-						<th class="whitespace-nowrap px-4 py-3 font-semibold text-sand-600">{col}</th>
+						<th>{col}</th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody>
 				{#each result.rows as row}
-					<tr class="border-b border-sand-100 transition-colors hover:bg-sage-50/40">
+					<tr>
 						{#each result.columns as col}
-							<td class="max-w-[300px] truncate px-4 py-2.5 text-sand-700">{formatCell(row[col])}</td>
+							<td>{formatCell(row[col])}</td>
 						{/each}
 					</tr>
 				{/each}
 			</tbody>
 		</table>
-		<div class="border-t border-sand-200 bg-sand-50 px-4 py-2 text-xs text-sand-400">
+		<div class="viewer-footer-bar">
 			{result.rows.length} of {result.totalRows.toLocaleString()} rows
 		</div>
 	</div>
 
-	<!-- Pagination -->
 	{#if totalPages > 1}
-		<div class="flex items-center justify-center gap-3 text-sm text-sand-600">
+		<div class="pagination">
 			<button
 				onclick={() => onpagechange?.(page - 1)}
 				disabled={page <= 1}
-				class="rounded-md px-3 py-1 text-sm font-medium text-sand-600 transition-colors hover:bg-sand-100 disabled:cursor-not-allowed disabled:opacity-40"
+				class="btn btn-ghost btn-sm"
 			>
-				← prev
+				&larr; prev
 			</button>
-			<span class="text-xs text-sand-400">Page {page} of {totalPages}</span>
+			<span class="page-info">Page {page} of {totalPages}</span>
 			<button
 				onclick={() => onpagechange?.(page + 1)}
 				disabled={page >= totalPages}
-				class="rounded-md px-3 py-1 text-sm font-medium text-sand-600 transition-colors hover:bg-sand-100 disabled:cursor-not-allowed disabled:opacity-40"
+				class="btn btn-ghost btn-sm"
 			>
-				next →
+				next &rarr;
 			</button>
 		</div>
 	{/if}
 
-	<!-- Actions -->
-	<div class="flex items-center gap-3 border-t border-sand-200 pt-4">
+	<div class="viewer-actions">
 		{#if onquerytable}
-			<button
-				onclick={onquerytable}
-				class="rounded-md bg-sage-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-sage-700"
-			>
-				Query this table
-			</button>
-		{/if}
-		{#if hasRecipe && oneditsource}
-			<button
-				onclick={oneditsource}
-				class="rounded-md px-4 py-1.5 text-sm font-medium text-sand-600 transition-colors hover:bg-sand-100"
-			>
-				Edit source
-			</button>
+			<button onclick={onquerytable} class="btn btn-primary">Query this table</button>
 		{/if}
 		{#if ondroptable}
-			<button
-				onclick={ondroptable}
-				class="rounded-md px-4 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
-			>
-				Drop table
-			</button>
+			<button onclick={ondroptable} class="btn btn-danger btn-sm">Drop table</button>
 		{/if}
 	</div>
 </div>
+
+<style>
+	.viewer {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		padding: var(--space-6);
+	}
+
+	.viewer-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.viewer-title {
+		font-family: var(--font-display);
+		font-size: var(--text-lg);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: var(--color-text);
+	}
+
+	.viewer-table-wrap {
+		overflow-x: auto;
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+	}
+
+	.viewer-footer-bar {
+		padding: var(--space-2) var(--space-4);
+		background: var(--color-surface-raised);
+		border-top: 1px solid var(--color-border);
+		font-family: var(--font-mono);
+		font-size: 9px;
+		color: var(--color-text-tertiary);
+		letter-spacing: 0.04em;
+	}
+
+	.pagination {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-3);
+	}
+
+	.page-info {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		color: var(--color-text-tertiary);
+		letter-spacing: 0.04em;
+	}
+
+	.viewer-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding-top: var(--space-4);
+		border-top: 1px dashed var(--color-border);
+	}
+</style>

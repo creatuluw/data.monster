@@ -1,0 +1,401 @@
+{
+  "project": "tauri-migration",
+  "spec": ".specs/tauri-migration/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "setup-001",
+      "phase": "Tauri Scaffolding",
+      "title": "Scaffold src-tauri/ with Cargo.toml, tauri.conf.json, build.rs, capabilities",
+      "description": "FR-1: Create the Tauri v2 project structure at src-tauri/ adapted from docs/src-tauri/. Cargo.toml with duckdb (bundled), tauri-plugin-dialog, serde, serde_json, chrono. tauri.conf.json configured for Data Monster (productName, identifier, devUrl pointing to SvelteKit dev server). build.rs with tauri_build::build(). capabilities/default.json with core, dialog, shell permissions.",
+      "acceptanceCriteria": [
+        "TDD: Write verification that cargo check succeeds for the src-tauri/ crate",
+        "TDD: Verify tauri.conf.json has correct productName and identifier",
+        "TDD: Verify capabilities include dialog:allow-open and dialog:allow-save",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "setup-002",
+      "phase": "Tauri Scaffolding",
+      "title": "Create Rust state, main.rs, lib.rs, and module structure",
+      "description": "FR-2: Create src-tauri/src/main.rs with Tauri builder, plugin registration (shell, dialog), DuckDbState management, and invoke_handler. Create state.rs with DuckDbState (conn Mutex<Option<Connection>>, query_cancelled Arc<AtomicBool>, interrupt_handle Mutex). Create commands/mod.rs with module declarations for database, tables, queries, files, folders, labels, saved_queries. Create utils/mod.rs and models/mod.rs.",
+      "acceptanceCriteria": [
+        "TDD: Write verification that main.rs compiles and registers all command handlers",
+        "TDD: Verify DuckDbState has conn, query_cancelled, interrupt_handle fields",
+        "TDD: Verify all command modules are declared in mod.rs",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-001",
+      "phase": "Database",
+      "title": "Implement initialize_duckdb with workspace folder and d8a_monster_ schema",
+      "description": "FR-2: Create commands/database.rs with initialize_duckdb command. Opens DuckDB at <workspace>/d8a_monster.duckdb. Creates d8a_monster_table_metadata, d8a_monster_table_labels, d8a_monster_saved_queries, d8a_monster_relationships internal tables. Includes WAL corruption recovery and locked database retry logic. Cleans up orphaned metadata on init. Working directory (workspace path) passed as parameter. Workspace path persisted in <app_data_dir>/workspace.json.",
+      "acceptanceCriteria": [
+        "TDD: Write test that initialize_duckdb creates .duckdb file at workspace path",
+        "TDD: Write test that all d8a_monster_ tables exist after initialization",
+        "TDD: Write test that calling initialize_duckdb twice returns 'already initialized'",
+        "TDD: Write test that orphaned metadata entries are cleaned up on init",
+        "TDD: Refactor to extract schema creation into separate function for testability",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-002",
+      "phase": "Database",
+      "title": "Implement choose_workspace_folder and workspace persistence",
+      "description": "FR-1: Add choose_workspace_folder Tauri command using tauri-plugin-dialog directory picker. Save selected path to <app_data_dir>/workspace.json. Add get_workspace_path command that reads workspace.json. Add set_workspace_path command. On app startup, check workspace.json; if missing or path invalid, frontend shows folder picker. Add switch_workspace command for changing folders.",
+      "acceptanceCriteria": [
+        "TDD: Write test that choose_workspace_folder opens dialog and returns path",
+        "TDD: Write test that workspace path persists to workspace.json",
+        "TDD: Write test that get_workspace_path returns null when no workspace set",
+        "TDD: Write test that get_workspace_path returns saved path when exists",
+        "TDD: Refactor workspace path logic into utility module",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-003",
+      "phase": "Database",
+      "title": "Implement file loading commands (CSV, Parquet, JSON) with workspace data folder",
+      "description": "FR-3: Create commands/files.rs with load_csv_file, load_parquet_file, load_json_file. Each reads file from disk path into DuckDB via read_csv_auto/read_parquet/read_json_auto, copies source file to <workspace>/data/main/, registers table in d8a_monster_table_metadata as type 'source'. Add get_file_columns for schema preview. Add helper get_data_dir() returning <workspace>/data/.",
+      "acceptanceCriteria": [
+        "TDD: Write test that load_csv_file creates table and copies file to data folder",
+        "TDD: Write test that load_parquet_file loads parquet data correctly",
+        "TDD: Write test that loaded table is registered in d8a_monster_table_metadata",
+        "TDD: Write test that source file is copied to workspace data/main/ folder",
+        "TDD: Refactor common loading logic into helper function",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-004",
+      "phase": "Database",
+      "title": "Implement folder management commands",
+      "description": "FR-3: Create commands/folders.rs with initialize_data_folders, list_folders, create_folder, list_files_in_folder, save_file_to_folder, get_file_path_in_folder. All relative to workspace data directory.",
+      "acceptanceCriteria": [
+        "TDD: Write test that initialize_data_folders creates data/ and data/main/ directories",
+        "TDD: Write test that list_folders returns 'main' as default folder",
+        "TDD: Write test that create_folder creates subdirectory under data/",
+        "TDD: Refactor to use workspace-relative paths consistently",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-005",
+      "phase": "Database",
+      "title": "Implement execute_query and cancel_query commands",
+      "description": "FR-4: Create commands/queries.rs with execute_query and cancel_query. execute_query runs SQL against DuckDB, returns JSON {columns, data}. Detects SELECT vs DML. Stores interrupt handle for cancellation. cancel_query sets AtomicBool and calls interrupt().",
+      "acceptanceCriteria": [
+        "TDD: Write test that execute_query returns {columns, data} for SELECT",
+        "TDD: Write test that execute_query handles DML statements",
+        "TDD: Write test that cancel_query interrupts a running query",
+        "TDD: Refactor value formatting into utility function",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "core-006",
+      "phase": "Database",
+      "title": "Implement table management commands",
+      "description": "FR-5: Create commands/tables.rs with list_tables, drop_table, create_table_from_query, get_table_size, get_saved_tables. list_tables queries information_schema. drop_table removes from DuckDB and d8a_monster_table_metadata. create_table_from_query runs CTAS and registers in metadata as type 'model'.",
+      "acceptanceCriteria": [
+        "TDD: Write test that list_tables returns table names from information_schema",
+        "TDD: Write test that drop_table removes table and metadata entry",
+        "TDD: Write test that create_table_from_query creates table and registers metadata",
+        "TDD: Refactor metadata registration into shared utility",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "core-007",
+      "phase": "Database",
+      "title": "Implement table labels (tags and groups) commands",
+      "description": "FR-6: Create commands/labels.rs with save_table_labels, get_table_labels, get_all_tags, get_all_groups. Uses d8a_monster_table_labels table (table_name PK, tags TEXT, group VARCHAR). save_table_labels upserts. get_table_labels returns tags as array and group. get_all_tags returns distinct tag values. get_all_groups returns distinct group values.",
+      "acceptanceCriteria": [
+        "TDD: Write test that save_table_labels inserts tags and group for a table",
+        "TDD: Write test that save_table_labels updates existing labels on conflict",
+        "TDD: Write test that get_table_labels returns tags array and group",
+        "TDD: Write test that get_all_tags returns distinct comma-separated tags",
+        "TDD: Write test that get_all_groups returns distinct non-null groups",
+        "TDD: Refactor tag splitting logic into utility",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "core-008",
+      "phase": "Database",
+      "title": "Implement saved queries commands",
+      "description": "FR-7: Create commands/saved_queries.rs with init_saved_queries_table, list_saved_queries, save_query, update_saved_query, delete_saved_query, get_saved_query. Uses d8a_monster_saved_queries table (slug PK, query_name, query_sql, description, tags, created_at, updated_at).",
+      "acceptanceCriteria": [
+        "TDD: Write test that save_query inserts into d8a_monster_saved_queries",
+        "TDD: Write test that list_saved_queries returns all saved queries",
+        "TDD: Write test that delete_saved_query removes by slug",
+        "TDD: Write test that update_saved_query modifies existing query",
+        "TDD: Refactor to share init pattern with database.rs schema creation",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-7"
+    },
+    {
+      "id": "core-009",
+      "phase": "Database",
+      "title": "Implement utility modules (metadata_helpers, formatting, types)",
+      "description": "FR-5: Create utils/metadata_helpers.rs with register_table_metadata, register_table_metadata_with_query, remove_table_metadata, cleanup_orphaned_metadata. Create utils/formatting.rs with format_duckdb_value for converting DuckDB value refs to serde_json::Value. Create utils/types.rs and utils/slugs.rs for slug generation.",
+      "acceptanceCriteria": [
+        "TDD: Write test that register_table_metadata inserts into d8a_monster_table_metadata",
+        "TDD: Write test that remove_table_metadata deletes entry by table_name",
+        "TDD: Write test that cleanup_orphaned_metadata removes entries for dropped tables",
+        "TDD: Write test that format_duckdb_value handles VARCHAR, INTEGER, DOUBLE, NULL",
+        "TDD: Refactor shared patterns into reusable helpers",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "frontend-001",
+      "phase": "Frontend",
+      "title": "Replace DuckDB WASM with Tauri invoke layer",
+      "description": "FR-2: Create src/lib/db-operations.ts wrapping all Tauri invoke() calls (initialize_duckdb, execute_query, load_csv_file, etc.). Create src/lib/db-utils.ts with parseQueryResult and parseQueryResultWithColumns. Create src/lib/db-context.ts for Svelte context. Remove src/lib/duckdb.ts, src/lib/persistence.ts, src/lib/db-helpers.ts. Remove @duckdb/duckdb-wasm from package.json.",
+      "acceptanceCriteria": [
+        "TDD: Write test that db-operations.ts functions call correct invoke commands",
+        "TDD: Write test that parseQueryResult handles {columns, data} format",
+        "TDD: Write test that parseQueryResult handles legacy array format",
+        "TDD: Verify no @duckdb/duckdb-wasm imports remain in src/",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "frontend-002",
+      "phase": "Frontend",
+      "title": "Update app store to use Tauri commands",
+      "description": "FR-2: Rewrite src/lib/stores/app.svelte.ts to call db-operations.ts instead of DuckDB WASM. app.init() calls initialize_duckdb via Tauri. app.refreshTables() calls list_tables via Tauri. app.connectFile() uses Tauri file dialog + load_csv_file/parquet/json. app.connectUrl() calls execute_query with read_csv_auto(url). Remove previewFile/previewUrl WASM calls.",
+      "acceptanceCriteria": [
+        "TDD: Write test that app.init calls initialize_duckdb",
+        "TDD: Write test that app.refreshTables calls list_tables",
+        "TDD: Write test that app.connectFile opens file dialog and loads via Tauri",
+        "TDD: Verify no DuckDB WASM references remain in app store",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "frontend-003",
+      "phase": "Frontend",
+      "title": "Update layout with workspace initialization flow",
+      "description": "FR-1: Update src/routes/+layout.svelte to check for workspace on mount. If no workspace (first launch), show workspace picker modal. On workspace set, call initialize_duckdb. Show 'Switch workspace' in header. Remove DuckDB WASM init and IndexedDB badges. Add Tauri availability detection with retry.",
+      "acceptanceCriteria": [
+        "TDD: Write test that layout shows workspace picker when no workspace configured",
+        "TDD: Write test that layout calls initialize_duckdb after workspace is set",
+        "TDD: Write test that 'Switch workspace' button triggers folder picker",
+        "TDD: Verify Tauri availability detection works with retry logic",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "frontend-004",
+      "phase": "Frontend",
+      "title": "Update connect flow to use Tauri file dialog and load commands",
+      "description": "FR-3: Update FileConnector to use @tauri-apps/plugin-dialog open dialog. On file selected: copy to workspace data folder via save_file_to_folder, then load via load_csv/parquet/json_file Tauri command. Remove drag-and-drop with browser File API. Update PreviewPane to get column info via get_file_columns Tauri command.",
+      "acceptanceCriteria": [
+        "TDD: Write test that FileConnector opens Tauri file dialog",
+        "TDD: Write test that selected file is copied to workspace data folder",
+        "TDD: Write test that file is loaded into DuckDB via Tauri load command",
+        "TDD: Verify preview shows column types and sample data correctly",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "frontend-005",
+      "phase": "Frontend",
+      "title": "Update query page to use Tauri execute_query",
+      "description": "FR-4: Update query page to call execute_query via db-operations.ts. Update runQuery to use Tauri invoke. Update pagination to use SQL LIMIT/OFFSET via Tauri. Update 'Ingest as table' to use create_table_from_query. Remove localStorage saved queries — use save_query/update_saved_query/delete_saved_query Tauri commands. Update sidebar table list to use list_tables.",
+      "acceptanceCriteria": [
+        "TDD: Write test that query execution calls Tauri execute_query",
+        "TDD: Write test that pagination uses LIMIT/OFFSET correctly",
+        "TDD: Write test that saved queries use Tauri commands instead of localStorage",
+        "TDD: Verify no localStorage data-monster-saved-queries key is written",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "frontend-006",
+      "phase": "Frontend",
+      "title": "Update TableOverview with tags/groups from Tauri commands",
+      "description": "FR-6: Replace table-tags.ts localStorage with Tauri commands. Update TableOverview.svelte to call get_table_labels, save_table_labels, get_all_tags, get_all_groups via db-operations.ts. Keep existing inline edit UI and filter bar. Remove table-tags.ts file.",
+      "acceptanceCriteria": [
+        "TDD: Write test that TableOverview loads labels via Tauri get_table_labels",
+        "TDD: Write test that saving labels calls Tauri save_table_labels",
+        "TDD: Write test that filter bar works with Tauri-fetched tags/groups",
+        "TDD: Verify no localStorage data-monster-table-labels key is written",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "frontend-007",
+      "phase": "Frontend",
+      "title": "Update table detail and analyst stores for Tauri",
+      "description": "FR-5, FR-8: Update /table/[name] page to call list_tables, drop_table via Tauri. Update analyst store getTableSchemas to call execute_query via Tauri instead of DuckDB WASM. Update /pages chart queries to use Tauri execute_query. Remove recipes.ts and ingest-history.ts localStorage modules — metadata now in d8a_monster_table_metadata.",
+      "acceptanceCriteria": [
+        "TDD: Write test that table detail page calls Tauri drop_table",
+        "TDD: Write test that analyst store calls Tauri execute_query for schema introspection",
+        "TDD: Write test that /pages chart queries use Tauri execute_query",
+        "TDD: Verify no localStorage data-monster-recipes or data-monster-ingest-history keys written",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-5, FR-8"
+    },
+    {
+      "id": "cleanup-001",
+      "phase": "Cleanup",
+      "title": "Remove DuckDB WASM, IndexedDB persistence, and localStorage dependencies",
+      "description": "Remove src/lib/duckdb.ts, src/lib/persistence.ts, src/lib/db-helpers.ts, src/lib/recipes.ts, src/lib/ingest-history.ts, src/lib/table-tags.ts. Remove @duckdb/duckdb-wasm from package.json dependencies. Clean up any remaining IndexedDB or localStorage references. Verify tauri dev and tauri build work end-to-end.",
+      "acceptanceCriteria": [
+        "TDD: Write test that no @duckdb/duckdb-wasm imports exist in src/",
+        "TDD: Write test that no localStorage calls exist in src/ (except Tauri internal)",
+        "TDD: Write test that no IndexedDB code exists in src/",
+        "TDD: Verify tauri dev launches app successfully",
+        "TDD: Verify tauri build produces installer",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "edge-001",
+      "phase": "Edge Cases",
+      "title": "Handle WAL corruption and locked database scenarios",
+      "description": "Edge case: Adapt WAL corruption recovery from docs/src-tauri/database.rs. Detect 'Failure while replaying WAL file' and 'INTERNAL Error' messages. Delete corrupted WAL file and retry. Handle locked database with exponential backoff (10 attempts). Frontend shows appropriate error messages.",
+      "acceptanceCriteria": [
+        "TDD: Write test that WAL corruption is detected and WAL file deleted on retry",
+        "TDD: Write test that locked database retries with backoff",
+        "TDD: Write test that frontend shows error when database cannot open after retries",
+        "TDD: Refactor retry logic into reusable function",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "Edge Cases"
+    },
+    {
+      "id": "edge-002",
+      "phase": "Edge Cases",
+      "title": "Handle missing or moved workspace folder",
+      "description": "Edge case: On app launch, verify workspace folder still exists. If deleted or moved, show error dialog and prompt user to choose new folder. If DuckDB file is missing but folder exists, reinitialize database.",
+      "acceptanceCriteria": [
+        "TDD: Write test that missing workspace folder triggers re-prompt",
+        "TDD: Write test that missing .duckdb file in existing workspace triggers re-initialization",
+        "TDD: Write test that workspace folder validation runs before initialize_duckdb",
+        "TDD: Refactor workspace validation into utility function",
+        "Task Logging: .specs/tauri-migration/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .agents/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .agents/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "Edge Cases"
+    }
+  ],
+  "tddWorkflow": {
+    "enforced": true,
+    "cycle": "RED-GREEN-REFACTOR",
+    "rules": [
+      "Write test first (RED) - test must fail",
+      "Write minimal code to pass (GREEN) - no optimization",
+      "Refactor only after test passes (REFACTOR) - maintain quality",
+      "All tasks must follow TDD cycle as acceptance criteria"
+    ]
+  }
+}

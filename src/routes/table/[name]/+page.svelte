@@ -3,24 +3,23 @@
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { getTableData, dropTable } from '$lib/db-helpers';
-	import { getRecipe, deleteRecipe } from '$lib/recipes';
+	import { executeQuery, dropTable, runPagedQuery } from '$lib/db-operations';
 	import { onMount } from 'svelte';
-	import type { QueryResult } from '$lib/db-helpers';
 
-	const PAGE_SIZE = 10;
+	const PAGE_SIZE = 20;
 
 	let tableName = $derived($page.params.name ?? '');
-	let tableData = $state<(QueryResult & { totalRows: number }) | null>(null);
+	let tableData = $state<{ columns: string[]; rows: Record<string, unknown>[]; totalRows: number } | null>(null);
 	let tablePage = $state(1);
 	let tableTotalPages = $state(1);
 
 	async function loadTable(name: string, page: number) {
 		if (!name) return;
 		try {
-			tableData = await getTableData(name, page, PAGE_SIZE);
+			const result = await runPagedQuery(`SELECT * FROM "${name}"`, page, PAGE_SIZE);
+			tableData = { columns: result.columns, rows: result.rows, totalRows: result.totalRows };
 			tablePage = page;
-			tableTotalPages = Math.max(1, Math.ceil(tableData.totalRows / PAGE_SIZE));
+			tableTotalPages = result.totalPages;
 		} catch (e) {
 			app.globalError = e instanceof Error ? e.message : 'Failed to load table';
 		}
@@ -45,23 +44,10 @@
 		app.globalError = '';
 		try {
 			await dropTable(tableName);
-			deleteRecipe(tableName);
 			await app.refreshTables();
 			goto(app.tables.length > 0 ? '/query' : '/connect');
 		} catch (e) {
 			app.globalError = e instanceof Error ? e.message : 'Failed to drop table';
-		}
-	}
-
-	function handleEditSource() {
-		const recipe = getRecipe(tableName);
-		if (!recipe) return;
-		if (recipe.query) {
-			app.pendingSql = recipe.query;
-			app.pendingAutoRun = false;
-			goto('/query');
-		} else {
-			goto('/connect');
 		}
 	}
 </script>
@@ -78,12 +64,10 @@
 		totalPages={tableTotalPages}
 		onpagechange={handlePageChange}
 		onquerytable={handleQueryTable}
-		oneditsource={handleEditSource}
 		ondroptable={handleDropTable}
-		hasRecipe={!!getRecipe(tableName)}
 	/>
 {:else}
-	<div class="flex flex-1 items-center justify-center">
-		<span class="text-sm text-sand-400">Loading table...</span>
+	<div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+		<span style="font-size: var(--text-sm); color: var(--color-text-tertiary);">Loading table...</span>
 	</div>
 {/if}

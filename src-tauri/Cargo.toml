@@ -1,0 +1,25 @@
+[package]
+name = "data-monster"
+version = "1.0.0"
+description = "Data Monster - A desktop data analysis application built with Tauri, SvelteKit, DuckDB and TypeScript"
+authors = ["Data Monster"]
+license = ""
+repository = ""
+edition = "2021"
+
+[lib]
+name = "data_monster_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2.1.0"
+tauri-plugin-dialog = "2.1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+duckdb = { version = "1.1", features = ["bundled"] }
+chrono = "0.4"
+uuid = { version = "1.6", features = ["v4", "serde"] }

@@ -2,7 +2,7 @@
 	import { app } from '$lib/stores/app.svelte';
 	import { analyst } from '$lib/stores/analyst.svelte';
 	import { goto } from '$app/navigation';
-	import { getTableData } from '$lib/db-helpers';
+	import { runPagedQuery } from '$lib/db-operations';
 	import { onMount } from 'svelte';
 
 	interface TableInfo {
@@ -14,6 +14,7 @@
 
 	let tables = $state<TableInfo[]>([]);
 	let loading = $state(true);
+	let searchQuery = $state('');
 
 	onMount(async () => {
 		if (app.tables.length === 0) {
@@ -24,7 +25,7 @@
 		const infos: TableInfo[] = [];
 		for (const name of app.tables) {
 			try {
-				const data = await getTableData(name, 1, 1);
+				const data = await runPagedQuery(`SELECT * FROM "${name}"`, 1, 1);
 				infos.push({
 					name,
 					rowCount: data.totalRows,
@@ -62,120 +63,407 @@
 	}
 
 	let selectedCount = $derived(tables.filter((t) => t.selected).length);
+	let filteredTables = $derived(
+		searchQuery.trim()
+			? tables.filter((t) => t.name.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+			: tables
+	);
+
+	function formatNumber(n: number): string {
+		if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+		if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+		return n.toLocaleString();
+	}
 </script>
 
 <svelte:head>
 	<title>Data Analyst — Data Monster</title>
 </svelte:head>
 
-<div class="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-	<div class="flex h-16 w-16 items-center justify-center rounded-xl bg-sage-600">
-		<svg
-			class="h-8 w-8 text-white"
-			fill="none"
-			viewBox="0 0 24 24"
-			stroke="currentColor"
-			stroke-width="2"
-		>
-			<path
-				stroke-linecap="round"
-				stroke-linejoin="round"
-				d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"
-			/>
-		</svg>
+<div class="overview">
+	<div class="overview-header">
+		<h2 class="overview-title">Data Analyst</h2>
+		<span class="tag tag-accent">{tables.length} table{tables.length !== 1 ? 's' : ''}</span>
 	</div>
 
-	<div class="text-center">
-		<h2 class="font-display text-2xl font-bold tracking-tight text-sand-800">
-			Flue Data Analyst
-		</h2>
-		<p class="mt-1 text-sm text-sand-400">
-			Select tables to load into the agent's context, then start analyzing.
-		</p>
-	</div>
-
-	{#if loading}
-		<div class="flex items-center gap-3 text-sand-400">
-			<svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
-				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-				<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-			</svg>
-			<span class="text-sm">Loading tables...</span>
-		</div>
-	{:else if tables.length === 0}
-		<div class="rounded-lg border border-dashed border-sand-200 bg-sand-50 px-6 py-8 text-center">
-			<p class="text-sm text-sand-400">No tables available. Connect data first.</p>
-			<a
-				href="/connect"
-				class="mt-3 inline-block rounded-lg bg-sage-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-sage-700"
-			>
-				Connect Data
-			</a>
-		</div>
-	{:else}
-		<div class="w-full max-w-lg">
-			<div class="mb-3 flex items-center justify-between">
-				<span class="text-xs font-medium text-sand-500"
-					>{selectedCount} of {tables.length} selected</span
-				>
-				<div class="flex gap-2">
-					<button
-						onclick={selectAll}
-						class="text-xs font-medium text-sage-600 transition-colors hover:text-sage-700"
-						>Select all</button
-					>
-					<button
-						onclick={deselectAll}
-						class="text-xs font-medium text-sand-400 transition-colors hover:text-sand-500"
-						>Deselect all</button
-					>
+	{#if tables.length > 0}
+		<div class="toolbar">
+			<div class="toolbar-left">
+				<span class="select-count">{selectedCount} of {tables.length} selected</span>
+				<div class="toolbar-actions">
+					<button onclick={selectAll} class="toolbar-btn">Select all</button>
+					<button onclick={deselectAll} class="toolbar-btn">Deselect all</button>
 				</div>
 			</div>
+			<div class="toolbar-search">
+				<svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+				</svg>
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Filter tables..."
+					class="search-input"
+				/>
+			</div>
+		</div>
+	{/if}
 
-			<div class="flex flex-col gap-2">
-				{#each tables as table (table.name)}
-					<button
-						onclick={() => toggleTable(table.name)}
-						class="flex items-center gap-3 rounded-lg border px-4 py-3 text-left shadow-sm transition-all {table.selected
-							? 'border-sage-400 bg-sage-50 shadow-md ring-1 ring-sage-200'
-							: 'border-sand-200 bg-white hover:border-sand-300 hover:shadow-md'}"
-					>
-						<div
-							class="flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors {table.selected
-								? 'border-sage-600 bg-sage-600'
-								: 'border-sand-300 bg-white'}"
-						>
+	<hr class="overview-divider" />
+
+	{#if loading}
+		<div class="overview-loading">
+			<span class="overview-empty-text">Loading table metadata…</span>
+		</div>
+	{:else if tables.length === 0}
+		<div class="overview-empty">
+			<span class="overview-empty-text">No tables yet. Connect a data source first, then come back to start analyzing.</span>
+		</div>
+	{:else}
+		<div class="card-grid">
+			{#each filteredTables as table (table.name)}
+				<div
+					class="card {table.selected ? 'is-selected' : ''}"
+					role="button"
+					tabindex="0"
+					onclick={() => toggleTable(table.name)}
+					onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTable(table.name); } }}
+				>
+					<div class="card-header">
+						<div class="card-check {table.selected ? 'is-checked' : ''}">
 							{#if table.selected}
-								<svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+								<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
 								</svg>
 							{/if}
 						</div>
-						<div class="min-w-0 flex-1">
-							<p class="truncate text-sm font-medium text-sand-700">{table.name}</p>
-							<p class="text-xs text-sand-400"
-								>{table.columnCount} columns · {table.rowCount.toLocaleString()} rows</p
-							>
-						</div>
-					</button>
-				{/each}
-			</div>
+						<h4 class="card-title">{table.name}</h4>
+					</div>
 
-			<div class="mt-6 flex justify-center gap-3">
-				<a
-					href="/"
-					class="rounded-lg border border-sand-200 bg-white px-5 py-2.5 text-sm font-medium text-sand-700 shadow-sm transition-all hover:bg-sand-50"
-				>
-					Back
-				</a>
-				<button
-					onclick={handleStart}
-					disabled={selectedCount === 0}
-					class="rounded-lg bg-sage-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-sage-700 disabled:cursor-not-allowed disabled:opacity-40"
-				>
-					Start Analysis ({selectedCount})
-				</button>
-			</div>
+					<hr class="card-divider" />
+
+					<div class="card-body">
+						<div class="stat">
+							<span class="stat-value">{table.columnCount}</span>
+							<span class="stat-label">fields</span>
+						</div>
+						<div class="stat">
+							<span class="stat-value">{formatNumber(table.rowCount)}</span>
+							<span class="stat-label">records</span>
+						</div>
+					</div>
+
+					<div class="card-footer">
+						<span class="tag tag-default">{table.columnCount} cols</span>
+						<span class="tag tag-default">{formatNumber(table.rowCount)} rows</span>
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<div class="overview-footer">
+			<a href="/" class="btn btn-ghost">Back</a>
+			<button
+				onclick={handleStart}
+				disabled={selectedCount === 0}
+				class="btn btn-primary btn-sm"
+			>
+				{selectedCount === 0 ? 'Select tables to continue' : `Analyze ${selectedCount} table${selectedCount !== 1 ? 's' : ''}`}
+			</button>
 		</div>
 	{/if}
 </div>
+
+<style>
+	.overview {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		height: 100%;
+		padding: var(--space-6);
+	}
+
+	.overview-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.overview-title {
+		font-family: var(--font-display);
+		font-size: var(--text-lg);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: var(--color-text);
+	}
+
+	.tag {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		padding: 2px var(--space-2);
+		border: 1px solid;
+		font-family: var(--font-body);
+		font-size: 9px;
+		font-weight: 600;
+		line-height: 1.5;
+		border-radius: var(--radius-xs);
+	}
+
+	.tag-default {
+		background: var(--color-surface-sunken);
+		color: var(--color-text-secondary);
+		border-color: var(--color-border);
+	}
+
+	.tag-accent {
+		background: var(--color-accent-muted);
+		color: var(--color-accent-dark);
+		border-color: oklch(0.82 0.03 41);
+	}
+
+	.toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-4);
+		flex-wrap: wrap;
+	}
+
+	.toolbar-left {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+	}
+
+	.select-count {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		letter-spacing: 0.04em;
+	}
+
+	.toolbar-actions {
+		display: flex;
+		gap: var(--space-1);
+	}
+
+	.toolbar-btn {
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		padding: var(--space-1) var(--space-2);
+		font-family: var(--font-mono);
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-xs);
+		transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+	}
+
+	.toolbar-btn:hover {
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
+	}
+
+	.toolbar-search {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.search-icon {
+		position: absolute;
+		left: var(--space-2);
+		color: var(--color-text-tertiary);
+		pointer-events: none;
+	}
+
+	.search-input {
+		padding: var(--space-1) var(--space-2) var(--space-1) var(--space-6);
+		border: 1px solid var(--color-border);
+		background: var(--color-surface);
+		font-family: var(--font-body);
+		font-size: var(--text-xs);
+		color: var(--color-text);
+		border-radius: var(--radius-xs);
+		outline: none;
+		width: 180px;
+		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease, width var(--duration-base) var(--ease-out-expo);
+	}
+
+	.search-input:focus {
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 2px var(--color-accent-muted);
+		width: 240px;
+	}
+
+	.search-input::placeholder {
+		color: var(--color-text-tertiary);
+	}
+
+	.overview-divider {
+		border: none;
+		height: 0;
+		border-top: 1px dashed var(--color-border);
+	}
+
+	.overview-empty,
+	.overview-loading {
+		padding: var(--space-12) var(--space-6);
+		text-align: center;
+		border: 1px dashed var(--color-border);
+		background: var(--color-surface-raised);
+	}
+
+	.overview-empty-text {
+		font-size: var(--text-sm);
+		color: var(--color-text-tertiary);
+	}
+
+	.card-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+		gap: var(--space-2);
+	}
+
+	.card {
+		background: var(--color-surface);
+		border: 1px solid var(--color-surface-sunken);
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		text-align: left;
+		transition: border-color var(--duration-fast) ease;
+		display: flex;
+		flex-direction: column;
+		padding: 0;
+		font: inherit;
+	}
+
+	.card,
+	.card *,
+	.card *::before,
+	.card *::after {
+		box-sizing: border-box;
+	}
+
+	.card:hover {
+		border-color: var(--color-border-strong);
+	}
+
+	.card.is-selected {
+		border-color: var(--color-accent);
+		background: var(--color-accent-muted);
+	}
+
+	.card-header {
+		padding: var(--space-3);
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.card-check {
+		width: 18px;
+		height: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 1.5px solid var(--color-border-strong);
+		border-radius: var(--radius-xs);
+		background: var(--color-surface);
+		flex-shrink: 0;
+		transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease;
+	}
+
+	.card-check.is-checked {
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+		color: var(--color-text-on-accent);
+	}
+
+	.card-title {
+		font-family: var(--font-display);
+		font-size: var(--text-base);
+		font-weight: 700;
+		letter-spacing: -0.01em;
+		color: var(--color-text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.card-divider {
+		border: none;
+		height: 0;
+		border-top: 1px dashed var(--color-border);
+	}
+
+	.card-body {
+		padding: var(--space-3);
+		display: flex;
+		gap: var(--space-6);
+		flex: 1;
+	}
+
+	.stat {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.stat-value {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		color: var(--color-text);
+		letter-spacing: -0.02em;
+	}
+
+	.stat-label {
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text-tertiary);
+	}
+
+	.card-footer {
+		padding: var(--space-3);
+		border-top: 1px dashed var(--color-border);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-1);
+	}
+
+	.overview-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-top: var(--space-4);
+		border-top: 1px dashed var(--color-border);
+	}
+
+	@media (max-width: 540px) {
+		.card-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.toolbar {
+			flex-direction: column;
+			align-items: stretch;
+		}
+
+		.toolbar-search {
+			width: 100%;
+		}
+
+		.search-input,
+		.search-input:focus {
+			width: 100%;
+		}
+	}
+</style>

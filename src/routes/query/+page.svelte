@@ -54,8 +54,8 @@
 	let savedQueriesError = $state('');
 	let showSaveQueryModal = $state(false);
 	let saveQueryError = $state('');
-	let pendingSourceMeta = $state<{ tableName: string; sourcePath: string } | null>(null);
-	let pendingBatchMeta = $state<{ tableName: string; sql: string; sourcePath: string }[] | null>(null);
+	let pendingSourceMeta = $state<{ tableName: string; sourcePath: string; sourceType?: string; originalSource?: string } | null>(null);
+	let pendingBatchMeta = $state<{ tableName: string; sql: string; sourcePath: string; sourceType?: string; originalSource?: string }[] | null>(null);
 
 	let showIngestModal = $state(false);
 	let queryName = $state('');
@@ -354,7 +354,7 @@
 			try {
 				for (const stmt of batch) {
 					await executeQuery(stmt.sql);
-					await saveTableSource(stmt.tableName, stmt.sql, stmt.sourcePath);
+					await saveTableSource(stmt.tableName, stmt.sql, stmt.sourcePath, stmt.sourceType, stmt.originalSource);
 				}
 				await app.refreshTables();
 				await loadTableMetas();
@@ -381,7 +381,7 @@
 			}
 			await executeQuery(createSql);
 			if (pendingSourceMeta) {
-				await saveTableSource(ingestTableName.trim(), createSql, pendingSourceMeta.sourcePath);
+				await saveTableSource(ingestTableName.trim(), createSql, pendingSourceMeta.sourcePath, pendingSourceMeta.sourceType, pendingSourceMeta.originalSource);
 				pendingSourceMeta = null;
 			}
 			const tagsStr = ingestTags.filter(t => t.trim()).join(',');
@@ -477,7 +477,12 @@
 				
 				if (previewData && sql) {
 					updateTab({ query: sql, name: `${previewData.tableName}.sql` });
-					pendingSourceMeta = { tableName: previewData.tableName, sourcePath: previewData.sourcePath };
+					pendingSourceMeta = {
+						tableName: previewData.tableName,
+						sourcePath: previewData.sourcePath,
+						sourceType: previewData.sourceType,
+						originalSource: previewData.originalSource
+					};
 					ingestTableName = previewData.tableName;
 
 					const stripped = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();

@@ -1,5 +1,6 @@
 import {
 	initializeDuckdb,
+	shutdownDuckdb,
 	getWorkspacePath,
 	chooseWorkspaceFolder,
 	listTables,
@@ -15,9 +16,9 @@ class AppState {
 
 	pendingSql = $state('');
 
-	pendingFile = $state<{ path: string; tableName: string } | null>(null);
-	pendingPreviewData = $state<{ tableName: string; columns: string[]; sourcePath: string } | null>(null);
-	pendingBatchIngest = $state<{ tableName: string; sql: string; sourcePath: string }[] | null>(null);
+	pendingFile = $state<{ path: string; tableName: string; originalSource?: string; sourceType?: string } | null>(null);
+	pendingPreviewData = $state<{ tableName: string; columns: string[]; sourcePath: string; sourceType?: string; originalSource?: string } | null>(null);
+	pendingBatchIngest = $state<{ tableName: string; sql: string; sourcePath: string; sourceType?: string; originalSource?: string }[] | null>(null);
 
 	async init() {
 		if (!isTauriAvailable()) {
@@ -36,6 +37,17 @@ class AppState {
 		} catch (e) {
 			this.globalError = extractErrorMessage(e, 'Failed to initialize database');
 		}
+	}
+
+	async shutdown() {
+		if (!this.dbReady) return;
+		try {
+			await shutdownDuckdb();
+		} catch (e) {
+			console.warn('Shutdown warning:', extractErrorMessage(e, ''));
+		}
+		this.dbReady = false;
+		this.tables = [];
 	}
 
 	async selectWorkspace(): Promise<boolean> {

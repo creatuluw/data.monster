@@ -100,6 +100,8 @@ pub fn generate_pg_ingest_sql(
             "tableName": table_name,
             "sql": sql,
             "sourcePath": format!("postgres://{}/{}.{}", escaped_url, schema, table_name),
+            "sourceType": "postgres",
+            "originalSource": format!("postgres://{}/{}.{}", url, schema, table_name),
         })
     }).collect();
 

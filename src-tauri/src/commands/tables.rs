@@ -111,6 +111,8 @@ pub fn save_table_source(
     table_name: String,
     creation_query: String,
     source_path: String,
+    source_type: Option<String>,
+    original_source: Option<String>,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
     let state_conn = state.conn.lock();
@@ -119,8 +121,8 @@ pub fn save_table_source(
         .ok_or("DuckDB not initialized")?;
 
     conn.execute(
-        "UPDATE d8a_monster_table_metadata SET creation_query = ?, source_path = ? WHERE table_name = ?",
-        duckdb::params![creation_query, source_path, table_name],
+        "UPDATE d8a_monster_table_metadata SET creation_query = ?, source_path = ?, source_type = ?, original_source = ? WHERE table_name = ?",
+        duckdb::params![creation_query, source_path, source_type, original_source, table_name],
     )
     .map_err(|e| format!("Failed to save table source: {}", e))?;
 
@@ -137,20 +139,22 @@ pub fn get_table_source(
         .as_ref()
         .ok_or("DuckDB not initialized")?;
 
-    let result: Option<(Option<String>, Option<String>)> = conn
+    let result: Option<(Option<String>, Option<String>, Option<String>, Option<String>)> = conn
         .query_row(
-            "SELECT creation_query, source_path FROM d8a_monster_table_metadata WHERE table_name = ?",
+            "SELECT creation_query, source_path, source_type, original_source FROM d8a_monster_table_metadata WHERE table_name = ?",
             duckdb::params![table_name],
-            |row| Ok((row.get(0)?, row.get(1)?)),
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
         )
         .ok();
 
     match result {
-        Some((creation_query, source_path)) => Ok(json!({
+        Some((creation_query, source_path, source_type, original_source)) => Ok(json!({
             "creationQuery": creation_query,
             "sourcePath": source_path,
+            "sourceType": source_type,
+            "originalSource": original_source,
         })),
-        None => Ok(json!({ "creationQuery": null, "sourcePath": null })),
+        None => Ok(json!({ "creationQuery": null, "sourcePath": null, "sourceType": null, "originalSource": null })),
     }
 }
 

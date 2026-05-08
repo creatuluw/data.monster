@@ -128,6 +128,10 @@
 		return s.length > max ? s.slice(0, max) + '…' : s;
 	}
 
+	let isInternalTable = $derived(
+		tables.find(t => t.name === selectedTable)?.isInternal ?? true
+	);
+
 	let totalPages = $derived(
 		tableData ? Math.max(1, Math.ceil(tableData.totalRows / pageSize)) : 1
 	);
@@ -145,7 +149,7 @@
 		</a>
 		<Database size={18} />
 		<h1 class="idb-title">Internal Database</h1>
-		<span class="idb-subtitle">d8a_monster_* tables</span>
+		<span class="idb-subtitle">all tables</span>
 	</div>
 
 	{#if error}
@@ -157,17 +161,32 @@
 
 	<div class="idb-body">
 		<aside class="idb-sidebar">
-			<div class="idb-sidebar-title">Tables</div>
-			{#each tables as table}
-				<button
-					class="idb-table-btn"
-					class:idb-table-btn--active={selectedTable === table.name}
-					onclick={() => selectTable(table.name)}
-				>
-					<span class="idb-table-name">{table.name.replace('d8a_monster_', '')}</span>
-					<span class="idb-table-count">{table.rowCount}</span>
-				</button>
-			{/each}
+			{#if tables.some(t => !t.isInternal)}
+				<div class="idb-sidebar-title">Your Tables</div>
+				{#each tables.filter(t => !t.isInternal) as table}
+					<button
+						class="idb-table-btn"
+						class:idb-table-btn--active={selectedTable === table.name}
+						onclick={() => selectTable(table.name)}
+					>
+						<span class="idb-table-name">{table.name}</span>
+						<span class="idb-table-count">{table.rowCount}</span>
+					</button>
+				{/each}
+			{/if}
+			{#if tables.some(t => t.isInternal)}
+				<div class="idb-sidebar-title">Internal Tables</div>
+				{#each tables.filter(t => t.isInternal) as table}
+					<button
+						class="idb-table-btn"
+						class:idb-table-btn--active={selectedTable === table.name}
+						onclick={() => selectTable(table.name)}
+					>
+						<span class="idb-table-name">{table.name.replace('d8a_monster_', '')}</span>
+						<span class="idb-table-count">{table.rowCount}</span>
+					</button>
+				{/each}
+			{/if}
 		</aside>
 
 		<div class="idb-content">
@@ -181,6 +200,9 @@
 				<div class="idb-toolbar">
 					<span class="idb-toolbar-table">{selectedTable}</span>
 					<span class="idb-toolbar-rows">{tableData.totalRows} rows</span>
+					{#if !isInternalTable}
+						<span class="idb-readonly-badge">Read only</span>
+					{/if}
 					<button class="btn btn-ghost btn-sm" onclick={loadData} title="Refresh">
 						<RefreshCw size={12} />
 					</button>
@@ -193,7 +215,9 @@
 								{#each tableData.columns as col}
 									<th>{col}</th>
 								{/each}
-								<th class="idb-grid-actions">Actions</th>
+								{#if isInternalTable}
+									<th class="idb-grid-actions">Actions</th>
+								{/if}
 							</tr>
 						</thead>
 						<tbody>
@@ -234,20 +258,22 @@
 											<td title={formatValue(row[col])}>{truncate(formatValue(row[col]))}</td>
 										{/each}
 										<td class="idb-grid-actions">
-											<button
-												class="btn btn-ghost btn-sm"
-												title="Edit"
-												onclick={() => startEdit(row)}
-											>
-												<Edit3 size={12} />
-											</button>
-											<button
-												class="btn btn-ghost btn-sm"
-												title="Delete"
-												onclick={() => confirmDelete(row)}
-											>
-												<Trash2 size={12} style="color: var(--color-danger);" />
-											</button>
+											{#if isInternalTable}
+												<button
+													class="btn btn-ghost btn-sm"
+													title="Edit"
+													onclick={() => startEdit(row)}
+												>
+													<Edit3 size={12} />
+												</button>
+												<button
+													class="btn btn-ghost btn-sm"
+													title="Delete"
+													onclick={() => confirmDelete(row)}
+												>
+													<Trash2 size={12} style="color: var(--color-danger);" />
+												</button>
+											{/if}
 										</td>
 									</tr>
 								{/if}
@@ -446,6 +472,17 @@
 	.idb-toolbar-rows {
 		font-size: var(--text-xs);
 		color: var(--color-text-tertiary);
+	}
+
+	.idb-readonly-badge {
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text-tertiary);
+		background: var(--color-bg-hover);
+		padding: 2px var(--space-2);
+		border-radius: var(--radius-sm);
 	}
 
 	.idb-grid-wrap {

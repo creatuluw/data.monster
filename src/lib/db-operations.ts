@@ -75,6 +75,10 @@ export async function initializeDuckdb(workspacePath: string): Promise<string> {
 	return invoke<string>('initialize_duckdb', { workspacePath });
 }
 
+export async function shutdownDuckdb(): Promise<void> {
+	return invoke<void>('shutdown_duckdb');
+}
+
 export async function chooseWorkspaceFolder(): Promise<string | null> {
 	const result = await invoke<string | null>('choose_workspace_folder');
 	return result;
@@ -119,14 +123,18 @@ export async function renameTable(oldName: string, newName: string): Promise<voi
 export interface TableSource {
 	creationQuery: string | null;
 	sourcePath: string | null;
+	sourceType: string | null;
+	originalSource: string | null;
 }
 
 export async function saveTableSource(
 	tableName: string,
 	creationQuery: string,
-	sourcePath: string
+	sourcePath: string,
+	sourceType?: string | null,
+	originalSource?: string | null
 ): Promise<void> {
-	return invoke<void>('save_table_source', { tableName, creationQuery, sourcePath });
+	return invoke<void>('save_table_source', { tableName, creationQuery, sourcePath, sourceType: sourceType ?? null, originalSource: originalSource ?? null });
 }
 
 export async function getTableSource(tableName: string): Promise<TableSource> {
@@ -265,6 +273,7 @@ export interface InternalTable {
 	name: string;
 	rowCount: number;
 	columns: { name: string; type: string }[];
+	isInternal: boolean;
 }
 
 export interface InternalTableData {

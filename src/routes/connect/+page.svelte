@@ -69,7 +69,7 @@
 			const ext = localPath.split('.').pop()?.toLowerCase() ?? 'csv';
 			const fileName = localPath.split(/[/\\]/).pop() ?? 'data';
 			const tableName = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
-			app.pendingFile = { path: localPath, tableName };
+			app.pendingFile = { path: localPath, tableName, sourceType: 'url', originalSource: urlInput.trim() };
 			goto('/preview');
 		} catch (e) {
 			app.globalError = extractErrorMessage(e, 'Failed to load URL');

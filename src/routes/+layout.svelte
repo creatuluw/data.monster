@@ -4,12 +4,14 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
+	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
 	let menuOpen = $state(false);
 	let copied = $state(false);
+	let initStatus = $state('Initializing database...');
 
 	let isDev = $derived(
 		typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -35,6 +37,16 @@
 	}
 
 	onMount(() => {
+		let destroyed = false;
+		let unlistenFn: (() => void) | null = null;
+
+		listen<string>('db-init-progress', (event) => {
+			initStatus = event.payload;
+		}).then((unlisten) => {
+			if (destroyed) { unlisten(); return; }
+			unlistenFn = unlisten;
+		});
+
 		if (!app.dbReady) {
 			app.init().then(() => {
 				if (!app.workspacePath) {
@@ -42,8 +54,16 @@
 				}
 			});
 		}
+
+		const handleBeforeUnload = () => { app.shutdown(); };
+		window.addEventListener('beforeunload', handleBeforeUnload);
 		window.addEventListener('click', handleClickOutside);
-		return () => window.removeEventListener('click', handleClickOutside);
+		return () => {
+			destroyed = true;
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			window.removeEventListener('click', handleClickOutside);
+			if (unlistenFn) unlistenFn();
+		};
 	});
 
 	async function handleSelectWorkspace() {
@@ -137,7 +157,7 @@
 				<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
 				<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
 			</svg>
-			<span style="font-size: var(--text-sm); color: var(--color-text-tertiary);">Initializing database...</span>
+			<span style="font-size: var(--text-sm); color: var(--color-text-tertiary);">{initStatus}</span>
 		</div>
 	{:else}
 		<div class="app-body">

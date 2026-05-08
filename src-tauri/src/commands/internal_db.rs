@@ -13,11 +13,11 @@ pub fn list_internal_tables(state: State<'_, DuckDbState>) -> Result<serde_json:
 
     let mut stmt = conn
         .prepare(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name LIKE 'd8a_monster_%' ORDER BY table_name",
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' ORDER BY table_name",
         )
         .map_err(|e| e.to_string())?;
 
-    let tables: Vec<serde_json::Value> = stmt
+    let user_tables: Vec<serde_json::Value> = stmt
         .query_map([], |row| {
             let name: String = row.get(0)?;
             Ok(json!({ "name": name }))
@@ -26,9 +26,27 @@ pub fn list_internal_tables(state: State<'_, DuckDbState>) -> Result<serde_json:
         .filter_map(|r| r.ok())
         .collect();
 
+    let mut stmt2 = conn
+        .prepare(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name LIKE 'd8a_monster_%' ORDER BY table_name",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let meta_tables: Vec<serde_json::Value> = stmt2
+        .query_map([], |row| {
+            let name: String = row.get(0)?;
+            Ok(json!({ "name": name }))
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    let all_tables: Vec<serde_json::Value> = user_tables.into_iter().chain(meta_tables.into_iter()).collect();
+
     let mut result = Vec::new();
-    for table_val in &tables {
+    for table_val in &all_tables {
         let table_name = table_val["name"].as_str().unwrap();
+        let is_internal = table_name.starts_with("d8a_monster_");
         let count: i64 = conn
             .query_row(
                 &format!("SELECT COUNT(*) FROM \"{}\"", table_name.replace('"', "\"\"")),
@@ -57,6 +75,7 @@ pub fn list_internal_tables(state: State<'_, DuckDbState>) -> Result<serde_json:
             "name": table_name,
             "rowCount": count,
             "columns": columns,
+            "isInternal": is_internal,
         }));
     }
 

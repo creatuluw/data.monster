@@ -117,7 +117,9 @@
 		app.pendingPreviewData = {
 			tableName,
 			columns: enabled.map(o => o.newName !== o.originalName ? o.newName : o.originalName),
-			sourcePath: workspaceFilePath
+			sourcePath: workspaceFilePath,
+			sourceType: app.pendingFile?.sourceType ?? 'file',
+			originalSource: app.pendingFile?.originalSource ?? app.pendingFile?.path ?? filePath
 		};
 		goto('/query');
 	}

@@ -1,17 +1,22 @@
 use duckdb::Connection;
 use std::fs;
 use std::path::Path;
-use tauri::State;
+use tauri::{Emitter, State, AppHandle};
 
 use crate::state::DuckDbState;
 use crate::utils::metadata_helpers::cleanup_orphaned_metadata;
 
 #[tauri::command]
-pub fn initialize_duckdb(workspace_path: String, state: State<'_, DuckDbState>) -> Result<String, String> {
+pub fn initialize_duckdb(
+    workspace_path: String,
+    state: State<'_, DuckDbState>,
+    app: AppHandle,
+) -> Result<String, String> {
     eprintln!("[database] Initializing DuckDB at {}", workspace_path);
     let mut state_conn = state.conn.lock();
 
     if state_conn.is_some() {
+        let _ = app.emit("db-init-progress", "Already initialized");
         return Ok("DuckDB already initialized".to_string());
     }
 
@@ -30,10 +35,37 @@ pub fn initialize_duckdb(workspace_path: String, state: State<'_, DuckDbState>) 
     let db_path = workspace.join("d8a_monster.duckdb");
     let wal_path = workspace.join("d8a_monster.duckdb.wal");
 
-    let conn = open_with_retry(&db_path, &wal_path)?;
+    let had_wal = wal_path.exists();
+    if had_wal {
+        let _ = app.emit("db-init-progress", "Previous session detected — recovering...");
+        eprintln!("[database] WAL file found from previous session, DuckDB will replay it");
+    }
 
+    let conn = open_with_retry(&db_path, &wal_path, &app)?;
+
+    if had_wal {
+        let _ = app.emit("db-init-progress", "WAL replayed — flushing to disk...");
+        eprintln!("[database] WAL was replayed, running FORCE CHECKPOINT to flush recovered data");
+        if let Err(e) = conn.execute_batch("FORCE CHECKPOINT") {
+            eprintln!("[database] Warning: FORCE CHECKPOINT after WAL recovery failed: {}", e);
+            if let Err(e2) = conn.execute_batch("CHECKPOINT") {
+                eprintln!("[database] Warning: CHECKPOINT also failed: {}", e2);
+            }
+        }
+    }
+
+    let _ = app.emit("db-init-progress", "Configuring database...");
+    if let Err(e) = conn.execute_batch("SET checkpoint_threshold = '4MB'") {
+        eprintln!("[database] Warning: failed to set checkpoint_threshold: {}", e);
+    }
+    if let Err(e) = conn.execute_batch("SET wal_autocheckpoint_entries = 5000") {
+        eprintln!("[database] Warning: failed to set wal_autocheckpoint_entries: {}", e);
+    }
+
+    let _ = app.emit("db-init-progress", "Creating schema...");
     initialize_schema(&conn)?;
 
+    let _ = app.emit("db-init-progress", "Cleaning up metadata...");
     let _ = cleanup_orphaned_metadata(&conn);
 
     *state_conn = Some(conn);
@@ -41,50 +73,87 @@ pub fn initialize_duckdb(workspace_path: String, state: State<'_, DuckDbState>) 
     let mut wp = state.workspace_path.lock();
     *wp = Some(workspace_path.clone());
 
+    let _ = app.emit("db-init-progress", "Database ready");
     Ok("DuckDB initialized successfully".to_string())
 }
 
-fn open_with_retry(db_path: &Path, wal_path: &Path) -> Result<Connection, String> {
+#[tauri::command]
+pub fn shutdown_duckdb(state: State<'_, DuckDbState>) -> Result<(), String> {
+    eprintln!("[database] Shutting down DuckDB...");
+    let mut state_conn = state.conn.lock();
+
+    if let Some(conn) = state_conn.take() {
+        eprintln!("[database] Running CHECKPOINT before shutdown...");
+        if let Err(e) = conn.execute_batch("CHECKPOINT") {
+            eprintln!("[database] Warning: CHECKPOINT failed during shutdown: {}", e);
+        }
+
+        match conn.close() {
+            Ok(()) => {
+                eprintln!("[database] Connection closed cleanly");
+            },
+            Err((conn, e)) => {
+                eprintln!("[database] Close returned error: {}, retrying...", e);
+                match conn.close() {
+                    Ok(()) => eprintln!("[database] Close succeeded on retry"),
+                    Err((_, e2)) => {
+                        eprintln!("[database] Close failed again: {}. Dropping connection.", e2);
+                        return Err(format!("Failed to close database cleanly: {} / {}", e, e2));
+                    }
+                }
+            }
+        }
+    }
+
+    let mut wp = state.workspace_path.lock();
+    *wp = None;
+
+    eprintln!("[database] Shutdown complete");
+    Ok(())
+}
+
+fn open_with_retry(db_path: &Path, wal_path: &Path, app: &AppHandle) -> Result<Connection, String> {
     let max_retries = 10;
-    let mut retry_count = 0;
+    let mut attempt = 0;
+    let mut wal_removed = false;
 
     loop {
+        attempt += 1;
+        if attempt > max_retries {
+            return Err(format!(
+                "Failed to open database after {} attempts. Try deleting: {}",
+                max_retries,
+                db_path.display()
+            ));
+        }
+
+        let _ = app.emit("db-init-progress", format!("Opening database (attempt {}/{})...", attempt, max_retries));
+
         match Connection::open(db_path) {
-            Ok(conn) => return Ok(conn),
+            Ok(conn) => {
+                eprintln!("[database] Opened database successfully on attempt {}", attempt);
+                return Ok(conn);
+            },
             Err(e) => {
                 let error_msg = e.to_string();
-
-                let is_lock_error = error_msg.contains("database is locked")
-                    || error_msg.contains("unable to open database file")
-                    || error_msg.contains("unable to get a read lock");
+                eprintln!("[database] Open error (attempt {}): {}", attempt, error_msg);
 
                 let is_wal_error = error_msg.contains("Failure while replaying WAL file")
                     || error_msg.contains("INTERNAL Error")
                     || error_msg.contains("DatabaseManager::GetDefaultDatabase");
 
-                if is_lock_error {
-                    retry_count += 1;
-                    if retry_count <= max_retries {
-                        eprintln!(
-                            "Database is locked (attempt {}/{})",
-                            retry_count, max_retries
-                        );
-                        std::thread::sleep(std::time::Duration::from_millis(
-                            300 * retry_count as u64,
-                        ));
-                        continue;
-                    } else {
-                        return Err(format!(
-                            "Database is locked after {} retry attempts",
-                            max_retries
-                        ));
-                    }
-                } else if is_wal_error {
-                    eprintln!("Detected corrupted WAL file, attempting recovery...");
+                let is_lock_error = error_msg.contains("database is locked")
+                    || error_msg.contains("unable to open database file")
+                    || error_msg.contains("unable to get a read lock");
+
+                if is_wal_error && !wal_removed {
+                    eprintln!("[database] WAL replay failed, WAL file may be corrupted");
+                    let _ = app.emit("db-init-progress", "WAL replay failed — removing corrupted WAL...");
                     if wal_path.exists() {
                         match fs::remove_file(wal_path) {
                             Ok(_) => {
-                                eprintln!("Removed corrupted WAL file");
+                                eprintln!("[database] WAL removed, retrying open (data since last checkpoint may be lost)");
+                                wal_removed = true;
                                 continue;
                             }
                             Err(remove_err) => {
@@ -93,35 +162,40 @@ fn open_with_retry(db_path: &Path, wal_path: &Path) -> Result<Connection, String
                                         .to_string()
                                         .contains("being used by another process");
                                 if is_file_locked {
-                                    retry_count += 1;
-                                    if retry_count <= max_retries {
-                                        eprintln!(
-                                            "WAL file locked (attempt {}/{})",
-                                            retry_count, max_retries
-                                        );
-                                        std::thread::sleep(std::time::Duration::from_millis(
-                                            300 * retry_count as u64,
-                                        ));
-                                        continue;
-                                    } else {
-                                        return Err(format!(
-                                            "WAL file locked after {} attempts",
-                                            max_retries
-                                        ));
-                                    }
+                                    let _ = app.emit("db-init-progress", format!("WAL file locked, retrying ({}/{})...", attempt, max_retries));
+                                    eprintln!("[database] WAL locked (attempt {}/{})", attempt, max_retries);
+                                    std::thread::sleep(std::time::Duration::from_millis(500));
+                                    continue;
                                 } else {
                                     return Err(format!(
-                                        "Failed to remove corrupted WAL file: {}",
-                                        remove_err
+                                        "Failed to remove corrupted WAL file: {}. Try manually deleting: {}",
+                                        remove_err,
+                                        wal_path.display()
                                     ));
                                 }
                             }
                         }
                     } else {
+                        wal_removed = true;
+                        eprintln!("[database] WAL already gone, retrying open");
                         continue;
                     }
+                } else if is_lock_error {
+                    let _ = app.emit("db-init-progress", format!("Database locked, retrying ({}/{})...", attempt, max_retries));
+                    eprintln!("[database] Locked (attempt {}/{})", attempt, max_retries);
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                    continue;
+                } else if is_wal_error && wal_removed {
+                    return Err(format!(
+                        "Database file may be corrupted (WAL was already removed). Try deleting: {}",
+                        db_path.display()
+                    ));
                 } else {
-                    return Err(error_msg);
+                    return Err(format!(
+                        "Failed to open database: {}. Try deleting: {}",
+                        error_msg,
+                        db_path.display()
+                    ));
                 }
             }
         }
@@ -135,11 +209,16 @@ pub(crate) fn initialize_schema(conn: &Connection) -> Result<(), String> {
             table_type VARCHAR NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             creation_query TEXT,
-            source_path TEXT
+            source_path TEXT,
+            source_type VARCHAR,
+            original_source TEXT
         )",
         [],
     )
     .map_err(|e| format!("Failed to create d8a_monster_table_metadata: {}", e))?;
+
+    let _ = conn.execute("ALTER TABLE d8a_monster_table_metadata ADD COLUMN source_type VARCHAR", []);
+    let _ = conn.execute("ALTER TABLE d8a_monster_table_metadata ADD COLUMN original_source TEXT", []);
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS d8a_monster_table_labels (

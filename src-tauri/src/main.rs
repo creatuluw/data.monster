@@ -18,6 +18,7 @@ fn main() {
         .manage(DuckDbState::default())
         .invoke_handler(tauri::generate_handler![
             initialize_duckdb,
+            shutdown_duckdb,
             choose_workspace_folder,
             get_workspace_path,
             set_workspace_path,

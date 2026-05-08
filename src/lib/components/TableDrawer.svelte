@@ -212,7 +212,7 @@
 
 					<hr class="drawer-divider" />
 
-					{#if source && (source.creationQuery || source.sourcePath)}
+					{#if source && (source.creationQuery || source.sourcePath || source.originalSource)}
 						<section class="drawer-section">
 							<div class="drawer-section-header">
 								<h3 class="drawer-section-title">Source</h3>
@@ -222,9 +222,29 @@
 									</button>
 								{/if}
 							</div>
+							{#if source.sourceType}
+								<div class="drawer-field">
+									<label class="drawer-label">Type</label>
+									<div class="drawer-source-path">
+										{#if source.sourceType === 'url'}
+											URL
+										{:else if source.sourceType === 'postgres'}
+											PostgreSQL
+										{:else}
+											File
+										{/if}
+									</div>
+								</div>
+							{/if}
+							{#if source.originalSource}
+								<div class="drawer-field">
+									<label class="drawer-label">Original source</label>
+									<div class="drawer-source-path" title={source.originalSource}>{source.originalSource}</div>
+								</div>
+							{/if}
 							{#if source.sourcePath}
 								<div class="drawer-field">
-									<label class="drawer-label">Path</label>
+									<label class="drawer-label">Workspace path</label>
 									<div class="drawer-source-path">{source.sourcePath}</div>
 								</div>
 							{/if}

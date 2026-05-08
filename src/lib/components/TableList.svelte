@@ -20,7 +20,7 @@
 		Connect
 	</button>
 
-	<span class="list-label">Tables</span>
+	<span class="list-label">Data</span>
 
 	{#if tables.length === 0}
 		<div class="empty-state">

@@ -1,28 +1,22 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { SquarePen, X, Plus, Tag, FolderOpen, Trash2 } from 'lucide-svelte';
-	import { getAllTableMeta, type TableMeta } from '$lib/db-operations';
-	import {
-		getTableLabels,
-		saveTableLabels,
-		getAllTags as getAllTagsOp,
-		getAllGroups as getAllGroupsOp,
-		renameTable,
-		type TableLabels
-	} from '$lib/db-operations';
+	import { Trash2, Tag, FolderOpen, Blend, FileBraces, Database } from 'lucide-svelte';
+	import { getAllTableMeta, getTableLabels, getAllTags as getAllTagsOp, getAllGroups as getAllGroupsOp, type TableMeta, type TableLabels } from '$lib/db-operations';
+	import Tabs from '$lib/components/Tabs.svelte';
 
 	let {
 		tables = [],
 		onselect,
-		onrename,
+		onopendrawer,
 		ondelete
 	}: {
 		tables: string[];
 		onselect: (table: string) => void;
-		onrename?: (oldName: string, newName: string) => void;
+		onopendrawer: (table: string) => void;
 		ondelete?: (tableName: string) => Promise<void>;
 	} = $props();
 
+	let activeTab = $state('tables');
 	let tableMetas = $state<TableMeta[]>([]);
 	let loading = $state(true);
 	let labelsMap = $state<Record<string, TableLabels>>({});
@@ -31,12 +25,6 @@
 
 	let filterTag = $state<string | null>(null);
 	let filterGroup = $state<string | null>(null);
-
-	let editingTable = $state<string | null>(null);
-	let editTags = $state<string[]>([]);
-	let editGroup = $state<string>('');
-	let editName = $state<string>('');
-	let newTagInput = $state('');
 
 	let confirmDeleteTable = $state<string | null>(null);
 	let deletingTable = $state<string | null>(null);
@@ -49,6 +37,17 @@
 		}
 		refreshLabels();
 		loading = false;
+	});
+
+	let prevTableNames = $state<string>('');
+
+	$effect(() => {
+		const currentNames = tables.join(',');
+		if (currentNames === prevTableNames) return;
+		prevTableNames = currentNames;
+		if (loading) return;
+		tableMetas = tableMetas.filter((m) => tables.includes(m.name));
+		refreshLabels();
 	});
 
 	async function refreshLabels() {
@@ -92,49 +91,6 @@
 		return 'CSV';
 	}
 
-	function startEdit(tableName: string) {
-		const labels = labelsMap[tableName] ?? { tableName, tags: [], group: null };
-		editingTable = tableName;
-		editName = tableName;
-		editTags = [...labels.tags];
-		editGroup = labels.group ?? '';
-		newTagInput = '';
-	}
-
-	async function saveEdit() {
-		if (!editingTable) return;
-		const trimmedName = editName.trim();
-		const oldName = editingTable;
-		if (!trimmedName) {
-			editingTable = null;
-			return;
-		}
-		try {
-			if (trimmedName !== oldName) {
-				await renameTable(oldName, trimmedName);
-				onrename?.(oldName, trimmedName);
-			}
-			const tagsStr = editTags.filter((t) => t.trim() !== '').join(',');
-			const group = editGroup.trim() || null;
-			await saveTableLabels(trimmedName, tagsStr, group);
-		} catch {
-			// fallback
-		}
-		editingTable = null;
-		if (trimmedName !== oldName) {
-			try {
-				tableMetas = await getAllTableMeta();
-			} catch {
-				// ignore
-			}
-		}
-		await refreshLabels();
-	}
-
-	function cancelEdit() {
-		editingTable = null;
-	}
-
 	async function handleDelete(tableName: string) {
 		if (!ondelete) return;
 		deletingTable = tableName;
@@ -144,37 +100,16 @@
 			delete labelsMap[tableName];
 			labelsMap = { ...labelsMap };
 		} catch {
-			// error handled by parent
 		} finally {
 			deletingTable = null;
 			confirmDeleteTable = null;
 		}
 	}
 
-	function addTag() {
-		const tag = newTagInput.trim();
-		if (tag && !editTags.includes(tag)) {
-			editTags = [...editTags, tag];
-		}
-		newTagInput = '';
-	}
-
-	function removeTag(tag: string) {
-		editTags = editTags.filter((t) => t !== tag);
-	}
-
-	function handleTagKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			addTag();
-		}
-	}
-
 	function handleCardKeydown(e: KeyboardEvent, tableName: string) {
-		if (editingTable === tableName) return;
 		if (e.key === 'Enter' || e.key === ' ') {
 			e.preventDefault();
-			onselect(tableName);
+			onopendrawer(tableName);
 		}
 	}
 
@@ -189,153 +124,113 @@
 
 <div class="overview">
 	<div class="overview-header">
-		<h2 class="overview-title">Tables</h2>
+		<h2 class="overview-title">Data</h2>
 		<span class="tag tag-accent">{tables.length} table{tables.length !== 1 ? 's' : ''}</span>
 	</div>
 
-	{#if allTags.length > 0 || allGroups.length > 0}
-		<div class="filter-bar">
-			{#if allTags.length > 0}
-				<div class="filter-group">
-					<Tag size={12} class="filter-icon" />
-					{#each allTags as tag}
-						<button
-							class="filter-chip"
-							class:filter-chip-active={filterTag === tag}
-							onclick={() => toggleFilterTag(tag)}
-						>
-							{tag}
-						</button>
-					{/each}
-				</div>
-			{/if}
-			{#if allGroups.length > 0}
-				<div class="filter-group">
-					<FolderOpen size={12} class="filter-icon" />
-					{#each allGroups as group}
-						<button
-							class="filter-chip"
-							class:filter-chip-active={filterGroup === group}
-							onclick={() => toggleFilterGroup(group)}
-						>
-							{group}
-						</button>
-					{/each}
-				</div>
-			{/if}
-		</div>
-	{/if}
+	<Tabs bind:activeKey={activeTab} items={[
+		{ key: 'tables', label: tabTables },
+		{ key: 'relationships', label: tabRelationships },
+		{ key: 'definitions', label: tabDefinitions },
+	]} variant="default" />
 
-	<hr class="overview-divider" />
+	{#snippet tabTables()}
+		<Database size={13} /> Tables
+	{/snippet}
 
-	{#if tables.length === 0}
-		<div class="overview-empty">
-			<span class="overview-empty-text">No tables yet. Connect a file to get started.</span>
-		</div>
-	{:else if loading}
-		<div class="overview-loading">
-			<span class="overview-empty-text">Loading metadata…</span>
-		</div>
-	{:else}
-		<div class="card-grid">
-			{#each filteredMetas as meta (meta.name)}
-				{@const labels = labelsMap[meta.name]}
-				{@const isEditing = editingTable === meta.name}
-				<div
-					class="card"
-					class:card-editing={isEditing}
-					role="button"
-					tabindex="0"
-					onkeydown={(e) => handleCardKeydown(e, meta.name)}
-				>
-					<div class="card-header">
-						<h4 class="card-title">{meta.name}</h4>
-						<div class="card-header-actions">
-							{#if confirmDeleteTable === meta.name}
-								<span class="confirm-delete">
-									<span class="confirm-delete-text">Delete?</span>
-									<button
-										class="confirm-delete-btn confirm-delete-yes"
-										onclick={(e) => { e.stopPropagation(); handleDelete(meta.name); }}
-										disabled={deletingTable === meta.name}
-									>Yes</button>
-									<button
-										class="confirm-delete-btn confirm-delete-no"
-										onclick={(e) => { e.stopPropagation(); confirmDeleteTable = null; }}
-										disabled={deletingTable === meta.name}
-									>No</button>
-								</span>
-							{:else}
-								<button
-									class="card-edit-btn card-delete-btn"
-									onclick={(e) => { e.stopPropagation(); confirmDeleteTable = meta.name; }}
-									title="Delete table"
-									disabled={deletingTable !== null}
-								>
-									<Trash2 size={14} />
-								</button>
-								<button
-									class="card-edit-btn"
-									onclick={(e) => { e.stopPropagation(); startEdit(meta.name); }}
-									title="Edit tags & group"
-									disabled={deletingTable !== null}
-								>
-									<SquarePen size={14} />
-								</button>
-							{/if}
-						</div>
+	{#snippet tabRelationships()}
+		<Blend size={13} /> Relationships
+	{/snippet}
+
+	{#snippet tabDefinitions()}
+		<FileBraces size={13} /> Metadata
+	{/snippet}
+
+	{#if activeTab === 'tables'}
+		{#if allTags.length > 0 || allGroups.length > 0}
+			<div class="filter-bar">
+				{#if allTags.length > 0}
+					<div class="filter-group">
+						<Tag size={12} class="filter-icon" />
+						{#each allTags as tag}
+							<button
+								class="filter-chip"
+								class:filter-chip-active={filterTag === tag}
+								onclick={() => toggleFilterTag(tag)}
+							>
+								{tag}
+							</button>
+						{/each}
 					</div>
+				{/if}
+				{#if allGroups.length > 0}
+					<div class="filter-group">
+						<FolderOpen size={12} class="filter-icon" />
+						{#each allGroups as group}
+							<button
+								class="filter-chip"
+								class:filter-chip-active={filterGroup === group}
+								onclick={() => toggleFilterGroup(group)}
+							>
+								{group}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
 
-					{#if isEditing}
-						<div class="card-edit-area" onclick={(e) => e.stopPropagation()}>
-							<div class="edit-field">
-								<label class="edit-label">Name</label>
-								<input
-									type="text"
-									class="input edit-input"
-									bind:value={editName}
-								/>
-							</div>
-							<div class="edit-field">
-								<label class="edit-label">Group</label>
-								<input
-									type="text"
-									class="input edit-input"
-									placeholder="e.g. Sales, Finance..."
-									bind:value={editGroup}
-								/>
-							</div>
-							<div class="edit-field">
-								<label class="edit-label">Tags</label>
-								<div class="edit-tags">
-									{#each editTags as tag}
-										<span class="edit-tag-chip">
-											{tag}
-											<button class="edit-tag-remove" onclick={() => removeTag(tag)}>
-												<X size={10} />
-											</button>
-										</span>
-									{/each}
-									<div class="edit-tag-input-row">
-										<input
-											type="text"
-											class="input edit-tag-input"
-											placeholder="Add tag…"
-											bind:value={newTagInput}
-											onkeydown={handleTagKeydown}
-										/>
-										<button class="edit-tag-add-btn" onclick={addTag}>
-											<Plus size={12} />
-										</button>
-									</div>
-								</div>
-							</div>
-							<div class="edit-actions">
-								<button class="btn btn-secondary btn-sm" onclick={cancelEdit}>Cancel</button>
-								<button class="btn btn-primary btn-sm" onclick={saveEdit}>Done</button>
+		<hr class="overview-divider" />
+
+		{#if tables.length === 0}
+			<div class="overview-empty">
+				<span class="overview-empty-text">No tables yet. Connect a file to get started.</span>
+			</div>
+		{:else if loading}
+			<div class="overview-loading">
+				<span class="overview-empty-text">Loading metadata…</span>
+			</div>
+		{:else}
+			<div class="card-grid">
+				{#each filteredMetas as meta (meta.name)}
+					{@const labels = labelsMap[meta.name]}
+					<div
+						class="card"
+						role="button"
+						tabindex="0"
+						onkeydown={(e) => handleCardKeydown(e, meta.name)}
+						onclick={() => onopendrawer(meta.name)}
+					>
+						<div class="card-header">
+							<h4 class="card-title">{meta.name}</h4>
+							<div class="card-header-actions">
+								{#if confirmDeleteTable === meta.name}
+									<span class="confirm-delete">
+										<span class="confirm-delete-text">Delete?</span>
+										<button
+											class="confirm-delete-btn confirm-delete-yes"
+											onclick={(e) => { e.stopPropagation(); handleDelete(meta.name); }}
+											disabled={deletingTable === meta.name}
+										>Yes</button>
+										<button
+											class="confirm-delete-btn confirm-delete-no"
+											onclick={(e) => { e.stopPropagation(); confirmDeleteTable = null; }}
+											disabled={deletingTable === meta.name}
+										>No</button>
+									</span>
+								{:else}
+									<button
+										class="card-edit-btn card-delete-btn"
+										onclick={(e) => { e.stopPropagation(); confirmDeleteTable = meta.name; }}
+										title="Delete table"
+										disabled={deletingTable !== null}
+									>
+										<Trash2 size={14} />
+									</button>
+								{/if}
 							</div>
 						</div>
-					{:else}
+
 						<hr class="card-divider" />
 
 						<div class="card-body">
@@ -358,11 +253,25 @@
 							{/each}
 							<span class="tag tag-default">{inferSourceType(meta.name)}</span>
 							<span class="tag tag-default">{meta.columnCount} cols</span>
-							<span class="card-action" onclick={() => onselect(meta.name)}>Open →</span>
+							<span class="card-action" onclick={(e) => { e.stopPropagation(); onselect(meta.name); }}>Open →</span>
 						</div>
-					{/if}
-				</div>
-			{/each}
+					</div>
+				{/each}
+			</div>
+		{/if}
+	{:else if activeTab === 'relationships'}
+		<hr class="overview-divider" />
+		<div class="tab-empty">
+			<Blend size={32} class="tab-empty-icon" />
+			<h3 class="tab-empty-title">Relationships</h3>
+			<p class="tab-empty-desc">Foreign key relationships between tables will appear here. Connect tables with shared columns to define how they relate.</p>
+		</div>
+	{:else if activeTab === 'definitions'}
+		<hr class="overview-divider" />
+		<div class="tab-empty">
+			<FileBraces size={32} class="tab-empty-icon" />
+			<h3 class="tab-empty-title">Definitions and context</h3>
+			<p class="tab-empty-desc">Add definitions, descriptions, and business context to your tables and columns to help collaborators understand the data.</p>
 		</div>
 	{/if}
 </div>
@@ -450,6 +359,35 @@
 		color: var(--color-text-tertiary);
 	}
 
+	.tab-empty {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-16) var(--space-6);
+		text-align: center;
+	}
+
+	.tab-empty-icon {
+		color: var(--color-text-tertiary);
+		opacity: 0.5;
+	}
+
+	.tab-empty-title {
+		font-family: var(--font-display);
+		font-size: var(--text-md);
+		font-weight: 700;
+		color: var(--color-text);
+		letter-spacing: -0.01em;
+	}
+
+	.tab-empty-desc {
+		font-size: var(--text-sm);
+		color: var(--color-text-tertiary);
+		max-width: 40ch;
+		line-height: 1.5;
+	}
+
 	.card-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -462,7 +400,7 @@
 		border-radius: var(--radius-md);
 		cursor: pointer;
 		text-align: left;
-		transition: color var(--duration-fast) ease;
+		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 		display: flex;
 		flex-direction: column;
 		padding: 0;
@@ -476,10 +414,9 @@
 		box-sizing: border-box;
 	}
 
-
-
-	.card-editing {
-		cursor: default;
+	.card:hover {
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 1px var(--color-accent-muted);
 	}
 
 	.card-header {
@@ -488,11 +425,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: var(--space-2);
-	}
-
-	.card-icon {
-		color: var(--color-text-tertiary);
-		flex-shrink: 0;
 	}
 
 	.card-edit-btn {
@@ -512,18 +444,6 @@
 	.card-edit-btn:hover {
 		color: var(--color-accent);
 		background: var(--color-accent-muted);
-	}
-
-	.card-edit-btn-saving {
-		font-family: var(--font-body);
-		font-size: 9px;
-		font-weight: 600;
-		padding: 2px var(--space-2);
-		color: var(--color-accent-dark);
-		background: var(--color-accent-muted);
-		border: 1px solid oklch(0.82 0.03 41);
-		border-radius: var(--radius-xs);
-		cursor: pointer;
 	}
 
 	.card-header-actions {
@@ -693,105 +613,5 @@
 
 	.card-action:hover {
 		color: var(--color-accent);
-	}
-
-
-
-	.card-edit-area {
-		padding: var(--space-3);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-		flex: 1;
-	}
-
-	.edit-field {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-1);
-	}
-
-	.edit-label {
-		font-size: 9px;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--color-text-tertiary);
-	}
-
-	.edit-input {
-		font-size: var(--text-xs);
-		padding: var(--space-1) var(--space-2);
-	}
-
-	.edit-tags {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-1);
-		align-items: center;
-	}
-
-	.edit-tag-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 2px;
-		padding: 2px var(--space-2);
-		background: var(--color-sage-50);
-		border: 1px solid var(--color-sage-200);
-		border-radius: var(--radius-xs);
-		font-size: 9px;
-		font-weight: 600;
-		color: var(--color-sage-700);
-	}
-
-	.edit-tag-remove {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border: none;
-		background: none;
-		color: var(--color-sage-400);
-		cursor: pointer;
-		padding: 0;
-		line-height: 1;
-	}
-
-	.edit-tag-remove:hover {
-		color: var(--color-danger);
-	}
-
-	.edit-tag-input-row {
-		display: flex;
-		align-items: center;
-		gap: 2px;
-	}
-
-	.edit-tag-input {
-		font-size: 9px;
-		padding: 2px var(--space-2);
-		width: 90px;
-	}
-
-	.edit-tag-add-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2px;
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-		color: var(--color-text-secondary);
-		cursor: pointer;
-		border-radius: var(--radius-xs);
-	}
-
-	.edit-tag-add-btn:hover {
-		border-color: var(--color-accent);
-		color: var(--color-accent);
-	}
-
-	.edit-actions {
-		display: flex;
-		gap: var(--space-2);
-		justify-content: flex-end;
 	}
 </style>

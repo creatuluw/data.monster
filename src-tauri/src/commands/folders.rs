@@ -59,3 +59,60 @@ pub fn create_folder(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_initialize_data_folders() {
+        let dir = TempDir::new().unwrap();
+        let ws = dir.path().to_str().unwrap().to_string();
+        initialize_data_folders(ws.clone()).unwrap();
+        assert!(Path::new(&ws).join("data").join("main").exists());
+    }
+
+    #[test]
+    fn test_initialize_idempotent() {
+        let dir = TempDir::new().unwrap();
+        let ws = dir.path().to_str().unwrap().to_string();
+        initialize_data_folders(ws.clone()).unwrap();
+        initialize_data_folders(ws.clone()).unwrap();
+        assert!(Path::new(&ws).join("data").join("main").exists());
+    }
+
+    #[test]
+    fn test_list_folders_default() {
+        let dir = TempDir::new().unwrap();
+        let ws = dir.path().to_str().unwrap().to_string();
+        let folders = list_folders(ws).unwrap();
+        assert_eq!(folders, vec!["main"]);
+    }
+
+    #[test]
+    fn test_create_and_list() {
+        let dir = TempDir::new().unwrap();
+        let ws = dir.path().to_str().unwrap().to_string();
+        initialize_data_folders(ws.clone()).unwrap();
+
+        create_folder(ws.clone(), "archive".to_string()).unwrap();
+        create_folder(ws.clone(), "staging".to_string()).unwrap();
+
+        let folders = list_folders(ws).unwrap();
+        assert!(folders.contains(&"archive".to_string()));
+        assert!(folders.contains(&"main".to_string()));
+        assert!(folders.contains(&"staging".to_string()));
+    }
+
+    #[test]
+    fn test_create_duplicate_fails() {
+        let dir = TempDir::new().unwrap();
+        let ws = dir.path().to_str().unwrap().to_string();
+        initialize_data_folders(ws.clone()).unwrap();
+        create_folder(ws.clone(), "test".to_string()).unwrap();
+        let result = create_folder(ws, "test".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("already exists"));
+    }
+}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PreviewData, ColumnOverride } from '$lib/db-operations';
+	import Pagination from './Pagination.svelte';
 
 	let {
 		data,
@@ -12,6 +13,14 @@
 	} = $props();
 
 	const TYPE_OPTIONS = ['VARCHAR', 'INTEGER', 'BIGINT', 'DOUBLE', 'BOOLEAN', 'DATE', 'TIMESTAMP'];
+	const PAGE_SIZE = 10;
+
+	let currentPage = $state(1);
+
+	let totalPages = $derived(Math.ceil(Math.min(data.rows.length, 100) / PAGE_SIZE));
+	let pageRows = $derived(
+		data.rows.slice(0, 100).slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+	);
 
 	function formatCell(value: unknown): string {
 		if (value === null || value === undefined) return '\u2014';
@@ -64,28 +73,9 @@
 </script>
 
 <div class="preview">
-	<div class="preview-header">
-		<h2 class="preview-title">{data.sourceName ?? 'Preview'}</h2>
-		<span class="tag tag-accent">{data.totalRows.toLocaleString()} rows</span>
-	</div>
-
 	<div class="preview-table-wrap">
 		<table class="data-table">
 			<thead>
-				<tr class="toggle-row">
-					{#each data.columns as col}
-						{@const on = isEnabled(col)}
-						<th class="toggle-cell">
-							<button
-								onclick={() => toggleEnabled(col)}
-								class="toggle-btn {on ? 'is-on' : 'is-off'}"
-								title={on ? 'Click to exclude column' : 'Click to include column'}
-							>
-								{on ? 'on' : 'off'}
-							</button>
-						</th>
-					{/each}
-				</tr>
 				<tr class="type-row">
 					{#each data.columns as col}
 						{@const on = isEnabled(col)}
@@ -107,19 +97,28 @@
 					{#each data.columns as col}
 						{@const on = isEnabled(col)}
 						<th class="name-cell">
-							<input
-								type="text"
-								value={getNewName(col)}
-								onchange={(e) => setNewName(col, (e.target as HTMLInputElement).value)}
-								disabled={!on}
-								class="name-input {!on ? 'is-disabled' : ''}"
-							/>
+							<div class="name-cell-inner">
+								<input
+									type="text"
+									value={getNewName(col)}
+									onchange={(e) => setNewName(col, (e.target as HTMLInputElement).value)}
+									disabled={!on}
+									class="name-input {!on ? 'is-disabled' : ''}"
+								/>
+								<button
+									onclick={() => toggleEnabled(col)}
+									class="toggle-label {on ? 'is-on' : 'is-off'}"
+									title={on ? 'Click to exclude column' : 'Click to include column'}
+								>
+									{on ? 'on' : 'off'}
+								</button>
+							</div>
 						</th>
 					{/each}
 				</tr>
 			</thead>
 			<tbody>
-				{#each data.rows as row}
+				{#each pageRows as row}
 					<tr>
 						{#each data.columns as col}
 							{@const on = isEnabled(col)}
@@ -131,9 +130,15 @@
 		</table>
 	</div>
 
-	<div class="preview-footer">
-		<button onclick={onnext} class="btn btn-primary">
-			Write table query &rarr;
+	<div class="preview-bottom">
+		<Pagination
+			{currentPage}
+			totalItems={Math.min(data.rows.length, 100)}
+			perPage={PAGE_SIZE}
+			onchange={(p) => currentPage = p}
+		/>
+		<button onclick={onnext} class="btn btn-primary preview-next-btn">
+			Next &rarr;
 		</button>
 	</div>
 </div>
@@ -142,21 +147,7 @@
 	.preview {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-6);
-	}
-
-	.preview-header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	.preview-title {
-		font-family: var(--font-display);
-		font-size: var(--text-lg);
-		font-weight: 700;
-		letter-spacing: -0.01em;
-		color: var(--color-text);
+		gap: var(--space-4);
 	}
 
 	.preview-table-wrap {
@@ -165,14 +156,9 @@
 		background: var(--color-surface);
 	}
 
-	.toggle-row,
 	.type-row,
 	.name-row {
 		background: var(--color-surface-raised);
-	}
-
-	.toggle-row {
-		border-bottom: 1px solid var(--color-border);
 	}
 
 	.type-row {
@@ -183,29 +169,37 @@
 		border-bottom: 1px solid var(--color-border-strong);
 	}
 
-	.toggle-cell,
 	.type-cell,
 	.name-cell {
 		white-space: nowrap;
 		padding: var(--space-2) var(--space-4);
+		border-right: 1px solid color-mix(in oklch, var(--color-border) 40%, transparent);
 	}
 
-	.toggle-btn {
+	.type-cell:last-child,
+	.name-cell:last-child {
+		border-right: none;
+	}
+
+	.toggle-label {
 		font-family: var(--font-mono);
-		font-size: 9px;
+		font-size: 8px;
 		letter-spacing: 0.06em;
 		background: none;
 		border: none;
 		cursor: pointer;
+		flex-shrink: 0;
+		width: 22px;
+		text-align: right;
 		transition: color var(--duration-fast) ease;
 	}
 
-	.toggle-btn.is-on {
-		color: var(--color-accent);
+	.toggle-label.is-on {
+		color: var(--color-text-tertiary);
 	}
 
-	.toggle-btn.is-off {
-		color: var(--color-text-tertiary);
+	.toggle-label.is-off {
+		color: var(--color-border);
 		text-decoration: line-through;
 	}
 
@@ -229,6 +223,12 @@
 		opacity: 0.3;
 	}
 
+	.name-cell-inner {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-1);
+	}
+
 	.name-input {
 		border: none;
 		background: transparent;
@@ -238,7 +238,7 @@
 		color: var(--color-text-secondary);
 		outline: none;
 		min-width: 60px;
-		width: 100%;
+		flex: 1;
 	}
 
 	.name-input.is-disabled {
@@ -250,8 +250,25 @@
 		opacity: 0.3;
 	}
 
-	.preview-footer {
+	.data-table td {
+		border-right: 1px solid color-mix(in oklch, var(--color-border) 40%, transparent);
+		padding: var(--space-2) var(--space-4);
+		white-space: nowrap;
+	}
+
+	.data-table td:last-child {
+		border-right: none;
+	}
+
+	.preview-bottom {
 		display: flex;
-		justify-content: flex-end;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-4);
+	}
+
+	.preview-next-btn {
+		height: 32px;
+		flex-shrink: 0;
 	}
 </style>

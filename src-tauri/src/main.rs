@@ -25,6 +25,7 @@ fn main() {
             load_parquet_file,
             load_json_file,
             get_file_columns,
+            preview_file,
             initialize_data_folders,
             list_folders,
             create_folder,

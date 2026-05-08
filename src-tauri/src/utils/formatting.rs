@@ -81,3 +81,85 @@ pub fn format_duckdb_value(val: duckdb::types::ValueRef) -> serde_json::Value {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use duckdb::Connection;
+
+    fn query_val(conn: &Connection, sql: &str) -> serde_json::Value {
+        let mut stmt = conn.prepare(sql).unwrap();
+        let result: serde_json::Value = stmt
+            .query_map([], |row| Ok(format_duckdb_value(row.get_ref(0).unwrap())))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .next()
+            .unwrap();
+        result
+    }
+
+    #[test]
+    fn test_null() {
+        let conn = Connection::open_in_memory().unwrap();
+        assert_eq!(query_val(&conn, "SELECT NULL"), serde_json::Value::Null);
+    }
+
+    #[test]
+    fn test_boolean() {
+        let conn = Connection::open_in_memory().unwrap();
+        assert_eq!(query_val(&conn, "SELECT true"), serde_json::Value::Bool(true));
+        assert_eq!(query_val(&conn, "SELECT false"), serde_json::Value::Bool(false));
+    }
+
+    #[test]
+    fn test_integer() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT 42");
+        assert_eq!(val, serde_json::json!(42));
+    }
+
+    #[test]
+    fn test_bigint() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT 9999999999::BIGINT");
+        assert_eq!(val, serde_json::json!(9999999999i64));
+    }
+
+    #[test]
+    fn test_double() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT 3.14::DOUBLE");
+        assert!(val.is_f64() || val.is_string());
+        if let Some(f) = val.as_f64() {
+            assert!((f - 3.14f64).abs() < 0.001);
+        }
+    }
+
+    #[test]
+    fn test_text() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT 'hello world'");
+        assert_eq!(val, serde_json::json!("hello world"));
+    }
+
+    #[test]
+    fn test_decimal() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT 1.5::DECIMAL(10,2)");
+        assert!(val.is_string());
+    }
+
+    #[test]
+    fn test_date() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT DATE '2024-01-15'");
+        assert_eq!(val, serde_json::json!("2024-01-15"));
+    }
+
+    #[test]
+    fn test_blob() {
+        let conn = Connection::open_in_memory().unwrap();
+        let val = query_val(&conn, "SELECT BLOB 'abc'");
+        assert!(val.as_str().unwrap().contains("blob"));
+    }
+}

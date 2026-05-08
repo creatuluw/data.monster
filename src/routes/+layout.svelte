@@ -80,7 +80,7 @@
 		</a>
 		<div class="header-meta">
 			{#if app.dbReady}
-				<a href="/tables" class="header-link">
+				<a href="/data" class="header-link">
 					{app.tables.length} table{app.tables.length !== 1 ? 's' : ''}
 				</a>
 				<span class="tag tag-success">Persistent</span>

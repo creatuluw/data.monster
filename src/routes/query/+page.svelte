@@ -60,12 +60,32 @@
 	let selectedQueryTag = $state('');
 	let deletingQuerySlug = $state<string | null>(null);
 	let initialSql = $state('');
+	let showPreviewLimit = $state(true);
 
 	const activeTab = $derived(tabs.find(t => t.id === activeTabId) || tabs[0]);
 
 	const isSavedQueryModified = $derived(
 		activeTab.loadedQuery && activeTab.query !== activeTab.loadedQuery.sql
 	);
+
+	const displayQuery = $derived(() => {
+		if (!showPreviewLimit) return activeTab.query;
+		const trimmed = activeTab.query.replace(/;+\s*$/, '').trim();
+		const lower = trimmed.toLowerCase();
+		const isMutation =
+			lower.startsWith('insert') ||
+			lower.startsWith('update') ||
+			lower.startsWith('delete') ||
+			lower.startsWith('alter') ||
+			lower.startsWith('drop') ||
+			lower.startsWith('create');
+		
+		if (isMutation || lower.includes('limit')) {
+			return activeTab.query;
+		}
+		
+		return trimmed;
+	});
 
 	const allQueryTags = $derived(() => {
 		const tagsSet = new Set<string>();
@@ -124,10 +144,27 @@
 		const sql = activeTab.query.trim();
 		if (!sql) return;
 
+		let sqlToRun = sql;
+		if (showPreviewLimit) {
+			const trimmed = sql.replace(/;+\s*$/, '').trim();
+			const lower = trimmed.toLowerCase();
+			const isMutation =
+				lower.startsWith('insert') ||
+				lower.startsWith('update') ||
+				lower.startsWith('delete') ||
+				lower.startsWith('alter') ||
+				lower.startsWith('drop') ||
+				lower.startsWith('create');
+			
+			if (!isMutation && !lower.includes('limit')) {
+				sqlToRun = `${trimmed} LIMIT 100`;
+			}
+		}
+
 		updateTab({ loading: true, error: '' });
 		const t0 = performance.now();
 		try {
-			const result = await runPagedQuery(sql, 1, 100);
+			const result = await runPagedQuery(sqlToRun, 1, 100);
 			const queryTime = performance.now() - t0;
 			updateTab({ result, queryTime, loading: false });
 			await app.refreshTables();
@@ -274,7 +311,7 @@
 			await createTableFromQuery(ingestTableName, activeTab.query);
 			await app.refreshTables();
 			showIngestModal = false;
-			goto('/tables');
+			goto('/data');
 		} catch (e) {
 			app.globalError = e instanceof Error ? e.message : 'Failed to save table';
 		}
@@ -346,11 +383,21 @@
 		loadSavedQueries();
 		loadTableMetas();
 
-		if (app.pendingSql) {
-			initialSql = app.pendingSql;
+		if (app.pendingSql || app.pendingPreviewData) {
+			const previewData = app.pendingPreviewData;
+			
+			if (previewData) {
+				initialSql = app.pendingSqlForPreview;
+				showPreviewLimit = true;
+			} else {
+				initialSql = app.pendingSql;
+			}
+			
 			const shouldAutoRun = app.pendingAutoRun;
 			app.pendingSql = '';
 			app.pendingAutoRun = false;
+			app.pendingPreviewData = null;
+			
 			updateTab({ query: initialSql });
 			if (shouldAutoRun && initialSql) {
 				requestAnimationFrame(() => handleRunQuery());
@@ -383,15 +430,15 @@
 	<div class="sidebar" style="width: {sidebarWidth}px;">
 		<div class="sidebar-header">
 			<h2 class="sidebar-title">Data sources</h2>
-			<button onclick={loadTableMetas} class="sidebar-refresh" title="Refresh tables">
+			<button onclick={loadTableMetas} class="sidebar-refresh" title="Refresh data">
 				<RefreshCw size={14} />
 			</button>
 		</div>
 
 		<div class="sidebar-body">
 			<div class="sidebar-section-label">
-				<span>Tables</span>
-				<a href="/tables" class="sidebar-external-link" title="View all tables">
+				<span>Data</span>
+				<a href="/data" class="sidebar-external-link" title="View all data">
 					<Share size={12} />
 				</a>
 			</div>
@@ -444,6 +491,12 @@
 				{:else}
 					<span class="exec-time">0.00s</span>
 				{/if}
+			</div>
+			<div class="top-bar-center">
+				<label class="preview-limit-toggle">
+					<input type="checkbox" checked={showPreviewLimit} onchange={() => { showPreviewLimit = !showPreviewLimit; handleRunQuery(); }} />
+					<span>Preview limit (100 rows)</span>
+				</label>
 			</div>
 			<div class="top-bar-right">
 				<button
@@ -531,7 +584,7 @@
 			<!-- Editor Area -->
 			<div class="editor-pane" style="height: {editorHeightPercent}%;">
 				<textarea
-					value={activeTab.query}
+					value={displayQuery()}
 					oninput={(e) => updateTab({ query: (e.target as HTMLTextAreaElement).value })}
 					onkeydown={(e) => {
 						if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -1065,10 +1118,15 @@
 	}
 
 	.top-bar-left,
-	.top-bar-right {
+	.top-bar-right,
+	.top-bar-center {
 		display: flex;
 		align-items: center;
 		gap: var(--space-2);
+	}
+
+	.top-bar {
+		justify-content: space-between;
 	}
 
 	.status-pill {
@@ -1093,6 +1151,21 @@
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
 		color: var(--color-text-tertiary);
+	}
+
+	.preview-limit-toggle {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.preview-limit-toggle input[type="checkbox"] {
+		accent-color: var(--color-accent);
+		cursor: pointer;
 	}
 
 	.btn-update {

@@ -1,26 +1,43 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { app } from '$lib/stores/app.svelte';
-	import { runPagedQuery, type PagedQueryResult, type ColumnInfo } from '$lib/db-operations';
+	import { runPagedQuery, getTableMeta, type PagedQueryResult, type ColumnInfo } from '$lib/db-operations';
 	import BarChart from '$lib/components/BarChart.svelte';
 	import { FileText } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
 
 	const TABLE_PAGE_SIZE = 50;
 
-	let salesByCountry = $state<Record<string, unknown>[]>([]);
-	let salesByProduct = $state<Record<string, unknown>[]>([]);
+	const CATEGORICAL_TYPES = new Set([
+		'VARCHAR', 'TEXT', 'STRING', 'CHAR', 'BPCHAR', 'NAME', 'UUID', 'ENUM', 'BOOLEAN', 'BOOL'
+	]);
+	const NUMERIC_TYPES = new Set([
+		'INTEGER', 'BIGINT', 'SMALLINT', 'TINYINT', 'INT', 'INT2', 'INT4', 'INT8',
+		'DOUBLE', 'FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DECIMAL', 'NUMERIC',
+		'HUGEINT', 'UINTEGER', 'UBIGINT', 'USMALLINT', 'UTINYINT'
+	]);
+
+	interface ChartConfig {
+		categoryCol: string;
+		valueCol: string;
+		title: string;
+		selected: Set<string>;
+	}
+
+	let chartData1 = $state<Record<string, unknown>[]>([]);
+	let chartData2 = $state<Record<string, unknown>[]>([]);
 	let loading = $state(true);
 	let error = $state('');
+	let noChartData = $state(false);
+
+	let chart1 = $state<ChartConfig | null>(null);
+	let chart2 = $state<ChartConfig | null>(null);
 
 	let tableData = $state<PagedQueryResult | null>(null);
 	let tablePage = $state(1);
 	let tableTotalPages = $state(1);
 
 	let tableName = $derived(app.tables[0] ?? '');
-
-	let selectedCountries = $state(new Set<string>());
-	let selectedProducts = $state(new Set<string>());
 
 	async function loadChartData() {
 		if (app.tables.length === 0) {
@@ -31,20 +48,46 @@
 		const table = app.tables[0];
 
 		try {
-			const [countryResult, productResult] = await Promise.all([
+			const meta = await getTableMeta(table);
+			const catCols = meta.columns.filter((c) => CATEGORICAL_TYPES.has(c.type.toUpperCase()) || !NUMERIC_TYPES.has(c.type.toUpperCase()));
+			const numCols = meta.columns.filter((c) => NUMERIC_TYPES.has(c.type.toUpperCase()));
+
+			if (catCols.length === 0 || numCols.length === 0) {
+				noChartData = true;
+				loading = false;
+				await loadTablePage(1);
+				return;
+			}
+
+			const valCol = numCols[0].name;
+			const cat1 = catCols[0].name;
+			const cat2 = catCols.length > 1 ? catCols[1].name : cat1;
+
+			chart1 = { categoryCol: cat1, valueCol: valCol, title: `${valCol} by ${cat1}`, selected: new Set() };
+			chart2 = catCols.length > 1
+				? { categoryCol: cat2, valueCol: valCol, title: `${valCol} by ${cat2}`, selected: new Set() }
+				: null;
+
+			const queries = [
 				runPagedQuery(
-					`SELECT country, ROUND(SUM(sales)::numeric, 0)::double as total_sales FROM "${table}" ${buildWhere(['country'])} GROUP BY country ORDER BY total_sales DESC`,
-					1,
-					10000
-				),
-				runPagedQuery(
-					`SELECT product_name, ROUND(SUM(sales)::numeric, 0)::double as total_sales FROM "${table}" ${buildWhere(['product_name'])} GROUP BY product_name ORDER BY total_sales DESC`,
+					`SELECT "${cat1}", ROUND(SUM("${valCol}")::numeric, 0)::double as total_${valCol} FROM "${table}" ${buildWhere([{ col: cat1, selected: chart1.selected }, { col: cat2, selected: chart2?.selected }], cat1)} GROUP BY "${cat1}" ORDER BY total_${valCol} DESC`,
 					1,
 					10000
 				)
-			]);
-			salesByCountry = countryResult.rows;
-			salesByProduct = productResult.rows;
+			];
+			if (chart2) {
+				queries.push(
+					runPagedQuery(
+						`SELECT "${cat2}", ROUND(SUM("${valCol}")::numeric, 0)::double as total_${valCol} FROM "${table}" ${buildWhere([{ col: cat1, selected: chart1.selected }, { col: cat2, selected: chart2.selected }], cat2)} GROUP BY "${cat2}" ORDER BY total_${valCol} DESC`,
+						1,
+						10000
+					)
+				);
+			}
+
+			const results = await Promise.all(queries);
+			chartData1 = results[0].rows;
+			if (results[1]) chartData2 = results[1].rows;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load chart data';
 		}
@@ -53,15 +96,18 @@
 		await loadTablePage(1);
 	}
 
-	function buildWhere(exclude: string[] = []): string {
+	interface FilterDef {
+		col: string;
+		selected: Set<string> | undefined;
+	}
+
+	function buildWhere(filters: FilterDef[], exclude?: string): string {
 		const conditions: string[] = [];
-		if (selectedCountries.size > 0 && !exclude.includes('country')) {
-			const vals = [...selectedCountries].map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
-			conditions.push(`country IN (${vals})`);
-		}
-		if (selectedProducts.size > 0 && !exclude.includes('product_name')) {
-			const vals = [...selectedProducts].map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
-			conditions.push(`product_name IN (${vals})`);
+		for (const f of filters) {
+			if (f.selected && f.selected.size > 0 && f.col !== exclude) {
+				const vals = [...f.selected].map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
+				conditions.push(`"${f.col}" IN (${vals})`);
+			}
 		}
 		return conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 	}
@@ -69,12 +115,14 @@
 	async function refreshFromFilter() {
 		if (!tableName) return;
 		await loadChartData();
-		await loadTablePage(1);
 	}
 
 	async function loadTablePage(page: number) {
 		if (!tableName) return;
-		const where = buildWhere([]);
+		const filters: FilterDef[] = [];
+		if (chart1) filters.push({ col: chart1.categoryCol, selected: chart1.selected });
+		if (chart2) filters.push({ col: chart2.categoryCol, selected: chart2.selected });
+		const where = buildWhere(filters);
 		const countResult = await runPagedQuery(`SELECT COUNT(*) as cnt FROM "${tableName}" ${where}`, 1, 1);
 		const totalRows = Number(countResult.rows[0]?.cnt ?? 0);
 		const offset = (page - 1) * TABLE_PAGE_SIZE;
@@ -84,19 +132,19 @@
 		tableTotalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
 	}
 
-	let countryLoading = $state(false);
-	let productLoading = $state(false);
+	let chart1Loading = $state(false);
+	let chart2Loading = $state(false);
 
-	async function onCountrySelect(_label: string) {
-		countryLoading = true;
+	async function onChart1Select(_label: string) {
+		chart1Loading = true;
 		await refreshFromFilter();
-		countryLoading = false;
+		chart1Loading = false;
 	}
 
-	async function onProductSelect(_label: string) {
-		productLoading = true;
+	async function onChart2Select(_label: string) {
+		chart2Loading = true;
 		await refreshFromFilter();
-		productLoading = false;
+		chart2Loading = false;
 	}
 
 	function formatCell(value: unknown): string {
@@ -127,18 +175,63 @@
 		<div class="pages-error">
 			<span>{error}</span>
 		</div>
+	{:else if noChartData}
+		<div class="pages-content">
+			<div class="pages-nochart">
+				<p>No chartable columns found. The table needs at least one text column and one numeric column.</p>
+			</div>
+			{#if tableData}
+				<div class="pages-table-section">
+					<div class="pages-table-header">
+						<h3 class="pages-table-title">{tableName}</h3>
+						<span class="pages-table-count">{tableData.totalRows.toLocaleString()} rows</span>
+					</div>
+					<div class="pages-table-wrap">
+						<table class="data-table">
+							<thead>
+								<tr>
+									{#each tableData.columns as col}
+										<th>{col}</th>
+									{/each}
+								</tr>
+							</thead>
+							<tbody>
+								{#each tableData.rows as row}
+									<tr>
+										{#each tableData.columns as col}
+											<td>{formatCell(row[col])}</td>
+										{/each}
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+					{#if tableTotalPages > 1}
+						<div class="pagination">
+							<button onclick={() => loadTablePage(tablePage - 1)} disabled={tablePage <= 1} class="btn btn-ghost btn-sm">&larr; prev</button>
+							<span class="page-info">Page {tablePage} of {tableTotalPages}</span>
+							<button onclick={() => loadTablePage(tablePage + 1)} disabled={tablePage >= tableTotalPages} class="btn btn-ghost btn-sm">next &rarr;</button>
+						</div>
+					{/if}
+				</div>
+			{/if}
+		</div>
 	{:else}
 		<div class="pages-content">
-			{#if selectedCountries.size > 0 || selectedProducts.size > 0}
+			{#if (chart1 && chart1.selected.size > 0) || (chart2 && chart2.selected.size > 0)}
 				<div class="filter-bar">
 					<span class="filter-label">Active filters:</span>
-					{#each [...selectedCountries] as c}
-						<button class="filter-chip" onclick={() => { const s = new Set(selectedCountries); s.delete(c); selectedCountries = s; refreshFromFilter(); }}>{c} &times;</button>
-					{/each}
-					{#each [...selectedProducts] as p}
-						<button class="filter-chip" onclick={() => { const s = new Set(selectedProducts); s.delete(p); selectedProducts = s; refreshFromFilter(); }}>{p} &times;</button>
-					{/each}
-					<button class="filter-clear" onclick={() => { selectedCountries = new Set(); selectedProducts = new Set(); refreshFromFilter(); }}>Clear all</button>
+					{#if chart1}
+						{#each [...chart1.selected] as c}
+							<button class="filter-chip" onclick={() => { const s = new Set(chart1!.selected); s.delete(c); chart1!.selected = s; refreshFromFilter(); }}>{c} &times;</button>
+						{/each}
+					{/if}
+					{#if chart2}
+						{#each [...chart2.selected] as p}
+							<button class="filter-chip" onclick={() => { const s = new Set(chart2!.selected); s.delete(p); chart2!.selected = s; refreshFromFilter(); }}>{p} &times;</button>
+						{/each}
+					{/if}
+					<button class="filter-clear" onclick={() => { if (chart1) chart1.selected = new Set(); if (chart2) chart2.selected = new Set(); refreshFromFilter(); }}>Clear all</button>
 				</div>
 			{:else}
 				<div class="filter-bar filter-bar-empty">
@@ -146,9 +239,13 @@
 				</div>
 			{/if}
 
-			<div class="pages-charts">
-				<BarChart data={salesByCountry} labelKey="country" valueKey="total_sales" title="Sales by Country" tagLabel="{salesByCountry.length} countries" bind:selected={selectedCountries} onselect={onCountrySelect} onaction={() => goto('/pages/chart/country')} />
-				<BarChart data={salesByProduct} labelKey="product_name" valueKey="total_sales" title="Sales by Product" tagLabel="{salesByProduct.length} products" bind:selected={selectedProducts} onselect={onProductSelect} onaction={() => goto('/pages/chart/product')} />
+			<div class="pages-charts" class:pages-charts-single={!chart2}>
+				{#if chart1}
+					<BarChart data={chartData1} labelKey={chart1.categoryCol} valueKey={`total_${chart1.valueCol}`} title={chart1.title} tagLabel="{chartData1.length} {chart1.categoryCol}" bind:selected={chart1.selected} onselect={onChart1Select} onaction={() => goto(`/pages/chart/${encodeURIComponent(chart1!.categoryCol)}`)} />
+				{/if}
+				{#if chart2}
+					<BarChart data={chartData2} labelKey={chart2.categoryCol} valueKey={`total_${chart2.valueCol}`} title={chart2.title} tagLabel="{chartData2.length} {chart2.categoryCol}" bind:selected={chart2.selected} onselect={onChart2Select} onaction={() => goto(`/pages/chart/${encodeURIComponent(chart2!.categoryCol)}`)} />
+				{/if}
 			</div>
 
 			{#if tableData}
@@ -263,6 +360,24 @@
 		gap: var(--space-6);
 		padding: var(--space-6);
 		overflow: auto;
+	}
+
+	.pages-nochart {
+		padding: var(--space-4) var(--space-6);
+		background: var(--color-surface-sunken);
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-sm);
+		text-align: center;
+	}
+
+	.pages-nochart p {
+		font-size: var(--text-sm);
+		color: var(--color-text-tertiary);
+		margin: 0;
+	}
+
+	.pages-charts-single {
+		grid-template-columns: 1fr;
 	}
 
 	.filter-bar {

@@ -20,10 +20,12 @@
       ],
       "enabled": true
     },
+    /*
     "chrome-devtools": {
       "type": "local",
       "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
     },
+    */
     "zai-mcp-server": {
       "type": "local",
       "command": ["npx", "-y", "@z_ai/mcp-server"],

@@ -127,7 +127,7 @@ fn open_with_retry(db_path: &Path, wal_path: &Path) -> Result<Connection, String
     }
 }
 
-fn initialize_schema(conn: &Connection) -> Result<(), String> {
+pub(crate) fn initialize_schema(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS d8a_monster_table_metadata (
             table_name VARCHAR PRIMARY KEY,
@@ -165,4 +165,51 @@ fn initialize_schema(conn: &Connection) -> Result<(), String> {
     .map_err(|e| format!("Failed to create d8a_monster_saved_queries: {}", e))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use duckdb::Connection;
+
+    #[test]
+    fn test_initialize_schema_creates_tables() {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main' AND table_name LIKE 'd8a_monster_%'",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 3);
+    }
+
+    #[test]
+    fn test_initialize_schema_idempotent() {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        initialize_schema(&conn).unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main' AND table_name LIKE 'd8a_monster_%'",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 3);
+    }
+
+    #[test]
+    fn test_metadata_table_has_columns() {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        let mut stmt = conn.prepare("SELECT column_name FROM (DESCRIBE d8a_monster_table_metadata)").unwrap();
+        let cols: Vec<String> = stmt
+            .query_map([], |row| row.get::<_, String>(0))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+        assert!(cols.contains(&"table_name".to_string()));
+        assert!(cols.contains(&"table_type".to_string()));
+        assert!(cols.contains(&"created_at".to_string()));
+    }
 }

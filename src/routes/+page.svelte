@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/stores/app.svelte';
-	import { PlusCircle, Code, Hash, TrendingUp, FileText } from 'lucide-svelte';
+	import { PlusCircle, Code, Database, TrendingUp, FileText } from 'lucide-svelte';
 </script>
 
 <svelte:head>
@@ -18,13 +18,13 @@
 				Connect
 			</a>
 			{#if app.tables.length > 0}
+				<a href="/data" class="action-btn">
+					<Database size={16} />
+					Data ({app.tables.length})
+				</a>
 				<a href="/query" class="action-btn">
 					<Code size={16} />
 					Query
-				</a>
-				<a href="/tables" class="action-btn">
-					<Hash size={16} />
-					Tables ({app.tables.length})
 				</a>
 				<a href="/analyst" class="action-btn">
 					<TrendingUp size={16} />
@@ -35,7 +35,7 @@
 					Pages
 				</a>
 			{:else}
-				<span class="home-locked">Connect data to unlock Query, Tables & Analyst</span>
+				<span class="home-locked">Connect data to unlock Query, Data & Analyst</span>
 			{/if}
 		</div>
 	</div>

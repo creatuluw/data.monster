@@ -89,11 +89,11 @@
 	{#if tables.length > 0}
 		<div class="toolbar">
 			<div class="toolbar-left">
-				<span class="select-count">{selectedCount} of {tables.length} selected</span>
 				<div class="toolbar-actions">
 					<button onclick={selectAll} class="toolbar-btn">Select all</button>
 					<button onclick={deselectAll} class="toolbar-btn">Deselect all</button>
 				</div>
+				<span class="select-count">{selectedCount} of {tables.length} selected</span>
 			</div>
 			<div class="toolbar-search">
 				<svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -290,14 +290,14 @@
 		color: var(--color-text);
 		border-radius: var(--radius-xs);
 		outline: none;
-		width: 180px;
-		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease, width var(--duration-base) var(--ease-out-expo);
+		width: calc(2 * 260px + var(--space-2));
+		max-width: 100%;
+		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
 	}
 
 	.search-input:focus {
 		border-color: var(--color-accent);
 		box-shadow: 0 0 0 2px var(--color-accent-muted);
-		width: 240px;
 	}
 
 	.search-input::placeholder {

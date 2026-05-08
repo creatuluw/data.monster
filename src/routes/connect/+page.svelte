@@ -12,6 +12,7 @@
 	import { goto } from '$app/navigation';
 	import { Upload, Link, Database, ChevronRight, Check, LoaderCircle } from 'lucide-svelte';
 
+	let activeTab = $state<'file' | 'remote' | 'database'>('file');
 	let loading = $state(false);
 	let urlInput = $state('');
 	let urlLoading = $state(false);
@@ -51,16 +52,8 @@
 			const fileName = filePath.split(/[/\\]/).pop() ?? 'data';
 			const tableName = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
 
-			if (ext === 'parquet') {
-				await loadParquetFile(filePath, tableName);
-			} else if (ext === 'json' || ext === 'jsonl' || ext === 'ndjson') {
-				await loadJsonFile(filePath, tableName);
-			} else {
-				await loadCsvFile(filePath, tableName);
-			}
-
-			await app.refreshTables();
-			goto('/query');
+			app.pendingFile = { path: filePath, tableName };
+			goto('/preview');
 		} catch (e) {
 			app.globalError = e instanceof Error ? e.message : 'Failed to load file';
 		} finally {
@@ -165,137 +158,152 @@
 		<p class="hero-desc">Load a file, paste a URL, or connect a database.</p>
 
 		<div class="connect-options">
-			<div class="connect-section">
-				<button class="btn btn-primary" onclick={handleFilePick} disabled={loading}>
-					{#if loading}
-						<svg class="spinner spinner--sm" viewBox="0 0 24 24" fill="none">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-							<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-						</svg>
-						Loading...
-					{:else}
-						<Upload size={16} />
-						Open file
-					{/if}
+			<div class="tab-bar" role="tablist">
+				<button class="tab-btn" class:active={activeTab === 'file'} role="tab" aria-selected={activeTab === 'file'} onclick={() => activeTab = 'file'}>
+					<Upload size={14} />
+					File
 				</button>
-				<span class="connect-hint">CSV, Parquet, JSON, JSONL</span>
+				<button class="tab-btn" class:active={activeTab === 'remote'} role="tab" aria-selected={activeTab === 'remote'} onclick={() => activeTab = 'remote'}>
+					<Link size={14} />
+					Remote
+				</button>
+				<button class="tab-btn" class:active={activeTab === 'database'} role="tab" aria-selected={activeTab === 'database'} onclick={() => activeTab = 'database'}>
+					<Database size={14} />
+					Database
+				</button>
 			</div>
 
-			<div class="connect-divider">or</div>
-
-			<div class="connect-section">
-				<div class="url-row">
-					<input
-						type="text"
-						bind:value={urlInput}
-						placeholder="https://example.com/data.csv"
-						class="input"
-						onkeydown={(e) => { if (e.key === 'Enter') handleUrl(); }}
-					/>
-					<button class="btn btn-secondary" onclick={handleUrl} disabled={urlLoading || !urlInput.trim()}>
-						<Link size={14} />
-						Load
-					</button>
-				</div>
-				<span class="connect-hint">Paste a URL to a CSV, Parquet, or JSON file</span>
-			</div>
-
-			<div class="connect-divider">or</div>
-
-			<div class="connect-section">
-				<div class="url-row">
-					<input
-						type="text"
-						bind:value={pgUrl}
-						placeholder="postgresql://user:pass@host:5432/dbname"
-						class="input input-mono"
-						disabled={pgConnecting || pgConnected}
-						onkeydown={(e) => { if (e.key === 'Enter' && !pgConnected) handlePgConnect(); }}
-					/>
-					{#if pgConnected}
-						<button class="btn btn-secondary" onclick={() => { pgConnected = false; pgTables = []; pgSelectedTables = new Set(); pgIngestedTables = []; }}>
-							Reset
-						</button>
-					{:else}
-						<button class="btn btn-secondary" onclick={handlePgConnect} disabled={pgConnecting || !pgUrl.trim()}>
-							{#if pgConnecting}
-								<LoaderCircle size={14} class="spinner-icon" />
-								Connecting
+			<div class="tab-content" role="tabpanel">
+				{#if activeTab === 'file'}
+					<div class="connect-section">
+						<button class="btn btn-primary" onclick={handleFilePick} disabled={loading}>
+							{#if loading}
+								<svg class="spinner spinner--sm" viewBox="0 0 24 24" fill="none">
+									<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
+									<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+								</svg>
+								Loading...
 							{:else}
-								<Database size={14} />
-								Connect
+								<Upload size={16} />
+								Open file
 							{/if}
 						</button>
-					{/if}
-				</div>
-				<span class="connect-hint">Connect to a PostgreSQL database</span>
-
-				{#if pgConnected}
-					<div class="pg-browser">
-						{#if pgSchemas.length > 1}
-							<div class="pg-schema-row">
-								<label class="pg-label">Schema</label>
-								<select class="input" bind:value={pgSelectedSchema} onchange={loadPgTables}>
-									<option value="" disabled>Select schema</option>
-									{#each pgSchemas as s}
-										<option value={s}>{s}</option>
-									{/each}
-								</select>
-							</div>
-						{/if}
-
-						{#if pgTablesLoading}
-							<div class="pg-loading">
-								<LoaderCircle size={14} class="spinner-icon" />
-								Loading tables...
-							</div>
-						{:else if pgTables.length > 0}
-							<div class="pg-tables-header">
-								<span class="pg-label">{pgTables.length} tables</span>
-								<button class="btn btn-ghost btn-sm" onclick={toggleAll}>
-									{pgSelectedTables.size === pgTables.length ? 'Deselect all' : 'Select all'}
+						<span class="connect-hint">CSV, Parquet, JSON, JSONL</span>
+					</div>
+				{:else if activeTab === 'remote'}
+					<div class="connect-section">
+						<div class="url-row">
+							<input
+								type="text"
+								bind:value={urlInput}
+								placeholder="https://example.com/data.csv"
+								class="input input-mono"
+								onkeydown={(e) => { if (e.key === 'Enter') handleUrl(); }}
+							/>
+							<button class="btn btn-secondary" onclick={handleUrl} disabled={urlLoading || !urlInput.trim()}>
+								<Link size={14} />
+								Load
+							</button>
+						</div>
+						<span class="connect-hint">Paste a URL to a CSV, Parquet, or JSON file</span>
+					</div>
+				{:else if activeTab === 'database'}
+					<div class="connect-section">
+						<div class="url-row">
+							<input
+								type="text"
+								bind:value={pgUrl}
+								placeholder="postgresql://user:pass@host:5432/dbname"
+								class="input input-mono"
+								disabled={pgConnecting || pgConnected}
+								onkeydown={(e) => { if (e.key === 'Enter' && !pgConnected) handlePgConnect(); }}
+							/>
+							{#if pgConnected}
+								<button class="btn btn-secondary" onclick={() => { pgConnected = false; pgTables = []; pgSelectedTables = new Set(); pgIngestedTables = []; }}>
+									Reset
 								</button>
-							</div>
-							<div class="pg-table-list">
-								{#each pgTables as table}
-									{@const isIngested = pgIngestedTables.includes(table)}
-									{@const isSelected = pgSelectedTables.has(table)}
-									<label class="pg-table-item" class:pg-table-item--selected={isSelected} class:pg-table-item--ingested={isIngested}>
-										<input
-											type="checkbox"
-											checked={isSelected || isIngested}
-											disabled={isIngested}
-											onchange={() => toggleTable(table)}
-										/>
-										<span class="pg-table-name">{table}</span>
-										{#if isIngested}
-											<Check size={12} class="pg-check" />
-										{/if}
-									</label>
-								{/each}
-							</div>
-							<div class="pg-actions">
-								<button
-									class="btn btn-primary"
-									onclick={handleIngest}
-									disabled={pgIngesting || pgSelectedTables.size === 0}
-								>
-									{#if pgIngesting}
+							{:else}
+								<button class="btn btn-secondary" onclick={handlePgConnect} disabled={pgConnecting || !pgUrl.trim()}>
+									{#if pgConnecting}
 										<LoaderCircle size={14} class="spinner-icon" />
-										Ingesting {pgSelectedTables.size} tables...
+										Connecting
 									{:else}
-										<ChevronRight size={14} />
-										Ingest {pgSelectedTables.size || ''} {pgSelectedTables.size === 1 ? 'table' : 'tables'}
+										<Database size={14} />
+										Connect
 									{/if}
 								</button>
-								{#if pgIngestedTables.length > 0}
-									<button class="btn btn-secondary" onclick={() => goto('/tables')}>
-										View tables
-									</button>
+							{/if}
+						</div>
+						<span class="connect-hint">Connect to a PostgreSQL database</span>
+
+						{#if pgConnected}
+							<div class="pg-browser">
+								{#if pgSchemas.length > 1}
+									<div class="pg-schema-row">
+										<label class="pg-label">Schema</label>
+										<select class="input" bind:value={pgSelectedSchema} onchange={loadPgTables}>
+											<option value="" disabled>Select schema</option>
+											{#each pgSchemas as s}
+												<option value={s}>{s}</option>
+											{/each}
+										</select>
+									</div>
+								{/if}
+
+								{#if pgTablesLoading}
+									<div class="pg-loading">
+										<LoaderCircle size={14} class="spinner-icon" />
+										Loading tables...
+									</div>
+								{:else if pgTables.length > 0}
+									<div class="pg-tables-header">
+										<span class="pg-label">{pgTables.length} tables</span>
+										<button class="btn btn-ghost btn-sm" onclick={toggleAll}>
+											{pgSelectedTables.size === pgTables.length ? 'Deselect all' : 'Select all'}
+										</button>
+									</div>
+									<div class="pg-table-list">
+										{#each pgTables as table}
+											{@const isIngested = pgIngestedTables.includes(table)}
+											{@const isSelected = pgSelectedTables.has(table)}
+											<label class="pg-table-item" class:pg-table-item--selected={isSelected} class:pg-table-item--ingested={isIngested}>
+												<input
+													type="checkbox"
+													checked={isSelected || isIngested}
+													disabled={isIngested}
+													onchange={() => toggleTable(table)}
+												/>
+												<span class="pg-table-name">{table}</span>
+												{#if isIngested}
+													<Check size={12} class="pg-check" />
+												{/if}
+											</label>
+										{/each}
+									</div>
+									<div class="pg-actions">
+										<button
+											class="btn btn-primary"
+											onclick={handleIngest}
+											disabled={pgIngesting || pgSelectedTables.size === 0}
+										>
+											{#if pgIngesting}
+												<LoaderCircle size={14} class="spinner-icon" />
+												Ingesting {pgSelectedTables.size} tables...
+											{:else}
+												<ChevronRight size={14} />
+												Ingest {pgSelectedTables.size || ''} {pgSelectedTables.size === 1 ? 'table' : 'tables'}
+											{/if}
+										</button>
+										{#if pgIngestedTables.length > 0}
+											<button class="btn btn-secondary" onclick={() => goto('/data')}>
+												View data
+											</button>
+										{/if}
+									</div>
+								{:else if pgSelectedSchema}
+									<span class="connect-hint">No tables found in this schema.</span>
 								{/if}
 							</div>
-						{:else if pgSelectedSchema}
-							<span class="connect-hint">No tables found in this schema.</span>
 						{/if}
 					</div>
 				{/if}
@@ -357,14 +365,54 @@
 	.connect-options {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-6);
 		width: 100%;
 		max-width: 28rem;
 		margin-top: var(--space-4);
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-lg);
-		padding: var(--space-8);
+		overflow: hidden;
+	}
+
+	.tab-bar {
+		display: flex;
+		gap: var(--space-1);
+		padding: var(--space-1);
+		background: var(--color-surface-raised);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.tab-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-1);
+		flex: 1;
+		padding: var(--space-2) var(--space-4);
+		font-family: var(--font-body);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		color: var(--color-text-secondary);
+		background: none;
+		border: none;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: all var(--duration-fast) ease;
+	}
+
+	.tab-btn:hover {
+		color: var(--color-text);
+		background: var(--color-surface-sunken);
+	}
+
+	.tab-btn.active {
+		color: var(--color-text);
+		background: var(--color-surface);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.tab-content {
+		padding: var(--space-6) var(--space-6);
 	}
 
 	.connect-section {
@@ -377,26 +425,6 @@
 		font-size: var(--text-xs);
 		color: var(--color-text-tertiary);
 	}
-
-	.connect-divider {
-		text-align: center;
-		font-size: var(--text-xs);
-		color: var(--color-text-tertiary);
-		position: relative;
-	}
-
-	.connect-divider::before,
-	.connect-divider::after {
-		content: "";
-		position: absolute;
-		top: 50%;
-		width: calc(50% - 1rem);
-		height: 1px;
-		background: var(--color-border);
-	}
-
-	.connect-divider::before { left: 0; }
-	.connect-divider::after { right: 0; }
 
 	.url-row {
 		display: flex;

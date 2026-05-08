@@ -122,3 +122,119 @@ pub fn get_all_groups(state: State<'_, DuckDbState>) -> Result<Vec<String>, Stri
 
     Ok(groups)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::database::initialize_schema;
+    use duckdb::Connection;
+
+    fn setup() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        conn
+    }
+
+    #[test]
+    fn test_save_and_get_labels() {
+        let conn = setup();
+        conn.execute(
+            "INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t1', 'sales,finance', 'reports')",
+            [],
+        ).unwrap();
+
+        let result: (Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT tags, \"group\" FROM d8a_monster_table_labels WHERE table_name = 't1'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+
+        let tags: Vec<String> = result.0.unwrap()
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        assert_eq!(tags, vec!["sales", "finance"]);
+        assert_eq!(result.1, Some("reports".to_string()));
+    }
+
+    #[test]
+    fn test_get_labels_missing() {
+        let conn = setup();
+        let result = conn.query_row(
+            "SELECT tags, \"group\" FROM d8a_monster_table_labels WHERE table_name = 'nope'",
+            [],
+            |row| Ok((row.get::<_, Option<String>>(0)?, row.get::<_, Option<String>>(1)?)),
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_upsert_labels() {
+        let conn = setup();
+        conn.execute(
+            "INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t1', 'a,b', 'g1')
+             ON CONFLICT (table_name) DO UPDATE SET tags = EXCLUDED.tags, \"group\" = EXCLUDED.\"group\"",
+            [],
+        ).unwrap();
+        conn.execute(
+            "INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t1', 'c,d', 'g2')
+             ON CONFLICT (table_name) DO UPDATE SET tags = EXCLUDED.tags, \"group\" = EXCLUDED.\"group\"",
+            [],
+        ).unwrap();
+
+        let tags: String = conn.query_row(
+            "SELECT tags FROM d8a_monster_table_labels WHERE table_name = 't1'",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(tags, "c,d");
+
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM d8a_monster_table_labels",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_get_all_tags() {
+        let conn = setup();
+        conn.execute("INSERT INTO d8a_monster_table_labels (table_name, tags) VALUES ('t1', 'alpha,beta')", []).unwrap();
+        conn.execute("INSERT INTO d8a_monster_table_labels (table_name, tags) VALUES ('t2', 'beta,gamma')", []).unwrap();
+
+        let mut stmt = conn.prepare("SELECT tags FROM d8a_monster_table_labels WHERE tags IS NOT NULL AND tags != ''").unwrap();
+        let mut all_tags: Vec<String> = Vec::new();
+        for row in stmt.query_map([], |row| row.get::<_, String>(0)).unwrap() {
+            let tags_str = row.unwrap();
+            for tag in tags_str.split(',') {
+                let trimmed = tag.trim().to_string();
+                if !trimmed.is_empty() && !all_tags.contains(&trimmed) {
+                    all_tags.push(trimmed);
+                }
+            }
+        }
+        all_tags.sort();
+        assert_eq!(all_tags, vec!["alpha", "beta", "gamma"]);
+    }
+
+    #[test]
+    fn test_get_all_groups() {
+        let conn = setup();
+        conn.execute("INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t1', '', 'finance')", []).unwrap();
+        conn.execute("INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t2', '', 'sales')", []).unwrap();
+        conn.execute("INSERT INTO d8a_monster_table_labels (table_name, tags, \"group\") VALUES ('t3', '', 'finance')", []).unwrap();
+
+        let mut stmt = conn.prepare(
+                "SELECT DISTINCT \"group\" FROM d8a_monster_table_labels WHERE \"group\" IS NOT NULL AND \"group\" != '' ORDER BY \"group\"",
+            ).unwrap();
+        let groups: Vec<String> = stmt
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+        assert_eq!(groups, vec!["finance", "sales"]);
+    }
+}

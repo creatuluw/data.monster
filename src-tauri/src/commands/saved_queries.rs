@@ -119,3 +119,120 @@ pub fn delete_saved_query(slug: String, state: State<'_, DuckDbState>) -> Result
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::database::initialize_schema;
+    use crate::utils::slugs::generate_slug;
+    use duckdb::Connection;
+
+    fn setup() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        conn
+    }
+
+    #[test]
+    fn test_save_and_list() {
+        let conn = setup();
+        let slug = generate_slug("My Query");
+        conn.execute(
+            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, description, tags, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            duckdb::params![&slug, "My Query", "SELECT 1", Option::<String>::None, Option::<String>::None],
+        ).unwrap();
+
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM d8a_monster_saved_queries",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 1);
+
+        let name: String = conn.query_row(
+            "SELECT query_name FROM d8a_monster_saved_queries WHERE slug = ?",
+            duckdb::params![&slug],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(name, "My Query");
+    }
+
+    #[test]
+    fn test_update() {
+        let conn = setup();
+        let slug = generate_slug("test");
+        conn.execute(
+            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, description, tags, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            duckdb::params![&slug, "test", "SELECT 1", "desc", "tag1"],
+        ).unwrap();
+
+        let existing: (String, String, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT query_name, query_sql, description, tags FROM d8a_monster_saved_queries WHERE slug = ?",
+                duckdb::params![&slug],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            ).unwrap();
+
+        let new_name = "updated".to_string();
+        let new_sql = existing.1.clone();
+        let new_desc = existing.2.clone();
+        let new_tags = existing.3.clone();
+
+        conn.execute(
+            "UPDATE d8a_monster_saved_queries SET query_name = ?, query_sql = ?, description = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+            duckdb::params![&new_name, &new_sql, &new_desc, &new_tags, &slug],
+        ).unwrap();
+
+        let name: String = conn.query_row(
+            "SELECT query_name FROM d8a_monster_saved_queries WHERE slug = ?",
+            duckdb::params![&slug],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(name, "updated");
+    }
+
+    #[test]
+    fn test_delete() {
+        let conn = setup();
+        let slug = generate_slug("delme");
+        conn.execute(
+            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, created_at, updated_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            duckdb::params![&slug, "delme", "SELECT 1"],
+        ).unwrap();
+
+        conn.execute(
+            "DELETE FROM d8a_monster_saved_queries WHERE slug = ?",
+            duckdb::params![&slug],
+        ).unwrap();
+
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM d8a_monster_saved_queries",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_slug_uniqueness() {
+        let conn = setup();
+        let slug1 = generate_slug("Same Name");
+        let slug2 = generate_slug("Same Name");
+        assert_eq!(slug1, slug2);
+
+        conn.execute(
+            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, created_at, updated_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            duckdb::params![&slug1, "Same Name", "SELECT 1"],
+        ).unwrap();
+
+        let result = conn.execute(
+            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, created_at, updated_at)
+             VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            duckdb::params![&slug2, "Same Name", "SELECT 2"],
+        );
+        assert!(result.is_err());
+    }
+}

@@ -22,6 +22,16 @@ class AppState {
 	pendingSql = $state('');
 	pendingAutoRun = $state(false);
 
+	pendingFile = $state<{ path: string; tableName: string } | null>(null);
+	pendingPreviewData = $state<{ tableName: string; columns: string[] } | null>(null);
+
+	get pendingSqlForPreview(): string {
+		if (!this.pendingPreviewData) return '';
+		const { tableName, columns } = this.pendingPreviewData;
+		const columnList = columns.map(c => `  "${c}"`).join(',\n');
+		return `-- ${columns.length} columns\nSELECT\n${columnList}\nFROM "${tableName}"\nLIMIT 100;`;
+	}
+
 	async init() {
 		if (!isTauriAvailable()) {
 			this.globalError = 'This app requires the Tauri desktop runtime.';

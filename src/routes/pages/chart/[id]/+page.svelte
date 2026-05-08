@@ -3,21 +3,30 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { app } from '$lib/stores/app.svelte';
-	import { runPagedQuery } from '$lib/db-operations';
+	import { runPagedQuery, getTableMeta } from '$lib/db-operations';
 	import BarChart from '$lib/components/BarChart.svelte';
 	import { ArrowLeft, XCircle } from 'lucide-svelte';
 
-	let chartId = $derived($page.params.id);
+	const CATEGORICAL_TYPES = new Set([
+		'VARCHAR', 'TEXT', 'STRING', 'CHAR', 'BPCHAR', 'NAME', 'UUID', 'ENUM', 'BOOLEAN', 'BOOL'
+	]);
+	const NUMERIC_TYPES = new Set([
+		'INTEGER', 'BIGINT', 'SMALLINT', 'TINYINT', 'INT', 'INT2', 'INT4', 'INT8',
+		'DOUBLE', 'FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DECIMAL', 'NUMERIC',
+		'HUGEINT', 'UINTEGER', 'UBIGINT', 'USMALLINT', 'UTINYINT'
+	]);
 
-	let chartConfig = $derived(
-		chartId === 'country'
-			? { labelKey: 'country', valueKey: 'total_sales', title: 'Sales by Country', tagLabel: 'countries', groupBy: 'country' }
-			: { labelKey: 'product_name', valueKey: 'total_sales', title: 'Sales by Product', tagLabel: 'products', groupBy: 'product_name' }
-	);
+	let chartId = $derived(decodeURIComponent($page.params.id ?? ''));
 
 	let data = $state<Record<string, unknown>[]>([]);
 	let selected = $state(new Set<string>());
 	let loading = $state(true);
+	let noData = $state(false);
+
+	let categoryCol = $state('');
+	let valueCol = $state('');
+	let chartTitle = $state('');
+	let valueKey = $state('');
 
 	async function loadChart() {
 		if (app.tables.length === 0) {
@@ -28,8 +37,24 @@
 		const table = app.tables[0];
 
 		try {
+			const meta = await getTableMeta(table);
+			const catCols = meta.columns.filter((c) => CATEGORICAL_TYPES.has(c.type.toUpperCase()) || !NUMERIC_TYPES.has(c.type.toUpperCase()));
+			const numCols = meta.columns.filter((c) => NUMERIC_TYPES.has(c.type.toUpperCase()));
+
+			const catCol = catCols.find((c) => c.name === chartId) ?? catCols[0];
+			if (!catCol || numCols.length === 0) {
+				noData = true;
+				loading = false;
+				return;
+			}
+
+			categoryCol = catCol.name;
+			valueCol = numCols[0].name;
+			valueKey = `total_${valueCol}`;
+			chartTitle = `${valueCol} by ${categoryCol}`;
+
 			const result = await runPagedQuery(
-				`SELECT ${chartConfig.groupBy}, ROUND(SUM(sales)::numeric, 0)::double as total_sales FROM "${table}" GROUP BY ${chartConfig.groupBy} ORDER BY total_sales DESC`,
+				`SELECT "${categoryCol}", ROUND(SUM("${valueCol}")::numeric, 0)::double as ${valueKey} FROM "${table}" GROUP BY "${categoryCol}" ORDER BY ${valueKey} DESC`,
 				1,
 				10000
 			);
@@ -45,7 +70,7 @@
 </script>
 
 <svelte:head>
-	<title>{chartConfig.title} — Data Monster</title>
+	<title>{chartTitle || 'Chart'} — Data Monster</title>
 </svelte:head>
 
 <div class="chart-detail">
@@ -59,15 +84,17 @@
 		<div class="chart-panel-body">
 			{#if loading}
 				<span class="chart-loading">Loading…</span>
+			{:else if noData}
+				<span class="chart-loading">No chartable columns found.</span>
 			{:else}
-				<BarChart data={data} labelKey={chartConfig.labelKey} valueKey={chartConfig.valueKey} title={chartConfig.title} tagLabel="{data.length} {chartConfig.tagLabel}" bind:selected fill drawerOpen onaction={() => goto('/pages')} />
+				<BarChart data={data} labelKey={categoryCol} valueKey={valueKey} title={chartTitle} tagLabel="{data.length} {categoryCol}" bind:selected fill drawerOpen onaction={() => goto('/pages')} />
 			{/if}
 		</div>
 	</div>
 
 	<aside class="drawer">
 		<div class="drawer-header">
-			<h2 class="drawer-title">{chartConfig.title}</h2>
+			<h2 class="drawer-title">{chartTitle || 'Chart'}</h2>
 			<button class="close-btn" onclick={() => goto('/pages')} aria-label="Close">
 				<XCircle size={18} />
 			</button>

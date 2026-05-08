@@ -135,6 +135,20 @@ export async function getFileColumns(
 	return invoke<{ columns: ColumnInfo[] }>('get_file_columns', { path });
 }
 
+export interface FilePreviewResult {
+	columns: string[];
+	rows: Record<string, unknown>[];
+	totalRows: number;
+	columnTypes: { name: string; type: string }[];
+}
+
+export async function previewFile(
+	path: string,
+	limit: number = 100
+): Promise<FilePreviewResult> {
+	return invoke<FilePreviewResult>('preview_file', { path, limit });
+}
+
 export async function saveTableLabels(
 	tableName: string,
 	tags: string,

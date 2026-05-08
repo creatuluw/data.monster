@@ -103,3 +103,95 @@ pub fn rename_table(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::database::initialize_schema;
+    use crate::utils::metadata_helpers::{register_table_metadata, remove_table_metadata, rename_table_metadata};
+    use duckdb::Connection;
+
+    fn setup() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        conn
+    }
+
+    fn list_user_tables(conn: &Connection) -> Vec<String> {
+        let mut stmt = conn
+            .prepare(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' ORDER BY table_name",
+            )
+            .unwrap();
+        stmt.query_map([], |row| row.get::<_, String>(0))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    }
+
+    #[test]
+    fn test_create_and_list() {
+        let conn = setup();
+        conn.execute("CREATE TABLE my_data AS SELECT 1 AS x", []).unwrap();
+        register_table_metadata(&conn, "my_data", "source").unwrap();
+        let tables = list_user_tables(&conn);
+        assert_eq!(tables, vec!["my_data"]);
+    }
+
+    #[test]
+    fn test_drop_table() {
+        let conn = setup();
+        conn.execute("CREATE TABLE t1 AS SELECT 1 AS x", []).unwrap();
+        register_table_metadata(&conn, "t1", "source").unwrap();
+        assert!(list_user_tables(&conn).contains(&"t1".to_string()));
+
+        conn.execute("DROP TABLE IF EXISTS \"t1\"", []).unwrap();
+        remove_table_metadata(&conn, "t1").unwrap();
+        assert!(!list_user_tables(&conn).contains(&"t1".to_string()));
+    }
+
+    #[test]
+    fn test_rename_table() {
+        let conn = setup();
+        conn.execute("CREATE TABLE old_name AS SELECT 1 AS x", []).unwrap();
+        register_table_metadata(&conn, "old_name", "source").unwrap();
+
+        conn.execute("ALTER TABLE \"old_name\" RENAME TO \"new_name\"", []).unwrap();
+        rename_table_metadata(&conn, "old_name", "new_name").unwrap();
+
+        let tables = list_user_tables(&conn);
+        assert!(!tables.contains(&"old_name".to_string()));
+        assert!(tables.contains(&"new_name".to_string()));
+    }
+
+    #[test]
+    fn test_create_from_query() {
+        let conn = setup();
+        conn.execute("CREATE TABLE raw AS SELECT * FROM generate_series(1, 10) AS t(n)", []).unwrap();
+
+        let sanitized = "filtered".replace('"', "\"\"");
+        conn.execute(
+            &format!("CREATE TABLE \"{}\" AS SELECT * FROM raw WHERE n > 5", sanitized),
+            [],
+        ).unwrap();
+        register_table_metadata(&conn, "filtered", "model").unwrap();
+
+        let count: i64 = conn.query_row("SELECT COUNT(*) FROM filtered", [], |row| row.get(0)).unwrap();
+        assert_eq!(count, 5);
+    }
+
+    #[test]
+    fn test_table_name_with_special_chars() {
+        let conn = setup();
+        let name = "my table".replace('"', "\"\"");
+        conn.execute(&format!("CREATE TABLE \"{}\" AS SELECT 1", name), []).unwrap();
+        let tables = list_user_tables(&conn);
+        assert!(tables.contains(&"my table".to_string()));
+    }
+
+    #[test]
+    fn test_metadata_hidden_from_list() {
+        let conn = setup();
+        let tables = list_user_tables(&conn);
+        assert!(!tables.iter().any(|t| t.starts_with("d8a_monster_")));
+    }
+}

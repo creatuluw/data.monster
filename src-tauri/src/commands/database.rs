@@ -8,7 +8,8 @@ use crate::utils::metadata_helpers::cleanup_orphaned_metadata;
 
 #[tauri::command]
 pub fn initialize_duckdb(workspace_path: String, state: State<'_, DuckDbState>) -> Result<String, String> {
-    let mut state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[database] Initializing DuckDB at {}", workspace_path);
+    let mut state_conn = state.conn.lock();
 
     if state_conn.is_some() {
         return Ok("DuckDB already initialized".to_string());
@@ -37,7 +38,7 @@ pub fn initialize_duckdb(workspace_path: String, state: State<'_, DuckDbState>) 
 
     *state_conn = Some(conn);
 
-    let mut wp = state.workspace_path.lock().map_err(|e| e.to_string())?;
+    let mut wp = state.workspace_path.lock();
     *wp = Some(workspace_path.clone());
 
     Ok("DuckDB initialized successfully".to_string())

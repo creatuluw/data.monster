@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { app } from '$lib/stores/app.svelte';
-	import { runPagedQuery, getTableMeta, type PagedQueryResult, type ColumnInfo } from '$lib/db-operations';
+	import { runPagedQuery, getTableMeta, type PagedQueryResult, type ColumnInfo, extractErrorMessage } from '$lib/db-operations';
 	import BarChart from '$lib/components/BarChart.svelte';
 	import { FileText } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
@@ -89,7 +89,7 @@
 			chartData1 = results[0].rows;
 			if (results[1]) chartData2 = results[1].rows;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load chart data';
+			error = extractErrorMessage(e, 'Failed to load chart data');
 		}
 
 		loading = false;

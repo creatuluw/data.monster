@@ -4,9 +4,10 @@
 	import { app } from '$lib/stores/app.svelte';
 	import {
 		previewFile,
-		executeQuery,
+		getFileSize,
 		type PreviewData,
-		type ColumnOverride
+		type ColumnOverride,
+		extractErrorMessage
 	} from '$lib/db-operations';
 	import PreviewPane from '$lib/components/PreviewPane.svelte';
 	import { LoaderCircle } from 'lucide-svelte';
@@ -17,6 +18,7 @@
 	let columnOverrides: ColumnOverride[] = $state([]);
 	let tableName = $state('');
 	let filePath = $state('');
+	let workspaceFilePath = $state('');
 	let fileSize = $state<number | null>(null);
 
 	let fileType = $derived.by(() => {
@@ -54,6 +56,8 @@
 			const result = await previewFile(filePath, 100);
 			const colInfos = result.columnTypes;
 
+			workspaceFilePath = result.workspacePath;
+
 			paneData = {
 				columns: result.columns,
 				rows: result.rows,
@@ -71,12 +75,10 @@
 			}));
 
 			try {
-				const safePath = filePath.replace(/\\/g, '/');
-				const sizeRes = await executeQuery(`SELECT file_size('${safePath}') AS sz`) as any;
-				if (sizeRes?.data?.[0]?.[0] != null) fileSize = Number(sizeRes.data[0][0]);
+				fileSize = await getFileSize(filePath);
 			} catch {}
 		} catch (e: unknown) {
-			const msg = e instanceof Error ? e.message : typeof e === 'string' ? e : 'Failed to load file';
+			const msg = extractErrorMessage(e, 'Failed to load file');
 			error = msg || 'Failed to load file';
 		} finally {
 			loading = false;
@@ -86,14 +88,14 @@
 	function handleContinue() {
 		if (!paneData) return;
 
-		const ext = filePath.split('.').pop()?.toLowerCase() ?? 'csv';
+		const ext = workspaceFilePath.split('.').pop()?.toLowerCase() ?? 'csv';
 		const readFn = ext === 'parquet'
 			? 'read_parquet'
 			: ext === 'json' || ext === 'jsonl' || ext === 'ndjson'
 				? 'read_json_auto'
 				: 'read_csv_auto';
 
-		const safePath = filePath.replace(/\\/g, '/');
+		const safePath = workspaceFilePath.replace(/\\/g, '/');
 		const enabled = columnOverrides.filter(o => o.enabled);
 
 		const selectList = enabled.map(o => {
@@ -105,13 +107,17 @@
 			return `  ${cast}${alias}`;
 		}).join(',\n');
 
-		const sql = `-- ${enabled.length} columns, ${paneData.totalRows.toLocaleString()} rows\nCREATE TABLE "${tableName}" AS\nSELECT\n${selectList}\nFROM ${readFn}('${safePath}');`;
+		const readFnArgs = readFn === 'read_csv_auto'
+			? `${readFn}('${safePath}', ignore_errors=true)`
+			: `${readFn}('${safePath}')`;
+
+		const sql = `-- ${enabled.length} columns, ${paneData.totalRows.toLocaleString()} rows\nSELECT\n${selectList}\nFROM ${readFnArgs};`;
 
 		app.pendingSql = sql;
-		app.pendingAutoRun = true;
 		app.pendingPreviewData = {
 			tableName,
-			columns: enabled.map(o => o.newName !== o.originalName ? o.newName : o.originalName)
+			columns: enabled.map(o => o.newName !== o.originalName ? o.newName : o.originalName),
+			sourcePath: workspaceFilePath
 		};
 		goto('/query');
 	}

@@ -1,5 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 
+export function extractErrorMessage(e: unknown, fallback: string = 'Query failed'): string {
+	if (e instanceof Error) return e.message;
+	if (typeof e === 'string') return e;
+	if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message);
+	return fallback;
+}
+
 export interface PreviewData {
 	columns: string[];
 	rows: Record<string, unknown>[];
@@ -35,6 +42,7 @@ export interface PagedQueryResult {
 	pageSize: number;
 	totalPages: number;
 	isMutation: boolean;
+	hasUnknownTotal?: boolean;
 }
 
 export interface ColumnInfo {
@@ -108,6 +116,37 @@ export async function renameTable(oldName: string, newName: string): Promise<voi
 	return invoke<void>('rename_table', { oldName, newName });
 }
 
+export interface TableSource {
+	creationQuery: string | null;
+	sourcePath: string | null;
+}
+
+export async function saveTableSource(
+	tableName: string,
+	creationQuery: string,
+	sourcePath: string
+): Promise<void> {
+	return invoke<void>('save_table_source', { tableName, creationQuery, sourcePath });
+}
+
+export async function getTableSource(tableName: string): Promise<TableSource> {
+	return invoke<TableSource>('get_table_source', { tableName });
+}
+
+export async function refreshTableFromSource(tableName: string): Promise<void> {
+	return invoke<void>('refresh_table_from_source', { tableName });
+}
+
+export interface TableTypeEntry {
+	tableName: string;
+	tableType: string;
+}
+
+export async function getTableTypes(): Promise<TableTypeEntry[]> {
+	const result = await invoke<{ types: TableTypeEntry[] }>('get_table_types');
+	return result.types;
+}
+
 export async function loadCsvFile(
 	path: string,
 	tableName: string
@@ -135,11 +174,20 @@ export async function getFileColumns(
 	return invoke<{ columns: ColumnInfo[] }>('get_file_columns', { path });
 }
 
+export async function getFileSize(path: string): Promise<number> {
+	return invoke<number>('get_file_size', { path });
+}
+
+export async function downloadUrlToWorkspace(url: string): Promise<{ path: string }> {
+	return invoke<{ path: string }>('download_url_to_workspace', { url });
+}
+
 export interface FilePreviewResult {
 	columns: string[];
 	rows: Record<string, unknown>[];
 	totalRows: number;
 	columnTypes: { name: string; type: string }[];
+	workspacePath: string;
 }
 
 export async function previewFile(
@@ -213,6 +261,50 @@ export async function saveSettings(settings: Record<string, unknown>): Promise<v
 	return invoke<void>('save_settings', { settings });
 }
 
+export interface InternalTable {
+	name: string;
+	rowCount: number;
+	columns: { name: string; type: string }[];
+}
+
+export interface InternalTableData {
+	columns: string[];
+	rows: Record<string, unknown>[];
+	totalRows: number;
+	page: number;
+	pageSize: number;
+}
+
+export async function listInternalTables(): Promise<InternalTable[]> {
+	const result = await invoke<{ tables: InternalTable[] }>('list_internal_tables');
+	return result.tables;
+}
+
+export async function queryInternalTable(
+	tableName: string,
+	page: number,
+	pageSize: number
+): Promise<InternalTableData> {
+	return invoke<InternalTableData>('query_internal_table', { tableName, page, pageSize });
+}
+
+export async function updateInternalRow(
+	tableName: string,
+	pkColumn: string,
+	pkValue: string,
+	updates: Record<string, string>
+): Promise<void> {
+	return invoke<void>('update_internal_row', { tableName, pkColumn, pkValue, updates });
+}
+
+export async function deleteInternalRow(
+	tableName: string,
+	pkColumn: string,
+	pkValue: string
+): Promise<void> {
+	return invoke<void>('delete_internal_row', { tableName, pkColumn, pkValue });
+}
+
 export async function initializeDataFolders(
 	workspacePath: string
 ): Promise<void> {
@@ -229,9 +321,19 @@ export async function listPostgresTables(schema: string): Promise<string[]> {
 	return result.tables;
 }
 
-export async function ingestPostgresTables(schema: string, tableNames: string[]): Promise<string[]> {
-	const result = await invoke<{ ingested: string[] }>('ingest_postgres_tables', { schema, tableNames });
-	return result.ingested;
+export interface PgIngestStatement {
+	tableName: string;
+	sql: string;
+	sourcePath: string;
+}
+
+export async function generatePgInestSql(
+	url: string,
+	schema: string,
+	tableNames: string[]
+): Promise<PgIngestStatement[]> {
+	const result = await invoke<{ statements: PgIngestStatement[] }>('generate_pg_ingest_sql', { url, schema, tableNames });
+	return result.statements;
 }
 
 export function isTauriAvailable(): boolean {
@@ -269,6 +371,29 @@ export async function runPagedQuery(
 		throw new Error('Unexpected result from DML query');
 	}
 
+	const usesFileFn = /read_csv_auto|read_parquet|read_json_auto/i.test(trimmed);
+	const safePageSize = Math.min(Math.max(pageSize, 1), 50000);
+	const offset = (page - 1) * safePageSize;
+
+	if (usesFileFn) {
+		const pagedSql = `${trimmed} LIMIT ${safePageSize} OFFSET ${offset}`;
+		const result = await executeQuery(pagedSql);
+		if (!('columns' in result)) {
+			throw new Error('Unexpected result from SELECT query');
+		}
+		const columns = result.columns;
+		const rows: Record<string, unknown>[] = result.data.map((row: unknown[]) => {
+			const obj: Record<string, unknown> = {};
+			columns.forEach((col, i) => {
+				obj[col] = row[i];
+			});
+			return obj;
+		});
+		const totalRows = rows.length < safePageSize ? offset + rows.length : -1;
+		const totalPages = totalRows >= 0 ? Math.max(1, Math.ceil(totalRows / safePageSize)) : -1;
+		return { columns, rows, totalRows, page, pageSize: safePageSize, totalPages, isMutation: false };
+	}
+
 	const countSql = `SELECT COUNT(*) as cnt FROM (${trimmed}) as _q`;
 	let totalRows = 0;
 	try {
@@ -277,11 +402,8 @@ export async function runPagedQuery(
 			totalRows = Number(countResult.data[0][0]);
 		}
 	} catch {
-		// If count fails, run without pagination
 	}
 
-	const safePageSize = Math.min(Math.max(pageSize, 1), 100);
-	const offset = (page - 1) * safePageSize;
 	const pagedSql = `SELECT * FROM (${trimmed}) as _paged LIMIT ${safePageSize} OFFSET ${offset}`;
 
 	const result = await executeQuery(pagedSql);

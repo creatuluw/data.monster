@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getSettings, saveSettings } from '$lib/db-operations';
+	import { getSettings, saveSettings, extractErrorMessage } from '$lib/db-operations';
 	import { analyst } from '$lib/stores/analyst.svelte';
-	import { Settings, Save, CheckCircle, AlertCircle } from 'lucide-svelte';
+	import { Settings, Save, CheckCircle, AlertCircle, Database } from 'lucide-svelte';
 
 	let apiUrl = $state('');
 	let apiKey = $state('');
@@ -41,7 +41,7 @@
 			saved = true;
 			setTimeout(() => { saved = false; }, 3000);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to save settings';
+			error = extractErrorMessage(e, 'Failed to save settings');
 		}
 		saving = false;
 	}
@@ -55,6 +55,11 @@
 	<div class="settings-header">
 		<Settings size={20} />
 		<h1 class="settings-title">Settings</h1>
+		<div style="flex:1"></div>
+		<a href="/settings/internal-db" class="btn btn-secondary btn-sm" title="Internal Database">
+			<Database size={14} />
+			Internal DB
+		</a>
 	</div>
 
 	{#if loading}

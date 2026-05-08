@@ -2,7 +2,8 @@
 	import { RefreshCw, Share, Table, Bookmark, Copy, Upload, Play, FileText, XCircle, PlusCircle, Database, ArrowLeft, Trash2, Tag } from 'lucide-svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
-	import { runPagedQuery, createTableFromQuery, getTableMeta, getAllTableMeta, type PagedQueryResult, type TableMeta, listSavedQueries, saveQuery, updateSavedQuery, deleteSavedQuery as deleteSavedQueryOp, type SavedQuery as SavedQueryOp } from '$lib/db-operations';
+	import { runPagedQuery, executeQuery, saveTableSource, saveTableLabels, getTableMeta, getAllTableMeta, type PagedQueryResult, type TableMeta, listSavedQueries, saveQuery, updateSavedQuery, deleteSavedQuery as deleteSavedQueryOp, type SavedQuery as SavedQueryOp, extractErrorMessage } from '$lib/db-operations';
+	import TagInput from '$lib/components/TagInput.svelte';
 	import { onMount } from 'svelte';
 
 	interface SavedQuery {
@@ -29,7 +30,7 @@
 	let tabs = $state<QueryTab[]>([{
 		id: '1',
 		name: 'query-1.sql',
-		query: 'SELECT * FROM information_schema.tables LIMIT 10;',
+		query: 'SELECT * FROM information_schema.tables;',
 		result: null,
 		error: '',
 		loading: false,
@@ -50,12 +51,22 @@
 
 	let savedQueries = $state<SavedQuery[]>([]);
 	let showSavedQueriesModal = $state(false);
+	let savedQueriesError = $state('');
 	let showSaveQueryModal = $state(false);
+	let saveQueryError = $state('');
+	let pendingSourceMeta = $state<{ tableName: string; sourcePath: string } | null>(null);
+	let pendingBatchMeta = $state<{ tableName: string; sql: string; sourcePath: string }[] | null>(null);
+
 	let showIngestModal = $state(false);
 	let queryName = $state('');
 	let queryDescription = $state('');
 	let queryTags = $state('');
 	let ingestTableName = $state('');
+	let ingestTags = $state<string[]>([]);
+	let ingestGroupTags = $state<string[]>([]);
+	let ingestError = $state('');
+	let ingestBusy = $state(false);
+	let saveQueryBusy = $state(false);
 	let searchQueryTerm = $state('');
 	let selectedQueryTag = $state('');
 	let deletingQuerySlug = $state<string | null>(null);
@@ -69,22 +80,7 @@
 	);
 
 	const displayQuery = $derived(() => {
-		if (!showPreviewLimit) return activeTab.query;
-		const trimmed = activeTab.query.replace(/;+\s*$/, '').trim();
-		const lower = trimmed.toLowerCase();
-		const isMutation =
-			lower.startsWith('insert') ||
-			lower.startsWith('update') ||
-			lower.startsWith('delete') ||
-			lower.startsWith('alter') ||
-			lower.startsWith('drop') ||
-			lower.startsWith('create');
-		
-		if (isMutation || lower.includes('limit')) {
-			return activeTab.query;
-		}
-		
-		return trimmed;
+		return activeTab.query;
 	});
 
 	const allQueryTags = $derived(() => {
@@ -140,37 +136,70 @@
 		}
 	}
 
+	function togglePreviewLimit() {
+		const query = activeTab.query;
+		const stripped = query.replace(/;+\s*$/, '').replace(/\s+LIMIT\s+100\s*$/i, '').trim();
+		if (showPreviewLimit) {
+			updateTab({ query: `${stripped};` });
+		} else {
+			updateTab({ query: `${stripped}\nLIMIT 100;` });
+		}
+		showPreviewLimit = !showPreviewLimit;
+		handleRunQuery();
+	}
+
 	async function handleRunQuery() {
 		const sql = activeTab.query.trim();
 		if (!sql) return;
 
-		let sqlToRun = sql;
-		if (showPreviewLimit) {
-			const trimmed = sql.replace(/;+\s*$/, '').trim();
-			const lower = trimmed.toLowerCase();
-			const isMutation =
-				lower.startsWith('insert') ||
-				lower.startsWith('update') ||
-				lower.startsWith('delete') ||
-				lower.startsWith('alter') ||
-				lower.startsWith('drop') ||
-				lower.startsWith('create');
-			
-			if (!isMutation && !lower.includes('limit')) {
-				sqlToRun = `${trimmed} LIMIT 100`;
-			}
+		const stripped = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+		const lower = stripped.toLowerCase();
+
+		const isMutation =
+			lower.startsWith('insert') ||
+			lower.startsWith('update') ||
+			lower.startsWith('delete') ||
+			lower.startsWith('alter') ||
+			lower.startsWith('drop');
+
+		const isCreateTableAs = lower.startsWith('create table') && lower.includes(' as ');
+
+		if (isMutation && !isCreateTableAs) {
+			updateTab({ error: 'Only SELECT queries can be run. Use Ingest to create tables.', loading: false });
+			return;
 		}
+
+		if (isCreateTableAs) {
+			updateTab({ loading: true, error: '' });
+			const t0 = performance.now();
+			try {
+				await executeQuery(sql.trim());
+				await app.refreshTables();
+				const queryTime = performance.now() - t0;
+				updateTab({ result: null, queryTime, loading: false });
+			} catch (e) {
+				updateTab({
+					error: extractErrorMessage(e, 'Failed to create table'),
+					queryTime: performance.now() - t0,
+					loading: false
+				});
+			}
+			return;
+		}
+
+		const cleanSql = stripped.replace(/;+\s*$/, '');
 
 		updateTab({ loading: true, error: '' });
 		const t0 = performance.now();
 		try {
-			const result = await runPagedQuery(sqlToRun, 1, 100);
+			const pageSize = lower.includes('limit') ? 100 : 10000;
+			const result = await runPagedQuery(cleanSql, 1, pageSize);
 			const queryTime = performance.now() - t0;
 			updateTab({ result, queryTime, loading: false });
 			await app.refreshTables();
 		} catch (e) {
 			updateTab({
-				error: e instanceof Error ? e.message : 'Query failed',
+				error: extractErrorMessage(e, 'Query failed'),
 				queryTime: performance.now() - t0,
 				loading: false
 			});
@@ -185,7 +214,7 @@
 			const result = await runPagedQuery(sql, page, 100);
 			updateTab({ result, loading: false });
 		} catch (e) {
-			updateTab({ error: e instanceof Error ? e.message : 'Query failed', loading: false });
+			updateTab({ error: extractErrorMessage(e, 'Query failed'), loading: false });
 		}
 	}
 
@@ -230,13 +259,17 @@
 				createdAt: q.createdAt ?? '',
 				updatedAt: q.updatedAt ?? ''
 			}));
-		} catch {
+			savedQueriesError = '';
+		} catch (e) {
 			savedQueries = [];
+			savedQueriesError = extractErrorMessage(e, 'Failed to load saved queries');
 		}
 	}
 
 	async function saveCurrentQuery() {
 		if (!queryName.trim()) return;
+		saveQueryError = '';
+		saveQueryBusy = true;
 		try {
 			if (activeTab.loadedQuery) {
 				await updateSavedQuery(
@@ -257,8 +290,9 @@
 			await loadSavedQueries();
 			showSaveQueryModal = false;
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to save query';
+			saveQueryError = extractErrorMessage(e, 'Failed to save query');
 		}
+		saveQueryBusy = false;
 	}
 
 	function openSaveQueryModal() {
@@ -266,6 +300,7 @@
 		queryName = '';
 		queryDescription = '';
 		queryTags = '';
+		saveQueryError = '';
 		if (activeTab.loadedQuery) {
 			queryName = activeTab.loadedQuery.name;
 			queryDescription = activeTab.loadedQuery.description;
@@ -300,21 +335,66 @@
 	}
 
 	function openIngestModal() {
-		ingestTableName = '';
+		if (!pendingSourceMeta) {
+			ingestTableName = '';
+		}
+		ingestTags = [];
+		ingestGroupTags = [];
+		ingestError = '';
 		showIngestModal = true;
 	}
 
 	async function handleIngest() {
-		if (!ingestTableName.trim()) return;
-		app.globalError = '';
+		ingestError = '';
+		ingestBusy = true;
+
+		if (pendingBatchMeta) {
+			const batch = pendingBatchMeta;
+			pendingBatchMeta = null;
+			try {
+				for (const stmt of batch) {
+					await executeQuery(stmt.sql);
+					await saveTableSource(stmt.tableName, stmt.sql, stmt.sourcePath);
+				}
+				await app.refreshTables();
+				await loadTableMetas();
+				showIngestModal = false;
+				goto('/data');
+			} catch (e) {
+				ingestError = extractErrorMessage(e, 'Failed to ingest tables');
+			}
+			ingestBusy = false;
+			return;
+		}
+
+		if (!ingestTableName.trim()) { ingestBusy = false; return; }
 		try {
-			await createTableFromQuery(ingestTableName, activeTab.query);
+			const sql = activeTab.query.trim();
+			const stripped = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim().replace(/;+\s*$/, '');
+			const lower = stripped.toLowerCase();
+			let createSql: string;
+			if (lower.startsWith('create table')) {
+				createSql = sql;
+			} else {
+				const sanitized = ingestTableName.trim().replace(/"/g, '""');
+				createSql = `CREATE TABLE "${sanitized}" AS ${stripped}`;
+			}
+			await executeQuery(createSql);
+			if (pendingSourceMeta) {
+				await saveTableSource(ingestTableName.trim(), createSql, pendingSourceMeta.sourcePath);
+				pendingSourceMeta = null;
+			}
+			const tagsStr = ingestTags.filter(t => t.trim()).join(',');
+			const group = ingestGroupTags.length > 0 ? ingestGroupTags[0].trim() || null : null;
+			await saveTableLabels(ingestTableName.trim(), tagsStr, group);
 			await app.refreshTables();
+			await loadTableMetas();
 			showIngestModal = false;
 			goto('/data');
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to save table';
+			ingestError = extractErrorMessage(e, 'Failed to save table');
 		}
+		ingestBusy = false;
 	}
 
 	function formatCell(value: unknown): string {
@@ -380,29 +460,47 @@
 	}
 
 	onMount(() => {
-		loadSavedQueries();
-		loadTableMetas();
+		(async () => {
+			if (app.pendingBatchIngest) {
+				const batch = app.pendingBatchIngest;
+				app.pendingBatchIngest = null;
 
-		if (app.pendingSql || app.pendingPreviewData) {
-			const previewData = app.pendingPreviewData;
-			
-			if (previewData) {
-				initialSql = app.pendingSqlForPreview;
-				showPreviewLimit = true;
-			} else {
-				initialSql = app.pendingSql;
+				const allSql = batch.map(s => s.sql).join(';\n') + ';';
+				updateTab({ query: allSql, name: 'ingest.sql' });
+				pendingBatchMeta = batch;
+			} else if (app.pendingSql || app.pendingPreviewData) {
+				const previewData = app.pendingPreviewData;
+				const sql = app.pendingSql;
+				
+				app.pendingSql = '';
+				app.pendingPreviewData = null;
+				
+				if (previewData && sql) {
+					updateTab({ query: sql, name: `${previewData.tableName}.sql` });
+					pendingSourceMeta = { tableName: previewData.tableName, sourcePath: previewData.sourcePath };
+					ingestTableName = previewData.tableName;
+
+					const stripped = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
+					const lower = stripped.toLowerCase();
+					if (!lower.startsWith('create') && !lower.startsWith('insert') && !lower.startsWith('drop') && !lower.startsWith('alter')) {
+						updateTab({ loading: true, error: '' });
+						const t0 = performance.now();
+						try {
+							const previewSql = stripped.replace(/;+\s*$/, '');
+							const result = await runPagedQuery(previewSql, 1, 100);
+							updateTab({ result, queryTime: performance.now() - t0, loading: false });
+						} catch (e) {
+							updateTab({ error: extractErrorMessage(e, 'Preview failed'), queryTime: performance.now() - t0, loading: false });
+						}
+					}
+				} else {
+					updateTab({ query: sql });
+				}
 			}
-			
-			const shouldAutoRun = app.pendingAutoRun;
-			app.pendingSql = '';
-			app.pendingAutoRun = false;
-			app.pendingPreviewData = null;
-			
-			updateTab({ query: initialSql });
-			if (shouldAutoRun && initialSql) {
-				requestAnimationFrame(() => handleRunQuery());
-			}
-		}
+
+			await loadSavedQueries();
+			await loadTableMetas();
+		})();
 
 		window.addEventListener('mousemove', handleMouseMove);
 		window.addEventListener('mouseup', stopResize);
@@ -493,10 +591,6 @@
 				{/if}
 			</div>
 			<div class="top-bar-center">
-				<label class="preview-limit-toggle">
-					<input type="checkbox" checked={showPreviewLimit} onchange={() => { showPreviewLimit = !showPreviewLimit; handleRunQuery(); }} />
-					<span>Preview limit (100 rows)</span>
-				</label>
 			</div>
 			<div class="top-bar-right">
 				<button
@@ -519,7 +613,7 @@
 					</button>
 				{/if}
 
-				{#if activeTab.result && !activeTab.result.isMutation}
+				{#if pendingSourceMeta || pendingBatchMeta || (activeTab.result && !activeTab.result.isMutation)}
 					<button class="btn btn-secondary btn-sm" onclick={openIngestModal}>
 						<Upload size={14} />
 						Ingest
@@ -630,6 +724,10 @@
 							</span>
 						{/if}
 					</span>
+					<label class="preview-limit-toggle">
+						<input type="checkbox" checked={showPreviewLimit} onchange={togglePreviewLimit} />
+						<span>Limit 100</span>
+					</label>
 				</div>
 
 				<!-- Results Content -->
@@ -733,7 +831,12 @@
 				</button>
 			</div>
 
-			{#if savedQueries.length === 0}
+			{#if savedQueriesError}
+				<div class="modal-error" style="margin: var(--space-3) var(--space-6);">
+					<span>{savedQueriesError}</span>
+					<button class="modal-error-close" onclick={() => savedQueriesError = ''}>✕</button>
+				</div>
+			{:else if savedQueries.length === 0}
 				<div class="modal-empty">
 					<Bookmark size={48} />
 					<h3 class="modal-empty-title">No saved queries</h3>
@@ -860,11 +963,26 @@
 				</div>
 			</div>
 
+			{#if saveQueryError}
+				<div class="modal-error">
+					<span>{saveQueryError}</span>
+					<button class="modal-error-close" onclick={() => saveQueryError = ''}>✕</button>
+				</div>
+			{/if}
+
 			<div class="modal-footer">
-				<button class="btn btn-secondary" onclick={() => showSaveQueryModal = false}>Cancel</button>
-				<button class="btn btn-primary" onclick={saveCurrentQuery} disabled={!queryName.trim()}>
-					<Copy size={14} />
-					Save query
+				<button class="btn btn-secondary" onclick={() => showSaveQueryModal = false} disabled={saveQueryBusy}>Cancel</button>
+				<button class="btn btn-primary" onclick={saveCurrentQuery} disabled={saveQueryBusy || !queryName.trim()}>
+					{#if saveQueryBusy}
+						<svg class="spinner spinner--sm" viewBox="0 0 24 24" fill="none">
+							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
+							<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						</svg>
+						Saving…
+					{:else}
+						<Copy size={14} />
+						Save query
+					{/if}
 				</button>
 			</div>
 		</div>
@@ -876,28 +994,73 @@
 	<div class="modal-overlay" onclick={() => showIngestModal = false}>
 		<div class="modal" onclick={(e) => e.stopPropagation()}>
 			<div class="modal-header">
-				<h2 class="modal-title">Ingest as table</h2>
+				<h2 class="modal-title">
+					{#if pendingBatchMeta}
+						Ingest {pendingBatchMeta.length} tables
+					{:else}
+						Ingest as table
+					{/if}
+				</h2>
 			</div>
 
 			<div class="modal-body">
-				<div class="field">
-					<label for="ingest-table-name" class="field-label">Table name</label>
-					<input id="ingest-table-name" type="text" bind:value={ingestTableName} placeholder="new_table" class="input input-mono" />
-				</div>
-
-				<div class="field">
-					<span class="field-label">SQL to save</span>
-					<div class="sql-preview">
-						<code>{activeTab.query || ''}</code>
+				{#if pendingBatchMeta}
+					<div class="field">
+						<span class="field-label">Tables to ingest ({pendingBatchMeta.length})</span>
+						<div class="pg-preview-list">
+							{#each pendingBatchMeta as stmt}
+								<div class="pg-preview-item">
+									<span class="pg-preview-item-name">{stmt.tableName}</span>
+									<span class="pg-preview-item-path">{stmt.sourcePath}</span>
+								</div>
+							{/each}
+						</div>
 					</div>
-				</div>
+				{:else}
+					<div class="field">
+						<label for="ingest-table-name" class="field-label">Table name</label>
+						<input id="ingest-table-name" type="text" bind:value={ingestTableName} placeholder="new_table" class="input input-mono" />
+					</div>
+					<div class="field">
+						<label class="field-label">Group</label>
+						<TagInput bind:tags={ingestGroupTags} placeholder="Add group and press enter…" />
+					</div>
+					<div class="field">
+						<label class="field-label">Tags</label>
+						<TagInput bind:tags={ingestTags} placeholder="Add tag and press enter…" />
+					</div>
+				{/if}
+
+				{#if !pendingBatchMeta}
+					<div class="field">
+						<span class="field-label">SQL</span>
+						<div class="sql-preview">
+							<code>{activeTab.query || ''}</code>
+						</div>
+					</div>
+				{/if}
 			</div>
 
+			{#if ingestError}
+				<div class="modal-error">
+					<span>{ingestError}</span>
+					<button class="modal-error-close" onclick={() => ingestError = ''}>✕</button>
+				</div>
+			{/if}
+
 			<div class="modal-footer">
-				<button class="btn btn-secondary" onclick={() => showIngestModal = false}>Cancel</button>
-				<button class="btn btn-primary" onclick={handleIngest} disabled={!ingestTableName.trim()}>
-					<Upload size={14} />
-					Ingest
+				<button class="btn btn-secondary" onclick={() => showIngestModal = false} disabled={ingestBusy}>Cancel</button>
+				<button class="btn btn-primary" onclick={handleIngest} disabled={ingestBusy || (!pendingBatchMeta && !ingestTableName.trim())}>
+					{#if ingestBusy}
+						<svg class="spinner spinner--sm" viewBox="0 0 24 24" fill="none">
+							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
+							<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						</svg>
+						Ingesting…
+					{:else}
+						<Upload size={14} />
+						Ingest
+					{/if}
 				</button>
 			</div>
 		</div>
@@ -1154,18 +1317,22 @@
 	}
 
 	.preview-limit-toggle {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
-		gap: var(--space-2);
-		font-size: var(--text-xs);
-		color: var(--color-text-secondary);
+		gap: var(--space-1);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		color: var(--color-text-tertiary);
 		cursor: pointer;
 		user-select: none;
+		margin-left: auto;
 	}
 
 	.preview-limit-toggle input[type="checkbox"] {
 		accent-color: var(--color-accent);
 		cursor: pointer;
+		width: 12px;
+		height: 12px;
 	}
 
 	.btn-update {
@@ -1506,6 +1673,32 @@
 		gap: var(--space-4);
 	}
 
+	.modal-error {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin: 0 var(--space-6) var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		color: var(--color-error);
+		background: var(--color-error-bg, rgba(220, 38, 38, 0.08));
+		border-radius: var(--radius-md, 6px);
+		font-size: var(--text-sm, 0.875rem);
+	}
+
+	.modal-error-close {
+		background: none;
+		border: none;
+		color: var(--color-error);
+		cursor: pointer;
+		padding: 0 0 0 var(--space-2);
+		font-size: var(--text-sm, 0.875rem);
+		opacity: 0.7;
+	}
+
+	.modal-error-close:hover {
+		opacity: 1;
+	}
+
 	.modal-footer {
 		display: flex;
 		align-items: center;
@@ -1680,5 +1873,44 @@
 	.spinner--sm {
 		width: 14px;
 		height: 14px;
+	}
+
+	.pg-preview-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-surface-raised);
+		max-height: 240px;
+		overflow-y: auto;
+	}
+
+	.pg-preview-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-2) var(--space-3);
+		font-size: var(--text-xs);
+	}
+
+	.pg-preview-item:not(:last-child) {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.pg-preview-item-name {
+		font-family: var(--font-mono);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.pg-preview-item-path {
+		font-family: var(--font-mono);
+		font-size: 9px;
+		color: var(--color-text-tertiary);
+		max-width: 240px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 </style>

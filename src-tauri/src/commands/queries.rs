@@ -7,7 +7,7 @@ use crate::utils::formatting::format_duckdb_value;
 
 #[tauri::command]
 pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized. Please select a workspace folder.")?;
@@ -82,7 +82,12 @@ pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde
             "rowCount": data.len()
         }))
     } else {
-        let affected = conn.execute(&sql, []).map_err(|e| e.to_string())?;
+        eprintln!("[queries] DML start: {}", if sql.len() > 200 { &sql[..200] } else { &sql });
+        let affected = conn.execute(&sql, []).map_err(|e| {
+            eprintln!("[queries] DML error: {}", e);
+            e.to_string()
+        })?;
+        eprintln!("[queries] DML done ({} rows affected)", affected);
         Ok(json!({
             "type": "dml",
             "affectedRows": affected

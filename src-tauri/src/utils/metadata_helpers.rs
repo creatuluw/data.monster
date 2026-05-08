@@ -40,6 +40,20 @@ pub fn rename_table_metadata(
     Ok(())
 }
 
+pub fn get_table_source_row(
+    conn: &Connection,
+    table_name: &str,
+) -> Result<Option<(String, Option<String>, Option<String>)>, String> {
+    let result = conn
+        .query_row(
+            "SELECT table_type, creation_query, source_path FROM d8a_monster_table_metadata WHERE table_name = ?",
+            duckdb::params![table_name],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?, row.get::<_, Option<String>>(2)?)),
+        )
+        .ok();
+    Ok(result)
+}
+
 pub fn cleanup_orphaned_metadata(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "DELETE FROM d8a_monster_table_metadata WHERE table_name NOT IN (

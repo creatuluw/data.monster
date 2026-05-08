@@ -2,11 +2,12 @@ use serde_json::json;
 use tauri::State;
 
 use crate::state::DuckDbState;
-use crate::utils::metadata_helpers::{register_table_metadata, remove_table_metadata, rename_table_metadata};
+use crate::utils::metadata_helpers::{get_table_source_row, register_table_metadata, remove_table_metadata, rename_table_metadata};
 
 #[tauri::command]
 pub fn list_tables(state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[tables] Listing");
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -31,7 +32,8 @@ pub fn list_tables(state: State<'_, DuckDbState>) -> Result<serde_json::Value, S
 
 #[tauri::command]
 pub fn drop_table(table_name: String, state: State<'_, DuckDbState>) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[tables] Dropping '{}'", table_name);
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -57,7 +59,7 @@ pub fn create_table_from_query(
     sql: String,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -79,7 +81,7 @@ pub fn rename_table(
     new_name: String,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -104,10 +106,108 @@ pub fn rename_table(
     Ok(())
 }
 
+#[tauri::command]
+pub fn save_table_source(
+    table_name: String,
+    creation_query: String,
+    source_path: String,
+    state: State<'_, DuckDbState>,
+) -> Result<(), String> {
+    let state_conn = state.conn.lock();
+    let conn = state_conn
+        .as_ref()
+        .ok_or("DuckDB not initialized")?;
+
+    conn.execute(
+        "UPDATE d8a_monster_table_metadata SET creation_query = ?, source_path = ? WHERE table_name = ?",
+        duckdb::params![creation_query, source_path, table_name],
+    )
+    .map_err(|e| format!("Failed to save table source: {}", e))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn get_table_source(
+    table_name: String,
+    state: State<'_, DuckDbState>,
+) -> Result<serde_json::Value, String> {
+    let state_conn = state.conn.lock();
+    let conn = state_conn
+        .as_ref()
+        .ok_or("DuckDB not initialized")?;
+
+    let result: Option<(Option<String>, Option<String>)> = conn
+        .query_row(
+            "SELECT creation_query, source_path FROM d8a_monster_table_metadata WHERE table_name = ?",
+            duckdb::params![table_name],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .ok();
+
+    match result {
+        Some((creation_query, source_path)) => Ok(json!({
+            "creationQuery": creation_query,
+            "sourcePath": source_path,
+        })),
+        None => Ok(json!({ "creationQuery": null, "sourcePath": null })),
+    }
+}
+
+#[tauri::command]
+pub fn get_table_types(state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
+    let state_conn = state.conn.lock();
+    let conn = state_conn
+        .as_ref()
+        .ok_or("DuckDB not initialized")?;
+
+    let mut stmt = conn
+        .prepare("SELECT table_name, table_type FROM d8a_monster_table_metadata")
+        .map_err(|e| e.to_string())?;
+
+    let rows: Vec<serde_json::Value> = stmt
+        .query_map([], |row| {
+            let name: String = row.get(0)?;
+            let typ: String = row.get(1)?;
+            Ok(json!({ "tableName": name, "tableType": typ }))
+        })
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    Ok(json!({ "types": rows }))
+}
+
+#[tauri::command]
+pub fn refresh_table_from_source(
+    table_name: String,
+    state: State<'_, DuckDbState>,
+) -> Result<(), String> {
+    let state_conn = state.conn.lock();
+    let conn = state_conn
+        .as_ref()
+        .ok_or("DuckDB not initialized")?;
+
+    let source = get_table_source_row(conn, &table_name)?;
+    let (_table_type, creation_query, _source_path) = source
+        .ok_or("No metadata found for table")?;
+    let sql = creation_query
+        .ok_or("No creation query stored for table")?;
+
+    let sanitized = table_name.replace('"', "\"\"");
+    conn.execute(&format!("DROP TABLE IF EXISTS \"{}\"", sanitized), [])
+        .map_err(|e| format!("Failed to drop table: {}", e))?;
+
+    conn.execute(&sql, [])
+        .map_err(|e| format!("Failed to recreate table: {}", e))?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::commands::database::initialize_schema;
-    use crate::utils::metadata_helpers::{register_table_metadata, remove_table_metadata, rename_table_metadata};
+use crate::utils::metadata_helpers::{get_table_source_row, register_table_metadata, remove_table_metadata, rename_table_metadata};
     use duckdb::Connection;
 
     fn setup() -> Connection {

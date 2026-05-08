@@ -1,12 +1,11 @@
 <script lang="ts">
 	import { open } from '@tauri-apps/plugin-dialog';
 	import {
-		loadCsvFile,
-		loadParquetFile,
-		loadJsonFile,
+		downloadUrlToWorkspace,
+		generatePgInestSql,
 		connectPostgres,
 		listPostgresTables,
-		ingestPostgresTables
+		extractErrorMessage
 	} from '$lib/db-operations';
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
@@ -55,7 +54,7 @@
 			app.pendingFile = { path: filePath, tableName };
 			goto('/preview');
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to load file';
+			app.globalError = extractErrorMessage(e, 'Failed to load file');
 		} finally {
 			loading = false;
 		}
@@ -66,11 +65,14 @@
 		urlLoading = true;
 		app.globalError = '';
 		try {
-			await app.connectUrl(urlInput.trim());
-			await app.refreshTables();
-			goto('/query');
+			const { path: localPath } = await downloadUrlToWorkspace(urlInput.trim());
+			const ext = localPath.split('.').pop()?.toLowerCase() ?? 'csv';
+			const fileName = localPath.split(/[/\\]/).pop() ?? 'data';
+			const tableName = fileName.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '_');
+			app.pendingFile = { path: localPath, tableName };
+			goto('/preview');
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to load URL';
+			app.globalError = extractErrorMessage(e, 'Failed to load URL');
 		} finally {
 			urlLoading = false;
 		}
@@ -92,7 +94,7 @@
 				await loadPgTables();
 			}
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to connect';
+			app.globalError = extractErrorMessage(e, 'Failed to connect');
 		} finally {
 			pgConnecting = false;
 		}
@@ -107,7 +109,7 @@
 		try {
 			pgTables = await listPostgresTables(pgSelectedSchema);
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to list tables';
+			app.globalError = extractErrorMessage(e, 'Failed to list tables');
 		} finally {
 			pgTablesLoading = false;
 		}
@@ -137,10 +139,11 @@
 		app.globalError = '';
 		try {
 			const names = Array.from(pgSelectedTables);
-			pgIngestedTables = await ingestPostgresTables(pgSelectedSchema, names);
-			await app.refreshTables();
+			const statements = await generatePgInestSql(pgUrl, pgSelectedSchema, names);
+			app.pendingBatchIngest = statements;
+			goto('/query');
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to ingest tables';
+			app.globalError = extractErrorMessage(e, 'Failed to ingest tables');
 		} finally {
 			pgIngesting = false;
 		}

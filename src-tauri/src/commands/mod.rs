@@ -1,6 +1,7 @@
 pub mod database;
 pub mod files;
 pub mod folders;
+pub mod internal_db;
 pub mod labels;
 pub mod postgres;
 pub mod queries;

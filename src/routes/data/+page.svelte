@@ -3,7 +3,7 @@
 	import TableDrawer from '$lib/components/TableDrawer.svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
-	import { dropTable } from '$lib/db-operations';
+	import { dropTable, extractErrorMessage } from '$lib/db-operations';
 
 	let drawerTable = $state<string | null>(null);
 
@@ -23,13 +23,21 @@
 		await app.refreshTables();
 	}
 
+	async function handleRefresh() {
+		await app.refreshTables();
+	}
+
 	async function handleDelete(tableName: string) {
 		app.globalError = '';
 		try {
 			await dropTable(tableName);
 			await app.refreshTables();
+			if (app.tables.length === 0) {
+				goto('/');
+				return;
+			}
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to delete table';
+			app.globalError = extractErrorMessage(e, 'Failed to delete table');
 		}
 		drawerTable = null;
 	}
@@ -54,6 +62,7 @@
 		onclose={handleCloseDrawer}
 		onrename={handleRename}
 		ondelete={handleDelete}
+		onrefresh={handleRefresh}
 	/>
 {/if}
 

@@ -6,14 +6,15 @@ use crate::utils::slugs::generate_slug;
 
 #[tauri::command]
 pub fn list_saved_queries(state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[saved_queries] Listing");
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
 
     let mut stmt = conn
         .prepare(
-            "SELECT slug, query_name, query_sql, description, tags, created_at, updated_at FROM d8a_monster_saved_queries ORDER BY updated_at DESC",
+            "SELECT slug, query_name, query_sql, description, tags, CAST(created_at AS VARCHAR), CAST(updated_at AS VARCHAR) FROM d8a_monster_saved_queries ORDER BY updated_at DESC",
         )
         .map_err(|e| e.to_string())?;
 
@@ -51,7 +52,8 @@ pub fn save_query(
     tags: Option<String>,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[saved_queries] Saving '{}' ({} bytes)", name, sql.len());
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -59,9 +61,9 @@ pub fn save_query(
     let slug = generate_slug(&name);
 
     conn.execute(
-        "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, description, tags, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
-        duckdb::params![&slug, &name, &sql, &description, &tags],
+        "INSERT OR REPLACE INTO d8a_monster_saved_queries (slug, query_name, query_sql, description, tags, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, COALESCE((SELECT created_at FROM d8a_monster_saved_queries WHERE slug = ?), CURRENT_TIMESTAMP), CURRENT_TIMESTAMP)",
+        duckdb::params![&slug, &name, &sql, &description, &tags, &slug],
     )
     .map_err(|e| format!("Failed to save query: {}", e))?;
 
@@ -77,7 +79,7 @@ pub fn update_saved_query(
     tags: Option<String>,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -106,7 +108,7 @@ pub fn update_saved_query(
 
 #[tauri::command]
 pub fn delete_saved_query(slug: String, state: State<'_, DuckDbState>) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -216,7 +218,7 @@ mod tests {
     }
 
     #[test]
-    fn test_slug_uniqueness() {
+    fn test_slug_upsert() {
         let conn = setup();
         let slug1 = generate_slug("Same Name");
         let slug2 = generate_slug("Same Name");
@@ -228,11 +230,17 @@ mod tests {
             duckdb::params![&slug1, "Same Name", "SELECT 1"],
         ).unwrap();
 
-        let result = conn.execute(
-            "INSERT INTO d8a_monster_saved_queries (slug, query_name, query_sql, created_at, updated_at)
+        conn.execute(
+            "INSERT OR REPLACE INTO d8a_monster_saved_queries (slug, query_name, query_sql, created_at, updated_at)
              VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
             duckdb::params![&slug2, "Same Name", "SELECT 2"],
-        );
-        assert!(result.is_err());
+        ).unwrap();
+
+        let sql: String = conn.query_row(
+            "SELECT query_sql FROM d8a_monster_saved_queries WHERE slug = ?",
+            duckdb::params![&slug1],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(sql, "SELECT 2");
     }
 }

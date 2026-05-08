@@ -10,7 +10,7 @@ pub fn save_table_labels(
     group: Option<String>,
     state: State<'_, DuckDbState>,
 ) -> Result<(), String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -30,7 +30,7 @@ pub fn get_table_labels(
     table_name: String,
     state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -70,7 +70,7 @@ pub fn get_table_labels(
 
 #[tauri::command]
 pub fn get_all_tags(state: State<'_, DuckDbState>) -> Result<Vec<String>, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -103,7 +103,7 @@ pub fn get_all_tags(state: State<'_, DuckDbState>) -> Result<Vec<String>, String
 
 #[tauri::command]
 pub fn get_all_groups(state: State<'_, DuckDbState>) -> Result<Vec<String>, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;

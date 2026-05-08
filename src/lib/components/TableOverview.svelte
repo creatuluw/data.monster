@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Trash2, Tag, FolderOpen, Blend, FileBraces, Database } from 'lucide-svelte';
-	import { getAllTableMeta, getTableLabels, getAllTags as getAllTagsOp, getAllGroups as getAllGroupsOp, type TableMeta, type TableLabels } from '$lib/db-operations';
+	import { getAllTableMeta, getTableLabels, getAllTags as getAllTagsOp, getAllGroups as getAllGroupsOp, getTableTypes, type TableMeta, type TableLabels } from '$lib/db-operations';
 	import Tabs from '$lib/components/Tabs.svelte';
 
 	let {
@@ -22,6 +22,7 @@
 	let labelsMap = $state<Record<string, TableLabels>>({});
 	let allTags = $state<string[]>([]);
 	let allGroups = $state<string[]>([]);
+	let tableTypes = $state<Record<string, string>>({});
 
 	let filterTag = $state<string | null>(null);
 	let filterGroup = $state<string | null>(null);
@@ -36,6 +37,12 @@
 			tableMetas = [];
 		}
 		refreshLabels();
+		try {
+			const types = await getTableTypes();
+			const map: Record<string, string> = {};
+			for (const t of types) map[t.tableName] = t.tableType;
+			tableTypes = map;
+		} catch {}
 		loading = false;
 	});
 
@@ -252,6 +259,9 @@
 								<span class="tag tag-label">{tag}</span>
 							{/each}
 							<span class="tag tag-default">{inferSourceType(meta.name)}</span>
+							{#if tableTypes[meta.name]}
+								<span class="tag tag-type-{tableTypes[meta.name]}">{tableTypes[meta.name]}</span>
+							{/if}
 							<span class="tag tag-default">{meta.columnCount} cols</span>
 							<span class="card-action" onclick={(e) => { e.stopPropagation(); onselect(meta.name); }}>Open →</span>
 						</div>
@@ -596,6 +606,18 @@
 		background: var(--color-copper-50);
 		color: var(--color-copper-600);
 		border-color: var(--color-copper-200);
+	}
+
+	.tag-type-source {
+		background: oklch(0.95 0.04 180);
+		color: oklch(0.30 0.08 180);
+		border-color: oklch(0.85 0.04 180);
+	}
+
+	.tag-type-model {
+		background: oklch(0.95 0.04 280);
+		color: oklch(0.30 0.08 280);
+		border-color: oklch(0.85 0.04 280);
 	}
 
 	.card-action {

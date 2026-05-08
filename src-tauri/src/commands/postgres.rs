@@ -2,7 +2,6 @@ use serde_json::json;
 use tauri::State;
 
 use crate::state::DuckDbState;
-use crate::utils::metadata_helpers::register_table_metadata;
 
 const PG_ATTACH_NAME: &str = "__pg_source";
 
@@ -11,7 +10,7 @@ pub fn connect_postgres(
     url: String,
     state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -57,7 +56,7 @@ pub fn list_postgres_tables(
     schema: String,
     state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -84,34 +83,25 @@ pub fn list_postgres_tables(
 }
 
 #[tauri::command]
-pub fn ingest_postgres_tables(
+pub fn generate_pg_ingest_sql(
+    url: String,
     schema: String,
     table_names: Vec<String>,
-    state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
-    let conn = state_conn
-        .as_ref()
-        .ok_or("DuckDB not initialized")?;
-
-    let mut ingested: Vec<String> = Vec::new();
-
-    for table_name in &table_names {
+    let escaped_url = url.replace('\'', "''");
+    let statements: Vec<serde_json::Value> = table_names.iter().map(|table_name| {
         let sanitized = table_name.replace('"', "\"\"");
         let schema_sanitized = schema.replace('"', "\"\"");
-
-        let create_sql = format!(
+        let sql = format!(
             "CREATE TABLE \"{}\" AS SELECT * FROM {}.\"{}\".\"{}\"",
             sanitized, PG_ATTACH_NAME, schema_sanitized, sanitized
         );
+        json!({
+            "tableName": table_name,
+            "sql": sql,
+            "sourcePath": format!("postgres://{}/{}.{}", escaped_url, schema, table_name),
+        })
+    }).collect();
 
-        conn.execute(&create_sql, [])
-            .map_err(|e| format!("Failed to ingest table '{}': {}", table_name, e))?;
-
-        register_table_metadata(conn, table_name, "source")?;
-
-        ingested.push(table_name.clone());
-    }
-
-    Ok(json!({ "ingested": ingested }))
+    Ok(json!({ "statements": statements }))
 }

@@ -1,11 +1,58 @@
 use serde_json::json;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use tauri::State;
 
 use crate::state::DuckDbState;
 use crate::utils::formatting::format_duckdb_value;
 use crate::utils::metadata_helpers::register_table_metadata;
+
+#[tauri::command]
+pub fn get_file_size(path: String) -> Result<f64, String> {
+    let metadata = fs::metadata(&path).map_err(|e| format!("Failed to read file: {}", e))?;
+    Ok(metadata.len() as f64)
+}
+
+#[tauri::command]
+pub fn download_url_to_workspace(
+    url: String,
+    state: State<'_, DuckDbState>,
+) -> Result<serde_json::Value, String> {
+    eprintln!("[files] Downloading URL: {}", url);
+    let wp = state.workspace_path.lock();
+    let workspace = wp.as_ref().ok_or("No workspace folder set")?.clone();
+    drop(wp);
+
+    let parsed = url::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
+    let path_segment = parsed.path_segments()
+        .and_then(|segments| segments.last())
+        .unwrap_or("data.csv");
+    let file_name = Path::new(path_segment)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("data.csv");
+
+    let dest_dir = Path::new(&workspace).join("data").join("main");
+    fs::create_dir_all(&dest_dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
+    let dest_path = dest_dir.join(file_name);
+
+    let response = reqwest::blocking::get(&url)
+        .map_err(|e| format!("Failed to download: {}", e))?;
+    let bytes = response.bytes()
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    let mut file = fs::File::create(&dest_path)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+    file.write_all(&bytes)
+        .map_err(|e| format!("Failed to write file: {}", e))?;
+
+    eprintln!("[files] Downloaded {} bytes to {}", bytes.len(), dest_path.display());
+
+    let dest_str = dest_path.to_str().ok_or("Invalid destination path")?.to_string();
+
+    Ok(json!({ "path": dest_str }))
+}
 
 #[tauri::command]
 pub fn load_csv_file(
@@ -39,7 +86,7 @@ pub fn get_file_columns(
     path: String,
     state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
@@ -58,8 +105,8 @@ pub fn get_file_columns(
 
     let safe_path = path.replace('\\', "/");
     let query = format!(
-        "SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM {}('{}'))",
-        read_fn, safe_path
+        "SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM {})",
+        read_fn_call(read_fn, &safe_path)
     );
 
     let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
@@ -82,7 +129,8 @@ pub fn preview_file(
     limit: i64,
     state: State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let wp = state.workspace_path.lock().map_err(|e| e.to_string())?;
+    eprintln!("[files] Previewing: {} (limit {})", path, limit);
+    let wp = state.workspace_path.lock();
     let workspace = wp.as_ref().ok_or("No workspace folder set")?.clone();
     drop(wp);
 
@@ -96,7 +144,12 @@ pub fn preview_file(
     let dest_dir = Path::new(&workspace).join("data").join("main");
     let dest_path = dest_dir.join(file_name);
 
-    if !dest_path.exists() {
+    let already_in_workspace = source_path.canonicalize()
+        .ok()
+        .map(|c| dest_path.canonicalize().map(|d| c == d).unwrap_or(false))
+        .unwrap_or(false);
+
+    if !already_in_workspace && !dest_path.exists() {
         fs::create_dir_all(&dest_dir).map_err(|e| format!("Failed to create data dir: {}", e))?;
         fs::copy(source_path, &dest_path)
             .map_err(|e| format!("Failed to copy file to workspace: {}", e))?;
@@ -116,14 +169,14 @@ pub fn preview_file(
 
     let safe_path = dest_path.to_str().ok_or("Invalid destination path")?.replace('\\', "/");
 
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
 
     let desc_sql = format!(
-        "SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM {}('{}'))",
-        read_fn, safe_path
+        "SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM {})",
+        read_fn_call(read_fn, &safe_path)
     );
     let mut desc_stmt = conn.prepare(&desc_sql).map_err(|e| e.to_string())?;
     let column_types: Vec<serde_json::Value> = desc_stmt
@@ -137,14 +190,14 @@ pub fn preview_file(
         .collect::<Vec<_>>();
     drop(desc_stmt);
 
-    let count_sql = format!("SELECT COUNT(*) FROM {}('{}')", read_fn, safe_path);
+    let count_sql = format!("SELECT COUNT(*) FROM {}", read_fn_call(read_fn, &safe_path));
     let total_rows: i64 = conn
         .query_row(&count_sql, [], |row| row.get(0))
         .map_err(|e| format!("Failed to count rows: {}", e))?;
 
     let data_sql = format!(
-        "SELECT * FROM {}('{}') LIMIT {}",
-        read_fn, safe_path, limit
+        "SELECT * FROM {} LIMIT {}",
+        read_fn_call(read_fn, &safe_path), limit
     );
     let mut stmt = conn.prepare(&data_sql).map_err(|e| e.to_string())?;
 
@@ -192,8 +245,17 @@ pub fn preview_file(
         "columns": column_names,
         "rows": row_values,
         "totalRows": total_rows,
-        "columnTypes": column_types
+        "columnTypes": column_types,
+        "workspacePath": safe_path
     }))
+}
+
+fn read_fn_call(read_fn: &str, path: &str) -> String {
+    if read_fn == "read_csv_auto" {
+        format!("{}('{}', ignore_errors=true)", read_fn, path)
+    } else {
+        format!("{}('{}')", read_fn, path)
+    }
 }
 
 fn load_file(
@@ -202,12 +264,13 @@ fn load_file(
     read_fn: &str,
     state: &State<'_, DuckDbState>,
 ) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock().map_err(|e| e.to_string())?;
+    eprintln!("[files] Loading {} as table '{}' via {}", path, table_name, read_fn);
+    let state_conn = state.conn.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized")?;
 
-    let wp = state.workspace_path.lock().map_err(|e| e.to_string())?;
+    let wp = state.workspace_path.lock();
     let workspace = wp.as_ref().ok_or("No workspace folder set")?;
 
     let source_path = Path::new(path);
@@ -227,13 +290,41 @@ fn load_file(
 
     let sanitized = table_name.replace('"', "\"\"");
     let escaped_dest = dest_path.to_str().ok_or("Invalid destination path")?.replace('\\', "/");
-    let query = format!(
-        "CREATE TABLE \"{}\" AS SELECT * FROM {}('{}')",
-        sanitized, read_fn, escaped_dest
-    );
 
-    conn.execute(&query, [])
-        .map_err(|e| format!("Failed to load file into table: {}", e))?;
+    let fn_call = read_fn_call(read_fn, &escaped_dest);
+
+    let total: i64 = conn.query_row(
+        &format!("SELECT COUNT(*) FROM {}", fn_call),
+        [],
+        |row| row.get(0),
+    ).map_err(|e| format!("Failed to count source rows: {}", e))?;
+    eprintln!("[files] Total rows in source: {}", total);
+
+    let batch_size: i64 = 50_000;
+    let batches = ((total + batch_size - 1) / batch_size).max(1);
+
+    conn.execute(
+        &format!("CREATE TABLE \"{}\" AS SELECT * FROM {} WHERE 1=0", sanitized, fn_call),
+        [],
+    ).map_err(|e| format!("Failed to create empty table: {}", e))?;
+
+    for b in 0..batches {
+        let offset = b * batch_size;
+        eprintln!("[files] Inserting batch {}/{} (offset {})", b + 1, batches, offset);
+        conn.execute(
+            &format!(
+                "INSERT INTO \"{}\" SELECT * FROM {} LIMIT {} OFFSET {}",
+                sanitized, fn_call, batch_size, offset
+            ),
+            [],
+        ).map_err(|e| format!("Failed to insert batch {}: {}", b + 1, e))?;
+        let done: i64 = conn.query_row(
+            &format!("SELECT COUNT(*) FROM \"{}\"", sanitized),
+            [],
+            |row| row.get(0),
+        ).unwrap_or(offset);
+        eprintln!("[files] Progress: {}/{} rows ({:.0}%)", done, total, (done as f64 / total as f64) * 100.0);
+    }
 
     let row_count: i64 = conn
         .query_row(
@@ -279,11 +370,11 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let safe_path = csv_path.to_str().unwrap().replace('\\', "/");
 
-        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}')", safe_path);
+        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let total_rows: i64 = conn.query_row(&count_sql, [], |row| row.get(0)).unwrap();
         assert_eq!(total_rows, 3);
 
-        let data_sql = format!("SELECT * FROM read_csv_auto('{}') LIMIT 100", safe_path);
+        let data_sql = format!("SELECT * FROM read_csv_auto('{}', ignore_errors=true) LIMIT 100", safe_path);
         let mut stmt = conn.prepare(&data_sql).unwrap();
 
         let mut column_names: Vec<String> = Vec::new();
@@ -332,11 +423,11 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let safe_path = csv_path.to_str().unwrap().replace('\\', "/");
 
-        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}')", safe_path);
+        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let total_rows: i64 = conn.query_row(&count_sql, [], |row| row.get(0)).unwrap();
         assert_eq!(total_rows, 10);
 
-        let data_sql = format!("SELECT * FROM read_csv_auto('{}') LIMIT 3", safe_path);
+        let data_sql = format!("SELECT * FROM read_csv_auto('{}', ignore_errors=true) LIMIT 3", safe_path);
         let mut stmt = conn.prepare(&data_sql).unwrap();
         let rows: Vec<_> = stmt.query_map([], |row| row.get::<_, i64>(0)).unwrap()
             .filter_map(|r| r.ok())
@@ -395,7 +486,7 @@ mod tests {
         let raw_path = csv_path.to_str().unwrap();
         let safe_path = raw_path.replace('\\', "/");
 
-        let sql = format!("SELECT * FROM read_csv_auto('{}')", safe_path);
+        let sql = format!("SELECT * FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let result: Result<i64, _> = conn.query_row(&sql, [], |row| row.get(0));
         assert!(result.is_ok(), "Forward-slash path should work");
     }
@@ -408,12 +499,12 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let safe_path = csv_path.to_str().unwrap().replace('\\', "/");
 
-        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}')", safe_path);
+        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let total_rows: i64 = conn.query_row(&count_sql, [], |row| row.get(0)).unwrap();
         assert_eq!(total_rows, 0);
 
         let desc_sql = format!(
-            "SELECT column_name FROM (DESCRIBE SELECT * FROM read_csv_auto('{}'))",
+            "SELECT column_name FROM (DESCRIBE SELECT * FROM read_csv_auto('{}', ignore_errors=true))",
             safe_path
         );
         let mut desc_stmt = conn.prepare(&desc_sql).unwrap();
@@ -438,7 +529,7 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let safe_path = csv_path.to_str().unwrap().replace('\\', "/");
 
-        let data_sql = format!("SELECT * FROM read_csv_auto('{}')", safe_path);
+        let data_sql = format!("SELECT * FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let mut stmt = conn.prepare(&data_sql).unwrap();
 
         let rows: Vec<Vec<serde_json::Value>> = stmt
@@ -474,11 +565,11 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         let safe_path = csv_path.to_str().unwrap().replace('\\', "/");
 
-        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}')", safe_path);
+        let count_sql = format!("SELECT COUNT(*) FROM read_csv_auto('{}', ignore_errors=true)", safe_path);
         let total: i64 = conn.query_row(&count_sql, [], |row| row.get(0)).unwrap();
         assert_eq!(total, 3);
 
-        let data_sql = format!("SELECT * FROM read_csv_auto('{}') LIMIT 100", safe_path);
+        let data_sql = format!("SELECT * FROM read_csv_auto('{}', ignore_errors=true) LIMIT 100", safe_path);
         let mut stmt = conn.prepare(&data_sql).unwrap();
         let rows: Vec<_> = stmt.query_map([], |row| row.get::<_, i64>(0)).unwrap()
             .filter_map(|r| r.ok())

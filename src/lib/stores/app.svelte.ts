@@ -2,15 +2,9 @@ import {
 	initializeDuckdb,
 	getWorkspacePath,
 	chooseWorkspaceFolder,
-	executeQuery,
 	listTables,
-	getFileColumns,
-	loadCsvFile,
-	loadParquetFile,
-	loadJsonFile,
-	type PagedQueryResult,
-	type ColumnInfo,
-	isTauriAvailable
+	isTauriAvailable,
+	extractErrorMessage
 } from '$lib/db-operations';
 
 class AppState {
@@ -20,17 +14,10 @@ class AppState {
 	globalError = $state('');
 
 	pendingSql = $state('');
-	pendingAutoRun = $state(false);
 
 	pendingFile = $state<{ path: string; tableName: string } | null>(null);
-	pendingPreviewData = $state<{ tableName: string; columns: string[] } | null>(null);
-
-	get pendingSqlForPreview(): string {
-		if (!this.pendingPreviewData) return '';
-		const { tableName, columns } = this.pendingPreviewData;
-		const columnList = columns.map(c => `  "${c}"`).join(',\n');
-		return `-- ${columns.length} columns\nSELECT\n${columnList}\nFROM "${tableName}"\nLIMIT 100;`;
-	}
+	pendingPreviewData = $state<{ tableName: string; columns: string[]; sourcePath: string } | null>(null);
+	pendingBatchIngest = $state<{ tableName: string; sql: string; sourcePath: string }[] | null>(null);
 
 	async init() {
 		if (!isTauriAvailable()) {
@@ -47,7 +34,7 @@ class AppState {
 				this.dbReady = true;
 			}
 		} catch (e) {
-			this.globalError = e instanceof Error ? e.message : 'Failed to initialize database';
+			this.globalError = extractErrorMessage(e, 'Failed to initialize database');
 		}
 	}
 
@@ -62,27 +49,12 @@ class AppState {
 			this.dbReady = true;
 			return true;
 		} catch (e) {
-			this.globalError = e instanceof Error ? e.message : 'Failed to set workspace';
+			this.globalError = extractErrorMessage(e, 'Failed to set workspace');
 			return false;
 		}
 	}
 
 	async refreshTables() {
-		this.tables = await listTables();
-	}
-
-	async connectUrl(url: string) {
-		const ext = url.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'csv';
-		const reader =
-			ext === 'parquet'
-				? `read_parquet('${url}')`
-				: ext === 'json' || ext === 'jsonl'
-					? `read_json_auto('${url}')`
-					: `read_csv_auto('${url}')`;
-
-		const tableName = `url_${Date.now()}`;
-		const createSql = `CREATE TABLE "${tableName}" AS SELECT * FROM ${reader}`;
-		await executeQuery(createSql);
 		this.tables = await listTables();
 	}
 }

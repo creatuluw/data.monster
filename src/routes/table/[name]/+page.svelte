@@ -3,7 +3,7 @@
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import { executeQuery, dropTable, runPagedQuery } from '$lib/db-operations';
+	import { executeQuery, dropTable, runPagedQuery, extractErrorMessage } from '$lib/db-operations';
 	import { onMount } from 'svelte';
 
 	const PAGE_SIZE = 20;
@@ -21,7 +21,7 @@
 			tablePage = page;
 			tableTotalPages = result.totalPages;
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to load table';
+			app.globalError = extractErrorMessage(e, 'Failed to load table');
 		}
 	}
 
@@ -35,7 +35,6 @@
 
 	function handleQueryTable() {
 		app.pendingSql = `SELECT * FROM "${tableName}"\nLIMIT 100`;
-		app.pendingAutoRun = false;
 		goto('/query');
 	}
 
@@ -47,7 +46,7 @@
 			await app.refreshTables();
 			goto(app.tables.length > 0 ? '/query' : '/connect');
 		} catch (e) {
-			app.globalError = e instanceof Error ? e.message : 'Failed to drop table';
+			app.globalError = extractErrorMessage(e, 'Failed to drop table');
 		}
 	}
 </script>

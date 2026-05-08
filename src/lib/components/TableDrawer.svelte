@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { X, Trash2 } from 'lucide-svelte';
+	import { X, Trash2, RefreshCw } from 'lucide-svelte';
 	import {
 		getTableMeta,
 		type TableMeta,
 		getTableLabels,
 		saveTableLabels,
 		renameTable,
-		type TableLabels
+		type TableLabels,
+		getTableSource,
+		type TableSource,
+		refreshTableFromSource
 	} from '$lib/db-operations';
 	import TagInput from '$lib/components/TagInput.svelte';
 
@@ -14,12 +17,14 @@
 		tableName = '',
 		onclose,
 		onrename,
-		ondelete
+		ondelete,
+		onrefresh
 	}: {
 		tableName: string;
 		onclose: () => void;
 		onrename?: (oldName: string, newName: string) => void;
 		ondelete?: (tableName: string) => Promise<void>;
+		onrefresh?: () => Promise<void>;
 	} = $props();
 
 	let meta = $state<TableMeta | null>(null);
@@ -31,7 +36,9 @@
 	let editGroupTags = $state<string[]>([]);
 	let confirmDelete = $state(false);
 	let deleting = $state(false);
+	let refreshing = $state(false);
 	let drawerOpen = $state(false);
+	let source = $state<TableSource | null>(null);
 
 	async function loadTable(name: string) {
 		loading = true;
@@ -42,14 +49,16 @@
 		confirmDelete = false;
 		deleting = false;
 		try {
-			const [m, l] = await Promise.all([getTableMeta(name), getTableLabels(name)]);
+			const [m, l, s] = await Promise.all([getTableMeta(name), getTableLabels(name), getTableSource(name)]);
 			meta = m;
 			labels = l;
+			source = s;
 			editTags = [...l.tags];
 			editGroupTags = l.group ? [l.group] : [];
 		} catch {
 			meta = null;
 			labels = { tableName: name, tags: [], group: null };
+			source = null;
 			editTags = [];
 			editGroupTags = [];
 		} finally {
@@ -98,6 +107,19 @@
 		} finally {
 			deleting = false;
 			confirmDelete = false;
+		}
+	}
+
+	async function handleRefresh() {
+		refreshing = true;
+		try {
+			await refreshTableFromSource(tableName);
+			const m = await getTableMeta(tableName);
+			meta = m;
+			await onrefresh?.();
+		} catch {
+		} finally {
+			refreshing = false;
 		}
 	}
 
@@ -189,6 +211,33 @@
 					</section>
 
 					<hr class="drawer-divider" />
+
+					{#if source && (source.creationQuery || source.sourcePath)}
+						<section class="drawer-section">
+							<div class="drawer-section-header">
+								<h3 class="drawer-section-title">Source</h3>
+								{#if source.creationQuery}
+									<button class="drawer-refresh-btn" onclick={handleRefresh} disabled={refreshing} title="Reload from source">
+										<RefreshCw size={12} />
+									</button>
+								{/if}
+							</div>
+							{#if source.sourcePath}
+								<div class="drawer-field">
+									<label class="drawer-label">Path</label>
+									<div class="drawer-source-path">{source.sourcePath}</div>
+								</div>
+							{/if}
+							{#if source.creationQuery}
+								<div class="drawer-field">
+									<label class="drawer-label">Query</label>
+									<pre class="drawer-source-sql">{source.creationQuery}</pre>
+								</div>
+							{/if}
+						</section>
+
+						<hr class="drawer-divider" />
+					{/if}
 
 					<section class="drawer-section">
 						<h3 class="drawer-section-title">Columns</h3>
@@ -505,6 +554,70 @@
 		display: flex;
 		gap: var(--space-2);
 		justify-content: flex-end;
+	}
+
+	.drawer-section-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.drawer-refresh-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: var(--space-1);
+		border: none;
+		background: none;
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		border-radius: var(--radius-xs);
+		transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
+	}
+
+	.drawer-refresh-btn:hover:not(:disabled) {
+		color: var(--color-text);
+		background: var(--color-surface-sunken);
+	}
+
+	.drawer-refresh-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from { transform: rotate(0deg); }
+		to { transform: rotate(360deg); }
+	}
+
+	.drawer-source-path {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+		padding: var(--space-2) var(--space-3);
+		background: var(--color-surface-raised);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		overflow-x: auto;
+		white-space: nowrap;
+	}
+
+	.drawer-source-sql {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+		padding: var(--space-2) var(--space-3);
+		background: var(--color-surface-raised);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		overflow-x: auto;
+		white-space: pre-wrap;
+		word-break: break-word;
+		max-height: 200px;
+		overflow-y: auto;
+		margin: 0;
+		line-height: 1.5;
 	}
 
 	:global(.btn-danger) {

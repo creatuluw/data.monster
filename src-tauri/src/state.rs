@@ -1,6 +1,7 @@
 use duckdb::Connection;
+use parking_lot::Mutex;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 pub struct DuckDbState {
     pub conn: Mutex<Option<Connection>>,

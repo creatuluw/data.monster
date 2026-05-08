@@ -120,9 +120,18 @@ pub fn save_table_source(
         .as_ref()
         .ok_or("DuckDB not initialized")?;
 
+    let table_type = determine_table_type(&source_type);
+
     conn.execute(
-        "UPDATE d8a_monster_table_metadata SET creation_query = ?, source_path = ?, source_type = ?, original_source = ? WHERE table_name = ?",
-        duckdb::params![creation_query, source_path, source_type, original_source, table_name],
+        "INSERT INTO d8a_monster_table_metadata (table_name, table_type, creation_query, source_path, source_type, original_source, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT (table_name) DO UPDATE SET
+            table_type = EXCLUDED.table_type,
+            creation_query = EXCLUDED.creation_query,
+            source_path = EXCLUDED.source_path,
+            source_type = EXCLUDED.source_type,
+            original_source = EXCLUDED.original_source",
+        duckdb::params![table_name, table_type, creation_query, source_path, source_type, original_source],
     )
     .map_err(|e| format!("Failed to save table source: {}", e))?;
 
@@ -206,6 +215,14 @@ pub fn refresh_table_from_source(
         .map_err(|e| format!("Failed to recreate table: {}", e))?;
 
     Ok(())
+}
+
+fn determine_table_type(source_type: &Option<String>) -> String {
+    match source_type.as_deref() {
+        Some("url") => "url".to_string(),
+        Some("postgres") => "postgres".to_string(),
+        _ => "file".to_string(),
+    }
 }
 
 #[cfg(test)]

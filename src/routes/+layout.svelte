@@ -94,10 +94,15 @@
 {:else}
 <div class="app-shell">
 	<header class="app-header">
-		<a href="/" class="app-brand">
-			<span class="brand-mark"></span>
-			Data Monster
-		</a>
+		<div class="app-brand-group">
+			<a href="/" class="app-brand">
+				<span class="brand-mark"></span>
+				Data Monster
+			</a>
+			{#if app.workspacePath}
+				<span class="workspace-label" title={app.workspacePath}>{app.workspacePath}</span>
+			{/if}
+		</div>
 		<div class="header-meta">
 			{#if app.dbReady}
 				<a href="/data" class="header-link">
@@ -221,6 +226,25 @@
 		height: 6px;
 		background: var(--color-accent);
 		border-radius: 1px;
+	}
+
+	.app-brand-group {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.workspace-label {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--color-text-tertiary);
+		background: var(--color-surface-sunken);
+		padding: 2px var(--space-2);
+		border-radius: var(--radius-xs);
+		max-width: 420px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 
 	.header-meta {

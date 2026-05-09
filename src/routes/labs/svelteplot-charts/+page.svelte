@@ -4,7 +4,7 @@
 	type ChartEntry = { id: string; label: string; desc: string; icon: typeof BarChart2; status: 'available' | 'planned' };
 
 	const charts: ChartEntry[] = [
-		{ id: 'bar', label: 'Bar Chart', desc: 'Compare values across categories with composable layers, click-to-filter, and configurable aggregation driven by live SQL queries.', icon: BarChart2, status: 'available' },
+		{ id: 'bar', label: 'Bar Chart', desc: 'Compare values across categories with horizontal or vertical bars, linked interactions, and configurable styling.', icon: BarChart2, status: 'available' },
 		{ id: 'line', label: 'Line Chart', desc: 'Show trends and continuity over ordered dimensions like time or sequence.', icon: LineChart, status: 'planned' },
 		{ id: 'area', label: 'Area Chart', desc: 'Emphasize volume under a trend line with filled regions.', icon: AreaChart, status: 'planned' },
 		{ id: 'pie', label: 'Pie / Donut', desc: 'Show part-to-whole proportions for a small number of slices.', icon: PieChart, status: 'planned' },
@@ -13,24 +13,24 @@
 </script>
 
 <svelte:head>
-	<title>LayerChart — Data Monster Labs</title>
+	<title>SveltePlot — Data Monster Labs</title>
 </svelte:head>
 
 <div class="lib-page">
 	<div class="lib-header">
-		<span class="section-number">LAYERCHART</span>
+		<span class="section-number">SVELTEPLOT</span>
 	</div>
 
 	<div class="lib-body">
 		<div class="lib-intro">
-			<h1 class="lib-title">LayerChart</h1>
-			<p class="lib-desc">Layered grammar-of-graphics for Svelte. Composable marks, scales, and axes that compile to SVG — built on top of D3 with full Svelte reactivity.</p>
+			<h1 class="lib-title">SveltePlot</h1>
+			<p class="lib-desc">Svelte-native wrapper around Observable Plot. Renders SVG with idiomatic Svelte components, linked interactions, and first-class reactivity — no canvas layer.</p>
 		</div>
 
 		<div class="chart-grid">
 			{#each charts as ct (ct.id)}
 				{#if ct.status === 'available'}
-					<a href="/labs/chart-lib/{ct.id}" class="chart-card">
+					<a href="/labs/svelteplot-charts/{ct.id}" class="chart-card">
 						<div class="chart-card-icon">
 							<ct.icon size={18} />
 						</div>

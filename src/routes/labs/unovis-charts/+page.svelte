@@ -4,7 +4,7 @@
 	type ChartEntry = { id: string; label: string; desc: string; icon: typeof BarChart2; status: 'available' | 'planned' };
 
 	const charts: ChartEntry[] = [
-		{ id: 'bar', label: 'Bar Chart', desc: 'Compare values across categories with composable layers, click-to-filter, and configurable aggregation driven by live SQL queries.', icon: BarChart2, status: 'available' },
+		{ id: 'bar', label: 'Bar Chart', desc: 'Compare values across categories with stacked bars, built-in tooltip, bullet legend, and click-to-filter interactions.', icon: BarChart2, status: 'available' },
 		{ id: 'line', label: 'Line Chart', desc: 'Show trends and continuity over ordered dimensions like time or sequence.', icon: LineChart, status: 'planned' },
 		{ id: 'area', label: 'Area Chart', desc: 'Emphasize volume under a trend line with filled regions.', icon: AreaChart, status: 'planned' },
 		{ id: 'pie', label: 'Pie / Donut', desc: 'Show part-to-whole proportions for a small number of slices.', icon: PieChart, status: 'planned' },
@@ -13,24 +13,24 @@
 </script>
 
 <svelte:head>
-	<title>LayerChart — Data Monster Labs</title>
+	<title>Unovis — Data Monster Labs</title>
 </svelte:head>
 
 <div class="lib-page">
 	<div class="lib-header">
-		<span class="section-number">LAYERCHART</span>
+		<span class="section-number">UNOVIS</span>
 	</div>
 
 	<div class="lib-body">
 		<div class="lib-intro">
-			<h1 class="lib-title">LayerChart</h1>
-			<p class="lib-desc">Layered grammar-of-graphics for Svelte. Composable marks, scales, and axes that compile to SVG — built on top of D3 with full Svelte reactivity.</p>
+			<h1 class="lib-title">Unovis</h1>
+			<p class="lib-desc">Framework-independent visualization primitives by F5. Renders SVG with TypeScript-first APIs, built-in tooltip, legend, and click-to-filter interactions powered by <code>@unovis/ts</code>.</p>
 		</div>
 
 		<div class="chart-grid">
 			{#each charts as ct (ct.id)}
 				{#if ct.status === 'available'}
-					<a href="/labs/chart-lib/{ct.id}" class="chart-card">
+					<a href="/labs/unovis-charts/{ct.id}" class="chart-card">
 						<div class="chart-card-icon">
 							<ct.icon size={18} />
 						</div>
@@ -98,6 +98,15 @@
 		margin: var(--space-2) 0 0 0;
 		max-width: 64ch;
 		line-height: var(--leading-relaxed);
+	}
+
+	.lib-desc code {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		padding: 1px 4px;
+		border-radius: var(--radius-xs);
+		background: var(--color-surface-sunken);
+		color: var(--color-text-secondary);
 	}
 
 	.chart-grid {

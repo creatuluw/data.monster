@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BarChart } from 'layerchart';
+	import * as Plot from '@observablehq/plot';
 	import type { BarChartConfig, BarChartData } from './types';
 	import { executeBarChartQuery } from './engine/DataModelConnector';
 	import { PALETTE, DIMMED } from './chart-helpers';
@@ -7,27 +7,24 @@
 
 	interface Props {
 		config: BarChartConfig;
-		onBarClick?: (detail: { category: string; value: number; row: BarChartData }) => void;
 	}
 
-	let { config, onBarClick }: Props = $props();
+	let { config }: Props = $props();
 
 	let data: BarChartData[] = $state([]);
 	let selectedGroups: Set<string> = $state(new Set());
 	let isLoading: boolean = $state(true);
 	let error: string | null = $state(null);
-	let chartWidth = $state(0);
-	let chartHeight = $state(0);
-	let bodyWrapperEl: HTMLDivElement | undefined = $state();
+	let containerEl: HTMLDivElement | undefined = $state();
 
+	let dimField = $derived(config.dimension.field);
 	let isHorizontal = $derived((config.orientation ?? 'vertical') === 'horizontal');
 
-	let colorRange = $derived.by(() => {
-		const dimField = config.dimension.field;
-		const groups = [...new Set(data.map((d) => String(d[dimField] ?? '')))];
-		const sel = selectedGroups;
-		if (sel.size === 0) return PALETTE;
-		return groups.map((g) => (sel.has(g) ? PALETTE[groups.indexOf(g) % PALETTE.length] : DIMMED));
+	let title = $derived.by(() => {
+		const agg = config.metric.aggregate ?? 'SUM';
+		const metricLabel = config.metric.label ?? config.metric.field;
+		const dimLabel = config.dimension.label ?? config.dimension.field;
+		return `${agg} of ${metricLabel} by ${dimLabel}`;
 	});
 
 	async function fetchData() {
@@ -44,6 +41,92 @@
 		}
 	}
 
+	function plotData(): Array<{ category: string; value: number }> {
+		return data.map((d) => ({
+			category: String(d[dimField] ?? ''),
+			value: typeof d.value === 'number' ? d.value : (Number(d.value) || 0)
+		}));
+	}
+
+	function renderPlot() {
+		if (!containerEl) return;
+		if (isLoading || error || data.length === 0) return;
+
+		const sel = selectedGroups;
+		const isSel = sel.size > 0;
+
+		const pd = plotData();
+		const sortDir = config.sortDirection ?? 'DESC';
+
+		const marks: any[] = [];
+
+		if (isHorizontal) {
+			marks.push(
+				Plot.barX(pd, {
+					y: 'category',
+					x: 'value',
+					fill: (d: { category: string }) => {
+						if (!isSel) return PALETTE[0];
+						const idx = pd.findIndex((r) => r.category === d.category);
+						return sel.has(d.category) ? PALETTE[idx % PALETTE.length] : DIMMED;
+					},
+					sort: { y: sortDir === 'ASC' ? 'x' : '-x' },
+					tip: true
+				})
+			);
+		} else {
+			marks.push(
+				Plot.barY(pd, {
+					x: 'category',
+					y: 'value',
+					fill: (d: { category: string }) => {
+						if (!isSel) return PALETTE[0];
+						const idx = pd.findIndex((r) => r.category === d.category);
+						return sel.has(d.category) ? PALETTE[idx % PALETTE.length] : DIMMED;
+					},
+					sort: { x: sortDir === 'ASC' ? 'y' : '-y' },
+					tip: true
+				})
+			);
+		}
+
+		containerEl.firstChild?.remove();
+
+		const plot = Plot.plot({
+			marks,
+			marginLeft: 80,
+			marginBottom: 60,
+			style: {
+				fontFamily: 'var(--font-mono)',
+				fontSize: '11px',
+				color: 'var(--color-text-secondary)',
+				background: 'transparent',
+				overflow: 'visible'
+			}
+		});
+
+		containerEl.append(plot);
+
+		if (config.clickToFilter !== false) {
+			const rects = plot.querySelectorAll<SVGRectElement>('[aria-label="bar"]');
+			rects.forEach((rect) => {
+				const cat = pd[Array.from(rect.parentElement?.parentElement?.children ?? [])
+					.indexOf(rect.closest('g')!) % pd.length]?.category;
+				if (!cat) return;
+				rect.style.cursor = 'pointer';
+				rect.addEventListener('click', () => {
+					const next = new Set(selectedGroups);
+					if (next.has(cat)) {
+						next.delete(cat);
+					} else {
+						next.add(cat);
+					}
+					selectedGroups = next;
+				});
+			});
+		}
+	}
+
 	$effect(() => {
 		void config.table;
 		void config.dimension.field;
@@ -56,35 +139,10 @@
 	});
 
 	$effect(() => {
-		const el = bodyWrapperEl;
-		if (!el) return;
-		const measure = () => {
-			const r = el.getBoundingClientRect();
-			chartWidth = r.width;
-			chartHeight = r.height;
-		};
-		measure();
-		const observer = new ResizeObserver(() => measure());
-		observer.observe(el);
-		return () => observer.disconnect();
+		void data.length;
+		void selectedGroups.size;
+		renderPlot();
 	});
-
-	function handleBarClick(_event: MouseEvent, detail: { data: any }) {
-		if (config.clickToFilter === false) return;
-		const group = String(detail.data[config.dimension.field] ?? '');
-		if (!group) return;
-		const next = new Set(selectedGroups);
-		if (next.has(group)) {
-			next.delete(group);
-		} else {
-			next.add(group);
-		}
-		selectedGroups = next;
-		if (onBarClick) {
-			const row = data.find((r) => String(r[config.dimension.field]) === group);
-			if (row) onBarClick({ category: group, value: Number(row.value) || 0, row });
-		}
-	}
 
 	function removeGroup(group: string) {
 		const next = new Set(selectedGroups);
@@ -95,13 +153,6 @@
 	function clearAll() {
 		selectedGroups = new Set();
 	}
-
-	let title = $derived.by(() => {
-		const agg = config.metric.aggregate ?? 'SUM';
-		const metricLabel = config.metric.label ?? config.metric.field;
-		const dimLabel = config.dimension.label ?? config.dimension.field;
-		return `${agg} of ${metricLabel} by ${dimLabel}`;
-	});
 </script>
 
 <div class="chart-shell">
@@ -121,7 +172,7 @@
 		</div>
 	{/if}
 
-	<div class="chart-body" bind:this={bodyWrapperEl}>
+	<div class="chart-body" bind:this={containerEl}>
 		{#if isLoading}
 			<div class="chart-state">
 				<svg class="spinner" viewBox="0 0 24 24" fill="none">
@@ -138,48 +189,6 @@
 			<div class="chart-state">
 				<span>No data available</span>
 			</div>
-		{:else if chartWidth > 0 && chartHeight > 0}
-			{#key colorRange}
-				{#if isHorizontal}
-					<BarChart
-						data={data}
-						y={config.dimension.field}
-						c={config.dimension.field}
-						cRange={colorRange}
-						orientation="horizontal"
-						series={[{
-							key: 'value',
-							value: 'value',
-							color: colorRange[0] ?? 'var(--color-accent)'
-						}]}
-						width={chartWidth}
-						height={chartHeight}
-						padding={{ top: 16, right: 24, bottom: 48, left: 64 }}
-						motion="tween"
-						onBarClick={handleBarClick}
-						props={{ bars: { radius: 0, strokeWidth: 0 } }}
-					/>
-				{:else}
-					<BarChart
-						data={data}
-						x={config.dimension.field}
-						c={config.dimension.field}
-						cRange={colorRange}
-						orientation="vertical"
-						series={[{
-							key: 'value',
-							value: 'value',
-							color: colorRange[0] ?? 'var(--color-accent)'
-						}]}
-						width={chartWidth}
-						height={chartHeight}
-						padding={{ top: 16, right: 24, bottom: 48, left: 64 }}
-						motion="tween"
-						onBarClick={handleBarClick}
-						props={{ bars: { radius: 0, strokeWidth: 0 } }}
-					/>
-				{/if}
-			{/key}
 		{/if}
 	</div>
 </div>
@@ -261,6 +270,13 @@
 		flex: 1;
 		min-height: 0;
 		padding: var(--space-4);
+		overflow: hidden;
+	}
+
+	.chart-body :global(svg) {
+		overflow: visible;
+		width: 100%;
+		height: 100%;
 	}
 
 	.chart-state {

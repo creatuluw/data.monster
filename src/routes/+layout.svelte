@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
+	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
@@ -87,6 +88,33 @@
 	});
 
 	let isUiPage = $derived($page.url.pathname.startsWith('/ui'));
+
+	const routeLabels: Record<string, string> = {
+		data: 'Data',
+		connect: 'Connect',
+		query: 'Query',
+		table: 'Table',
+		settings: 'Settings',
+		'internal-db': 'Internal DB',
+		labs: 'Labs',
+		'chart-lib': 'Chart Lib',
+		charts: 'Charts',
+		analyst: 'Analyst',
+		chat: 'Chat',
+		pages: 'Pages',
+		chart: 'Chart',
+		preview: 'Preview',
+	};
+
+	let breadcrumbs = $derived.by(() => {
+		const path = $page.url.pathname;
+		if (path === '/' || isUiPage) return [];
+		const segments = path.split('/').filter(Boolean);
+		return segments.map((seg, i) => ({
+			href: '/' + segments.slice(0, i + 1).join('/'),
+			label: decodeURIComponent(routeLabels[seg] || seg),
+		}));
+	});
 </script>
 
 {#if isUiPage}
@@ -140,6 +168,12 @@
 			{/if}
 		</div>
 	</header>
+
+	{#if breadcrumbs.length > 0}
+		<div class="breadcrumb-bar">
+			<Breadcrumb items={breadcrumbs} />
+		</div>
+	{/if}
 
 	{#if showWorkspacePicker && !app.dbReady}
 		<div class="workspace-picker">
@@ -268,6 +302,15 @@
 		display: flex;
 		align-items: center;
 		gap: 2px;
+	}
+
+	.breadcrumb-bar {
+		display: flex;
+		align-items: center;
+		padding: var(--space-1) var(--space-6);
+		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-sunken);
+		flex-shrink: 0;
 	}
 
 	.app-loading {

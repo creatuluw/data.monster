@@ -11,8 +11,10 @@ Built with **Tauri v2**, **SvelteKit**, **DuckDB**, and **TypeScript**. Runs as 
 - **SQL query runner** — Write and run SQL queries with paginated results, column editing, and preview limiting
 - **Table management** — Browse, rename, label, group, and drop tables with a visual explorer
 - **Saved queries** — Save, organize, and reload frequently used SQL queries
-- **AI analyst** — Chat with an LLM about your data (configurable endpoint)
+- **AI analyst** — Chat with an LLM about your data (configurable endpoint, local LLM support)
 - **Pages** — Build lightweight data pages from query results
+- **Chart library** — Reusable bar chart component powered by LayerChart with click-to-filter and config editor
+- **Labs** — Experimental features and component testing workspace
 - **Internal DB browser** — Inspect and edit internal metadata tables (`d8a_monster_*`) from Settings
 - **Persistent workspace** — All data stored on disk in a DuckDB file; survives restarts
 
@@ -167,4 +169,4 @@ your-workspace/
 | Database   | DuckDB 1.1 (embedded, bundled)      |
 | Backend    | Rust                                |
 | Icons      | Lucide                              |
-| Charts     | Chart.js                            |
+| Charts     | LayerChart                         |

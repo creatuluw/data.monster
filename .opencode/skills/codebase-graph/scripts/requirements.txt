@@ -1,0 +1,11 @@
+# Codebase Graph Skill - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# YAML parsing for schema validation
+PyYAML>=6.0
+
+# Optional: For enhanced TypeScript parsing (if available)
+# typescript-tools>=1.0.0
+
+# Optional: For Python AST enhancement (already in stdlib)
+# astroid>=3.0.0

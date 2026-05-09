@@ -1,0 +1,467 @@
+# Codebase Graph Schema
+# Type definitions and constraints for the typed knowledge graph
+
+version: "1.0"
+generated: "2025-01-15"
+
+# =============================================================================
+# ENTITY DEFINITIONS
+# =============================================================================
+
+entities:
+  # ---------------------------------------------------------------------------
+  # CodeFile - Represents a source code file
+  # ---------------------------------------------------------------------------
+  CodeFile:
+    description: "A source code file in the codebase"
+    required:
+      - id
+      - path
+      - language
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (file path relative to root)"
+        pattern: "^[a-zA-Z0-9_./-]+$"
+      path:
+        type: string
+        description: "File path relative to project root"
+      language:
+        type: string
+        description: "Programming language or file type"
+        enum:
+          - typescript
+          - javascript
+          - python
+          - rust
+          - go
+          - svelte
+          - json
+          - yaml
+          - markdown
+          - unknown
+      size:
+        type: number
+        description: "File size in bytes"
+        min: 0
+      last_modified:
+        type: timestamp
+        description: "Last modification timestamp (ISO 8601)"
+      imports:
+        type: array
+        description: "List of imported module paths"
+        items:
+          type: string
+      exports:
+        type: array
+        description: "List of exported symbol names"
+        items:
+          type: string
+
+  # ---------------------------------------------------------------------------
+  # Function - Represents a function or method
+  # ---------------------------------------------------------------------------
+  Function:
+    description: "A function or method definition"
+    required:
+      - id
+      - name
+      - file
+      - line_start
+      - line_end
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (file_path#function_name)"
+        pattern: "^[a-zA-Z0-9_./#-]+$"
+      name:
+        type: string
+        description: "Function name"
+      signature:
+        type: string
+        description: "Full function signature"
+      file:
+        type: string
+        description: "Path to containing file"
+      line_start:
+        type: integer
+        description: "Starting line number"
+        min: 1
+      line_end:
+        type: integer
+        description: "Ending line number"
+        min: 1
+        constraint: "line_end >= line_start"
+      parameters:
+        type: array
+        description: "Function parameters"
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+      return_type:
+        type: string
+        description: "Return type annotation"
+      exported:
+        type: boolean
+        description: "Whether the function is exported"
+      calls:
+        type: array
+        description: "Function IDs this function calls"
+        items:
+          type: string
+      called_by:
+        type: array
+        description: "Function IDs that call this function"
+        items:
+          type: string
+      decorators:
+        type: array
+        description: "Decorators applied to the function"
+        items:
+          type: string
+
+  # ---------------------------------------------------------------------------
+  # Class - Represents a class definition
+  # ---------------------------------------------------------------------------
+  Class:
+    description: "A class definition"
+    required:
+      - id
+      - name
+      - file
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (file_path#class_name)"
+        pattern: "^[a-zA-Z0-9_./#-]+$"
+      name:
+        type: string
+        description: "Class name"
+      file:
+        type: string
+        description: "Path to containing file"
+      line_start:
+        type: integer
+        description: "Starting line number"
+        min: 1
+      line_end:
+        type: integer
+        description: "Ending line number"
+        min: 1
+      extends:
+        type: string
+        description: "Parent class ID (if any)"
+        nullable: true
+      implements:
+        type: array
+        description: "Interface IDs implemented by this class"
+        items:
+          type: string
+      methods:
+        type: array
+        description: "Method function IDs"
+        items:
+          type: string
+      properties:
+        type: array
+        description: "Class properties"
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+            visibility:
+              type: string
+              enum:
+                - public
+                - private
+                - protected
+
+  # ---------------------------------------------------------------------------
+  # Interface - Represents an interface or type definition
+  # ---------------------------------------------------------------------------
+  Interface:
+    description: "An interface or type definition"
+    required:
+      - id
+      - name
+      - file
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (file_path#interface_name)"
+        pattern: "^[a-zA-Z0-9_./#-]+$"
+      name:
+        type: string
+        description: "Interface name"
+      file:
+        type: string
+        description: "Path to containing file"
+      line_start:
+        type: integer
+        description: "Starting line number"
+        min: 1
+      line_end:
+        type: integer
+        description: "Ending line number"
+        min: 1
+      extends:
+        type: array
+        description: "Interface IDs this interface extends"
+        items:
+          type: string
+      properties:
+        type: array
+        description: "Interface properties"
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+      implemented_by:
+        type: array
+        description: "Class IDs that implement this interface"
+        items:
+          type: string
+
+  # ---------------------------------------------------------------------------
+  # Variable - Represents a variable or constant
+  # ---------------------------------------------------------------------------
+  Variable:
+    description: "A variable, constant, or let binding"
+    required:
+      - id
+      - name
+      - file
+      - scope
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (file_path#variable_name)"
+        pattern: "^[a-zA-Z0-9_./#-]+$"
+      name:
+        type: string
+        description: "Variable name"
+      type:
+        type: string
+        description: "Variable type annotation"
+      file:
+        type: string
+        description: "Path to containing file"
+      scope:
+        type: string
+        description: "Scope level"
+        enum:
+          - module
+          - function
+          - class
+          - block
+      usages:
+        type: array
+        description: "Function IDs where this variable is used"
+        items:
+          type: string
+      exported:
+        type: boolean
+        description: "Whether the variable is exported"
+
+  # ---------------------------------------------------------------------------
+  # Module - Represents a module or package
+  # ---------------------------------------------------------------------------
+  Module:
+    description: "A module or package unit"
+    required:
+      - id
+      - name
+      - path
+    properties:
+      id:
+        type: string
+        description: "Unique identifier (module path or name)"
+      name:
+        type: string
+        description: "Module name"
+      path:
+        type: string
+        description: "Module path relative to root"
+      exports:
+        type: array
+        description: "Exported symbol IDs"
+        items:
+          type: string
+      dependencies:
+        type: array
+        description: "Dependent module IDs"
+        items:
+          type: string
+
+# =============================================================================
+# RELATION DEFINITIONS
+# =============================================================================
+
+relations:
+  # ---------------------------------------------------------------------------
+  # imports - CodeFile imports CodeFile
+  # ---------------------------------------------------------------------------
+  imports:
+    description: "File import relationship"
+    from_types:
+      - CodeFile
+    to_types:
+      - CodeFile
+    cardinality: many-to-many
+    allow_missing: true  # External imports are allowed
+    resolve_relative: true  # Resolve ./../ paths
+
+  # ---------------------------------------------------------------------------
+  # calls - Function calls Function
+  # ---------------------------------------------------------------------------
+  calls:
+    description: "Function call relationship"
+    from_types:
+      - Function
+    to_types:
+      - Function
+    cardinality: many-to-many
+    acyclic: true  # No circular function calls (enforced with warning)
+    validate_targets: true  # Both functions must exist
+
+  # ---------------------------------------------------------------------------
+  # extends - Class extends Class
+  # ---------------------------------------------------------------------------
+  extends:
+    description: "Class inheritance relationship"
+    from_types:
+      - Class
+    to_types:
+      - Class
+    cardinality: many-to-one  # Single inheritance
+    validate_targets: true  # Parent class must exist
+    acyclic: true  # No circular inheritance
+
+  # ---------------------------------------------------------------------------
+  # implements - Class implements Interface
+  # ---------------------------------------------------------------------------
+  implements:
+    description: "Interface implementation relationship"
+    from_types:
+      - Class
+    to_types:
+      - Interface
+    cardinality: many-to-many
+    validate_targets: true  # Interface must exist
+
+  # ---------------------------------------------------------------------------
+  # contains - CodeFile contains Symbol
+  # ---------------------------------------------------------------------------
+  contains:
+    description: "File contains symbol relationship"
+    from_types:
+      - CodeFile
+    to_types:
+      - Function
+      - Class
+      - Interface
+      - Variable
+    cardinality: one-to-many
+    required: true  # Every symbol must be contained in a file
+
+  # ---------------------------------------------------------------------------
+  # exports - Module exports Symbol
+  # ---------------------------------------------------------------------------
+  exports:
+    description: "Module exports symbol relationship"
+    from_types:
+      - Module
+    to_types:
+      - Function
+      - Class
+      - Interface
+      - Variable
+    cardinality: one-to-many
+
+# =============================================================================
+# CONSTRAINTS
+# =============================================================================
+
+constraints:
+  # Required relation types that must exist for valid graph
+  required_relations:
+    - imports
+    - contains
+
+  # Relations that must not form cycles
+  acyclic_relations:
+    - calls
+    - extends
+
+  # Validation rules
+  validation_rules:
+    - name: "relation_target_exists"
+      description: "All relation targets must exist as entities"
+      severity: error
+
+    - name: "no_circular_calls"
+      description: "Function call graph must be acyclic"
+      severity: warning
+
+    - name: "no_circular_inheritance"
+      description: "Class inheritance must be acyclic"
+      severity: error
+
+    - name: "line_numbers_valid"
+      description: "Line end must be >= line start"
+      severity: error
+
+    - name: "file_exists"
+      description: "All symbol files must exist in CodeFile entities"
+      severity: error
+
+    - name: "unique_ids"
+      description: "All entity IDs must be unique"
+      severity: error
+
+# =============================================================================
+# INDEX CONFIGURATION
+# =============================================================================
+
+indexes:
+  - entity: CodeFile
+    field: id
+    unique: true
+
+  - entity: CodeFile
+    field: path
+    unique: true
+
+  - entity: Function
+    field: id
+    unique: true
+
+  - entity: Function
+    field: name
+    unique: false
+
+  - entity: Function
+    field: file
+    unique: false
+
+  - entity: Class
+    field: id
+    unique: true
+
+  - entity: Interface
+    field: id
+    unique: true
+
+  - entity: Variable
+    field: id
+    unique: true

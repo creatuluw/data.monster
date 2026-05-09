@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-skill-creator": {
+      "source": "francyjglisboa/agent-skill-creator",
+      "sourceType": "github",
+      "computedHash": "91c3c7cda6b7218a93455fdf47e99f97f70a94a106cee0aa6360bc280ec9fef1"
+    },
+    "codebase-documenter": {
+      "source": "ailabs-393/ai-labs-claude-skills",
+      "sourceType": "github",
+      "computedHash": "42f8267717c269dd643a1e3c179ffdab09783bd10469deea83852dda8a1b22cd"
+    },
+    "codebase-to-course": {
+      "source": "zarazhangrui/codebase-to-course",
+      "sourceType": "github",
+      "computedHash": "8062048d1be18060babc508f02299aeff19cb1b966aa85aacdd61e93992a975d"
+    },
+    "deep-research": {
+      "source": "bytedance/deer-flow",
+      "sourceType": "github",
+      "computedHash": "c0477094cbe075d32f103eb7c39b139c9bc2e762f8537260a2330e50d2df45a0"
+    },
+    "design-taste-frontend": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "9d1e82c5c409d2b0247245a005bc0f7e4447c0999b78dcea60f568c1ba4a6694"
+    },
+    "documentation-writing": {
+      "source": "vinnie357/claude-skills",
+      "sourceType": "github",
+      "computedHash": "e56eb3a9a4a37bdade611f8cb9a538f8ba00c3198c03a6cc60ee5160958d7bfe"
+    },
+    "full-output-enforcement": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "26bd29ce4c5e02c7666b2d503609bf466bd32290822e91f0e984147048dbb924"
+    },
+    "high-end-visual-design": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "7db385e4c5370e5a7fca9704a1361b056e4504ea6a03924bb86f33a4f00b5c73"
+    },
+    "industrial-brutalist-ui": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "8fc355c4aadb7d29c53ca28bc41be3cd6eea765d121e3737c4dc2d0f90a8effa"
+    },
+    "minimalist-ui": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "08873a3131d3be27bef9bf3304b310b16b44ca6e3561aebe532797be3443f6bd"
+    },
+    "ontology": {
+      "source": "sundial-org/awesome-openclaw-skills",
+      "sourceType": "github",
+      "computedHash": "6dc13e461962abd9a1d70a6afe3f728fc6a0f5b76ba0e1d31453d1d5e913362b"
+    },
+    "redesign-existing-projects": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "b405eee0e0e80fc243f731d9aa368bca307e356db7e6157d27101d369dac6726"
+    },
+    "stitch-design-taste": {
+      "source": "Leonxlnx/taste-skill",
+      "sourceType": "github",
+      "computedHash": "3aa58992f0fd9673b975cd48cd4f8ae4b4976fd5cdd9f20e26d3d447aee317fb"
+    },
+    "user-guide-writing": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "e396b8378c0c98b92fb849ec7a94d5adb902b9f33b37188c8942073112ae8558"
+    },
+    "youtube-transcript": {
+      "source": "intellectronica/agent-skills",
+      "sourceType": "github",
+      "computedHash": "790a7240f43726fe8d25da049af9b771623d27d9b446eeab33f9aa5b3e0756c1"
+    }
+  }
+}

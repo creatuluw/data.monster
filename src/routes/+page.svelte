@@ -38,6 +38,9 @@
 				<span class="home-locked">Connect data to unlock Query, Data & Analyst</span>
 			{/if}
 		</div>
+		<div class="labs-link">
+			<a href="/labs" class="labs-anchor">/labs →</a>
+		</div>
 	</div>
 </div>
 
@@ -127,5 +130,21 @@
 		font-size: var(--text-xs);
 		color: var(--color-text-tertiary);
 		background: var(--color-surface-raised);
+	}
+
+	.labs-link {
+		margin-top: var(--space-4);
+	}
+
+	.labs-anchor {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--color-text-tertiary);
+		text-decoration: none;
+		transition: color var(--duration-fast) ease;
+	}
+
+	.labs-anchor:hover {
+		color: var(--color-accent);
 	}
 </style>

@@ -1,0 +1,180 @@
+{
+  "project": "chart-lib",
+  "spec": ".specs/chart-lib/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "setup-001",
+      "phase": "Setup",
+      "title": "Install LayerChart and configure CSS variables",
+      "description": "FR-1: Install `layerchart@next` as a dependency. Add LayerChart CSS variables to the app's global stylesheet so chart theming inherits from the app's design tokens. Verify a minimal BarChart renders without errors.",
+      "acceptanceCriteria": [
+        "TDD: Write a minimal Svelte component that imports BarChart from layerchart and renders with hardcoded data — confirm it fails before install, passes after",
+        "Verify `pnpm add layerchart@next` completes without peer dependency errors",
+        "Add `.lc-root-container` CSS variables to global stylesheet mapping to app design tokens (--color-primary, --color-surface-*, --color-surface-content)",
+        "Create `src/lib/charts/index.ts` barrel export file (empty initially, will be populated in later tasks)",
+        "Task Logging: Log completion to tasks-log.json with task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Apply Karpathy Guidelines — no over-engineering, match existing style, minimal changes only",
+        "Update Docs: Note layerchart dependency in docs/research if needed"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "setup-002",
+      "phase": "Setup",
+      "title": "Define TypeScript types for chart config",
+      "description": "FR-2: Create `src/lib/charts/types.ts` with BarChartConfig, BarChartData, FilterState, and supporting types. Export from index.ts.",
+      "acceptanceCriteria": [
+        "TDD: Write type-level tests or a test file that imports the types and creates valid/invalid configs — confirm type errors are caught",
+        "BarChartConfig includes: id, table, dimension ({ field, label? }), metric ({ field, label?, aggregate }), filters[], sortDirection, limit, clickToFilter, colors",
+        "BarChartData type: { [dimensionField]: string, value: number }",
+        "FilterState type: Map<string, Set<string>>",
+        "Types compile cleanly with `svelte-check`",
+        "Exported from `src/lib/charts/index.ts`",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Types should be minimal — no fields beyond what the spec requires. No premature abstractions for future chart types.",
+        "Update Docs: No docs changes needed for types-only"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-001",
+      "phase": "Core",
+      "title": "Create DataModelconnector — SQL compilation and execution",
+      "description": "FR-3: Create `src/lib/charts/engine/DataModel_connector.ts` with compileBarChartQuery() and executeBarChartQuery(). Compiles BarChartConfig + FilterState into DuckDB SQL, executes via existing executeQuery() from $lib/db-operations.",
+      "acceptanceCriteria": [
+        "TDD: Write test for compileBarChartQuery — given a simple config, assert the generated SQL string matches expected",
+        "TDD: Write test for compileBarChartQuery with active filters — assert WHERE clause is appended correctly",
+        "TDD: Write test for compileBarChartQuery with limit — assert LIMIT clause is present",
+        "TDD: Write test for executeBarChartQuery (integration) — executes against DuckDB and returns { rows: BarChartData[] }",
+        "compileBarChartQuery produces: SELECT {dim}, {agg}({metric}) as value FROM {table} [WHERE ...] GROUP BY {dim} ORDER BY value {dir} LIMIT {n}",
+        "Filter state generates: WHERE {dimension} IN ('val1', 'val2', ...)",
+        "Uses executeQuery() from `$lib/db-operations` — no direct Tauri invoke calls",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: No over-engineering. No caching layer. No connection pooling. Simple function that compiles and returns a string.",
+        "Update Docs: No docs changes needed"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-002",
+      "phase": "Core",
+      "title": "Create BarChartCanvas component — rendering and data flow",
+      "description": "FR-4: Create `src/lib/charts/BarChartCanvas.svelte` — the main re-usable component. Props: config (BarChartConfig), height, width. Uses Svelte 5 runes for state management. Calls executeBarChartQuery on mount. Renders LayerChart BarChart.",
+      "acceptanceCriteria": [
+        "TDD: Write a test that mounts BarChartCanvas with a config and verifies it renders without errors",
+        "TDD: Write a test that verifies on mount, data is fetched and bars are rendered",
+        "Component accepts props via $props(): config (required), height (default 400), width (optional, responsive)",
+        "Uses $state for: data (BarChartData[]), filterState (FilterState), isLoading, error",
+        "Uses $effect for: fetch data on mount, re-fetch when filterState changes",
+        "Renders LayerChart <BarChart> with data, x accessor, y accessor, and basic tooltip",
+        "Shows loading state while fetching, error state on failure, 'No data' for empty results",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Component should be ~100-150 lines. No premature extraction of sub-components. Match existing Svelte 5 patterns in the codebase.",
+        "Update Docs: Add BarChartCanvas to src/lib/charts/index.ts exports"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "core-003",
+      "phase": "Core",
+      "title": "Implement click-to-filter with visual dimming",
+      "description": "FR-5: Inside BarChartCanvas, implement the click-to-filter interaction using LayerChart's onBarClick callback. Toggle categories in/out of selection. Dim unselected bars using a derived color map. Show filter chips with Clear All.",
+      "acceptanceCriteria": [
+        "TDD: Write test — click a bar → verify selectedCategories set contains the category",
+        "TDD: Write test — click same bar again → verify category removed from set",
+        "TDD: Write test — verify colorMap derived: selected = palette color, unselected = dimmed oklch",
+        "onBarClick handler extracts category from event detail and toggles it in selectedCategories",
+        "Derived colorMap maps each data category to either a palette color or 'oklch(0.85 0.01 250 / 0.4)'",
+        "Color map is applied via LayerChart's color scale or per-bar fill override",
+        "FilterChipBar renders above chart: each selected category as chip with × button, plus 'Clear all' button",
+        "When filterState changes, executeBarChartQuery is called with updated WHERE clause",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Dim color should match the pattern from the draft (oklch with low chroma and alpha). No complex animation — just immediate color swap.",
+        "Update Docs: No docs changes needed"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "core-004",
+      "phase": "Core",
+      "title": "Add tooltip with value formatting",
+      "description": "FR-6: Enable LayerChart's built-in tooltip on the bar chart. Use band mode (optimal for bar charts). Format values with locale-aware number formatting.",
+      "acceptanceCriteria": [
+        "TDD: Write test — verify tooltipContext is passed with mode: 'band'",
+        "TDD: Write test — verify value formatting function produces expected output for various number ranges",
+        "Pass tooltipContext={{ mode: 'band' }} to the BarChart component",
+        "Tooltip displays category as header and formatted value as item",
+        "Number formatting: values > 999 use toLocaleString(), consider abbreviation for very large numbers",
+        "Tooltip does not cause console errors or memory leaks",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Use LayerChart's built-in Tooltip.Root/Tooltip.Header/Tooltip.Item components — no custom tooltip implementation unless necessary for formatting",
+        "Update Docs: No docs changes needed"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "core-005",
+      "phase": "Core",
+      "title": "Wire up on test route and verify end-to-end",
+      "description": "FR-7: Create a test route (src/routes/charts/+page.svelte) that imports BarChartCanvas, defines a BarChartConfig pointing to an existing DuckDB table, and renders the chart. Verify all features work: data load, bar render, click-to-filter, tooltips, error states.",
+      "acceptanceCriteria": [
+        "TDD: Write a test that navigates to /charts and verifies the page renders without errors",
+        "Create src/routes/charts/+page.svelte with a BarChartCanvas configured against a real (or sample) table",
+        "BarChartConfig has sensible defaults: dimension auto-picked from first string column, metric from first numeric column, aggregate SUM, limit 30",
+        "Chart title is auto-generated: '{aggregate} of {metric} by {dimension}'",
+        "All interactive features work: click-to-filter, filter chips, clear all, tooltips",
+        "Error state renders correctly if table doesn't exist or query fails",
+        "Empty state renders correctly if table has 0 rows",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Test route should be minimal — just the chart component with a config. No extra UI chrome beyond what's needed to verify.",
+        "Update Docs: Update docs/research/reusable-chart-architecture.md to note that Phase 1 core is implemented"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-7"
+    },
+    {
+      "id": "edge-001",
+      "phase": "Edge Cases",
+      "title": "Handle edge cases — empty data, single row, large categories, query errors",
+      "description": "Verify and fix edge cases: 0 rows, 1 row, >50 categories, query errors, null values. Add guard clauses and fallback UI for each.",
+      "acceptanceCriteria": [
+        "TDD: Write test — config points to empty table → 'No data available' message shown, no crash",
+        "TDD: Write test — table with 1 row → single bar renders correctly",
+        "TDD: Write test — table with 100 distinct categories → chart renders with limit applied (default 30), no overflow",
+        "TDD: Write test — invalid table name → error state shown, no page crash",
+        "TDD: Write test — null/undefined values in metric column → filtered out or handled in aggregation",
+        "All edge cases tested and handled gracefully",
+        "Task Logging: Log completion to tasks-log.json",
+        "Code Review: Guard clauses should be simple if/return patterns. No complex error boundary abstractions.",
+        "Update Docs: Document known limitations in spec if any are discovered"
+      ],
+      "priority": 2,
+      "status": "completed",
+      "mapsTo": "Edge Cases"
+    }
+  ],
+  "tddWorkflow": {
+    "enforced": true,
+    "cycle": "RED-GREEN-REFACTOR",
+    "rules": [
+      "Write test first (RED) - test must fail",
+      "Write minimal code to pass (GREEN) - no optimization",
+      "Refactor only after test passes (REFACTOR) - maintain quality",
+      "All tasks must follow TDD cycle as acceptance criteria"
+    ]
+  }
+}

@@ -2,11 +2,14 @@
 	import { onMount } from 'svelte';
 	import { getSettings, saveSettings, extractErrorMessage } from '$lib/db-operations';
 	import { analyst } from '$lib/stores/analyst.svelte';
-	import { Settings, Save, CheckCircle, AlertCircle, Database } from 'lucide-svelte';
+	import { Settings, Save, CheckCircle, AlertCircle, Database, Cloud, Cpu } from 'lucide-svelte';
+	import ModelManager from '$lib/components/ModelManager.svelte';
 
 	let apiUrl = $state('');
 	let apiKey = $state('');
 	let apiModel = $state('');
+	let inferenceMode = $state<'remote' | 'local'>('remote');
+	let localModelId = $state('');
 	let saving = $state(false);
 	let saved = $state(false);
 	let error = $state('');
@@ -18,6 +21,8 @@
 			apiUrl = (settings.llmApiUrl as string) || 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 			apiKey = (settings.llmApiKey as string) || '';
 			apiModel = (settings.llmModel as string) || 'glm-5';
+			inferenceMode = (settings.inferenceMode as string) === 'local' ? 'local' : 'remote';
+			localModelId = (settings.localModelId as string) || '';
 		} catch {
 			apiUrl = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 			apiModel = 'glm-5';
@@ -33,11 +38,15 @@
 			await saveSettings({
 				llmApiUrl: apiUrl,
 				llmApiKey: apiKey,
-				llmModel: apiModel
+				llmModel: apiModel,
+				inferenceMode,
+				localModelId: localModelId || null
 			});
 			analyst.apiUrl = apiUrl;
 			analyst.apiKey = apiKey;
 			analyst.apiModel = apiModel;
+			analyst.inferenceMode = inferenceMode;
+			analyst.localModelId = localModelId || null;
 			saved = true;
 			setTimeout(() => { saved = false; }, 3000);
 		} catch (e) {
@@ -66,47 +75,88 @@
 		<div class="settings-loading">Loading...</div>
 	{:else}
 		<div class="settings-section">
-			<h2 class="section-title">LLM Configuration</h2>
-			<p class="section-desc">Configure the AI analyst endpoint. Settings are stored locally on disk.</p>
+			<h2 class="section-title">AI Analyst</h2>
+			<p class="section-desc">Choose how to power the AI Analyst — remote API or local on-device inference.</p>
 
-			<div class="field">
-				<label for="api-url" class="field-label">API URL</label>
-				<input
-					id="api-url"
-					type="text"
-					class="input input-mono"
-					bind:value={apiUrl}
-					placeholder="https://api.z.ai/api/coding/paas/v4/chat/completions"
-				/>
-				<span class="field-hint">The chat completions endpoint URL</span>
+			<div class="mode-toggle-row">
+				<button
+					class="mode-btn"
+					class:active={inferenceMode === 'remote'}
+					onclick={() => { inferenceMode = 'remote'; }}
+				>
+					<Cloud size={16} />
+					<span class="mode-btn-text">
+						<span class="mode-btn-label">Remote API</span>
+						<span class="mode-btn-desc">Use a cloud LLM provider</span>
+					</span>
+				</button>
+				<button
+					class="mode-btn"
+					class:active={inferenceMode === 'local'}
+					onclick={() => { inferenceMode = 'local'; }}
+				>
+					<Cpu size={16} />
+					<span class="mode-btn-text">
+						<span class="mode-btn-label">Local AI</span>
+						<span class="mode-btn-desc">Run models on your device</span>
+					</span>
+				</button>
 			</div>
 
-			<div class="field">
-				<label for="api-key" class="field-label">API Key</label>
-				<input
-					id="api-key"
-					type="password"
-					class="input input-mono"
-					bind:value={apiKey}
-					placeholder="sk-..."
-				/>
-				<span class="field-hint">Your API key (stored locally, never sent to us)</span>
-			</div>
+			{#if inferenceMode === 'remote'}
+				<div class="settings-section" style="margin-top: var(--space-4); border: 1px solid var(--color-border);">
+					<h2 class="section-title">LLM Configuration</h2>
+					<p class="section-desc">Configure the AI analyst endpoint. Settings are stored locally on disk.</p>
 
-			<div class="field">
-				<label for="api-model" class="field-label">Model</label>
-				<input
-					id="api-model"
-					type="text"
-					class="input"
-					bind:value={apiModel}
-					placeholder="glm-5"
-				/>
-				<span class="field-hint">The model identifier to use</span>
-			</div>
+					<div class="field">
+						<label for="api-url" class="field-label">API URL</label>
+						<input
+							id="api-url"
+							type="text"
+							class="input input-mono"
+							bind:value={apiUrl}
+							placeholder="https://api.z.ai/api/coding/paas/v4/chat/completions"
+						/>
+						<span class="field-hint">The chat completions endpoint URL</span>
+					</div>
+
+					<div class="field">
+						<label for="api-key" class="field-label">API Key</label>
+						<input
+							id="api-key"
+							type="password"
+							class="input input-mono"
+							bind:value={apiKey}
+							placeholder="sk-..."
+						/>
+						<span class="field-hint">Your API key (stored locally, never sent to us)</span>
+					</div>
+
+					<div class="field">
+						<label for="api-model" class="field-label">Model</label>
+						<input
+							id="api-model"
+							type="text"
+							class="input"
+							bind:value={apiModel}
+							placeholder="glm-5"
+						/>
+						<span class="field-hint">The model identifier to use</span>
+					</div>
+				</div>
+			{:else}
+				<div class="settings-section" style="margin-top: var(--space-4); border: 1px solid var(--color-border);">
+					<h2 class="section-title">Local Model</h2>
+					<p class="section-desc">Download and manage local AI models for offline use.</p>
+					<div class="field-hint" style="margin-top: var(--space-2); margin-bottom: var(--space-4);">
+						Local models require ~2-5 GB of disk space and run on your CPU. Chat responses may be slower than remote APIs.
+					</div>
+					<ModelManager onselect={(id) => { localModelId = id; }} />
+				</div>
+			{/if}
 
 			<div class="save-row">
-				<button class="btn btn-primary" onclick={handleSave} disabled={saving || !apiUrl.trim()}>
+				<button class="btn btn-primary" onclick={handleSave} disabled={saving}>
 					{#if saving}
 						<svg class="spinner spinner--sm" viewBox="0 0 24 24" fill="none">
 							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
@@ -237,5 +287,52 @@
 	.spinner--sm {
 		width: 14px;
 		height: 14px;
+	}
+
+	.mode-toggle-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-3);
+	}
+
+	.mode-btn {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-4);
+		border: 2px solid var(--color-border);
+		border-radius: var(--radius-md);
+		background: var(--color-surface);
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		transition: border-color 0.15s, background 0.15s, color 0.15s;
+		text-align: center;
+	}
+
+	.mode-btn:hover {
+		border-color: var(--color-text-tertiary);
+	}
+
+	.mode-btn.active {
+		border-color: var(--color-accent);
+		background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+		color: var(--color-text);
+	}
+
+	.mode-btn-text {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+
+	.mode-btn-label {
+		font-size: var(--text-sm);
+		font-weight: 600;
+	}
+
+	.mode-btn-desc {
+		font-size: var(--text-xs);
+		opacity: 0.6;
 	}
 </style>

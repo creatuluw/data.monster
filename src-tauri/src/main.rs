@@ -6,9 +6,10 @@ mod state;
 mod utils;
 
 use commands::{
-    database::*, files::*, folders::*, internal_db::*, labels::*, postgres::*, queries::*,
-    saved_queries::*, settings::*, tables::*, workspace::*,
+    database::*, files::*, folders::*, internal_db::*, labels::*, local_llm::*, postgres::*,
+    queries::*, saved_queries::*, settings::*, tables::*, workspace::*,
 };
+use commands::local_llm::LlmState;
 use state::DuckDbState;
 
 fn main() {
@@ -16,6 +17,10 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(DuckDbState::default())
+        .manage(
+            LlmState::new()
+                .expect("Failed to initialize LLM state"),
+        )
         .invoke_handler(tauri::generate_handler![
             initialize_duckdb,
             shutdown_duckdb,
@@ -59,6 +64,17 @@ fn main() {
             connect_postgres,
             list_postgres_tables,
             generate_pg_ingest_sql,
+            detect_system_ram,
+            list_available_models,
+            download_model,
+            cancel_download,
+            list_downloaded_models,
+            delete_model,
+            load_model,
+            unload_model,
+            is_model_loaded,
+            generate_chat,
+            stop_generation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

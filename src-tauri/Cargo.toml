@@ -26,6 +26,9 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 reqwest = { version = "0.12", features = ["blocking"] }
 url = "2"
 parking_lot = "0.12"
+llama-cpp-2 = "0.1"
+sysinfo = "0.33"
+encoding_rs = "0.8"
 
 [dev-dependencies]
 tempfile = "3"

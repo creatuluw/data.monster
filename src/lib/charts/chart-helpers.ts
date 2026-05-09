@@ -13,7 +13,7 @@ export const PALETTE = [
 	'oklch(0.76 0.13 80)'
 ];
 
-export const DIMMED = 'oklch(0.9 0.005 250 / 0.45)';
+export const DIMMED = 'oklch(0.85 0.01 250 / 0.4)';
 
 export function aggregate(
 	data: Record<string, any>[],

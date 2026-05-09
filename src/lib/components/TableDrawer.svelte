@@ -319,7 +319,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 560px;
+		width: 40vw;
 		max-width: 100vw;
 		background: var(--color-surface);
 		border-left: 1px solid var(--color-border);

@@ -471,3 +471,83 @@ export async function getAllTableMeta(): Promise<TableMeta[]> {
 	}
 	return metas;
 }
+
+// ─── Local LLM ───────────────────────────────────────────────
+
+export interface ModelEntry {
+	id: string;
+	name: string;
+	description: string;
+	params: string;
+	size_bytes: number;
+	ram_required_bytes: number;
+	tier: 'fast' | 'balanced';
+	download_url: string;
+	filename: string;
+}
+
+export interface DownloadedModel {
+	model_id: string;
+	name: string;
+	filename: string;
+	size_bytes: number;
+}
+
+export interface ModelLoadStatus {
+	loaded: boolean;
+	model_id: string | null;
+}
+
+export interface DownloadProgress {
+	model_id: string;
+	bytes_downloaded: number;
+	bytes_total: number;
+	percent: number;
+}
+
+export async function detectSystemRam(): Promise<number> {
+	return invoke<number>('detect_system_ram');
+}
+
+export async function listAvailableModels(): Promise<ModelEntry[]> {
+	return invoke<ModelEntry[]>('list_available_models');
+}
+
+export async function downloadModel(modelId: string): Promise<void> {
+	return invoke<void>('download_model', { modelId });
+}
+
+export async function cancelDownload(): Promise<void> {
+	return invoke<void>('cancel_download');
+}
+
+export async function listDownloadedModels(): Promise<DownloadedModel[]> {
+	return invoke<DownloadedModel[]>('list_downloaded_models');
+}
+
+export async function deleteModel(modelId: string): Promise<void> {
+	return invoke<void>('delete_model', { modelId });
+}
+
+export async function loadModel(modelId: string): Promise<void> {
+	return invoke<void>('load_model', { modelId });
+}
+
+export async function unloadModel(): Promise<void> {
+	return invoke<void>('unload_model');
+}
+
+export async function isModelLoaded(): Promise<ModelLoadStatus> {
+	return invoke<ModelLoadStatus>('is_model_loaded');
+}
+
+export async function generateChat(messages: { role: string; content: string }[], systemPrompt: string): Promise<void> {
+	return invoke<void>('generate_chat', {
+		messages: messages.map((m) => ({ role: m.role, content: m.content })),
+		systemPrompt
+	});
+}
+
+export async function stopGeneration(): Promise<void> {
+	return invoke<void>('stop_generation');
+}

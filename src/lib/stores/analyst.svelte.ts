@@ -1,4 +1,5 @@
-import { runPagedQuery, type PagedQueryResult, executeQuery, getSettings } from '$lib/db-operations';
+import { runPagedQuery, type PagedQueryResult, executeQuery, getSettings, generateChat, stopGeneration, loadModel, unloadModel } from '$lib/db-operations';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 export interface ChatMessage {
 	id: string;
@@ -47,8 +48,16 @@ class AnalystState {
 	apiUrl = $state('');
 	apiKey = $state('');
 	apiModel = $state('');
+	inferenceMode = $state<'remote' | 'local'>('remote');
+	localModelId = $state<string | null>(null);
 
 	private initialized = false;
+	private tokenUnlisten: UnlistenFn | null = null;
+	private doneUnlisten: UnlistenFn | null = null;
+	private errorUnlisten: UnlistenFn | null = null;
+	private generationResolve: (() => void) | null = null;
+	private lastGenerationTime = 0;
+	private inactivityTimer: ReturnType<typeof setInterval> | null = null;
 
 	async init() {
 		if (this.initialized) return;
@@ -60,10 +69,31 @@ class AnalystState {
 			if (settings.llmApiKey) this.apiKey = settings.llmApiKey as string;
 			if (settings.llmModel) this.apiModel = settings.llmModel as string;
 			else this.apiModel = 'glm-5';
+			this.inferenceMode = (settings.inferenceMode as string) === 'local' ? 'local' : 'remote';
+			this.localModelId = (settings.localModelId as string) || null;
+
+			if (this.inferenceMode === 'local' && this.localModelId) {
+				try { await loadModel(this.localModelId); } catch { /* model may not be downloaded yet */ }
+			}
 		} catch {
 			this.apiUrl = 'https://api.z.ai/api/coding/paas/v4/chat/completions';
 			this.apiModel = 'glm-5';
 		}
+
+		this.startInactivityTimer();
+	}
+
+	private startInactivityTimer() {
+		if (this.inactivityTimer) return;
+		this.inactivityTimer = setInterval(() => {
+			if (this.inferenceMode === 'local' && this.lastGenerationTime > 0) {
+				const elapsed = Date.now() - this.lastGenerationTime;
+				if (elapsed > 5 * 60 * 1000 && !this.streaming) {
+					unloadModel().catch(() => {});
+					this.lastGenerationTime = 0;
+				}
+			}
+		}, 30000);
 	}
 
 	get currentQuery(): QueryEntry | null {
@@ -81,9 +111,23 @@ class AnalystState {
 	}
 
 	stop() {
+		if (this.inferenceMode === 'local') {
+			stopGeneration();
+		}
 		if (this.abortController) {
 			this.abortController.abort();
 		}
+		this.cleanupListeners();
+		if (this.generationResolve) {
+			this.generationResolve();
+			this.generationResolve = null;
+		}
+	}
+
+	private cleanupListeners() {
+		if (this.tokenUnlisten) { this.tokenUnlisten(); this.tokenUnlisten = null; }
+		if (this.doneUnlisten) { this.doneUnlisten(); this.doneUnlisten = null; }
+		if (this.errorUnlisten) { this.errorUnlisten(); this.errorUnlisten = null; }
 	}
 
 	togglePlanOption(optionId: string) {
@@ -250,8 +294,9 @@ Always generate at least one SQL query per user message.`;
 	}
 
 	async sendMessage(content: string) {
-		if (this.streaming && this.abortController) {
-			this.abortController.abort();
+		if (this.streaming) {
+			this.stop();
+			await new Promise((r) => setTimeout(r, 100));
 		}
 
 		await this.init();
@@ -265,6 +310,14 @@ Always generate at least one SQL query per user message.`;
 		const schemas = await this.getTableSchemas();
 		const systemPrompt = this.buildSystemPrompt(schemas);
 
+		if (this.inferenceMode === 'local') {
+			await this.sendLocal(systemPrompt);
+		} else {
+			await this.sendRemote(systemPrompt);
+		}
+	}
+
+	private async sendRemote(systemPrompt: string) {
 		const apiMessages = [
 			{ role: 'system' as const, content: systemPrompt },
 			...this.messages.map((m) => ({ role: m.role, content: m.content }))
@@ -368,6 +421,67 @@ Always generate at least one SQL query per user message.`;
 			this.streamingContent = '';
 			this.abortController = null;
 		}
+	}
+
+	private async sendLocal(systemPrompt: string) {
+		this.cleanupListeners();
+		this.lastGenerationTime = Date.now();
+
+		const apiMessages = this.messages.map((m) => ({ role: m.role, content: m.content }));
+
+		return new Promise<void>((resolve) => {
+			this.generationResolve = resolve;
+
+			listen<{ token: string }>('local-llm:token', (event) => {
+				this.streamingContent += event.payload.token;
+				this.extractAndExecuteSql();
+			}).then((unlisten) => { this.tokenUnlisten = unlisten; });
+
+			listen('local-llm:done', () => {
+				if (this.streamingContent) {
+					this.messages = [
+						...this.messages,
+						{
+							id: this.pendingMessageId,
+							role: 'assistant',
+							content: this.streamingContent,
+							timestamp: Date.now()
+						}
+					];
+					this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
+				}
+				this.streaming = false;
+				this.streamingContent = '';
+			}).then((unlisten) => { this.doneUnlisten = unlisten; });
+
+			listen<{ error: string }>('local-llm:error', (event) => {
+				this.messages = [
+					...this.messages,
+					{
+						id: this.pendingMessageId,
+						role: 'assistant',
+						content: `Error: ${event.payload.error}`,
+						timestamp: Date.now()
+					}
+				];
+				this.streaming = false;
+				this.streamingContent = '';
+			}).then((unlisten) => { this.errorUnlisten = unlisten; });
+
+			generateChat(apiMessages, systemPrompt).catch((e) => {
+				this.messages = [
+					...this.messages,
+					{
+						id: this.pendingMessageId,
+						role: 'assistant',
+						content: `Error: ${e}`,
+						timestamp: Date.now()
+					}
+				];
+				this.streaming = false;
+				this.streamingContent = '';
+			});
+		});
 	}
 
 	private async extractAndExecuteSql() {

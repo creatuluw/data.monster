@@ -57,6 +57,15 @@
 	--color-sand-900: oklch(0.16 0.006 80);
 }
 
+.lc-root-container {
+	--color-primary: var(--color-accent);
+	--color-surface-100: var(--color-surface);
+	--color-surface-200: var(--color-surface-sunken);
+	--color-surface-300: var(--color-surface-raised);
+	--color-surface-content: var(--color-text);
+	--color-surface-content-secondary: var(--color-text-secondary);
+}
+
 :root {
 	--font-mono: 'Geist Mono', 'Courier New', Courier, monospace;
 

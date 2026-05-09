@@ -1,0 +1,366 @@
+{
+  "project": "local-llm",
+  "spec": ".specs/local-llm/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "setup-001",
+      "phase": "Setup",
+      "title": "Add llama-cpp-2 dependency and build configuration",
+      "description": "FR-4/FR-5: Add the `llama-cpp-2` crate to Cargo.toml. This crate compiles llama.cpp from source via cmake and links it as a static library. Verify the project compiles on Windows with cmake available.",
+      "acceptanceCriteria": [
+        "TDD: Write a minimal Rust test that creates a llama.cpp backend instance (llama-cpp-2::LlamaModel) to verify the FFI linkage works",
+        "TDD: Test fails if llama-cpp-2 is not properly linked",
+        "TDD: Refactor after test passes — ensure no unnecessary feature flags",
+        "Verify `cargo build` succeeds in src-tauri/",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Simplicity First — only add llama-cpp-2, no other dependencies yet",
+        "Update Docs: Note cmake build requirement in README if not already documented"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-4, FR-5"
+    },
+    {
+      "id": "setup-002",
+      "phase": "Setup",
+      "title": "Create LLM state module and Tauri command registrations",
+      "description": "FR-4: Create `src-tauri/src/commands/local_llm.rs` as a new module. Add `LlmState` to hold loaded model, model ID, and download state. Register module in `commands/mod.rs` and `main.rs`. Add the new module declaration to `lib.rs`.",
+      "acceptanceCriteria": [
+        "TDD: Write test that LlmState::default() creates empty state (no model loaded, no downloads)",
+        "TDD: Test fails if LlmState struct doesn't exist",
+        "TDD: Refactor — use parking_lot::Mutex like existing DuckDbState pattern",
+        "local_llm module is registered in commands/mod.rs",
+        "Placeholder commands are registered in main.rs invoke_handler",
+        "Follow existing state management pattern from state.rs (Mutex-wrapped Option)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Match existing style — look at how DuckDbState is structured",
+        "Update Docs: N/A (internal module, no user-facing change)"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "core-001",
+      "phase": "Core",
+      "title": "Implement detect_system_ram command",
+      "description": "FR-1: Create a Tauri command `detect_system_ram()` that returns total physical RAM in bytes. On Windows, use the `windows` crate or `sysinfo` crate to query `GlobalMemoryStatusEx`.",
+      "acceptanceCriteria": [
+        "TDD: Write test that returns a positive u64 value on the current machine",
+        "TDD: Write test that the returned value is reasonable (>1GB, <1TB)",
+        "TDD: Refactor — use sysinfo crate if it simplifies cross-platform support, or Win32 API directly",
+        "Command is registered in main.rs invoke_handler",
+        "Returns Result<u64, String> consistent with existing command error patterns",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Surgical Changes — only add RAM detection, don't refactor other commands",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-002",
+      "phase": "Core",
+      "title": "Implement model catalog and list_available_models command",
+      "description": "FR-2: Define a `ModelEntry` struct with id, name, description, sizeBytes, ramRequiredBytes, tier, downloadUrl, filename. Hardcode a catalog of 8 models (Qwen 2.5 Coder 3B, Qwen 2.5 3B, Gemma 4 E2B, Phi-4 Mini, Llama 3.2 3B, Qwen 2.5 Coder 7B, Gemma 4 E4B, Mistral 7B). Return via `list_available_models()` Tauri command.",
+      "acceptanceCriteria": [
+        "TDD: Write test that list_available_models returns exactly 8 models",
+        "TDD: Write test that all models have required fields populated (non-empty name, positive size, valid tier)",
+        "TDD: Write test that fast-tier models have ramRequired <= 4GB and balanced-tier <= 7GB",
+        "TDD: Refactor — extract catalog into a function, keep struct Serializable",
+        "ModelEntry struct derives Serialize, Deserialize, Clone",
+        "Each model has a stable string ID (e.g., 'qwen25-coder-3b-q4km')",
+        "Download URLs point to HuggingFace GGUF files (bartowski or unsloth repos)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Simplicity First — hardcoded catalog, no external fetch needed",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-003",
+      "phase": "Core",
+      "title": "Implement download_model with progress events",
+      "description": "FR-3: Create `download_model(app, model_id)` Tauri command. Download GGUF from HuggingFace URL to `{app_data_dir}/models/{filename}`. Emit `local-llm:download-progress` events with bytes downloaded, total, and percent. Support cancellation via AtomicBool. Create models directory if it doesn't exist.",
+      "acceptanceCriteria": [
+        "TDD: Write test that models directory is created on download attempt",
+        "TDD: Write test that download emits progress events (mock or small file)",
+        "TDD: Write test that existing file matching expected size skips download",
+        "TDD: Write test that cancel_download sets the cancellation flag",
+        "TDD: Refactor — extract download logic into a helper function",
+        "Uses reqwest (already in dependencies) for HTTP download",
+        "Progress emitted via app.emit() as Tauri events",
+        "Partial downloads are cleaned up on error/cancel",
+        "Only one download at a time (reject concurrent with error)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use existing reqwest dependency, don't add new HTTP crate",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-004",
+      "phase": "Core",
+      "title": "Implement list_downloaded_models and delete_model commands",
+      "description": "FR-3: `list_downloaded_models()` scans the models directory for GGUF files and returns metadata (matching against catalog entries). `delete_model(model_id)` removes the GGUF file from disk and unloads it if loaded.",
+      "acceptanceCriteria": [
+        "TDD: Write test that list_downloaded_models returns empty when no files exist",
+        "TDD: Write test that list_downloaded_models returns entry after a file matching a catalog filename is placed in models dir",
+        "TDD: Write test that delete_model removes the file and returns Ok",
+        "TDD: Write test that delete_model returns error for unknown model_id",
+        "TDD: Refactor — share file path resolution logic with download_model",
+        "delete_model unloads the model first if it's currently loaded",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Surgical Changes — only add these two commands",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-005",
+      "phase": "Core",
+      "title": "Implement load_model and unload_model commands",
+      "description": "FR-4: `load_model(app, model_id)` resolves the GGUF path, loads it via llama-cpp-2's LlamaModel::load_from_file, and stores the loaded model in LlmState. `unload_model()` drops the model from state. `is_model_loaded()` returns current state.",
+      "acceptanceCriteria": [
+        "TDD: Write test that is_model_loaded returns {loaded: false, modelId: null} initially",
+        "TDD: Write test that load_model with a valid GGUF file succeeds and is_model_loaded returns {loaded: true, modelId}",
+        "TDD: Write test that load_model with missing file returns error",
+        "TDD: Write test that unload_model clears the loaded model",
+        "TDD: Write test that loading a second model unloads the first",
+        "TDD: Refactor — extract model path resolution into helper",
+        "LlmState uses Mutex<Option<(String, LlamaModel)>> pattern",
+        "RAM check: estimate required RAM (file_size * 1.3) and warn if exceeds detected RAM (non-blocking warning, not hard block)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Simplicity First — one model at a time, no model pooling",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "core-006",
+      "phase": "Core",
+      "title": "Implement generate_chat with streaming events",
+      "description": "FR-5: `generate_chat(app, messages, system_prompt)` formats the messages using llama.cpp's chat template, creates a sampling context (temperature 0.6, top_p 0.95, max_tokens 2048), and streams tokens via `local-llm:token` Tauri events. Emits `local-llm:done` on completion. Supports `stop_generation()` via AtomicBool.",
+      "acceptanceCriteria": [
+        "TDD: Write test that generate_chat returns error when no model is loaded",
+        "TDD: Write test that generate_chat emits local-llm:token events when model is loaded (integration test with small model)",
+        "TDD: Write test that stop_generation cancels generation and emits local-llm:done",
+        "TDD: Refactor — extract message formatting into helper, keep generate loop clean",
+        "Uses llama-cpp-2 chat template application (apply_chat_template)",
+        "Token loop: llama_decode + llama_sample in a loop, emit each token via app.emit()",
+        "Defaults: temperature=0.6, top_p=0.95, top_k=40, n_predict=2048, n_ctx=4096",
+        "Thread count defaults to num_cpus but configurable",
+        "Generation runs on a background thread to avoid blocking the main thread",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Goal-Driven — focus on getting tokens flowing, optimize later",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "core-007",
+      "phase": "Core",
+      "title": "Add inference mode to settings schema",
+      "description": "FR-6: Extend the settings flow to support `inferenceMode` ('remote'|'local') and `localModelId` (string|null). These are stored in the existing settings.json alongside llmApiUrl, llmApiKey, llmModel. Default is 'remote' if not set.",
+      "acceptanceCriteria": [
+        "TDD: Write test that get_settings returns defaults {inferenceMode: 'remote', localModelId: null} for new install",
+        "TDD: Write test that save_settings + get_settings roundtrips the new fields",
+        "TDD: Refactor — no changes to existing settings fields, purely additive",
+        "Existing settings.rs remains backward-compatible — old settings files without these keys work fine",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Surgical Changes — don't touch existing settings command logic, just document the new keys",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "frontend-001",
+      "phase": "Frontend",
+      "title": "Create TypeScript bindings and db-operations helpers for local LLM",
+      "description": "FR-5/FR-7: Add TypeScript helper functions to `src/lib/db-operations.ts` for the new Tauri commands: detectSystemRam, listAvailableModels, downloadModel, listDownloadedModels, deleteModel, loadModel, unloadModel, isModelLoaded, generateChat, stopGeneration. Add Tauri event listener helpers for local-llm:token, local-llm:done, local-llm:error, local-llm:download-progress.",
+      "acceptanceCriteria": [
+        "TDD: Write test that helper functions call invoke() with correct command names and arguments",
+        "TDD: Refactor — use consistent naming and error handling patterns matching existing helpers",
+        "Each function wraps `invoke('command_name', args)` with proper TypeScript types",
+        "Event listener helper uses `listen('event-name', callback)` from @tauri-apps/api/event",
+        "All functions return typed Results (no any types)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Match existing db-operations.ts patterns — look at how runPagedQuery wraps invoke",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-5, FR-7"
+    },
+    {
+      "id": "frontend-002",
+      "phase": "Frontend",
+      "title": "Update analyst.svelte.ts to support local inference path",
+      "description": "FR-7: Modify `AnalystState.sendMessage()` to branch on `inferenceMode`. When 'local', use `invoke('generate_chat')` + listen for `local-llm:token` events instead of fetch(). When 'remote', keep existing logic. Add `inferenceMode` and `localModelId` to state. Load settings on init(). Handle stop() for local mode via `stopGeneration()`.",
+      "acceptanceCriteria": [
+        "TDD: Write test that sendMessage with inferenceMode='remote' uses fetch (existing behavior)",
+        "TDD: Write test that sendMessage with inferenceMode='local' calls invoke('generate_chat')",
+        "TDD: Write test that local mode token events append to streamingContent identically to remote SSE",
+        "TDD: Write test that stop() calls stopGeneration() in local mode",
+        "TDD: Refactor — extract remote and local send logic into private methods to keep sendMessage clean",
+        "SQL extraction (extractAndExecuteSql) works identically for both modes",
+        "Plan parsing (parseAndSetPlan) works identically for both modes",
+        "Messages are preserved when switching modes mid-session",
+        "analyst.init() loads inferenceMode and localModelId from settings",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Surgical Changes — only modify the sendMessage method and add state fields, don't restructure the class",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-7"
+    },
+    {
+      "id": "frontend-003",
+      "phase": "Frontend",
+      "title": "Create ModelManager component",
+      "description": "FR-8: Create `src/lib/components/ModelManager.svelte` — a component that displays the model catalog, handles download/delete/load actions, shows progress, and displays RAM/disk information. Groups models by tier. Shows warnings for models exceeding detected RAM.",
+      "acceptanceCriteria": [
+        "TDD: Write test that ModelManager renders model cards for each catalog entry",
+        "TDD: Write test that download button triggers download with progress bar",
+        "TDD: Write test that models exceeding detected RAM show a warning badge",
+        "TDD: Refactor — extract ModelCard into its own sub-component if complexity warrants",
+        "Uses existing CSS variables and component patterns (look at TableList, Modal for style reference)",
+        "Tier badges: 'Fast' (green) and 'Balanced' (blue) with model count per tier",
+        "Each model card shows: name, params, size, RAM needed, download/load/delete status",
+        "Progress bar during download with percentage and MB/total MB",
+        "Loaded model has a distinct visual indicator (green dot or badge)",
+        "Disk usage summary at bottom: 'X GB used across N models'",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Match existing component patterns — look at similar list/card components",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-8"
+    },
+    {
+      "id": "frontend-004",
+      "phase": "Frontend",
+      "title": "Update Settings page with inference mode toggle and model manager",
+      "description": "FR-6/FR-8: Update `src/routes/settings/+page.svelte` to add an inference mode toggle (Remote API / Local AI) above the existing LLM config. When Local AI is selected, show the ModelManager component and hide remote API fields. Persist the mode choice to settings.",
+      "acceptanceCriteria": [
+        "TDD: Write test that toggling to Local AI hides remote API fields and shows ModelManager",
+        "TDD: Write test that toggling to Remote API shows URL/key/model fields and hides ModelManager",
+        "TDD: Write test that saving persists inferenceMode to settings",
+        "TDD: Refactor — keep the mode toggle logic clean, use conditional blocks",
+        "Settings page loads existing inferenceMode from settings on mount",
+        "Saving settings includes inferenceMode and localModelId",
+        "Remote API section has a visual indicator that it's inactive when in local mode",
+        "Smooth transition between modes (no layout jumps)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Surgical Changes — add toggle section, don't restructure existing settings layout",
+        "Update Docs: N/A"
+      ],
+      "priority": 1,
+      "status": "completed",
+      "mapsTo": "FR-6, FR-8"
+    },
+    {
+      "id": "integration-001",
+      "phase": "Integration",
+      "title": "End-to-end smoke test: local inference flow",
+      "description": "Integration test: Download a small model (Qwen 2.5 Coder 3B), load it, send a text-to-SQL prompt via generate_chat, verify tokens stream, verify SQL is extractable from the response.",
+      "acceptanceCriteria": [
+        "TDD: Write integration test that exercises the full local flow: download → load → generate → extract SQL",
+        "TDD: Test verifies tokens are received via Tauri events",
+        "TDD: Test verifies generation completes with local-llm:done event",
+        "Verify the generated response contains valid SQL when given a schema + question prompt matching the existing system prompt",
+        "Token throughput is measured and logged (tok/s)",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: This is a verification task, not a feature — keep the test focused",
+        "Update Docs: Update README with local AI setup instructions"
+      ],
+      "priority": 2,
+      "status": "completed",
+      "mapsTo": "FR-1, FR-2, FR-3, FR-4, FR-5, FR-7"
+    },
+    {
+      "id": "integration-002",
+      "phase": "Integration",
+      "title": "Handle model auto-load on app startup and auto-unload after inactivity",
+      "description": "FR-4: On app start, if settings have inferenceMode='local' and localModelId is set, auto-load that model. After 5 minutes of no generation activity, auto-unload to free RAM for DuckDB.",
+      "acceptanceCriteria": [
+        "TDD: Write test that app startup with local mode settings triggers load_model for the saved modelId",
+        "TDD: Write test that the inactivity timer triggers unload after 5 minutes",
+        "TDD: Write test that a generation resets the inactivity timer",
+        "TDD: Refactor — use a simple timestamp comparison, no complex timer framework",
+        "Auto-load runs in background, doesn't block app startup",
+        "If auto-load fails (model deleted), show warning but don't crash",
+        "Inactivity timer is only active when a model is loaded",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Simplicity First — a single timestamp + check, no background threads for the timer",
+        "Update Docs: Document the auto-unload behavior in README"
+      ],
+      "priority": 2,
+      "status": "completed",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "edge-001",
+      "phase": "Edge Cases",
+      "title": "Handle download cancellation, disk full, and corrupt GGUF files",
+      "description": "Edge cases 1-3, 5, 7: Clean up partial downloads on cancel/error. Check disk space before download. Handle corrupt GGUF with clear error message. Handle externally-deleted model files.",
+      "acceptanceCriteria": [
+        "TDD: Write test that cancelling a download deletes the partial file",
+        "TDD: Write test that disk full error is caught and returns descriptive message",
+        "TDD: Write test that loading a corrupt/truncated GGUF returns a clear error (not a panic)",
+        "TDD: Write test that loading a model whose file was deleted externally returns file-not-found",
+        "TDD: Refactor — share cleanup logic between cancel and error paths",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Cover all failure paths — every .unwrap() should be replaced with proper error handling",
+        "Update Docs: N/A"
+      ],
+      "priority": 2,
+      "status": "completed",
+      "mapsTo": "Edge Cases 1, 2, 3, 5, 7"
+    },
+    {
+      "id": "edge-002",
+      "phase": "Edge Cases",
+      "title": "Handle rapid mode switching and concurrent operations",
+      "description": "Edge cases 8, 10: Switching remote↔local mid-conversation preserves messages. Concurrent downloads are rejected. Generation during mode switch is handled gracefully.",
+      "acceptanceCriteria": [
+        "TDD: Write test that switching mode while streaming stops current generation cleanly",
+        "TDD: Write test that concurrent download_model calls return error on the second call",
+        "TDD: Write test that messages array survives mode switch intact",
+        "TDD: Refactor — use state machine or enum for download/generate state tracking",
+        "Task Logging: .specs/local-llm/tasks-log.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Simplicity First — AtomicBool flags for concurrent guards, not a full state machine",
+        "Update Docs: N/A"
+      ],
+      "priority": 2,
+      "status": "completed",
+      "mapsTo": "Edge Cases 8, 10"
+    }
+  ],
+  "tddWorkflow": {
+    "enforced": true,
+    "cycle": "RED-GREEN-REFACTOR",
+    "rules": [
+      "Write test first (RED) - test must fail",
+      "Write minimal code to pass (GREEN) - no optimization",
+      "Refactor only after test passes (REFACTOR) - maintain quality",
+      "All tasks must follow TDD cycle as acceptance criteria"
+    ]
+  }
+}

@@ -19,3 +19,33 @@ export interface ChartOptions {
 }
 
 export type ColorScale = Record<string, string>;
+
+export interface BarChartDimension {
+	field: string;
+	label?: string;
+}
+
+export interface BarChartMetric {
+	field: string;
+	label?: string;
+	aggregate?: 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX';
+}
+
+export interface BarChartConfig {
+	id: string;
+	table: string;
+	dimension: BarChartDimension;
+	metric: BarChartMetric;
+	orientation?: 'vertical' | 'horizontal';
+	filters?: string[];
+	sortDirection?: 'ASC' | 'DESC';
+	limit?: number;
+	clickToFilter?: boolean;
+	colors?: string[];
+}
+
+export interface BarChartData {
+	[key: string]: string | number | null;
+}
+
+export type FilterState = Map<string, Set<string>>;

@@ -3,6 +3,7 @@ pub mod files;
 pub mod folders;
 pub mod internal_db;
 pub mod labels;
+pub mod local_llm;
 pub mod postgres;
 pub mod queries;
 pub mod saved_queries;

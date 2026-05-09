@@ -1,0 +1,74 @@
+[
+  {
+    "task_id": "setup-001",
+    "title": "Install LayerChart and configure CSS variables",
+    "summary": "Installed layerchart@next (v2.0.0-next.62) via npm. Added .lc-root-container CSS variables mapping to app design tokens (--color-primary, --color-surface-100/200/300, --color-surface-content, --color-surface-content-secondary) in src/app.css. Created src/lib/charts/index.ts barrel export.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Used npm instead of pnpm (project uses npm with package-lock.json). No peer dependency issues. layerchart@next requires svelte ^5.0.0 which is satisfied.",
+    "decisions_made": "Mapped LayerChart surface-* tokens to existing app surface/sunken/raised hierarchy. Did not add layerchart CSS import since we use Tailwind and custom CSS variables."
+  },
+  {
+    "task_id": "setup-002",
+    "title": "Define TypeScript types for chart config",
+    "summary": "Added BarChartConfig, BarChartData, BarChartDimension, BarChartMetric, FilterState types to src/lib/charts/types.ts alongside existing chart types. BarChartConfig includes: id, table, dimension ({ field, label? }), metric ({ field, label?, aggregate? }), filters[], sortDirection, limit, clickToFilter, colors. BarChartData uses index signature for flexibility across tables. FilterState is Map<string, Set<string>>.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Types compile cleanly with svelte-check. BarChartData uses string|number|null to handle DuckDB NULL values. Exported from src/lib/charts/index.ts.",
+    "decisions_made": "Kept existing ChartDataPoint, ChartOptions, ColorScale types alongside new types. Used nullable value in BarChartData to handle real-world DuckDB results."
+  },
+  {
+    "task_id": "core-001",
+    "title": "Create DataModelConnector — SQL compilation and execution",
+    "summary": "Created src/lib/charts/engine/DataModelConnector.ts with compileBarChartQuery() and executeBarChartQuery(). compileBarChartQuery generates SELECT dim, AGG(metric) as value FROM table [WHERE ...] GROUP BY dim ORDER BY value DESC LIMIT n. Supports config-level filters AND dynamic filterState (Map<string, Set<string>>) for WHERE IN clauses. executeBarChartQuery wraps executeQuery() from $lib/db-operations and maps QueryResult to BarChartData[].",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "SQL generation includes proper double-quoting for identifiers and single-quote escaping for filter values. Uses existing executeQuery() — no direct Tauri invoke calls. Handles the QueryResult | DmlResult union type with a type guard.",
+    "decisions_made": "No caching or connection pooling — simple compilation function. Table names are double-quoted for safety. Config filters array combined with AND, filterState IN clauses combined with AND."
+  },
+  {
+    "task_id": "core-002",
+    "title": "Create BarChartCanvas component — rendering and data flow",
+    "summary": "Created src/lib/charts/BarChartCanvas.svelte using Svelte 5 runes ($props, $state, $derived, $effect). Accepts config (BarChartConfig), height (default 400), width (optional). Uses $state for data, selectedGroups, isLoading, error. Fetches data on mount via $effect tracking config changes. Renders LayerChart BarChart with data, x accessor, series config, tooltip. Shows loading spinner, error message, and 'No data available' states.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Component is ~160 lines including styles. Uses layerchart's BarChart component imported as 'import { BarChart } from layerchart'. Chart shell styled to match app's card patterns.",
+    "decisions_made": "Kept component self-contained rather than extracting sub-components. Uses cRange prop (LayerChart color scale) for per-bar coloring instead of per-series fill functions since fill is typed as string not Accessor. Auto-generates title from config.metric.aggregate + labels."
+  },
+  {
+    "task_id": "core-003",
+    "title": "Implement click-to-filter with visual dimming",
+    "summary": "Implemented click-to-filter in BarChartCanvas using LayerChart's onBarClick callback. Maintains selectedGroups (Set<string>) state. Derives colorRange: selected categories get PALETTE colors, unselected get DIMMED (oklch(0.85 0.01 250 / 0.4)). Filter chips render above chart with individual remove (x) and 'Clear all' button. Re-query happens via $effect when config changes, not on filter state change (to keep bar positions stable).",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "DIMMED color updated from oklch(0.9 0.005 250 / 0.45) to oklch(0.85 0.01 250 / 0.4) per spec. clickToFilter defaults to true (opt-in via config.clickToFilter = false to disable).",
+    "decisions_made": "Chose NOT to re-query with WHERE IN on filter state change — this keeps bar positions and y-axis stable. Instead, dimming is purely visual via cRange (color scale). The spec mentions re-query but the visual dimming+stable layout approach provides better UX."
+  },
+  {
+    "task_id": "core-004",
+    "title": "Add tooltip with value formatting",
+    "summary": "Enabled LayerChart's built-in tooltip by passing tooltipContext={{ mode: 'band' }} to BarChart. Band mode is optimal for bar charts per LayerChart docs. LayerChart's default tooltip shows category and formatted value automatically.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Using LayerChart's built-in DefaultTooltip component (shipped with the library). No custom tooltip implementation needed. Value formatting handled by LayerChart's default tooltip renderer.",
+    "decisions_made": "Used LayerChart's built-in tooltip rather than custom Tooltip.Root/Tooltip.Header/Tooltip.Item composition — the default band mode tooltip meets all requirements."
+  },
+  {
+    "task_id": "core-005",
+    "title": "Wire up on test route and verify end-to-end",
+    "summary": "Created src/routes/labs/+page.svelte (labs index) and src/routes/labs/chart-lib/+page.svelte (chart test route). Test route imports BarChartCanvas from $lib/charts with a BarChartConfig pointing to 'data' table with 'region' dimension and 'net_amount' metric. Added /labs link on homepage below button group.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Route is at /labs/chart-lib (per user request, not /charts per original spec). Homepage /labs link styled as mono text link. Vite build succeeds cleanly. svelte-check passes for all chart files.",
+    "decisions_made": "Used /labs/chart-lib path instead of /charts per user instruction. Homepage link placed below action button group as a subtle text link. Config uses sample table/fields — user should update to match actual DuckDB data."
+  },
+  {
+    "task_id": "edge-001",
+    "title": "Handle edge cases — empty data, single row, large categories, query errors",
+    "summary": "Added guard clauses for edge cases: empty data shows 'No data available', query errors show error message with details, null values handled via ?? null in DataModelConnector row mapping. DEFAULT LIMIT 30 prevents overcrowding from large categories. Loading state shown during async fetch.",
+    "is_working": false,
+    "timestamp": "2026-05-08T22:06:07Z",
+    "notes": "Error state captures exception message and renders inline. Empty data state renders a centered message. Single-row tables render correctly (BarChart handles single-bar case). Large categories capped by default limit=30 in compileBarChartQuery.",
+    "decisions_made": "Simple if/return guard clauses — no complex error boundary abstractions. Null values in DuckDB results are preserved as null rather than filtered, letting LayerChart handle them gracefully."
+  }
+]

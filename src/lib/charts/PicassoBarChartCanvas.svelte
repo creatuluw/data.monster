@@ -54,23 +54,24 @@
 
 	function buildSettings(selected: Set<string>) {
 		const hasSelection = selected.size > 0;
+		const isHorizontal = config.orientation === 'horizontal';
 
 		return {
 			scales: {
 				cat: { data: { extract: { field: dimField } }, type: 'band', padding: 0.15 },
-				val: { data: { extract: { field: 'value' } }, type: 'linear', min: 0, expand: 0.05, invert: true }
+				val: { data: { extract: { field: 'value' } }, type: 'linear', min: 0, expand: 0.05, invert: !isHorizontal }
 			},
 			components: [
 				{
 					type: 'axis',
 					key: 'yaxis',
-					scale: 'val',
+					scale: isHorizontal ? 'cat' : 'val',
 					layout: { dock: 'left' }
 				},
 				{
 					type: 'axis',
 					key: 'xaxis',
-					scale: 'cat',
+					scale: isHorizontal ? 'val' : 'cat',
 					layout: { dock: 'bottom' }
 				},
 				{
@@ -88,7 +89,7 @@
 					settings: {
 						major: { scale: 'cat' },
 						minor: { scale: 'val' },
-						orientation: 'vertical',
+						orientation: isHorizontal ? 'horizontal' : 'vertical',
 						box: {
 							fill: (d: any) => {
 								const cat = d?.datum?.value?.[dimField] ?? d?.data?.value?.[dimField] ?? '';
@@ -369,6 +370,11 @@
 
 	.chart-body :global(svg) {
 		overflow: hidden;
+	}
+
+	.chart-body :global(svg text) {
+		font-family: 'Lekton', monospace !important;
+		font-size: var(--text-xs) !important;
 	}
 
 	.chart-body.clickable {

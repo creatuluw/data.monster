@@ -6,6 +6,19 @@
 	import { extractErrorMessage } from '$lib/db-operations';
 	import { onDestroy } from 'svelte';
 
+	function formatValue(value: number, fmt: string): string {
+		switch (fmt) {
+			case 'currency': return '$' + value.toLocaleString();
+			case 'percent': return value.toFixed(1) + '%';
+			case 'compact': {
+				if (value >= 1_000_000) return (value / 1_000_000).toFixed(1) + 'M';
+				if (value >= 1_000) return (value / 1_000).toFixed(1) + 'K';
+				return value.toLocaleString();
+			}
+			default: return value.toLocaleString();
+		}
+	}
+
 	interface Props {
 		config: BarChartConfig;
 		onBarClick?: (detail: { category: string; value: number; row: BarChartData }) => void;
@@ -110,7 +123,32 @@
 							minHeightPx: 1
 						}
 					}
-				}
+				},
+				...(config.showValues
+					? [{
+							type: 'labels' as const,
+							key: 'value-labels',
+							displayOrder: 2,
+							settings: {
+								sources: [{
+									component: 'bars',
+									selector: 'rect',
+									strategy: {
+										type: 'bar' as const,
+										settings: {
+											direction: isHorizontal ? 'right' : 'up',
+											labels: [{
+												label: (node: any) => formatValue(Number(node.data.end.value), config.valueFormat ?? 'number'),
+												placements: [{
+													position: 'outside'
+												}]
+											}]
+										}
+									}
+								}]
+							}
+						}]
+					: [])
 			]
 		};
 	}
@@ -214,10 +252,13 @@
 	});
 
 	let lastDataRef: string = '';
+	let lastLabelRef: string = '';
 	$effect(() => {
 		const ref = data.map((d) => `${d[dimField]}=${d.value}`).join('|');
-		if (ref === lastDataRef) return;
+		const labelRef = `${config.showValues}-${config.valueFormat}`;
+		if (ref === lastDataRef && labelRef === lastLabelRef) return;
 		lastDataRef = ref;
+		lastLabelRef = labelRef;
 		mountChart();
 	});
 

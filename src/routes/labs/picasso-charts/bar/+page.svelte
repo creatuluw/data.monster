@@ -37,6 +37,8 @@
 	let orientation: 'vertical' | 'horizontal' = $state('vertical');
 	let limit = $state(20);
 	let clickToFilter = $state(true);
+	let showValues = $state(false);
+	let valueFormat: 'number' | 'currency' | 'percent' | 'compact' = $state('number');
 	let chartId = $state('picasso-1');
 	let clickedBar: { category: string; value: number } | null = $state(null);
 
@@ -52,7 +54,9 @@
 					orientation,
 					sortDirection,
 					limit,
-					clickToFilter
+					clickToFilter,
+					showValues,
+					valueFormat
 				}
 			: null
 	);
@@ -292,6 +296,39 @@
 						<span class="toggle-knob"></span>
 					</button>
 				</label>
+
+				<label class="toggle-row">
+					<div class="toggle-label">
+						<span>Show values</span>
+						<span class="toggle-hint">Display value labels on bars</span>
+					</div>
+					<button
+						class="toggle"
+						class:toggle-on={showValues}
+						onclick={() => showValues = !showValues}
+						role="switch"
+						aria-checked={showValues}
+					>
+						<span class="toggle-knob"></span>
+					</button>
+				</label>
+
+				{#if showValues}
+					<div class="field">
+						<label class="field-label" for="chart-format">Number format</label>
+						<div class="format-options">
+							{#each ['number', 'currency', 'percent', 'compact'] as fmt}
+								<button
+									class="agg-btn"
+									class:agg-btn-active={valueFormat === fmt}
+									onclick={() => valueFormat = fmt as typeof valueFormat}
+								>
+									{fmt}
+								</button>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<hr class="config-divider" />
@@ -596,6 +633,12 @@ LIMIT {limit}</code></pre>
 	.orient-options {
 		display: flex;
 		gap: var(--space-2);
+	}
+
+	.format-options {
+		display: flex;
+		gap: var(--space-2);
+		flex-wrap: wrap;
 	}
 
 	.orient-btn {

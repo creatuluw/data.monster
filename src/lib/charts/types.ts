@@ -42,6 +42,8 @@ export interface BarChartConfig {
 	limit?: number;
 	clickToFilter?: boolean;
 	colors?: string[];
+	showValues?: boolean;
+	valueFormat?: 'number' | 'currency' | 'percent' | 'compact';
 }
 
 export interface BarChartData {

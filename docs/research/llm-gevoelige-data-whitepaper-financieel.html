@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI op gevoelige financiële data — wie traint er mee, en wie niet?</title>
+<style>
+  :root {
+    --ivory: #FAF9F5; --slate: #141413; --clay: #D97757;
+    --oat: #E3DACC; --olive: #788C5D; --sky: #6A8CAF;
+    --gray-150: #F0EEE6; --gray-300: #D1CFC5; --gray-500: #87867F; --gray-700: #3D3D3A;
+    --card: #ffffff;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ivory:#1a1915; --slate:#f0eee6; --gray-700:#d1cfc5; --gray-500:#a8a79f;
+            --gray-300:#3d3d3a; --gray-150:#26251f; --card:#211f1b; --oat:#3d3d3a; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ivory); color: var(--gray-700); font-family: var(--sans);
+         font-size: 17px; line-height: 1.7; -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 18px; }
+
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--ivory);
+            border-bottom: 1px solid var(--gray-300); padding: 10px 18px;
+            display: flex; align-items: center; justify-content: space-between; }
+  .topbar .t { font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+               text-transform: uppercase; color: var(--gray-500); }
+  .print-btn { border: 1.5px solid var(--gray-300); background: var(--card); color: var(--slate);
+               border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: var(--sans); }
+
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--clay); margin: 28px 0 8px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 29px; color: var(--slate);
+       letter-spacing: -.01em; margin-bottom: 10px; }
+  .lead { color: var(--gray-700); margin-bottom: 20px; }
+
+  .tldr { border: 1.5px solid var(--clay); border-radius: 14px; background: var(--card);
+          padding: 16px 18px; margin: 8px 0 12px; }
+  .tldr h2 { margin: 0 0 8px; font-size: 15px; font-family: var(--sans); color: var(--clay);
+             text-transform: uppercase; letter-spacing: .06em; }
+  .tldr ul { padding-left: 18px; }
+  .tldr li { margin-bottom: 6px; }
+
+  h2.sec { font-family: var(--serif); font-weight: 500; font-size: 21px; color: var(--slate);
+           margin: 34px 0 10px; display: flex; align-items: baseline; gap: 10px; }
+  h2.sec .n { font-family: var(--mono); font-size: 13px; color: var(--clay); }
+  p { margin-bottom: 10px; }
+
+  .card { border: 1.5px solid var(--gray-300); border-radius: 14px; background: var(--card);
+          padding: 14px 16px; margin-bottom: 10px; }
+  .card b.t { color: var(--slate); }
+  .card p { margin: 2px 0 0; font-size: 15.5px; }
+  .card.good { border-color: var(--olive); }
+  .card.warn { border-color: var(--clay); }
+  .card.bad  { border-color: var(--sky); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 10px 0; }
+  th { text-align: left; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+       letter-spacing: .06em; color: var(--gray-500); padding: 8px 10px 6px; border-bottom: 2px solid var(--gray-300); }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--gray-300); vertical-align: top; }
+  td:first-child { color: var(--slate); font-weight: 600; }
+  table.providers { font-size: 13.5px; }
+  table.providers td { padding: 8px 8px; }
+  table.providers td:first-child { white-space: normal; }
+  .fnote { font-size: 12.5px; color: var(--gray-500); margin: 6px 0 12px; }
+
+  .figure { border: 1.5px solid var(--gray-300); border-radius: 14px; background: var(--card);
+            padding: 14px; margin: 12px 0; }
+  .figure svg { display: block; width: 100%; height: auto; max-width: 340px; margin: 0 auto; }
+  .figcap { font-size: 12.5px; color: var(--gray-500); text-align: center; margin-top: 8px; }
+
+  ul.check { list-style: none; padding: 0; }
+  ul.check li { padding: 8px 0 8px 30px; position: relative; border-bottom: 1px solid var(--gray-300); font-size: 15.5px; }
+  ul.check li:last-child { border-bottom: none; }
+  ul.check li::before { content: "✓"; position: absolute; left: 4px; top: 8px;
+                        color: var(--olive); font-weight: 700; }
+
+  ul.q { list-style: none; padding: 0; counter-reset: q; }
+  ul.q li { padding: 10px 0 10px 40px; position: relative; border-bottom: 1px solid var(--gray-300); font-size: 15.5px; counter-increment: q; }
+  ul.q li:last-child { border-bottom: none; }
+  ul.q li::before { content: counter(q); position: absolute; left: 2px; top: 10px;
+                    font-family: var(--mono); font-size: 13px; color: var(--clay); font-weight: 700; }
+
+  .conclusion { border-left: 4px solid var(--olive); background: var(--card);
+                border-radius: 0 14px 14px 0; padding: 14px 18px; margin-top: 12px; }
+  .conclusion b { color: var(--slate); }
+
+  .src { margin-top: 36px; border-top: 2px solid var(--gray-300); padding-top: 12px; }
+  .src h2 { font-size: 13px; font-family: var(--sans); text-transform: uppercase;
+            letter-spacing: .06em; color: var(--gray-500); margin-bottom: 8px; }
+  .src ol { padding-left: 20px; font-size: 12.5px; color: var(--gray-500); line-height: 1.5; }
+  .src li { margin-bottom: 3px; }
+
+  @media print { .topbar { display: none; } body { padding: 0; font-size: 12px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="t">Whitepaper · Finance &amp; Management</span>
+  <button class="print-btn" onclick="window.print()">Afdrukken</button>
+</div>
+
+<div class="wrap">
+
+  <p class="eyebrow">AI &amp; Privacy · September 2026</p>
+  <h1>AI op gevoelige financiële data: wie traint er mee — en wie niet?</h1>
+  <p class="lead">Alle grote AI-leveranciers zeggen "veilig". Maar wat doen ze <b>echt</b> met uw vragen en cijfers via hun zakelijke API? Dit paper geeft het antwoord per leverancier — en laat zien welke opzet veilig genoeg is voor financiële data.</p>
+
+  <div class="tldr">
+    <h2>Het antwoord in 30 seconden</h2>
+    <ul>
+      <li><b>Ja, het kan veilig</b> — vrijwel alle grote leveranciers trainen <b>níet</b> op zakelijke API-data.</li>
+      <li><b>Maar:</b> "niet trainen" ≠ "niet bewaren". Bijna iedereen bewaart ±30 dagen voor misbruikcontrole.</li>
+      <li>Nul-bewaring (ZDR) regelt u via een <b>contract</b> — alleen xAI en Together laten u het zelf instellen.</li>
+      <li><b>Uitzonderingen:</b> DeepSeek traint standaard op uw data (China); Kimi's beleid spreekt zichzelf tegen.</li>
+      <li>Voor écht gevoelige data: <b>eigen systemen of eigen cloud</b> — garantie in plaats van belofte.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec"><span class="n">01</span> Wie traint er níet op uw API-data?</h2>
+  <div class="card good"><b class="t">✓ Geen training op zakelijke API-data</b>
+    <p><b>OpenAI</b> (zakelijke voorwaarden) · <b>Anthropic</b> (nooit zonder toestemming) · <b>Google Gemini</b> (betaald) · <b>Microsoft Azure</b> · <b>xAI</b> (nooit zonder toestemming) · <b>Cohere</b> (betaald; gratis proef wél, na filtering) · <b>Mistral</b> (na opt-out) · <b>Together</b> (opt-in, standaard uit) · <b>Z.ai</b> (API) · <b>Qwen/Alibaba</b> ("nooit voor modeltraining").</p>
+  </div>
+  <div class="card warn"><b class="t">⚠ Lees de kleine lettertjes</b>
+    <p><b>Gratis tiers trainen wél:</b> Google (gratis), Mistral (gratis) en Cohere (proef) gebruiken uw data standaard voor modelverbetering. <b>Kimi:</b> het hulpblad beweert van niet, maar het bindende privacybeleid spreekt over "trainen en verfijnen van machine-learning-modellen". Bij twijfel telt het beleid, niet de marketing.</p>
+  </div>
+  <div class="card bad"><b class="t">✗ Standaard wél trainen</b>
+    <p><b>DeepSeek</b> traint standaard op uw vragen én antwoorden, zonder nette opt-out, met opslag in China onder Chinees recht. Eén privacybeleid dekt app én API. Behandel het als openbaar.</p>
+  </div>
+
+  <h2 class="sec"><span class="n">02</span> "Niet trainen" betekent niet "niet bewaren"</h2>
+  <p>Het belangrijkste onderscheid van dit hele paper: <b>trainen</b> en <b>bewaren</b> zijn twee verschillende dingen. Ook leveranciers die nooit trainen, bewaren vrijwel altijd uw prompts:</p>
+  <div class="card"><b class="t">±30 dagen is de norm</b><p>OpenAI, Google, Azure en xAI bewaren vragen en antwoorden standaard een maand voor misbruikcontrole. Anthropic bewaart sinds het huidige beleid standaard niets — maar behoudt gemarkeerde inhoud tot 2 jaar.</p></div>
+  <div class="card"><b class="t">Extra functies bewaren altijd</b><p>Bestandsuploads (tot verwijdering), server-cache, gespreksgeheugen (24 uur) en zoek-verrijkte antwoorden bij Google (30 dagen, niet af te zetten) — deze functies móéten bewaren om te werken en vallen buiten elke ZDR-afspraak.</p></div>
+  <div class="card"><b class="t">Tussenpersonen voegen een hop toe</b><p>Diensten als OpenRouter loggen zelf óók. Via Together draaien modellen van derden (zoals DeepSeek en Qwen) wél op Together-infrastructuur in de VS — de modelbouwer ziet uw data dan níet.</p></div>
+
+  <h2 class="sec"><span class="n">03</span> De volledige tabel: 12 leveranciers</h2>
+  <p>Geverifieerd tegen de officiële beleidsdocumenten (september 2026):</p>
+  <table class="providers">
+    <tr><th>Leverancier</th><th>Traint op uw data?</th><th>Bewaart uw data?</th><th>ZDR* mogelijk?</th></tr>
+    <tr><td>OpenAI</td><td>Nee (zakelijke voorwaarden)</td><td>±30 dagen, misbruikcontrole</td><td>Ja — via accountteam; EU-endpoint beschikbaar</td></tr>
+    <tr><td>Anthropic (Claude)</td><td>Nee, nooit zonder toestemming</td><td>Standaard geen opslag; gemarkeerde inhoud tot 2 jaar</td><td>Ja — per organisatie, via contract</td></tr>
+    <tr><td>Google Gemini</td><td>Betaald: nee. Gratis: wél</td><td>±30 dagen; zoekfunctie-data 30 dagen (niet af te zetten)</td><td>Ja — per project aan te vragen; Vertex (zakelijk) is strenger</td></tr>
+    <tr><td>Microsoft Azure</td><td>Nee</td><td>30 dagen misbruikcontrole</td><td>Ja — via formulier; data blijft in úw Azure-regio</td></tr>
+    <tr><td>Mistral</td><td>Nee mits uitgeschakeld; gratis tier: ja</td><td>Kort misbruikvenster</td><td>Ja — betaald, op aanvraag. Gehost binnen de EU</td></tr>
+    <tr><td>xAI (Grok)</td><td>Nee, nooit zonder toestemming</td><td>30 dagen, versleuteld</td><td>Ja — zélf in te schakelen in de console (uniek)</td></tr>
+    <tr><td>Cohere</td><td>Betaald: nee. Gratis: ja (gevoelige gegevens eerst weggefilterd)</td><td>Minimaal</td><td>Ja — zakelijk; óók draaibaar in uw eigen cloudomgeving</td></tr>
+    <tr><td>DeepSeek</td><td>Já — standaard aan, geen nette opt-out</td><td>Onbepaald ("zo lang nodig")</td><td>Nee — data staat in China, Chinees recht geldt</td></tr>
+    <tr><td>Kimi (Moonshot)</td><td>⚠ Tegenstrijdig: hulpblad zegt nee, privacybeleid zegt trainen</td><td>Onbepaald — "zo lang nodig"</td><td>Niet gepubliceerd. Singapore-entiteit, Chinese moedermaatschappij</td></tr>
+    <tr><td>Z.ai (Zhipu)</td><td>API: nee — verwerkt real-time, slaat niets op (verwerkersovereenkomst)</td><td>Geen opslag van inhoud, per DPA</td><td>Standaard geregeld in de DPA; de chatdienst traint wél</td></tr>
+    <tr><td>Together AI</td><td>Nee (opt-in, standaard uit)</td><td>Standaard wél vragen én antwoorden bewaard</td><td>Ja — zélf uit te zetten door uw beheerder</td></tr>
+    <tr><td>Qwen (Alibaba)</td><td>Nee — "nooit voor modeltraining"</td><td>Misbruikcontrole aan; geen bekend venster</td><td>Niet zelf te regelen; regio China of Singapore; modellen ook vrij te downloaden</td></tr>
+  </table>
+  <p class="fnote">* ZDR = zero data retention: de contractuele afspraak dat vragen en antwoorden nergens worden bewaard.</p>
+
+  <h2 class="sec"><span class="n">04</span> Nul-bewaring (ZDR): wie regelt wat?</h2>
+  <div class="card good"><b class="t">Zelf regelen — zonder sales</b><p><b>xAI:</b> teambrede schakelaar in de console (schakelt wel bestanden/batch uit). <b>Together:</b> beheerder zet "bewaar prompts en antwoorden" uit. <b>Z.ai:</b> al standaard geregeld in de verwerkersovereenkomst.</p></div>
+  <div class="card"><b class="t">Via contract of aanvraag</b><p><b>OpenAI</b> en <b>Anthropic</b> (via accountteam, per organisatie), <b>Google</b> (per project, inhoud én herleidbare gegevens gewist vóór logging), <b>Azure</b> (formulier), <b>Mistral</b> (betaald, alleen stateless endpoints), <b>Cohere</b> (zakelijk: "geen logging van prompts of antwoorden").</p></div>
+  <div class="card bad"><b class="t">Niet (of onbekend)</b><p><b>DeepSeek:</b> geen ZDR, geen zakelijke tier. <b>Kimi:</b> niet gepubliceerd, via sales.</p></div>
+  <p class="fnote">Let op: overal overleeft wettelijk vastgehouden (gemarkeerde) inhoud de ZDR-afspraak.</p>
+
+  <h2 class="sec"><span class="n">05</span> Wat vraagt de wet?</h2>
+  <div class="card"><b class="t">U blijft verantwoordelijk</b><p>Externe AI-dienst = verwerker → verwerkersovereenkomst (DPA) verplicht. Zonder DPA deelt u persoonsgegevens onrechtmatig uit.</p></div>
+  <div class="card"><b class="t">Verwijderen moet kunnen</b><p>Gegevens die in een getraind model zitten, verwijdert u niet. Bovendien: DPIA/risicoanalyse vóór gebruik bij persoonsgegevens; in de financiële sector tellen AI-diensten als ICT-uitbesteding (denk aan DORA).</p></div>
+
+  <h2 class="sec"><span class="n">06</span> De veiligste routes voor gevoelige data</h2>
+  <div class="card good"><b class="t">1 · Eigen systemen</b><p>AI draait op uw eigen computers: niets verlaat het bedrijf. Geen verwerker, geen DPA, verwijderrecht triviaal. Sterkste optie.</p></div>
+  <div class="card good"><b class="t">2 · Eigen cloud</b><p>Azure OpenAI in úw Azure-omgeving, of Cohere in uw eigen VPC: de leverancier levert de software, de data blijft binnen uw muren.</p></div>
+  <div class="card"><b class="t">3 · Slimme routes</b><p>DeepSeek-modellen via Together (draait in VS-datacenters, modelbouwer ziet niets) · open modellen zelf hosten (Qwen: Apache-2.0, GLM: MIT) · Qwen via Cloudflare mét ZDR.</p></div>
+
+  <h2 class="sec"><span class="n">07</span> Het kernpatroon: de AI ziet uw cijfers niet</h2>
+  <p>Onafhankelijk van de leverancier geldt de sterkste bescherming: de AI krijgt alleen <b>de structuur van uw gegevens</b> (welke tabellen en kolommen), niet de cijfers zelf. Vergelijk het met een externe adviseur die het onderzoeksvoorstel schrijft, maar het dossier nooit in handen krijgt:</p>
+
+  <div class="figure">
+    <svg viewBox="0 0 340 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vier stappen: uw vraag, AI formuleert de berekening, uw eigen systeem rekent, u krijgt het antwoord">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, -apple-system, sans-serif" font-size="13.5">
+        <rect x="20" y="10" width="300" height="52" rx="12" fill="#FAF9F5" stroke="#6A8CAF" stroke-width="1.5"/>
+        <text x="170" y="32" text-anchor="middle" fill="#141413" font-weight="600">1 · Uw vraag</text>
+        <text x="170" y="49" text-anchor="middle" fill="#87867F" font-size="11.5">"Wat is de omzet per regio?"</text>
+
+        <line x1="170" y1="62" x2="170" y2="90" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="94" width="300" height="52" rx="12" fill="#FAF9F5" stroke="#D97757" stroke-width="1.5"/>
+        <text x="170" y="116" text-anchor="middle" fill="#141413" font-weight="600">2 · AI formuleert de berekening</text>
+        <text x="170" y="133" text-anchor="middle" fill="#87867F" font-size="11.5">ziet alleen de tabellijst — geen cijfers</text>
+
+        <line x1="170" y1="146" x2="170" y2="174" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="178" width="300" height="52" rx="12" fill="#FAF9F5" stroke="#788C5D" stroke-width="1.5"/>
+        <text x="170" y="200" text-anchor="middle" fill="#141413" font-weight="600">3 · Uw eigen systeem rekent</text>
+        <text x="170" y="217" text-anchor="middle" fill="#87867F" font-size="11.5">gegevens blijven binnen het bedrijf</text>
+
+        <line x1="170" y1="230" x2="170" y2="258" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="262" width="300" height="52" rx="12" fill="#FAF9F5" stroke="#6A8CAF" stroke-width="1.5"/>
+        <text x="170" y="284" text-anchor="middle" fill="#141413" font-weight="600">4 · U krijgt het antwoord</text>
+        <text x="170" y="301" text-anchor="middle" fill="#87867F" font-size="11.5">eventueel samengevat door de AI</text>
+      </g>
+    </svg>
+    <p class="figcap">Zelfs een gelekte of gecompromitteerde AI kan niet onthullen wat ze nooit heeft gezien.</p>
+  </div>
+
+  <h2 class="sec"><span class="n">08</span> Wat moet ú regelen?</h2>
+  <ul class="check">
+    <li><b>Classificeer uw gegevens</b> (open / intern / vertrouwelijk) en leg per klasse vast welke AI mag.</li>
+    <li><b>Teken een DPA</b> met elke AI-leverancier; regel ZDR schriftelijk vóór productie.</li>
+    <li><b>Verbied publieke chatbots</b> voor vertrouwelijke data — en bied een goedgekeurd alternatief.</li>
+    <li><b>Controleer gratis tiers dubbel</b> — die trainen vaak standaard mee.</li>
+    <li><b>Eis een audit-spoor</b> (wie, wat, welk model, wanneer) zonder inhoud te bewaren.</li>
+  </ul>
+
+  <h2 class="sec"><span class="n">09</span> Vijf vragen voor uw leverancier</h2>
+  <ul class="q">
+    <li>Wordt onze data gebruikt om uw modellen te trainen — en staat dat in de voorwaarden, of alleen op uw website?</li>
+    <li>Hoe lang bewaart u onze vragen en antwoorden — en wie kan ze inzien?</li>
+    <li>Waar staan de servers (binnen de EU?) en is een verwerkersovereenkomst beschikbaar?</li>
+    <li>Welke certificeringen heeft u (ISO 27001, SOC 2)?</li>
+    <li>Welke functies (bestanden, batch, cache) vallen buiten uw ZDR-afspraak?</li>
+  </ul>
+
+  <h2 class="sec"><span class="n">10</span> Conclusie</h2>
+  <div class="conclusion">
+    <p><b>Ja, AI op gevoelige financiële data is mogelijk</b> — en de markt is rijp: vrijwel alle grote leveranciers trainen niet op zakelijke API-data, en de meeste bieden nul-bewaring via een contract.</p>
+    <p><b>"Niet bewaren" bestaat echt — maar zelden vanzelf.</b> De API van Z.ai verwerkt real-time en slaat inhoud op basis niet op; Anthropic bewaart standaard niets. Maar ±30 dagen misbruikcontrole is de norm, en alleen xAI en Together laten u ZDR zelf inschakelen. Azure en Cohere kunnen zelfs binnen úw cloud draaien: garantie in plaats van belofte.</p>
+    <p><b>En de tegenpool.</b> DeepSeek traint standaard op uw data (opslag in China); Kimi's privacybeleid spreekt de eigen hulppagina tegen. Goedkoop is niet hetzelfde als veilig — check de tabel in §3 vóórdat u kiest.</p>
+    <p>Blijvend advies: gevoelige analyses op eigen systemen of in eigen cloud, en altijd het patroon van §7 — <b>de AI stelt de vragen, uw eigen systemen geven de antwoorden.</b> Regel het beleid vóórdat medewerkers zelf aan de slag gaan.</p>
+  </div>
+
+  <div class="src">
+    <h2>Bronnen</h2>
+    <ol>
+      <li>Officiële privacy-, DPA- en retentiebeleiden van alle twaalf leveranciers (sept 2026 geverifieerd)</li>
+      <li>StartupSoft — LLMs with Enterprise and Sensitive Data</li>
+      <li>Duality Technologies — LLMs and Data Privacy (EDPB, memorisatie)</li>
+      <li>Lasso Security — LLM Data Privacy (incidenten 2025, schaduw-AI)</li>
+      <li>LLM Configurator — Private AI for Business / AVG-vergelijking</li>
+      <li>John Oct — PII-maskering met Microsoft Presidio</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

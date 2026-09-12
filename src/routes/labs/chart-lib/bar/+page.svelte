@@ -286,7 +286,7 @@
 				<label class="toggle-row">
 					<div class="toggle-label">
 						<span>Click to filter</span>
-						<span class="toggle-hint">Click bars to highlight categories</span>
+						<span class="toggle-hint">Click bars to select categories; hover for tooltip</span>
 					</div>
 					<button
 						class="toggle"

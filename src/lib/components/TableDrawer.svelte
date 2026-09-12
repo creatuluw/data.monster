@@ -9,7 +9,8 @@
 		type TableLabels,
 		getTableSource,
 		type TableSource,
-		refreshTableFromSource
+		refreshTableFromSource,
+		executeQuery
 	} from '$lib/db-operations';
 	import TagInput from '$lib/components/TagInput.svelte';
 
@@ -39,6 +40,24 @@
 	let refreshing = $state(false);
 	let drawerOpen = $state(false);
 	let source = $state<TableSource | null>(null);
+	let editColumn = $state<{ name: string; type: string } | null>(null);
+	let editColumnType = $state('');
+
+	const availableTypes = [
+		'VARCHAR',
+		'INTEGER',
+		'BIGINT',
+		'DOUBLE',
+		'FLOAT',
+		'DECIMAL',
+		'BOOLEAN',
+		'DATE',
+		'TIMESTAMP',
+		'TIME',
+		'BLOB',
+		'UUID',
+		'JSON'
+	];
 
 	async function loadTable(name: string) {
 		loading = true;
@@ -120,6 +139,41 @@
 		} catch {
 		} finally {
 			refreshing = false;
+		}
+	}
+
+	async function handleTypeChange(colName: string, newType: string) {
+		try {
+			await executeQuery(`ALTER TABLE "${tableName}" ALTER "${colName}" TYPE ${newType}`);
+			const m = await getTableMeta(tableName);
+			meta = m;
+		} catch {
+		} finally {
+			editColumn = null;
+			editColumnType = '';
+		}
+	}
+
+	function openTypeModal(colName: string, colType: string) {
+		editColumn = { name: colName, type: colType };
+		editColumnType = colType;
+	}
+
+	function closeTypeModal() {
+		editColumn = null;
+		editColumnType = '';
+	}
+
+	function handleModalKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			closeTypeModal();
+		}
+		if (e.key === 'Enter') {
+			const select = (e.target as HTMLElement).closest('.drawer-modal-body')?.querySelector('select');
+			if (select && document.activeElement === select) return;
+			if (editColumn && editColumnType.trim()) {
+				handleTypeChange(editColumn.name, editColumnType.trim().toUpperCase());
+			}
 		}
 	}
 
@@ -212,15 +266,10 @@
 
 					<hr class="drawer-divider" />
 
-					{#if source && (source.creationQuery || source.sourcePath || source.originalSource)}
+					{#if source && (source.sourcePath || source.originalSource)}
 						<section class="drawer-section">
 							<div class="drawer-section-header">
 								<h3 class="drawer-section-title">Source</h3>
-								{#if source.creationQuery}
-									<button class="drawer-refresh-btn" onclick={handleRefresh} disabled={refreshing} title="Reload from source">
-										<RefreshCw size={12} />
-									</button>
-								{/if}
 							</div>
 							{#if source.sourceType}
 								<div class="drawer-field">
@@ -248,12 +297,6 @@
 									<div class="drawer-source-path">{source.sourcePath}</div>
 								</div>
 							{/if}
-							{#if source.creationQuery}
-								<div class="drawer-field">
-									<label class="drawer-label">Query</label>
-									<pre class="drawer-source-sql">{source.creationQuery}</pre>
-								</div>
-							{/if}
 						</section>
 
 						<hr class="drawer-divider" />
@@ -263,13 +306,33 @@
 						<h3 class="drawer-section-title">Columns</h3>
 						<div class="drawer-columns">
 							{#each meta.columns as col}
-								<div class="drawer-col-row">
-									<span class="drawer-col-name">{col.name}</span>
-									<span class="drawer-col-type drawer-col-type-{typeColor(col.type)}">{col.type}</span>
+								<div class="drawer-col-group">
+									<button
+										class="drawer-col-row drawer-col-row-clickable"
+										title="Change type of {col.name}"
+										onclick={() => openTypeModal(col.name, col.type)}
+									>
+										<span class="drawer-col-name">{col.name}</span>
+										<span class="drawer-col-type drawer-col-type-{typeColor(col.type)}">{col.type}</span>
+									</button>
 								</div>
 							{/each}
 						</div>
 					</section>
+
+					{#if source?.creationQuery}
+						<hr class="drawer-divider" />
+
+						<section class="drawer-section">
+							<div class="drawer-section-header">
+								<h3 class="drawer-section-title">Query</h3>
+								<button class="drawer-refresh-btn" onclick={handleRefresh} disabled={refreshing} title="Reload from source">
+									<RefreshCw size={12} />
+								</button>
+							</div>
+							<pre class="drawer-source-sql">{source.creationQuery}</pre>
+						</section>
+					{/if}
 
 					<hr class="drawer-divider" />
 
@@ -296,6 +359,39 @@
 			{/if}
 		</div>
 	</div>
+
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	{#if editColumn}
+		<div class="drawer-modal-overlay" onclick={closeTypeModal} onkeydown={handleModalKeydown} role="dialog" aria-modal="true">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div class="drawer-modal" onclick={(e) => e.stopPropagation()} onkeydown={handleModalKeydown}>
+				<div class="drawer-modal-header">
+					<h3 class="drawer-modal-title">Change type</h3>
+					<button class="drawer-modal-close" onclick={closeTypeModal} aria-label="Close">&times;</button>
+				</div>
+				<div class="drawer-modal-body">
+					<div class="drawer-modal-field">
+						<span class="drawer-modal-field-name">{editColumn.name}</span>
+					</div>
+					<select
+						class="drawer-modal-select"
+						bind:value={editColumnType}
+						autofocus
+					>
+						{#each availableTypes as t}
+							<option value={t} selected={t === editColumn.type}>{t}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="drawer-modal-footer">
+					<button class="btn btn-ghost btn-sm" onclick={closeTypeModal}>Cancel</button>
+					<button class="btn btn-primary btn-sm" onclick={() => handleTypeChange(editColumn.name, editColumnType)}>
+						Apply
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -480,8 +576,17 @@
 		font-size: var(--text-xs);
 	}
 
-	.drawer-col-row:not(:last-child) {
-		border-bottom: 1px solid var(--color-border);
+	.drawer-col-row-clickable {
+		border: none;
+		background: none;
+		width: 100%;
+		cursor: pointer;
+		font-family: inherit;
+		transition: background var(--duration-fast) ease;
+	}
+
+	.drawer-col-row-clickable:hover {
+		background: var(--color-surface-sunken);
 	}
 
 	.drawer-col-name {
@@ -491,6 +596,7 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		text-align: left;
 	}
 
 	.drawer-col-type {
@@ -501,6 +607,112 @@
 		font-family: var(--font-mono);
 		flex-shrink: 0;
 		margin-left: var(--space-2);
+	}
+
+	.drawer-modal-overlay {
+		position: fixed;
+		inset: 0;
+		background: oklch(0.14 0.01 250 / 0.6);
+		backdrop-filter: blur(4px);
+		z-index: 300;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.drawer-modal {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-lg);
+		width: 90%;
+		max-width: 360px;
+		animation: drawerModalIn 0.15s var(--ease-out-expo);
+	}
+
+	@keyframes drawerModalIn {
+		from { transform: translateY(8px) scale(0.98); opacity: 0; }
+		to { transform: translateY(0) scale(1); opacity: 1; }
+	}
+
+	.drawer-modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: var(--space-3) var(--space-4);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.drawer-modal-title {
+		font-family: var(--font-display);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.drawer-modal-close {
+		width: 24px;
+		height: 24px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: transparent;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-xs);
+		cursor: pointer;
+		color: var(--color-text-tertiary);
+		font-size: 14px;
+		line-height: 1;
+	}
+
+	.drawer-modal-close:hover {
+		color: var(--color-text);
+		background: var(--color-surface-sunken);
+	}
+
+	.drawer-modal-body {
+		padding: var(--space-4);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.drawer-modal-field {
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-text);
+	}
+
+	.drawer-modal-field-name {
+		word-break: break-all;
+	}
+
+	.drawer-modal-select {
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--color-border-strong);
+		font-family: var(--font-mono);
+		font-size: var(--text-sm);
+		color: var(--color-text);
+		background: var(--color-surface);
+		border-radius: var(--radius-xs);
+		cursor: pointer;
+		outline: none;
+		width: 100%;
+	}
+
+	.drawer-modal-select:focus {
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 2px var(--color-accent-muted);
+	}
+
+	.drawer-modal-footer {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: var(--space-3);
+		padding: var(--space-3) var(--space-4);
+		border-top: 1px dashed var(--color-border);
 	}
 
 	.drawer-col-type-str {
@@ -531,6 +743,56 @@
 	.drawer-col-type-binary {
 		background: oklch(0.93 0.02 30);
 		color: oklch(0.35 0.03 30);
+	}
+
+	.drawer-col-group {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.drawer-col-group:not(:last-child) {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.drawer-col-fields {
+		display: flex;
+		flex-direction: column;
+		padding: 0 0 var(--space-1) var(--space-4);
+	}
+
+	.drawer-col-field {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 1px var(--space-2);
+		cursor: pointer;
+		transition: background var(--duration-fast) ease;
+	}
+
+	.drawer-col-field:hover {
+		background: var(--color-surface-sunken);
+	}
+
+	.drawer-col-field input[type="checkbox"] {
+		width: 12px;
+		height: 12px;
+		margin: 0;
+		cursor: pointer;
+		accent-color: var(--color-accent);
+		flex-shrink: 0;
+	}
+
+	.drawer-col-field-name {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		color: var(--color-text-secondary);
+	}
+
+	.drawer-col-field-suffix {
+		font-family: var(--font-body);
+		font-size: 8px;
+		color: var(--color-text-tertiary);
+		letter-spacing: 0.02em;
 	}
 
 	.drawer-danger-btn {

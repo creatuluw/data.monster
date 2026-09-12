@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { BarChart2, LineChart, AreaChart, PieChart, ScatterChart } from 'lucide-svelte';
+	import { BarChart2, LineChart, PieChart, ScatterChart } from 'lucide-svelte';
 
 	type ChartEntry = { id: string; label: string; desc: string; icon: typeof BarChart2; status: 'available' | 'planned' };
 
 	const charts: ChartEntry[] = [
 		{ id: 'bar', label: 'Bar Chart', desc: 'Compare values across categories with vertical or horizontal bars, click-to-filter brushing, and configurable aggregation.', icon: BarChart2, status: 'available' },
-		{ id: 'line', label: 'Line Chart', desc: 'Show trends and continuity over ordered dimensions like time or sequence.', icon: LineChart, status: 'planned' },
-		{ id: 'area', label: 'Area Chart', desc: 'Emphasize volume under a trend line with filled regions.', icon: AreaChart, status: 'planned' },
-		{ id: 'pie', label: 'Pie / Donut', desc: 'Show part-to-whole proportions for a small number of slices.', icon: PieChart, status: 'planned' },
-		{ id: 'scatter', label: 'Scatter Plot', desc: 'Reveal correlation between two numeric measures.', icon: ScatterChart, status: 'planned' },
+		{ id: 'line', label: 'Line / Area Chart', desc: 'Show trends over ordered dimensions. Toggle between line and area mode, smooth or linear curves, with optional data point markers.', icon: LineChart, status: 'available' },
+		{ id: 'pie', label: 'Pie / Donut', desc: 'Show part-to-whole proportions. Toggle between pie and donut mode with legend and value labels.', icon: PieChart, status: 'available' },
+		{ id: 'scatter', label: 'Scatter Plot', desc: 'Reveal correlation between two numeric measures. Optional color grouping by a categorical column.', icon: ScatterChart, status: 'available' },
 	];
 </script>
 

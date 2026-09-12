@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-bar-chart",
+  "main": "31d42f411633af03@62.js",
+  "version": "62.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-bar-chart",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

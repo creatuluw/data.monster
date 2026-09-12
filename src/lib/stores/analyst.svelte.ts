@@ -1,4 +1,4 @@
-import { runPagedQuery, type PagedQueryResult, executeQuery, getSettings, generateChat, stopGeneration, loadModel, unloadModel } from '$lib/db-operations';
+import { runPagedQuery, type PagedQueryResult, executeQuery, getSettings, generateChat, remoteChat, stopGeneration, loadModel, unloadModel } from '$lib/db-operations';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 export interface ChatMessage {
@@ -41,7 +41,6 @@ class AnalystState {
 	selectedPlanOptions = $state<Set<string>>(new Set());
 	customPlanOption = $state('');
 
-	private abortController: AbortController | null = null;
 	private extractedIndex = 0;
 	private pendingMessageId = '';
 
@@ -111,13 +110,22 @@ class AnalystState {
 	}
 
 	stop() {
-		if (this.inferenceMode === 'local') {
-			stopGeneration();
-		}
-		if (this.abortController) {
-			this.abortController.abort();
-		}
+		stopGeneration();
 		this.cleanupListeners();
+		if (this.streamingContent) {
+			this.messages = [
+				...this.messages,
+				{
+					id: this.pendingMessageId,
+					role: 'assistant',
+					content: this.streamingContent,
+					timestamp: Date.now()
+				}
+			];
+			this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
+		}
+		this.streaming = false;
+		this.streamingContent = '';
 		if (this.generationResolve) {
 			this.generationResolve();
 			this.generationResolve = null;
@@ -317,118 +325,8 @@ Always generate at least one SQL query per user message.`;
 		}
 	}
 
-	private async sendRemote(systemPrompt: string) {
-		const apiMessages = [
-			{ role: 'system' as const, content: systemPrompt },
-			...this.messages.map((m) => ({ role: m.role, content: m.content }))
-		];
-
-		this.abortController = new AbortController();
-
-		try {
-			const response = await fetch(this.apiUrl, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${this.apiKey}`
-				},
-				body: JSON.stringify({
-					model: this.apiModel,
-					messages: apiMessages,
-					stream: true,
-					temperature: 0.6
-				}),
-				signal: this.abortController.signal
-			});
-
-			if (!response.ok) {
-				const errorText = await response.text();
-				throw new Error(errorText || 'API request failed');
-			}
-
-			if (!response.body) throw new Error('No response body');
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let buffer = '';
-
-			while (true) {
-				const { done, value } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					const trimmed = line.trim();
-					if (!trimmed || !trimmed.startsWith('data: ')) continue;
-					const data = trimmed.slice(6);
-					if (data === '[DONE]') break;
-
-					try {
-						const parsed = JSON.parse(data);
-						const delta = parsed.choices?.[0]?.delta?.content || '';
-						if (delta) {
-							this.streamingContent += delta;
-							await this.extractAndExecuteSql();
-						}
-					} catch {
-						// skip malformed chunks
-					}
-				}
-			}
-
-			if (this.streamingContent) {
-				this.messages = [
-					...this.messages,
-					{
-						id: this.pendingMessageId,
-						role: 'assistant',
-						content: this.streamingContent,
-						timestamp: Date.now()
-					}
-				];
-				this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
-			}
-		} catch (e) {
-			if ((e as Error).name === 'AbortError') {
-				if (this.streamingContent) {
-					this.messages = [
-						...this.messages,
-						{
-							id: this.pendingMessageId,
-							role: 'assistant',
-							content: this.streamingContent,
-							timestamp: Date.now()
-						}
-					];
-					this.parseAndSetPlan(this.streamingContent, this.pendingMessageId);
-				}
-			} else {
-				this.messages = [
-					...this.messages,
-					{
-						id: this.pendingMessageId,
-						role: 'assistant',
-						content: `Error: ${(e as Error).message}`,
-						timestamp: Date.now()
-					}
-				];
-			}
-		} finally {
-			this.streaming = false;
-			this.streamingContent = '';
-			this.abortController = null;
-		}
-	}
-
-	private async sendLocal(systemPrompt: string) {
-		this.cleanupListeners();
-		this.lastGenerationTime = Date.now();
-
-		const apiMessages = this.messages.map((m) => ({ role: m.role, content: m.content }));
-
+	// Both local and remote generation stream through the same local-llm:* events.
+	private streamViaEvents(start: () => Promise<void>) {
 		return new Promise<void>((resolve) => {
 			this.generationResolve = resolve;
 
@@ -468,7 +366,7 @@ Always generate at least one SQL query per user message.`;
 				this.streamingContent = '';
 			}).then((unlisten) => { this.errorUnlisten = unlisten; });
 
-			generateChat(apiMessages, systemPrompt).catch((e) => {
+			start().catch((e) => {
 				this.messages = [
 					...this.messages,
 					{
@@ -482,6 +380,21 @@ Always generate at least one SQL query per user message.`;
 				this.streamingContent = '';
 			});
 		});
+	}
+
+	private async sendRemote(systemPrompt: string) {
+		this.cleanupListeners();
+		const apiMessages = this.messages.map((m) => ({ role: m.role, content: m.content }));
+		return this.streamViaEvents(() =>
+			remoteChat(this.apiUrl, this.apiKey, this.apiModel, apiMessages, systemPrompt)
+		);
+	}
+
+	private async sendLocal(systemPrompt: string) {
+		this.cleanupListeners();
+		this.lastGenerationTime = Date.now();
+		const apiMessages = this.messages.map((m) => ({ role: m.role, content: m.content }));
+		return this.streamViaEvents(() => generateChat(apiMessages, systemPrompt));
 	}
 
 	private async extractAndExecuteSql() {

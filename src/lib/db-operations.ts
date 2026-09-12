@@ -79,6 +79,10 @@ export async function shutdownDuckdb(): Promise<void> {
 	return invoke<void>('shutdown_duckdb');
 }
 
+export async function resetAllData(): Promise<void> {
+	return invoke<void>('reset_all_data');
+}
+
 export async function chooseWorkspaceFolder(): Promise<string | null> {
 	const result = await invoke<string | null>('choose_workspace_folder');
 	return result;
@@ -440,6 +444,15 @@ export interface TableMeta {
 	columns: ColumnInfo[];
 }
 
+export interface FieldFunction {
+	id: string;
+	label: string;
+	description: string | null;
+	sql_template: string;
+	applies_to: string;
+	output_type: string;
+}
+
 export async function getTableMeta(tableName: string): Promise<TableMeta> {
 	const schemaResult = await executeQuery(
 		`SELECT column_name, column_type FROM (DESCRIBE SELECT * FROM "${tableName}")`
@@ -470,6 +483,36 @@ export async function getAllTableMeta(): Promise<TableMeta[]> {
 		metas.push(await getTableMeta(name));
 	}
 	return metas;
+}
+
+export async function listFieldFunctions(): Promise<FieldFunction[]> {
+	return invoke<FieldFunction[]>('list_field_functions');
+}
+
+export async function createFieldFunction(
+	id: string,
+	label: string,
+	description: string | null,
+	sqlTemplate: string,
+	appliesTo: string,
+	outputType: string
+): Promise<void> {
+	return invoke<void>('create_field_function', { id, label, description, sqlTemplate, appliesTo, outputType });
+}
+
+export async function updateFieldFunction(
+	id: string,
+	label: string,
+	description: string | null,
+	sqlTemplate: string,
+	appliesTo: string,
+	outputType: string
+): Promise<void> {
+	return invoke<void>('update_field_function', { id, label, description, sqlTemplate, appliesTo, outputType });
+}
+
+export async function deleteFieldFunction(id: string): Promise<void> {
+	return invoke<void>('delete_field_function', { id });
 }
 
 // ─── Local LLM ───────────────────────────────────────────────
@@ -546,6 +589,16 @@ export async function generateChat(messages: { role: string; content: string }[]
 		messages: messages.map((m) => ({ role: m.role, content: m.content })),
 		systemPrompt
 	});
+}
+
+export async function remoteChat(
+	url: string,
+	apiKey: string,
+	model: string,
+	messages: { role: string; content: string }[],
+	systemPrompt: string
+): Promise<void> {
+	return invoke<void>('remote_chat', { url, apiKey, model, messages, systemPrompt });
 }
 
 export async function stopGeneration(): Promise<void> {

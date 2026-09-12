@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-box-plot",
+  "main": "f1bc5da5c2141170@60.js",
+  "version": "60.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-box-plot",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

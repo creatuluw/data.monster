@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM's met gevoelige data — Whitepaper</title>
+<style>
+  :root {
+    --ivory: #FAF9F5; --slate: #141413; --clay: #D97757;
+    --oat: #E3DACC; --olive: #788C5D; --sky: #6A8CAF;
+    --gray-150: #F0EEE6; --gray-300: #D1CFC5; --gray-500: #87867F; --gray-700: #3D3D3A;
+    --card: #ffffff;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ivory:#1a1915; --slate:#f0eee6; --gray-700:#d1cfc5; --gray-500:#a8a79f;
+            --gray-300:#3d3d3a; --gray-150:#26251f; --card:#211f1b; --oat:#3d3d3a; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ivory); color: var(--gray-700); font-family: var(--sans);
+         font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased; padding-bottom: 80px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 18px; }
+
+  .topbar { position: sticky; top: 0; z-index: 10; background: var(--ivory);
+            border-bottom: 1px solid var(--gray-300); padding: 10px 18px;
+            display: flex; align-items: center; justify-content: space-between; }
+  .topbar .t { font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+               text-transform: uppercase; color: var(--gray-500); }
+  .print-btn { border: 1.5px solid var(--gray-300); background: var(--card); color: var(--slate);
+               border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: var(--sans); }
+
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .1em;
+             text-transform: uppercase; color: var(--clay); margin: 28px 0 8px; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 30px; color: var(--slate);
+       letter-spacing: -.01em; margin-bottom: 10px; }
+  .lead { color: var(--gray-700); margin-bottom: 20px; }
+
+  .tldr { border: 1.5px solid var(--clay); border-radius: 14px; background: var(--card);
+          padding: 16px 18px; margin: 8px 0 12px; }
+  .tldr h2 { margin: 0 0 8px; font-size: 15px; font-family: var(--sans); color: var(--clay);
+             text-transform: uppercase; letter-spacing: .06em; }
+  .tldr ul { padding-left: 18px; }
+  .tldr li { margin-bottom: 6px; }
+
+  h2.sec { font-family: var(--serif); font-weight: 500; font-size: 21px; color: var(--slate);
+           margin: 34px 0 10px; display: flex; align-items: baseline; gap: 10px; }
+  h2.sec .n { font-family: var(--mono); font-size: 13px; color: var(--clay); }
+  p { margin-bottom: 10px; }
+
+  .card { border: 1.5px solid var(--gray-300); border-radius: 14px; background: var(--card);
+          padding: 14px 16px; margin-bottom: 10px; }
+  .card b.t { color: var(--slate); }
+  .card p { margin: 2px 0 0; font-size: 15px; }
+
+  ol.steps { padding-left: 22px; margin: 10px 0; }
+  ol.steps li { margin-bottom: 8px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 10px 0; }
+  th { text-align: left; font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+       letter-spacing: .06em; color: var(--gray-500); padding: 8px 10px 6px; border-bottom: 2px solid var(--gray-300); }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--gray-300); vertical-align: top; }
+  td:first-child { color: var(--slate); font-weight: 600; white-space: nowrap; }
+
+  .figure { border: 1.5px solid var(--gray-300); border-radius: 14px; background: var(--card);
+            padding: 14px; margin: 12px 0; }
+  .figure svg { display: block; width: 100%; height: auto; max-width: 360px; margin: 0 auto; }
+  .figcap { font-size: 12.5px; color: var(--gray-500); text-align: center; margin-top: 8px; }
+
+  ul.check { list-style: none; padding: 0; }
+  ul.check li { padding: 8px 0 8px 30px; position: relative; border-bottom: 1px solid var(--gray-300); font-size: 15px; }
+  ul.check li:last-child { border-bottom: none; }
+  ul.check li::before { content: "✓"; position: absolute; left: 4px; top: 8px;
+                        color: var(--olive); font-weight: 700; }
+
+  .src { margin-top: 36px; border-top: 2px solid var(--gray-300); padding-top: 12px; }
+  .src h2 { font-size: 13px; font-family: var(--sans); text-transform: uppercase;
+            letter-spacing: .06em; color: var(--gray-500); margin-bottom: 8px; }
+  .src ol { padding-left: 20px; font-size: 12.5px; color: var(--gray-500); line-height: 1.5; }
+  .src li { margin-bottom: 3px; }
+
+  @media print { .topbar { display: none; } body { padding: 0; font-size: 12px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="t">Data Monster · Whitepaper</span>
+  <button class="print-btn" onclick="window.print()">Afdrukken</button>
+</div>
+
+<div class="wrap">
+
+  <p class="eyebrow">AI &amp; Privacy · September 2026</p>
+  <h1>LLM's met gevoelige data</h1>
+  <p class="lead">Praktische gids voor AI-gestuurde data-analyse: welke risico's er zijn en welke architectuur gevoelige data beschermt — zonder de kracht van het model op te geven.</p>
+
+  <div class="tldr">
+    <h2>Kern in 30 seconden</h2>
+    <ul>
+      <li>Het sterkste patroon is <b>architectuur, geen cryptografie</b>: geef de LLM het <b>schema</b>, niet de rijen.</li>
+      <li><b>Lokaal model</b> = sterkste privacy: geen AVG-verwerker, geen DPA, geen data-egress.</li>
+      <li><b>Cloud-API</b> is acceptabel mét zero-data-retention én DPA — nooit voor de meest gevoelige data.</li>
+      <li>Alles wat tóch vertrekt, krijgt een <b>PII-maskerlaag</b>.</li>
+    </ul>
+  </div>
+
+  <h2 class="sec"><span class="n">01</span> Vijf risico's</h2>
+  <div class="card"><b class="t">Memorisatie</b><p>Modellen reproduceren trainingsdata soms bijna letterlijk. Fine-tunen op eigen data is het riskantst: gewichten kunnen niet 'vergeten'.</p></div>
+  <div class="card"><b class="t">Leakage bij inferentie</b><p>Slecht afgeschermde context (RAG) onthult records die de gebruiker niet mag zien.</p></div>
+  <div class="card"><b class="t">Prompt-injectie</b><p>Gecrafte input omzeilt guardrails. Staat nummer 1 op de OWASP LLM Top 10; gevoelige onthulling staat nummer 2.</p></div>
+  <div class="card"><b class="t">API-retentie</b><p>Waar worden prompts opgeslagen, hoe lang, wie leest ze mee en traint de leverancier erop? Elke API-call is een compliantievraag.</p></div>
+  <div class="card"><b class="t">Schaduw-AI</b><p>1 op 12 prompts van werknemers naar publieke modellen bevat vertrouwelijke informatie.</p></div>
+
+  <h2 class="sec"><span class="n">02</span> Waar draait het model?</h2>
+  <table>
+    <tr><th>Optie</th><th>Privacy</th><th>Let op</th></tr>
+    <tr>
+      <td>Lokaal</td>
+      <td>Sterkst — data verlaat het apparaat nooit. Geen verwerker, geen DPA, verwijderrecht is triviaal.</td>
+      <td>Eigen hardware nodig. Een lokaal 70B-model presteert nu 'GPT-4-waardig' voor de meeste bedrijfstaken.</td>
+    </tr>
+    <tr>
+      <td>Enterprise cloud</td>
+      <td>Acceptabel voor de meeste bedrijfsdata — mét contracten: zero-data-retention (OpenAI, Anthropic, Azure, Bedrock, Vertex) en geen training zonder opt-in.</td>
+      <td>AVG: DPA verplicht, regionale endpoints. ZDR ≠ niets gelogd: misbruikdetectie behoudt retentievensters.</td>
+    </tr>
+    <tr>
+      <td>Consumer cloud</td>
+      <td>Alleen niet-gevoelige data.</td>
+      <td>Nooit sturen: patiëntgegevens, HR- en salarisdata, klant-PII, geprivilegieerde stukken, credentials.</td>
+    </tr>
+  </table>
+
+  <h2 class="sec"><span class="n">03</span> Het kernpatroon: schema-only text-to-SQL</h2>
+  <p>Voor SQL schrijven heeft de LLM het <b>schema</b> nodig, niet de waarden. Dat maakt de data-analist het best te beveiligen gebruik:</p>
+  <ol class="steps">
+    <li>Stuur <b>vraag + tabel-/kolomnamen + types</b> (eventueel synthetische voorbeeldrijen) naar de LLM → deze genereert SQL.</li>
+    <li>Voer de SQL <b>lokaal</b> uit (bijv. DuckDB): read-only, uitsluitend SELECT, rijlimieten.</li>
+    <li>Stuur alleen <b>aggregaten</b> of gemaskeerde resultaten terug voor analyse.</li>
+  </ol>
+  <p>Zelfs een volledig gehackt of geprompt model <b>kan niet lekken wat het nooit heeft gezien</b>.</p>
+
+  <div class="figure">
+    <svg viewBox="0 0 340 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Flow: vraag en schema naar LLM, SQL naar lokale database, aggregaten terug">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
+        </marker>
+      </defs>
+      <g font-family="system-ui, -apple-system, sans-serif" font-size="13">
+        <rect x="20" y="10" width="300" height="56" rx="12" fill="#FAF9F5" stroke="#6A8CAF" stroke-width="1.5"/>
+        <text x="170" y="33" text-anchor="middle" fill="#141413" font-weight="600">Vraag + schema</text>
+        <text x="170" y="51" text-anchor="middle" fill="#87867F" font-size="11">tabellen, kolommen, types — géén rijen</text>
+
+        <line x1="170" y1="66" x2="170" y2="96" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="100" width="300" height="56" rx="12" fill="#FAF9F5" stroke="#D97757" stroke-width="1.5"/>
+        <text x="170" y="123" text-anchor="middle" fill="#141413" font-weight="600">LLM — genereert SQL</text>
+        <text x="170" y="141" text-anchor="middle" fill="#87867F" font-size="11">ziet alleen structuur, geen data</text>
+
+        <line x1="170" y1="156" x2="170" y2="186" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="190" width="300" height="56" rx="12" fill="#FAF9F5" stroke="#788C5D" stroke-width="1.5"/>
+        <text x="170" y="213" text-anchor="middle" fill="#141413" font-weight="600">Lokale database (DuckDB)</text>
+        <text x="170" y="231" text-anchor="middle" fill="#87867F" font-size="11">read-only · SELECT-only · rijlimiet</text>
+
+        <line x1="170" y1="246" x2="170" y2="276" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="280" width="300" height="56" rx="12" fill="#FAF9F5" stroke="#788C5D" stroke-width="1.5"/>
+        <text x="170" y="303" text-anchor="middle" fill="#141413" font-weight="600">Aggregaten / gemaskeerd</text>
+        <text x="170" y="321" text-anchor="middle" fill="#87867F" font-size="11">PII gewist vóór terugsturen</text>
+
+        <line x1="170" y1="336" x2="170" y2="366" stroke="#87867F" stroke-width="1.5" marker-end="url(#a)"/>
+
+        <rect x="20" y="370" width="300" height="56" rx="12" fill="#FAF9F5" stroke="#6A8CAF" stroke-width="1.5"/>
+        <text x="170" y="393" text-anchor="middle" fill="#141413" font-weight="600">Antwoord</text>
+        <text x="170" y="411" text-anchor="middle" fill="#87867F" font-size="11">echte waarden worden lokaal hersteld</text>
+      </g>
+    </svg>
+    <p class="figcap">Schema-only patroon: data blijft op het apparaat; de LLM ziet alleen structuur en aggregaten.</p>
+  </div>
+
+  <h2 class="sec"><span class="n">04</span> PII-maskering: het proxy-patroon</h2>
+  <p><b>Microsoft Presidio</b> (open source, draait volledig lokaal) detecteert 50+ entiteitstypen — namen, BSN/SSN, kaartnummers, e-mails, telefoonnummers — en vervangt ze door masks, hashes of realistische fakes (Faker). Het antwoord komt terug en de echte waarden worden <b>lokaal</b> teruggezet. Realistische fakes geven natuurlijker modeloutput dan <code>&lt;PERSOON&gt;</code>-tokens.</p>
+  <p><b>Beperkingen:</b> contextafhankelijke identifiers (inkomen + woonplaats) glippen erdoorheen, en volgens de EDPB (2025) overleeft 'geanonimiseerde' data zelden heridentificatie. Beschouw maskering als vangnet, niet als garantie.</p>
+
+  <h2 class="sec"><span class="n">05</span> Geavanceerde PET's — alleen bij training op gevoelige data</h2>
+  <div class="card"><b class="t">Differentiële privacy</b><p>Wiskundige garantie tegen memorisatie; ruis kost kwaliteit (praktisch ε ≈ 8–10).</p></div>
+  <div class="card"><b class="t">Confidential computing (TEE)</b><p>Versleuteld geheugen tijdens inferentie — zelfs de cloudbeheerder ziet niets. Vandaag praktisch toepasbaar.</p></div>
+  <div class="card"><b class="t">Federated learning</b><p>Train waar de data woont; stuur alleen gradients. Combineer met differentiële privacy.</p></div>
+  <div class="card"><b class="t">FHE</b><p>Rekenen op versleutelde data: sterkste garantie, hoogste rekenkosten.</p></div>
+
+  <h2 class="sec"><span class="n">06</span> Compliance in één oogopslag</h2>
+  <div class="card"><b class="t">AVG</b><p>Jij bent verwerkingsverantwoordelijke; cloud-AI is verwerker → DPA verplicht. DPIA vooraf. Verwijderrecht is onmogelijk in modelgewichten → kies schema-only/RAG.</p></div>
+  <div class="card"><b class="t">HIPAA</b><p>PHI uitsluitend naar leveranciers met een BAA; on-prem is de veilige default.</p></div>
+  <div class="card"><b class="t">SOC 2 / ISO 27001</b><p>Behandel LLM, vectorstores en logs als nieuwe assets. Log prompt-hashes, nooit rauwe prompts.</p></div>
+
+  <h2 class="sec"><span class="n">07</span> Checklist: LLM-data-analyse</h2>
+  <ul class="check">
+    <li><b>Lokaal als default</b> — embedded DB + lokaal model = nul data-egress.</li>
+    <li><b>Schema-only prompts</b> — geen echte rijen naar de LLM.</li>
+    <li><b>Read-only, SELECT-only, rijlimieten</b> op alles wat het model genereert.</li>
+    <li><b>Aggregaten terug</b> — PII-maskeren wat tóch moet.</li>
+    <li><b>Cloud-optie</b> achter anonimiseringsproxy; documenteer ZDR/DPA-status per leverancier.</li>
+    <li><b>Audit</b> — log als hash/meta; mappingtabellen versleuteld en lokaal.</li>
+  </ul>
+
+  <div class="src">
+    <h2>Bronnen</h2>
+    <ol>
+      <li>StartupSoft — LLMs with Enterprise and Sensitive Data (whitepaper)</li>
+      <li>Duality Technologies — LLMs and Data Privacy</li>
+      <li>Lasso Security — LLM Data Privacy: Enterprise</li>
+      <li>John Oct — Presidio: Protecting Sensitive Data</li>
+      <li>LLM Configurator — Private AI for Business / GDPR</li>
+      <li>OpenAI — Zero Data Retention for frontier models (aug 2026)</li>
+      <li>Anthropic — API and data retention (ZDR)</li>
+      <li>OWASP — Top 10 for LLM Applications 2025</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>

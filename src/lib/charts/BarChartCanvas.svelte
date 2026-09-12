@@ -2,8 +2,39 @@
 	import { BarChart } from 'layerchart';
 	import type { BarChartConfig, BarChartData } from './types';
 	import { executeBarChartQuery } from './engine/DataModelConnector';
-	import { PALETTE, DIMMED } from './chart-helpers';
+	import { PALETTE, DIMMED, BLACK } from './chart-helpers';
 	import { extractErrorMessage } from '$lib/db-operations';
+
+	/**
+	 * BarChartCanvas — LayerChart BarChart with point-and-click interaction
+	 *
+	 * Implements two LayerChart interaction patterns:
+	 *
+	 * ## tooltip-click
+	 * Uses `tooltipContext` with `mode: 'band'` to show hover tooltips
+	 * and handle click events via `onclick`. This provides a unified
+	 * interaction model where hover shows data and click selects/deselects.
+	 *
+	 * See: https://next.layerchart.com/docs/components/BarChart/tooltip-click
+	 *
+	 * ## group-series-bar-click
+	 * The `onBarClick` handler (used when clickToFilter is enabled) receives
+	 * `{ data, series }` detail, supporting grouped series layouts where each
+	 * bar belongs to a specific series. Selected bars are visually highlighted
+	 * while unselected bars are dimmed.
+	 *
+	 * See: https://next.layerchart.com/docs/components/BarChart/group-series-bar-click
+	 *
+	 * ## Interaction flow
+	 * 1. Hover a bar → tooltip shows category + value
+	 * 2. Click a bar → toggles selection, dims unselected bars
+	 * 3. Selected categories appear as filter chips above the chart
+	 * 4. Click a chip or the same bar again to deselect
+	 * 5. "Clear all" removes every selection
+	 *
+	 * Note: `tooltipContext` and `onBarClick` conflict, so when clickToFilter
+	 * is enabled we use tooltipContext.onclick for the click handler instead.
+	 */
 
 	interface Props {
 		config: BarChartConfig;
@@ -26,8 +57,32 @@
 		const dimField = config.dimension.field;
 		const groups = [...new Set(data.map((d) => String(d[dimField] ?? '')))];
 		const sel = selectedGroups;
-		if (sel.size === 0) return PALETTE;
-		return groups.map((g) => (sel.has(g) ? PALETTE[groups.indexOf(g) % PALETTE.length] : DIMMED));
+		if (sel.size === 0) return groups.map(() => BLACK);
+		return groups.map((g) => (sel.has(g) ? BLACK : DIMMED));
+	});
+
+	let tooltipConfig = $derived.by(() => {
+		if (config.clickToFilter === false) {
+			return { mode: 'band' as const };
+		}
+		return {
+			mode: 'band' as const,
+			onclick: (_e: MouseEvent, { data: clickedData }: { data: any }) => {
+				const group = String(clickedData[config.dimension.field] ?? '');
+				if (!group) return;
+				const next = new Set(selectedGroups);
+				if (next.has(group)) {
+					next.delete(group);
+				} else {
+					next.add(group);
+				}
+				selectedGroups = next;
+				if (onBarClick) {
+					const row = data.find((r) => String(r[config.dimension.field]) === group);
+					if (row) onBarClick({ category: group, value: Number(row.value) || 0, row });
+				}
+			}
+		};
 	});
 
 	async function fetchData() {
@@ -69,23 +124,6 @@
 		return () => observer.disconnect();
 	});
 
-	function handleBarClick(_event: MouseEvent, detail: { data: any }) {
-		if (config.clickToFilter === false) return;
-		const group = String(detail.data[config.dimension.field] ?? '');
-		if (!group) return;
-		const next = new Set(selectedGroups);
-		if (next.has(group)) {
-			next.delete(group);
-		} else {
-			next.add(group);
-		}
-		selectedGroups = next;
-		if (onBarClick) {
-			const row = data.find((r) => String(r[config.dimension.field]) === group);
-			if (row) onBarClick({ category: group, value: Number(row.value) || 0, row });
-		}
-	}
-
 	function removeGroup(group: string) {
 		const next = new Set(selectedGroups);
 		next.delete(group);
@@ -105,12 +143,8 @@
 </script>
 
 <div class="chart-shell">
-	<div class="chart-header">
-		<h3 class="chart-title-text">{title}</h3>
-	</div>
-
-	{#if selectedGroups.size > 0}
-		<div class="filter-chips">
+	<div class="chip-row">
+		{#if selectedGroups.size > 0}
 			{#each [...selectedGroups] as group (group)}
 				<button class="filter-chip" onclick={() => removeGroup(group)}>
 					{group}
@@ -118,8 +152,13 @@
 				</button>
 			{/each}
 			<button class="clear-all-btn" onclick={clearAll}>Clear all</button>
-		</div>
-	{/if}
+		{:else}
+			<span class="chip-skeleton">Click bars to filter</span>
+		{/if}
+	</div>
+	<div class="chart-header">
+		<h3 class="chart-title-text">{title}</h3>
+	</div>
 
 	<div class="chart-body" bind:this={bodyWrapperEl}>
 		{#if isLoading}
@@ -149,14 +188,13 @@
 						orientation="horizontal"
 						series={[{
 							key: 'value',
-							value: 'value',
-							color: colorRange[0] ?? 'var(--color-accent)'
+							value: 'value'
 						}]}
 						width={chartWidth}
 						height={chartHeight}
 						padding={{ top: 16, right: 24, bottom: 48, left: 64 }}
 						motion="tween"
-						onBarClick={handleBarClick}
+						tooltipContext={tooltipConfig}
 						props={{ bars: { radius: 0, strokeWidth: 0 } }}
 					/>
 				{:else}
@@ -168,14 +206,13 @@
 						orientation="vertical"
 						series={[{
 							key: 'value',
-							value: 'value',
-							color: colorRange[0] ?? 'var(--color-accent)'
+							value: 'value'
 						}]}
 						width={chartWidth}
 						height={chartHeight}
 						padding={{ top: 16, right: 24, bottom: 48, left: 64 }}
 						motion="tween"
-						onBarClick={handleBarClick}
+						tooltipContext={tooltipConfig}
 						props={{ bars: { radius: 0, strokeWidth: 0 } }}
 					/>
 				{/if}
@@ -187,8 +224,8 @@
 <style>
 	.chart-shell {
 		background: var(--color-surface);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-lg);
+		border: none;
+		border-radius: 0;
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -196,6 +233,9 @@
 	}
 
 	.chart-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
 		padding: var(--space-4) var(--space-6) 0;
 		flex-shrink: 0;
 	}
@@ -207,21 +247,39 @@
 		color: var(--color-text-secondary);
 		letter-spacing: -0.01em;
 		margin: 0;
+		white-space: nowrap;
 	}
 
-	.filter-chips {
+	.chip-row {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		gap: var(--space-2);
-		padding: var(--space-3) var(--space-6);
+		align-items: center;
+		padding: 0 var(--space-6);
+		height: 28px;
 		flex-shrink: 0;
+		overflow-x: auto;
+	}
+
+	.chip-skeleton {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		line-height: 24px;
+		letter-spacing: 0.02em;
+		color: var(--color-text-tertiary);
+		padding: 0 var(--space-2);
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-xs);
+		opacity: 0.6;
 	}
 
 	.filter-chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		padding: 2px var(--space-2);
+		padding: 0 var(--space-2);
+		height: 24px;
+		line-height: 1;
 		border: 1px solid var(--color-accent-light);
 		border-radius: var(--radius-xs);
 		background: var(--color-accent-muted);
@@ -230,6 +288,7 @@
 		font-size: var(--text-xs);
 		cursor: pointer;
 		transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease;
+		white-space: nowrap;
 	}
 
 	.filter-chip:hover {
@@ -242,7 +301,9 @@
 	}
 
 	.clear-all-btn {
-		padding: 2px var(--space-2);
+		padding: 0 var(--space-2);
+		height: 24px;
+		line-height: 1;
 		border: 1px solid transparent;
 		border-radius: var(--radius-xs);
 		background: transparent;
@@ -250,6 +311,7 @@
 		font-family: var(--font-body);
 		font-size: var(--text-xs);
 		cursor: pointer;
+		white-space: nowrap;
 		transition: color var(--duration-fast) ease;
 	}
 

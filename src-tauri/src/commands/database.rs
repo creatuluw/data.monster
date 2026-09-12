@@ -112,6 +112,35 @@ pub fn shutdown_duckdb(state: State<'_, DuckDbState>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub fn reset_all_data(state: State<'_, DuckDbState>) -> Result<(), String> {
+    eprintln!("[database] Resetting all data");
+    let state_conn = state.conn.lock();
+    let conn = state_conn
+        .as_ref()
+        .ok_or("DuckDB not initialized")?;
+
+    let mut stmt = conn
+        .prepare("SELECT table_name FROM information_schema.tables WHERE table_schema = 'main'")
+        .map_err(|e| e.to_string())?;
+
+    let tables: Vec<String> = stmt
+        .query_map([], |row| row.get::<_, String>(0))
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    for table in &tables {
+        let sanitized = table.replace('"', "\"\"");
+        let _ = conn.execute(&format!("DROP TABLE IF EXISTS \"{}\"", sanitized), []);
+        let _ = conn.execute(&format!("DROP VIEW IF EXISTS \"{}\"", sanitized), []);
+    }
+
+    initialize_schema(conn)?;
+
+    Ok(())
+}
+
 fn open_with_retry(db_path: &Path, wal_path: &Path, app: &AppHandle) -> Result<Connection, String> {
     let max_retries = 10;
     let mut attempt = 0;
@@ -244,6 +273,40 @@ pub(crate) fn initialize_schema(conn: &Connection) -> Result<(), String> {
     )
     .map_err(|e| format!("Failed to create d8a_monster_saved_queries: {}", e))?;
 
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS d8a_monster_field_functions (
+            id VARCHAR PRIMARY KEY,
+            label VARCHAR NOT NULL,
+            description TEXT,
+            sql_template TEXT NOT NULL,
+            applies_to TEXT NOT NULL,
+            output_type VARCHAR NOT NULL DEFAULT ''
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create d8a_monster_field_functions: {}", e))?;
+
+    let has_output_type: bool = conn
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('d8a_monster_field_functions') WHERE name = 'output_type'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )
+        .map(|c| c > 0)
+        .unwrap_or(false);
+    if !has_output_type {
+        let _ = conn.execute("ALTER TABLE d8a_monster_field_functions ADD COLUMN output_type VARCHAR NOT NULL DEFAULT ''", []);
+    }
+
+    conn.execute(
+        "INSERT OR IGNORE INTO d8a_monster_field_functions (id, label, description, sql_template, applies_to, output_type) VALUES
+            ('week_end', 'Week end', 'Last day of the week (Sunday)', 'date_trunc(''week'', {column}) + INTERVAL 6 DAYS', 'DATE,TIMESTAMP', 'DATE'),
+            ('month_end', 'Month end', 'Last day of the month', '(date_trunc(''month'', {column}) + INTERVAL 1 MONTH) - INTERVAL 1 DAY', 'DATE,TIMESTAMP', 'DATE'),
+            ('quarter_end', 'Quarter end', 'Last day of the quarter', '(date_trunc(''quarter'', {column}) + INTERVAL 3 MONTHS) - INTERVAL 1 DAY', 'DATE,TIMESTAMP', 'DATE')",
+        [],
+    )
+    .map_err(|e| format!("Failed to seed d8a_monster_field_functions: {}", e))?;
+
     Ok(())
 }
 
@@ -262,7 +325,7 @@ mod tests {
             [],
             |row| row.get(0),
         ).unwrap();
-        assert_eq!(count, 3);
+        assert_eq!(count, 4);
     }
 
     #[test]
@@ -272,6 +335,18 @@ mod tests {
         initialize_schema(&conn).unwrap();
         let count: i64 = conn.query_row(
             "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'main' AND table_name LIKE 'd8a_monster_%'",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 4);
+    }
+
+    #[test]
+    fn test_field_functions_seeded() {
+        let conn = Connection::open_in_memory().unwrap();
+        initialize_schema(&conn).unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM d8a_monster_field_functions",
             [],
             |row| row.get(0),
         ).unwrap();

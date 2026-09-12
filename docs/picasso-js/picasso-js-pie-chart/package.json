@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-pie-chart",
+  "main": "6289f9d033d0f463@50.js",
+  "version": "50.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-pie-chart",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

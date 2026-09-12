@@ -1,7 +1,12 @@
 export { default as BarChart } from './BarChart.svelte';
 export { default as BarChartCanvas } from './BarChartCanvas.svelte';
+export { default as LineAreaChartCanvas } from './LineAreaChartCanvas.svelte';
+export { default as PieDonutChartCanvas } from './PieDonutChartCanvas.svelte';
+export { default as ScatterChartCanvas } from './ScatterChartCanvas.svelte';
 export { default as PicassoBarChartCanvas } from './PicassoBarChartCanvas.svelte';
-export { default as ObservableBarChartCanvas } from './ObservableBarChartCanvas.svelte';
-export { aggregate, filterData, buildColorScale, toggleGroup, formatCurrency, formatNumber, formatPercent, PALETTE, DIMMED } from './chart-helpers';
-export type { ChartDataPoint, BarClickDetail, ChartOptions, ColorScale, BarChartConfig, BarChartData, BarChartDimension, BarChartMetric, FilterState } from './types';
-export { compileBarChartQuery, executeBarChartQuery } from './engine/DataModelConnector';
+export { default as PicassoLineAreaChartCanvas } from './PicassoLineAreaChartCanvas.svelte';
+export { default as PicassoPieDonutCanvas } from './PicassoPieDonutCanvas.svelte';
+export { default as PicassoScatterCanvas } from './PicassoScatterCanvas.svelte';
+export { aggregate, filterData, buildColorScale, toggleGroup, formatCurrency, formatNumber, formatPercent, PALETTE, BLACK, DIMMED } from './chart-helpers';
+export type { ChartDataPoint, BarClickDetail, ChartOptions, ColorScale, BarChartConfig, BarChartData, BarChartDimension, BarChartMetric, LineAreaChartConfig, PieDonutChartConfig, ScatterChartConfig, FilterState } from './types';
+export { compileBarChartQuery, executeBarChartQuery, compileLineAreaChartQuery, executeLineAreaChartQuery, compilePieDonutChartQuery, executePieDonutChartQuery, compileScatterChartQuery, executeScatterChartQuery } from './engine/DataModelConnector';

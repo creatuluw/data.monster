@@ -13,6 +13,8 @@ export const PALETTE = [
 	'oklch(0.76 0.13 80)'
 ];
 
+export const BLACK = 'oklch(0.22 0.005 250)';
+
 export const DIMMED = 'oklch(0.85 0.01 250 / 0.4)';
 
 export function aggregate(

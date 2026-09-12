@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BarChart2, Palette, Sparkles, Layers, FlaskConical, PieChart } from 'lucide-svelte';
+	import { BarChart2, Layers, FlaskConical } from 'lucide-svelte';
 </script>
 
 <svelte:head>
@@ -13,7 +13,7 @@
 	</div>
 
 	<p class="section-subtitle">
-		Chart rendering engines under evaluation. Each library has different strengths — try all three and compare.
+		Chart rendering engines under evaluation. Each library has different strengths — try them and compare.
 	</p>
 
 	<div class="labs-grid">
@@ -24,26 +24,6 @@
 			<div class="lab-info">
 				<span class="lab-title">Picasso Charts</span>
 				<span class="lab-desc">Canvas-based charting by Qlik. Declarative component model with built-in brushing, interactions, and SQL-driven live data — renders to `<canvas>`.</span>
-			</div>
-		</a>
-
-		<a href="/labs/observable-charts" class="lab-card">
-			<div class="lab-icon">
-				<FlaskConical size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">Observable Charts</span>
-				<span class="lab-desc">Grammar-of-graphics charting by Observable. Renders SVG with concise Plot API, faceting, and mark composition — a battle-tested standard for exploratory data visualization.</span>
-			</div>
-		</a>
-
-		<a href="/labs/svelteplot-charts" class="lab-card">
-			<div class="lab-icon">
-				<Sparkles size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">SveltePlot</span>
-				<span class="lab-desc">Svelte-native wrapper around Observable Plot. Renders SVG with idiomatic Svelte components, linked interactions, and first-class reactivity — no canvas layer.</span>
 			</div>
 		</a>
 
@@ -64,16 +44,6 @@
 			<div class="lab-info">
 				<span class="lab-title">Unovis</span>
 				<span class="lab-desc">Framework-independent visualization by F5. SVG bar charts with built-in tooltip, bullet legend, and click-to-filter interactions powered by @unovis/ts.</span>
-			</div>
-		</a>
-
-		<a href="/labs/echarts-charts" class="lab-card">
-			<div class="lab-icon">
-				<PieChart size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">Apache ECharts</span>
-				<span class="lab-desc">Production-grade Canvas/SVG charting by Apache. Rich interactivity, built-in tooltip, zoom, and click-to-filter with bar dimming powered by echarts.</span>
 			</div>
 		</a>
 	</div>

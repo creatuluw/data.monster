@@ -6,8 +6,8 @@ mod state;
 mod utils;
 
 use commands::{
-    database::*, files::*, folders::*, internal_db::*, labels::*, local_llm::*, postgres::*,
-    queries::*, saved_queries::*, settings::*, tables::*, workspace::*,
+    database::*, field_functions::*, files::*, folders::*, internal_db::*, labels::*, local_llm::*,
+    postgres::*, queries::*, saved_queries::*, settings::*, tables::*, workspace::*,
 };
 use commands::local_llm::LlmState;
 use state::DuckDbState;
@@ -24,6 +24,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             initialize_duckdb,
             shutdown_duckdb,
+            reset_all_data,
             choose_workspace_folder,
             get_workspace_path,
             set_workspace_path,
@@ -51,6 +52,10 @@ fn main() {
             get_table_labels,
             get_all_tags,
             get_all_groups,
+            list_field_functions,
+            create_field_function,
+            update_field_function,
+            delete_field_function,
             list_saved_queries,
             save_query,
             update_saved_query,
@@ -74,6 +79,7 @@ fn main() {
             unload_model,
             is_model_loaded,
             generate_chat,
+            remote_chat,
             stop_generation,
         ])
         .run(tauri::generate_context!())

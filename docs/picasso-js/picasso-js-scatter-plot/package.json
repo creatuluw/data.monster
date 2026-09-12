@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-example",
+  "main": "21465f5983c5f3c6@148.js",
+  "version": "148.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-example",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

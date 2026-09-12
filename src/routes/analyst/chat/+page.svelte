@@ -3,6 +3,18 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { marked } from 'marked';
+	import {
+		ChevronDown,
+		Database,
+		LoaderCircle,
+		Check,
+		ArrowRight,
+		Square,
+		Send,
+		Play,
+		Cog,
+		MessagesSquare
+	} from 'lucide-svelte';
 
 	marked.setOptions({ breaks: true, gfm: true });
 
@@ -236,9 +248,7 @@
 		<div class="chat-header">
 			<div class="chat-header-left">
 				<div class="chat-avatar">
-					<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714a2.25 2.25 0 0 1-.659 1.591L15 14.5" />
-					</svg>
+					<MessagesSquare size={16} />
 				</div>
 				<div>
 					<h2 class="chat-header-title">Data Analyst</h2>
@@ -246,21 +256,13 @@
 				</div>
 			</div>
 			<a href="/analyst" class="chat-settings-link" title="Change tables">
-				<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-					<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-				</svg>
+				<Cog size={14} />
 			</a>
 		</div>
 
 		<div bind:this={messagesEl} class="chat-messages">
 			{#if analyst.messages.length === 0 && !analyst.streaming}
 				<div class="welcome">
-					<div class="welcome-icon">
-						<svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-						</svg>
-					</div>
 					<h3 class="welcome-title">Ask anything about your data</h3>
 					<p class="welcome-desc">I'll analyze your {analyst.selectedTables.length} {analyst.selectedTables.length !== 1 ? 'tables' : 'table'} using SQL. Queries run automatically and results appear on the right.</p>
 
@@ -312,13 +314,11 @@
 											aria-expanded={expandedAccordions.has(accordionId)}
 										>
 											<div class="sql-accordion-title">
-												<svg class="sql-accordion-icon" class:is-open={expandedAccordions.has(accordionId)} width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-												</svg>
+											<span class="sql-accordion-icon" class:is-open={expandedAccordions.has(accordionId)}>
+												<ChevronDown size={14} />
+											</span>
 												<span class="sql-accordion-label">
-													<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-														<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 3.75v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75" />
-													</svg>
+													<Database size={14} />
 													SQL Query
 												</span>
 											</div>
@@ -326,10 +326,7 @@
 												<span class="sql-accordion-lines">{part.content.split('\n').length} line{part.content.split('\n').length !== 1 ? 's' : ''}</span>
 												{#if part.partial}
 													<span class="sql-accordion-status">
-														<svg class="spinner-sm" viewBox="0 0 24 24" fill="none">
-															<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-															<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-														</svg>
+														<LoaderCircle class="spinner-sm" size={10} />
 														Writing...
 													</span>
 												{/if}
@@ -371,9 +368,7 @@
 							>
 								<span class="plan-chip-check">
 									{#if analyst.selectedPlanOptions.has(option.id)}
-										<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
-											<path d="M2.5 6l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round" />
-										</svg>
+										<Check size={12} />
 									{/if}
 								</span>
 								<span class="plan-chip-label">{option.label}</span>
@@ -398,9 +393,7 @@
 							disabled={analyst.selectedPlanOptions.size === 0 && !analyst.customPlanOption.trim()}
 						>
 							Proceed with selected
-							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-							</svg>
+							<ArrowRight size={14} />
 						</button>
 					</div>
 				</div>
@@ -421,13 +414,11 @@
 										aria-expanded={expandedAccordions.has(accordionId)}
 									>
 										<div class="sql-accordion-title">
-											<svg class="sql-accordion-icon" class:is-open={expandedAccordions.has(accordionId)} width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-												<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-											</svg>
+											<span class="sql-accordion-icon" class:is-open={expandedAccordions.has(accordionId)}>
+												<ChevronDown size={14} />
+											</span>
 											<span class="sql-accordion-label">
-												<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 3.75v3.75c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125v-3.75" />
-												</svg>
+												<Database size={14} />
 												SQL Query
 											</span>
 										</div>
@@ -435,10 +426,7 @@
 											<span class="sql-accordion-lines">{part.content.split('\n').length} line{part.content.split('\n').length !== 1 ? 's' : ''}</span>
 											{#if part.partial}
 												<span class="sql-accordion-status">
-													<svg class="spinner-sm" viewBox="0 0 24 24" fill="none">
-														<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-														<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-													</svg>
+													<LoaderCircle class="spinner-sm" size={10} />
 													Writing...
 												</span>
 											{/if}
@@ -459,10 +447,7 @@
 			{:else if analyst.streaming}
 				<div class="message">
 					<div class="thinking">
-						<svg class="spinner" viewBox="0 0 24 24" fill="none" style="width: 16px; height: 16px;">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-							<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-						</svg>
+						<LoaderCircle class="spinner" size={16} />
 						<span class="thinking-text">Thinking...</span>
 					</div>
 				</div>
@@ -471,43 +456,41 @@
 
 		<div class="chat-input-area">
 			<div class="chat-input-row">
-				<textarea
-					bind:this={inputEl}
-					bind:value={inputText}
-					onkeydown={handleKeydown}
-					placeholder="Ask about your data..."
-					rows="1"
-					disabled={analyst.streaming || !!analyst.pendingPlan}
-					class="chat-input"
-					oninput={() => {
-						if (inputEl) {
-							inputEl.style.height = 'auto';
-							inputEl.style.height = Math.min(inputEl.scrollHeight, 96) + 'px';
-						}
-					}}
-				></textarea>
-				{#if analyst.streaming}
-					<button
-						onclick={() => analyst.stop()}
-						aria-label="Stop generating"
-						class="stop-btn"
-					>
-						<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-							<rect width="12" height="12" rx="2" />
-						</svg>
-					</button>
-				{:else}
-					<button
-						onclick={handleSend}
-						disabled={!inputText.trim() || !!analyst.pendingPlan}
-						aria-label="Send message"
-						class="send-btn"
-					>
-						<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />
-						</svg>
-					</button>
-				{/if}
+				<div class="chat-input-wrap">
+					<textarea
+						bind:this={inputEl}
+						bind:value={inputText}
+						onkeydown={handleKeydown}
+						placeholder="Ask about your data..."
+						rows="1"
+						disabled={analyst.streaming || !!analyst.pendingPlan}
+						class="chat-input"
+						oninput={() => {
+							if (inputEl) {
+								inputEl.style.height = 'auto';
+								inputEl.style.height = Math.min(inputEl.scrollHeight, 96) + 'px';
+							}
+						}}
+					></textarea>
+					{#if analyst.streaming}
+						<button
+							onclick={() => analyst.stop()}
+							aria-label="Stop generating"
+							class="stop-btn"
+						>
+							<Square size={14} />
+						</button>
+					{:else}
+						<button
+							onclick={handleSend}
+							disabled={!inputText.trim() || !!analyst.pendingPlan}
+							aria-label="Send message"
+							class="send-btn"
+						>
+							<Send size={14} />
+						</button>
+					{/if}
+				</div>
 			</div>
 			<span class="chat-input-hint">Enter to send · Shift+Enter for new line</span>
 		</div>
@@ -569,9 +552,7 @@
 								disabled={analyst.streaming || !editSql.trim()}
 								class="btn btn-primary btn-sm"
 							>
-								<svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-								</svg>
+								<Play size={10} />
 								Run
 							</button>
 						</div>
@@ -626,10 +607,7 @@
 					</div>
 				{:else if !activeQuery.error}
 					<div class="query-loading">
-						<svg class="spinner" viewBox="0 0 24 24" fill="none" style="width: 20px; height: 20px; color: var(--color-text-tertiary);">
-							<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" opacity="0.25" />
-							<path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-						</svg>
+						<LoaderCircle class="spinner" size={20} />
 						<span class="query-loading-text">Executing query...</span>
 					</div>
 				{/if}
@@ -747,17 +725,6 @@
 		gap: var(--space-4);
 	}
 
-	.welcome-icon {
-		width: 48px;
-		height: 48px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: var(--radius-lg);
-		background: var(--color-accent-muted);
-		color: var(--color-accent);
-		border: 1px solid oklch(0.82 0.03 41);
-	}
 
 	.welcome-title {
 		font-family: var(--font-display);
@@ -1234,6 +1201,7 @@
 	}
 
 	.sql-accordion-icon {
+		display: inline-flex;
 		width: 14px;
 		height: 14px;
 		color: var(--color-text-tertiary);
@@ -1400,9 +1368,17 @@
 	}
 
 	.chat-input-row {
+		position: relative;
 		display: flex;
 		align-items: flex-end;
 		gap: var(--space-2);
+	}
+
+	.chat-input-wrap {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex: 1;
 	}
 
 	.chat-input {

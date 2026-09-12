@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picassojs-gantt-chart",
+  "main": "a44d1777d6812db7@89.js",
+  "version": "89.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picassojs-gantt-chart",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

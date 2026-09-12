@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-donut-chart",
+  "main": "31e87f6d7869a4dc@45.js",
+  "version": "45.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-donut-chart",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

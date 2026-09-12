@@ -1,0 +1,183 @@
+{
+  "project": "field-function-library",
+  "spec": ".specs/field-function-library/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "core-001",
+      "phase": "Core",
+      "title": "Remove previous VIEW-based date enrichment implementation",
+      "description": "FR-6: Remove d8a_monster_date_fields from schema, delete date_fields.rs module, remove VIEW/__base logic from tables.rs and database.rs, unregister refresh_table_view and reset_all_data commands, remove DateFieldConfig types and bindings from db-operations.ts, remove date field toggles from TableDrawer.svelte and preview page, remove danger zone reset button from settings page, revert .app-main overflow change, remove isDateColumn and buildTableSelect.",
+      "acceptanceCriteria": [
+        "TDD: Verify no references to d8a_monster_date_fields, __base, refresh_table_view, reset_all_data, DateFieldConfig, isDateColumn, buildTableSelect remain in codebase",
+        "TDD: Verify tables load as plain DuckDB tables with no automatic VIEW wrapping",
+        "TDD: Verify existing table viewer, chart-lib, and query page work with plain tables",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "core-002",
+      "phase": "Core",
+      "title": "Create d8a_monster_field_functions schema table with pre-populated date functions",
+      "description": "FR-1: Add d8a_monster_field_functions table to initialize_schema() in database.rs. Columns: id VARCHAR PRIMARY KEY, label VARCHAR NOT NULL, description TEXT, sql_template TEXT NOT NULL, applies_to TEXT NOT NULL (comma-separated type patterns). Pre-populate with three date functions: week_end, month_end, quarter_end using INSERT OR IGNORE.",
+      "acceptanceCriteria": [
+        "TDD: d8a_monster_field_functions table exists after schema init with 3 pre-populated rows",
+        "TDD: Table has columns id, label, description, sql_template, applies_to",
+        "TDD: Schema init is idempotent — running twice does not duplicate rows",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-003",
+      "phase": "Core",
+      "title": "Rust CRUD commands for field functions",
+      "description": "FR-1, FR-2: Create src-tauri/src/commands/field_functions.rs with commands: list_field_functions (returns all), create_field_function (add new), update_field_function (edit existing), delete_field_function (remove). Register in main.rs and mod.rs. Include validation: label and sql_template required, applies_to must be non-empty.",
+      "acceptanceCriteria": [
+        "TDD: list_field_functions returns pre-populated date functions",
+        "TDD: create_field_function inserts a new row and returns success",
+        "TDD: update_field_function modifies an existing row",
+        "TDD: delete_field_function removes a row by id",
+        "TDD: Duplicate id on create returns error",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-004",
+      "phase": "Core",
+      "title": "Frontend API bindings and function library TypeScript module",
+      "description": "FR-1: Add TypeScript interfaces (FieldFunction) and API functions (listFieldFunctions, createFieldFunction, updateFieldFunction, deleteFieldFunction) to db-operations.ts. Create src/lib/field-functions/library.ts with helpers: getFunctionsForType(columnType) filters by applies_to patterns, generateFunctionSQL(fn, columnName) replaces {column} and {alias} placeholders, buildSelectClause(columns, activeFunctions) generates full SELECT clause.",
+      "acceptanceCriteria": [
+        "TDD: getFunctionsForType('DATE') returns week_end, month_end, quarter_end functions",
+        "TDD: getFunctionsForType('VARCHAR') returns empty array",
+        "TDD: generateFunctionSQL returns valid DuckDB expression with column quoted",
+        "TDD: buildSelectClause generates correct SELECT list with plain refs and computed columns",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-005",
+      "phase": "Core",
+      "title": "Settings page: function library management UI",
+      "description": "FR-2: Add a 'Field Functions' section to /settings page (or new tab/section). List all functions with label, description, applies_to. Add Function button opens modal/form with fields: label, description, sql_template, applies_to. Each row has edit (opens same modal pre-filled) and delete (with confirmation) actions. Uses existing settings page patterns.",
+      "acceptanceCriteria": [
+        "TDD: Function list loads from backend on page mount",
+        "TDD: Add function form validates required fields and saves to backend",
+        "TDD: Edit function pre-fills form and updates on save",
+        "TDD: Delete function shows confirmation and removes from list",
+        "TDD: Changes persist across page reloads",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-006",
+      "phase": "Core",
+      "title": "Column drawer component for query page",
+      "description": "FR-3: Create src/lib/components/ColumnFunctionDrawer.svelte — a right-side sliding drawer that displays a table's columns. Props: tableName, columns (ColumnInfo[]), fieldFunctions (FieldFunction[]), onclose, onfunctionchange. Each column row shows name + type badge. Clicking a column expands it to show matching functions. Uses same drawer pattern as TableDrawer.svelte (overlay + slide-in panel).",
+      "acceptanceCriteria": [
+        "TDD: Drawer opens with columns from getTableMeta()",
+        "TDD: Each column shows name and type badge",
+        "TDD: Clicking a date column reveals week_end, month_end, quarter_end functions",
+        "TDD: Clicking a VARCHAR column shows 'No functions available'",
+        "TDD: Drawer closes on X button and overlay click",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-007",
+      "phase": "Core",
+      "title": "Function selection with toggle state per column",
+      "description": "FR-4: In ColumnFunctionDrawer, maintain a Map<columnName, Set<functionId>> for active functions. Clicking a function toggles it in the set. Active functions show as tags below the column name with × remove button. Emit onfunctionchange event with the updated active functions map.",
+      "acceptanceCriteria": [
+        "TDD: Clicking a function adds it to active set and shows tag",
+        "TDD: Clicking active function removes it",
+        "TDD: × button on tag removes function",
+        "TDD: Multiple functions can be active on same column",
+        "TDD: onfunctionchange fires with updated map on every toggle",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "core-008",
+      "phase": "Core",
+      "title": "Wire drawer into query page with SQL injection",
+      "description": "FR-3, FR-5: In query/+page.svelte, modify loadTableQuery() to: (1) fetch field functions from backend, (2) open ColumnFunctionDrawer instead of auto-generating SQL. When functions change in drawer, regenerate the SELECT clause using buildSelectClause() and update the query editor text. Preserve the FROM, WHERE, ORDER BY, LIMIT clauses from the existing query.",
+      "acceptanceCriteria": [
+        "TDD: Clicking table in sidebar opens drawer instead of auto-running query",
+        "TDD: Selecting date functions updates editor with computed columns",
+        "TDD: Generated SQL includes original column + function expressions with AS aliases",
+        "TDD: Deselecting all functions reverts to plain column references",
+        "TDD: Generated SQL executes successfully via handleRunQuery",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "edge-001",
+      "phase": "Edge Cases",
+      "title": "Handle edge cases: empty tables, special chars, missing functions",
+      "description": "Edge Cases: Handle tables with no columns (empty state in drawer), columns with special characters (proper quoting), function deleted while active (remove from active set gracefully), very wide tables (drawer scroll), function template validation on save (reject empty template).",
+      "acceptanceCriteria": [
+        "TDD: Empty table shows 'No columns' message in drawer",
+        "TDD: Column name with spaces/special chars is double-quoted in SQL",
+        "TDD: Deleting an active function from settings removes it from active set on next load",
+        "TDD: Drawer scrolls for 100+ column tables",
+        "TDD: Saving function with empty sql_template shows validation error",
+        "Task Logging: .specs/field-function-library/tasks.json -> task_id | title | summary | is_working | timestamp | notes | decisions_made",
+        "Code Review: Use section -> 2. Code Review (Karpathy Guidelines) in .opencode/skills/te9-spec/SKILL.md",
+        "Update Docs: Use section -> 3. Documentation Updates in .opencode/skills/te9-spec/SKILL.md"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "Edge Cases"
+    }
+  ],
+  "tddWorkflow": {
+    "enforced": true,
+    "cycle": "RED-GREEN-REFACTOR",
+    "rules": [
+      "Write test first (RED) - test must fail",
+      "Write minimal code to pass (GREEN) - no optimization",
+      "Refactor only after test passes (REFACTOR) - maintain quality",
+      "All tasks must follow TDD cycle as acceptance criteria"
+    ]
+  }
+}

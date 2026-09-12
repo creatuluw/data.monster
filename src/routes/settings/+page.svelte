@@ -14,7 +14,6 @@
 	let saved = $state(false);
 	let error = $state('');
 	let loading = $state(true);
-
 	onMount(async () => {
 		try {
 			const settings = await getSettings();
@@ -54,6 +53,7 @@
 		}
 		saving = false;
 	}
+
 </script>
 
 <svelte:head>
@@ -68,6 +68,10 @@
 		<a href="/settings/internal-db" class="btn btn-secondary btn-sm" title="Internal Database">
 			<Database size={14} />
 			Internal DB
+		</a>
+		<a href="/settings/field-functions" class="btn btn-secondary btn-sm" style="margin-left: var(--space-2);" title="Field Functions">
+			<Settings size={14} />
+			Field Functions
 		</a>
 	</div>
 
@@ -176,6 +180,7 @@
 				{/if}
 			</div>
 		</div>
+
 	{/if}
 </div>
 
@@ -287,6 +292,16 @@
 	.spinner--sm {
 		width: 14px;
 		height: 14px;
+	}
+
+	:global(.btn-danger) {
+		background: var(--color-danger);
+		color: white;
+		border-color: var(--color-danger);
+	}
+
+	:global(.btn-danger:hover) {
+		opacity: 0.85;
 	}
 
 	.mode-toggle-row {

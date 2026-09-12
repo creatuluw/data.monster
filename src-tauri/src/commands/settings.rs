@@ -20,14 +20,73 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
 pub fn get_settings(app: tauri::AppHandle) -> Result<Value, String> {
     let path = settings_path(&app)?;
 
-    if !path.exists() {
-        return Ok(serde_json::json!({}));
+    let mut settings = if path.exists() {
+        let content =
+            fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {}", e))?;
+        serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings: {}", e))?
+    } else {
+        serde_json::json!({})
+    };
+
+    apply_env_overrides(&mut settings);
+    Ok(settings)
+}
+
+// LLM_API_KEY / LLM_API_URL / LLM_MODEL from the real env or a .env file (cwd, then parent)
+// override settings.json — .env is the source of truth in dev.
+fn apply_env_overrides(settings: &mut Value) {
+    let obj = match settings.as_object_mut() {
+        Some(o) => o,
+        None => return,
+    };
+
+    for (env_name, setting_name) in
+        [("LLM_API_KEY", "llmApiKey"), ("LLM_API_URL", "llmApiUrl"), ("LLM_MODEL", "llmModel")]
+    {
+        if let Some(v) = env_value(env_name) {
+            obj.insert(setting_name.to_string(), Value::String(v));
+        }
     }
 
-    let content =
-        fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {}", e))?;
+    // Accept both the base URL (.../v4) and the full chat-completions URL.
+    if let Some(url) = obj.get("llmApiUrl").and_then(|v| v.as_str()).map(str::to_string) {
+        if !url.contains("chat/completions") {
+            let url = format!("{}/chat/completions", url.trim_end_matches('/'));
+            obj.insert("llmApiUrl".to_string(), Value::String(url));
+        }
+    }
+}
 
-    serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings: {}", e))
+fn env_value(name: &str) -> Option<String> {
+    if let Ok(v) = std::env::var(name) {
+        if !v.trim().is_empty() {
+            return Some(v.trim().to_string());
+        }
+    }
+
+    let mut dir = std::env::current_dir().ok()?;
+    loop {
+        let file = dir.join(".env");
+        if let Ok(content) = fs::read_to_string(&file) {
+            for line in content.lines() {
+                let line = line.trim();
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+                let Some((k, v)) = line.split_once('=') else { continue };
+                if k.trim() == name {
+                    let v = v.trim().trim_matches('"');
+                    if !v.is_empty() {
+                        return Some(v.to_string());
+                    }
+                }
+            }
+            return None; // found a .env, var not in it
+        }
+        if !dir.pop() {
+            return None;
+        }
+    }
 }
 
 #[tauri::command]

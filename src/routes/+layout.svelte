@@ -93,7 +93,7 @@
 		data: 'Data',
 		connect: 'Connect',
 		query: 'Query',
-		table: 'Table',
+		table: 'Data',
 		settings: 'Settings',
 		'internal-db': 'Internal DB',
 		labs: 'Labs',
@@ -110,8 +110,9 @@
 		const path = $page.url.pathname;
 		if (path === '/' || isUiPage) return [];
 		const segments = path.split('/').filter(Boolean);
+		const hrefOverrides: Record<string, string> = { table: '/data' };
 		return segments.map((seg, i) => ({
-			href: '/' + segments.slice(0, i + 1).join('/'),
+			href: hrefOverrides[seg] ?? ('/' + segments.slice(0, i + 1).join('/')),
 			label: decodeURIComponent(routeLabels[seg] || seg),
 		}));
 	});
@@ -329,7 +330,7 @@
 
 	.app-main {
 		flex: 1;
-		overflow: hidden;
+		overflow-y: auto;
 		padding: 0;
 	}
 

@@ -72,7 +72,7 @@
 		return {
 			scales: {
 				cat: { data: { extract: { field: dimField } }, type: 'band', padding: 0.15 },
-				val: { data: { extract: { field: 'value' } }, type: 'linear', min: 0, expand: 0.05, invert: !isHorizontal }
+								val: { data: { extract: { field: 'value' } }, type: 'linear', min: 0, expand: 0.05, invert: !isHorizontal }
 			},
 			components: [
 				{
@@ -123,43 +123,72 @@
 							minHeightPx: 1
 						}
 					}
-				},
-				...(config.showValues
-					? [{
-							type: 'labels' as const,
-							key: 'value-labels',
-							displayOrder: 2,
-							settings: {
-								sources: [{
-									component: 'bars',
-									selector: 'rect',
-									strategy: {
-										type: 'bar' as const,
-										settings: {
-											direction: isHorizontal ? 'right' : 'up',
-											labels: [{
-												label: (node: any) => formatValue(Number(node.data.end.value), config.valueFormat ?? 'number'),
-												placements: [{
-													position: 'outside'
-												}]
-											}]
-										}
-									}
-								}]
-							}
-						}]
-					: [])
+				}
 			]
 		};
 	}
 
 	let clickHandler: ((e: MouseEvent) => void) | null = null;
 
+	function renderValueLabels() {
+		if (!containerEl || !chart || !config.showValues) return;
+		const existing = containerEl.querySelectorAll('.value-label');
+		existing.forEach((el) => el.remove());
+
+		const isHorizontal = config.orientation === 'horizontal';
+		const svg = containerEl.querySelector('svg');
+		if (!svg) return;
+
+		for (const row of data) {
+			const cat = String(row[dimField] ?? '');
+			const val = Number(row.value) || 0;
+			const text = formatValue(val, config.valueFormat ?? 'number');
+
+			let shapes: any[] = [];
+			try {
+				shapes = chart.shapesAt(
+					{ x: 0, y: 0, width: 99999, height: 99999 },
+					{ components: [{ key: 'bars', propagation: 'stop' }], propagation: 'stop' }
+				);
+			} catch (_) { return; }
+
+			const shape = shapes.find((s: any) => {
+				const d = s.data;
+				const sCat = String(d?.value ?? d?.label ?? '');
+				return sCat === cat;
+			});
+			if (!shape) continue;
+
+			const bounds = shape.bounds;
+			if (!bounds) continue;
+
+			const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+			textEl.setAttribute('class', 'value-label');
+			textEl.setAttribute('fill', '#333');
+			textEl.setAttribute('font-family', 'Lekton, monospace');
+			textEl.setAttribute('font-size', '11');
+			textEl.setAttribute('text-anchor', isHorizontal ? 'start' : 'middle');
+			textEl.setAttribute('dominant-baseline', isHorizontal ? 'central' : 'auto');
+			textEl.textContent = text;
+
+			if (isHorizontal) {
+				textEl.setAttribute('x', String(bounds.x + bounds.width + 4));
+				textEl.setAttribute('y', String(bounds.y + bounds.height / 2));
+			} else {
+				textEl.setAttribute('x', String(bounds.x + bounds.width / 2));
+				textEl.setAttribute('y', String(bounds.y - 4));
+			}
+
+			svg.appendChild(textEl);
+		}
+	}
+
 	function applySelection() {
 		if (!chart) return;
 		try {
 			chart.update({ settings: buildSettings(selectedGroups) as any });
 		} catch (_e) { /* */ }
+		renderValueLabels();
 	}
 
 	function mountChart() {
@@ -193,6 +222,8 @@
 				console.error('[picasso] chart creation failed:', err);
 				return;
 			}
+
+			renderValueLabels();
 
 			if (config.clickToFilter !== false) {
 				clickHandler = function (e: MouseEvent) {

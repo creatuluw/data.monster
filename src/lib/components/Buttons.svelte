@@ -112,13 +112,13 @@
 
 	.btn-danger {
 		background: var(--color-danger);
-		color: oklch(0.97 0.005 22);
+		color: oklch(0.97 0.005 25);
 		border-color: var(--color-danger);
 	}
 
 	.btn-danger:hover {
-		background: oklch(0.48 0.15 22);
-		border-color: oklch(0.48 0.15 22);
+		background: oklch(0.46 0.14 25);
+		border-color: oklch(0.46 0.14 25);
 	}
 
 	.btn-sm {

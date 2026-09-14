@@ -70,7 +70,7 @@
 	.tag-accent {
 		background: var(--color-accent-muted);
 		color: var(--color-accent-dark);
-		border-color: oklch(0.82 0.03 41);
+		border-color: oklch(0.82 0.04 160);
 	}
 
 	.tag-success {
@@ -80,14 +80,14 @@
 	}
 
 	.tag-warning {
-		background: oklch(0.96 0.03 80);
-		color: oklch(0.42 0.1 80);
-		border-color: oklch(0.9 0.03 80);
+		background: oklch(0.96 0.025 85);
+		color: oklch(0.42 0.09 85);
+		border-color: oklch(0.9 0.03 85);
 	}
 
 	.tag-danger {
-		background: oklch(0.95 0.03 22);
-		color: oklch(0.38 0.12 22);
-		border-color: oklch(0.9 0.04 22);
+		background: oklch(0.95 0.03 25);
+		color: oklch(0.38 0.12 25);
+		border-color: oklch(0.9 0.04 25);
 	}
 </style>

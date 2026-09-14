@@ -219,8 +219,8 @@
 	}
 
 	.col-type-str {
-		background: oklch(0.93 0.02 250);
-		color: oklch(0.35 0.04 250);
+		background: oklch(0.94 0.025 160);
+		color: oklch(0.36 0.035 165);
 	}
 
 	.col-type-int {
@@ -239,8 +239,8 @@
 	}
 
 	.col-type-time {
-		background: oklch(0.93 0.06 60);
-		color: oklch(0.30 0.08 60);
+		background: oklch(0.93 0.035 95);
+		color: oklch(0.32 0.045 82);
 	}
 
 	.col-type-binary {
@@ -292,7 +292,7 @@
 	}
 
 	.fn-item-active:hover {
-		background: oklch(0.88 0.03 250);
+		background: oklch(0.89 0.02 165);
 	}
 
 	.fn-check {

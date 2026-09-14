@@ -349,7 +349,7 @@
 		font-size: var(--text-sm);
 		color: var(--color-danger);
 		border: 1px dashed var(--color-danger);
-		background: oklch(0.96 0.02 22);
+		background: oklch(0.96 0.018 25);
 		border-radius: var(--radius-sm);
 	}
 
@@ -406,7 +406,7 @@
 		gap: 2px;
 		padding: 2px var(--space-2);
 		border: 1px solid #3b82f6;
-		background: oklch(0.95 0.03 250);
+		background: oklch(0.94 0.025 160);
 		color: #3b82f6;
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
@@ -419,7 +419,7 @@
 	}
 
 	.filter-chip:hover {
-		background: oklch(0.92 0.04 250);
+		background: oklch(0.93 0.03 160);
 	}
 
 	.filter-clear {

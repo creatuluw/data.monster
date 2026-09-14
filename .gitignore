@@ -10,3 +10,6 @@ nul
 # Tauri / Rust
 src-tauri/target/
 src-tauri/gen/
+
+.vite-dev.log
+.pi/

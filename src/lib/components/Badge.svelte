@@ -40,7 +40,7 @@
 	}
 
 	.badge-danger {
-		background: oklch(0.55 0.2 22);
+		background: oklch(0.5 0.18 25);
 		color: white;
 	}
 </style>

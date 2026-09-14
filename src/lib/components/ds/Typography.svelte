@@ -53,10 +53,9 @@
 				<span class="type-token-value">1rem / 400</span>
 			</div>
 			<p class="type-sample-body specimen-base">
-				Manrope brings geometric clarity with generous spacing and a
-				friendly character. Its clean lines and balanced x-height keep
-				paragraphs comfortable for long sessions, while the slightly
-				informal touch keeps text from feeling clinical or cold.
+				Inter is the workhorse UI grotesk: designed for screens, it stays
+				neutral at every weight with dependable tabular figures. Every
+				number aligns; nothing wobbles. Quiet, exact, accountable.
 			</p>
 		</div>
 		<div class="type-row">
@@ -81,19 +80,19 @@
 	<div class="font-pair-grid entrance entrance-d2">
 		<div class="font-pair-card">
 			<span class="font-pair-label">Display Font</span>
-			<h3 class="font-pair-name">Source Serif 4</h3>
-			<span class="font-pair-classification">Variable optical serif / Angle-accent terminals</span>
+			<h3 class="font-pair-name">Inter</h3>
+			<span class="font-pair-classification">UI grotesk / Tight, neutral display weights</span>
 			<p class="font-pair-sample display-sample">
 				ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
 				abcdefghijklmnopqrstuvwxyz<br />
 				0123456789<br />
-				<em>Precision. Warmth. Memory.</em>
+				<em>Accuracy. Trust. Growth.</em>
 			</p>
 		</div>
 		<div class="font-pair-card">
 			<span class="font-pair-label">Body Font</span>
-			<h3 class="font-pair-name body-font">Manrope</h3>
-			<span class="font-pair-classification">Variable sans / Geometric / Expanded metrics</span>
+			<h3 class="font-pair-name body-font">Inter</h3>
+			<span class="font-pair-classification">UI grotesk / Tabular figures</span>
 			<p class="font-pair-sample body-sample">
 				abcdefghijklmnopqrstuvwxyz<br />
 				ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />

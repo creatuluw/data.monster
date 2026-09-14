@@ -99,6 +99,6 @@
 
 	.input:invalid:not(:placeholder-shown) {
 		border-color: var(--color-danger);
-		box-shadow: 0 0 0 2px oklch(0.95 0.03 22);
+		box-shadow: 0 0 0 2px oklch(0.95 0.03 25);
 	}
 </style>

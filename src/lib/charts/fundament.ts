@@ -17,10 +17,10 @@ export function sameDatum<T>(keys: ((d: T) => unknown)[]): (a: T, b: T) => boole
 	};
 }
 
-export interface BarDatum {
+export type BarDatum = {
 	category: string;
 	value: number;
-}
+};
 
 /** Aggregate rows into sorted bar records; optionally cap at topN with an Other bucket. */
 export function buildBars<T>(

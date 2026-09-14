@@ -1,60 +1,67 @@
 @import 'tailwindcss';
 
 @theme {
-	--font-display: 'Source Serif 4', serif;
-	--font-body: 'Manrope', sans-serif;
+	--font-display: 'Inter', sans-serif;
+	--font-body: 'Inter', sans-serif;
 
-	--color-accent: oklch(0.64 0.22 41);
-	--color-accent-light: oklch(0.76 0.15 65);
-	--color-accent-dark: oklch(0.55 0.22 38);
-	--color-accent-muted: oklch(0.93 0.04 55);
+	/* Ledger green — the single brand accent */
+	--color-accent: oklch(0.44 0.1 158);
+	--color-accent-light: oklch(0.55 0.11 160);
+	--color-accent-dark: oklch(0.37 0.09 156);
+	--color-accent-muted: oklch(0.94 0.025 160);
 
-	--color-surface: #ffffff;
-	--color-surface-raised: oklch(0.96 0.005 250);
-	--color-surface-sunken: oklch(0.935 0.006 250);
+	--color-surface: oklch(0.99 0.003 160);
+	--color-surface-raised: oklch(0.965 0.004 160);
+	--color-surface-sunken: oklch(0.94 0.005 160);
 
-	--color-text: oklch(0.14 0.01 250);
-	--color-text-secondary: oklch(0.4 0.012 250);
-	--color-text-tertiary: oklch(0.58 0.01 250);
-	--color-text-on-accent: oklch(0.97 0.005 250);
+	--color-text: oklch(0.16 0.01 165);
+	--color-text-secondary: oklch(0.4 0.012 165);
+	--color-text-tertiary: oklch(0.56 0.01 165);
+	--color-text-on-accent: oklch(0.98 0.005 160);
 
-	--color-border: oklch(0.86 0.006 250);
-	--color-border-strong: oklch(0.72 0.012 250);
-	--color-grid: oklch(0.9 0.004 250);
+	--color-border: oklch(0.88 0.006 165);
+	--color-border-strong: oklch(0.72 0.012 165);
+	--color-grid: oklch(0.91 0.005 165);
 
-	--color-success: oklch(0.68 0.14 160);
-	--color-warning: oklch(0.76 0.13 80);
-	--color-danger: oklch(0.58 0.17 22);
+	--color-success: oklch(0.6 0.12 158);
+	--color-warning: oklch(0.75 0.12 85);
+	--color-danger: oklch(0.55 0.16 25);
 
-	--color-sage-50: oklch(0.97 0.02 230);
-	--color-sage-100: oklch(0.94 0.03 228);
-	--color-sage-200: oklch(0.88 0.05 225);
-	--color-sage-300: oklch(0.78 0.07 222);
-	--color-sage-400: oklch(0.70 0.11 218);
-	--color-sage-500: oklch(0.61 0.12 228);
-	--color-sage-600: oklch(0.51 0.12 238);
-	--color-sage-700: oklch(0.42 0.11 248);
-	--color-sage-800: oklch(0.34 0.11 253);
-	--color-sage-900: oklch(0.21 0.09 268);
+	/* Green ramp (status, data categories) — harmonized with brand hue 158 */
+	--color-sage-50: oklch(0.97 0.012 160);
+	--color-sage-100: oklch(0.94 0.022 159);
+	--color-sage-200: oklch(0.88 0.035 158);
+	--color-sage-300: oklch(0.79 0.05 158);
+	--color-sage-400: oklch(0.7 0.07 158);
+	--color-sage-500: oklch(0.61 0.09 158);
+	--color-sage-600: oklch(0.51 0.095 158);
+	--color-sage-700: oklch(0.42 0.09 158);
+	--color-sage-800: oklch(0.34 0.075 158);
+	--color-sage-900: oklch(0.22 0.055 160);
 
-	--color-copper-50: oklch(0.97 0.03 62);
-	--color-copper-100: oklch(0.93 0.05 60);
-	--color-copper-200: oklch(0.85 0.10 58);
-	--color-copper-300: oklch(0.76 0.15 65);
-	--color-copper-400: oklch(0.73 0.16 60);
-	--color-copper-500: oklch(0.71 0.18 55);
-	--color-copper-600: oklch(0.67 0.20 50);
+	/* Gold ramp — rare micro-accent (growth, highlights). Never decorative. */
+	--color-copper-50: oklch(0.975 0.015 95);
+	--color-copper-100: oklch(0.95 0.03 95);
+	--color-copper-200: oklch(0.9 0.055 92);
+	--color-copper-300: oklch(0.84 0.08 90);
+	--color-copper-400: oklch(0.8 0.09 88);
+	--color-copper-500: oklch(0.76 0.1 86);
+	--color-copper-600: oklch(0.66 0.1 84);
+	--color-copper-700: oklch(0.52 0.08 82);
+	--color-copper-800: oklch(0.42 0.06 82);
+	--color-copper-900: oklch(0.32 0.045 82);
 
-	--color-sand-50: oklch(0.985 0.003 80);
-	--color-sand-100: oklch(0.965 0.005 80);
-	--color-sand-200: oklch(0.925 0.007 80);
-	--color-sand-300: oklch(0.875 0.009 80);
-	--color-sand-400: oklch(0.72 0.010 80);
-	--color-sand-500: oklch(0.55 0.012 80);
-	--color-sand-600: oklch(0.40 0.012 80);
-	--color-sand-700: oklch(0.30 0.010 80);
-	--color-sand-800: oklch(0.22 0.008 80);
-	--color-sand-900: oklch(0.16 0.006 80);
+	/* Ink-neutral ramp, tinted toward brand hue */
+	--color-sand-50: oklch(0.985 0.003 160);
+	--color-sand-100: oklch(0.965 0.004 160);
+	--color-sand-200: oklch(0.925 0.005 160);
+	--color-sand-300: oklch(0.875 0.006 162);
+	--color-sand-400: oklch(0.72 0.008 162);
+	--color-sand-500: oklch(0.55 0.009 162);
+	--color-sand-600: oklch(0.4 0.01 163);
+	--color-sand-700: oklch(0.3 0.009 163);
+	--color-sand-800: oklch(0.22 0.008 164);
+	--color-sand-900: oklch(0.16 0.007 164);
 }
 
 .lc-root-container {
@@ -101,9 +108,9 @@
 	--radius-xl: 10px;
 	--radius-full: 9999px;
 
-	--shadow-sm: 0 1px 2px oklch(0.22 0.005 250 / 0.07);
-	--shadow-md: 0 2px 8px oklch(0.22 0.005 250 / 0.09);
-	--shadow-lg: 0 6px 24px oklch(0.22 0.005 250 / 0.12);
+	--shadow-sm: 0 1px 2px oklch(0.22 0.005 160 / 0.07);
+	--shadow-md: 0 2px 8px oklch(0.22 0.005 160 / 0.09);
+	--shadow-lg: 0 6px 24px oklch(0.22 0.005 160 / 0.12);
 
 	--ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 	--ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -121,6 +128,7 @@ html {
 	font-family: var(--font-body);
 	font-size: var(--text-base);
 	line-height: var(--leading-normal);
+	font-variant-numeric: tabular-nums;
 	color: var(--color-text);
 	background: var(--color-surface);
 	-webkit-font-smoothing: antialiased;
@@ -219,8 +227,8 @@ textarea,
 }
 
 .btn-danger:hover:not(:disabled) {
-	background: oklch(0.48 0.15 22);
-	border-color: oklch(0.48 0.15 22);
+	background: oklch(0.46 0.14 25);
+	border-color: oklch(0.46 0.14 25);
 }
 
 .btn-sm {
@@ -309,25 +317,25 @@ textarea,
 .tag-accent {
 	background: var(--color-accent-muted);
 	color: var(--color-accent-dark);
-	border-color: oklch(0.82 0.03 41);
+	border-color: oklch(0.82 0.04 160);
 }
 
 .tag-success {
-	background: oklch(0.95 0.03 160);
-	color: oklch(0.4 0.1 160);
-	border-color: oklch(0.88 0.04 160);
+	background: oklch(0.95 0.025 158);
+	color: oklch(0.35 0.08 158);
+	border-color: oklch(0.88 0.035 158);
 }
 
 .tag-warning {
-	background: oklch(0.96 0.03 80);
-	color: oklch(0.42 0.1 80);
-	border-color: oklch(0.9 0.03 80);
+	background: oklch(0.96 0.025 85);
+	color: oklch(0.42 0.09 85);
+	border-color: oklch(0.9 0.03 85);
 }
 
 .tag-danger {
-	background: oklch(0.95 0.03 22);
-	color: oklch(0.38 0.12 22);
-	border-color: oklch(0.9 0.04 22);
+	background: oklch(0.95 0.03 25);
+	color: oklch(0.38 0.12 25);
+	border-color: oklch(0.9 0.04 25);
 }
 
 .card {
@@ -532,10 +540,12 @@ textarea,
 }
 
 .prose-chat blockquote {
-	border-left: 3px solid var(--color-accent-light);
-	padding-left: 0.75em;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-xs);
+	background: var(--color-surface-sunken);
+	padding: 0.5em 0.75em;
 	margin: 0.5em 0;
-	color: var(--color-text-tertiary);
+	color: var(--color-text-secondary);
 }
 
 .prose-chat table {

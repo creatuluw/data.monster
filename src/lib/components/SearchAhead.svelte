@@ -346,7 +346,7 @@
 		gap: var(--space-1);
 		padding: 2px var(--space-2);
 		background: var(--color-accent-muted);
-		border: 1px solid oklch(0.82 0.03 41);
+		border: 1px solid oklch(0.82 0.04 160);
 		border-radius: var(--radius-xs);
 		font-family: var(--font-mono);
 		font-size: 9px;
@@ -357,7 +357,7 @@
 		transition: background var(--duration-fast) ease;
 	}
 
-	.searchahead-chip:hover { background: oklch(0.88 0.03 41); }
+	.searchahead-chip:hover { background: oklch(0.88 0.02 160); }
 	.searchahead-chip::after { content: "\00D7"; font-size: 11px; margin-left: var(--space-1); color: var(--color-accent-light); }
 
 	@media (max-width: 640px) {

@@ -206,8 +206,8 @@
 	.btn-secondary:hover { border-color: var(--color-accent); color: var(--color-accent); }
 	.btn-ghost { background: transparent; color: var(--color-text-secondary); border-color: transparent; }
 	.btn-ghost:hover { background: var(--color-surface-sunken); color: var(--color-text); }
-	.btn-danger { background: var(--color-danger); color: oklch(0.97 0.005 22); border-color: var(--color-danger); }
-	.btn-danger:hover { background: oklch(0.48 0.15 22); border-color: oklch(0.48 0.15 22); }
+	.btn-danger { background: var(--color-danger); color: oklch(0.97 0.005 25); border-color: var(--color-danger); }
+	.btn-danger:hover { background: oklch(0.46 0.14 25); border-color: oklch(0.46 0.14 25); }
 
 	.modal-backdrop {
 		position: fixed;
@@ -254,7 +254,7 @@
 	}
 
 	.danger-header {
-		border-bottom-color: oklch(0.9 0.04 22);
+		border-bottom-color: oklch(0.9 0.04 25);
 	}
 
 	.modal-header-left {

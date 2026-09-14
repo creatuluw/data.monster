@@ -1497,12 +1497,12 @@
 
 	.btn-update {
 		background: var(--color-warning);
-		color: oklch(0.25 0.05 80);
-		border-color: oklch(0.7 0.06 80);
+		color: oklch(0.25 0.04 85);
+		border-color: oklch(0.72 0.05 85);
 	}
 
 	.btn-update:hover:not(:disabled) {
-		background: oklch(0.68 0.12 80);
+		background: oklch(0.68 0.11 85);
 	}
 
 	.tab-bar {
@@ -1695,12 +1695,12 @@
 	.results-error {
 		padding: var(--space-4);
 		margin: var(--space-3);
-		background: oklch(0.95 0.03 22);
-		border: 1px solid oklch(0.9 0.04 22);
+		background: oklch(0.95 0.03 25);
+		border: 1px solid oklch(0.9 0.04 25);
 		border-radius: var(--radius-xs);
 		font-family: var(--font-mono);
 		font-size: var(--text-xs);
-		color: oklch(0.38 0.12 22);
+		color: oklch(0.38 0.12 25);
 	}
 
 	.results-empty {

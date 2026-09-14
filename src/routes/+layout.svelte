@@ -22,6 +22,13 @@
 		menuOpen = !menuOpen;
 	}
 
+	function handleCopyUrl() {
+		navigator.clipboard.writeText($page.url.href).then(() => {
+			copied = true;
+			setTimeout(() => { copied = false; }, 2000);
+		});
+	}
+
 	function handleCopyRoute() {
 		const url = $page.url.href;
 		navigator.clipboard.writeText(url).then(() => {
@@ -170,6 +177,16 @@
 		</div>
 	</header>
 
+	{#if isDev}
+		<button class="dev-copy-url" onclick={handleCopyUrl} title="Copy current URL for LLM">
+			{#if copied}
+				<Check size={14} />
+			{:else}
+				<Link size={14} />
+			{/if}
+		</button>
+	{/if}
+
 	{#if breadcrumbs.length > 0}
 		<div class="breadcrumb-bar">
 			<Breadcrumb items={breadcrumbs} />
@@ -226,7 +243,7 @@
 		justify-content: space-between;
 		padding: var(--space-3) var(--space-6);
 		border-bottom: 1px solid var(--color-border);
-		background: oklch(0.98 0.003 250 / 0.97);
+		background: oklch(0.98 0.003 160 / 0.97);
 		-webkit-backdrop-filter: blur(12px);
 		backdrop-filter: blur(12px);
 		flex-shrink: 0;
@@ -337,11 +354,11 @@
 	.app-error {
 		padding: var(--space-3) var(--space-4);
 		margin-bottom: var(--space-4);
-		background: oklch(0.95 0.03 22);
-		border: 1px solid oklch(0.9 0.04 22);
+		background: oklch(0.95 0.03 25);
+		border: 1px solid oklch(0.9 0.04 25);
 		border-radius: var(--radius-xs);
 		font-size: var(--text-sm);
-		color: oklch(0.38 0.12 22);
+		color: oklch(0.38 0.12 25);
 	}
 
 	.workspace-picker {
@@ -396,11 +413,34 @@
 
 	.workspace-error {
 		padding: var(--space-2) var(--space-3);
-		background: oklch(0.95 0.03 22);
-		border: 1px solid oklch(0.9 0.04 22);
+		background: oklch(0.95 0.03 25);
+		border: 1px solid oklch(0.9 0.04 25);
 		border-radius: var(--radius-xs);
 		font-size: var(--text-xs);
-		color: oklch(0.38 0.12 22);
+		color: oklch(0.38 0.12 25);
+	}
+
+	.dev-copy-url {
+		position: fixed;
+		right: var(--space-3);
+		bottom: var(--space-3);
+		z-index: 90;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-full, 999px);
+		background: var(--color-surface);
+		color: var(--color-text-tertiary);
+		cursor: pointer;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.dev-copy-url:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
 	}
 
 	.dev-menu {

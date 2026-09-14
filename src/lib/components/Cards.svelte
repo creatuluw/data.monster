@@ -161,7 +161,7 @@
 	.tag-accent {
 		background: var(--color-accent-muted);
 		color: var(--color-accent-dark);
-		border-color: oklch(0.82 0.03 41);
+		border-color: oklch(0.82 0.04 160);
 	}
 
 	.btn {

@@ -249,11 +249,11 @@
 
 	.editor-error {
 		padding: var(--space-3) var(--space-4);
-		background: oklch(0.95 0.03 22);
-		border: 1px solid oklch(0.9 0.04 22);
+		background: oklch(0.95 0.03 25);
+		border: 1px solid oklch(0.9 0.04 25);
 		border-radius: var(--radius-xs);
 		font-size: var(--text-sm);
-		color: oklch(0.38 0.12 22);
+		color: oklch(0.38 0.12 25);
 	}
 
 	.results-header {

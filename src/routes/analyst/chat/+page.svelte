@@ -675,7 +675,7 @@
 		border-radius: var(--radius-md);
 		background: var(--color-accent-muted);
 		color: var(--color-accent);
-		border: 1px solid oklch(0.82 0.03 41);
+		border: 1px solid oklch(0.82 0.04 160);
 		flex-shrink: 0;
 	}
 
@@ -817,7 +817,7 @@
 		background: var(--color-accent-muted);
 		padding: var(--space-3);
 		border-radius: var(--radius-md);
-		border: 1px solid oklch(0.82 0.03 41);
+		border: 1px solid oklch(0.82 0.04 160);
 	}
 
 	.message-user-label {
@@ -1734,9 +1734,9 @@
 		flex-shrink: 0;
 		padding: var(--space-3) var(--space-4);
 		border-bottom: 1px solid var(--color-border);
-		background: oklch(0.95 0.03 22);
+		background: oklch(0.95 0.03 25);
 		font-size: var(--text-sm);
-		color: oklch(0.38 0.12 22);
+		color: oklch(0.38 0.12 25);
 	}
 
 	.query-results {

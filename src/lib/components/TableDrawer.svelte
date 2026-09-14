@@ -716,8 +716,8 @@
 	}
 
 	.drawer-col-type-str {
-		background: oklch(0.93 0.02 250);
-		color: oklch(0.35 0.04 250);
+		background: oklch(0.94 0.025 160);
+		color: oklch(0.36 0.035 165);
 	}
 
 	.drawer-col-type-int {
@@ -736,8 +736,8 @@
 	}
 
 	.drawer-col-type-time {
-		background: oklch(0.93 0.06 60);
-		color: oklch(0.30 0.08 60);
+		background: oklch(0.93 0.035 95);
+		color: oklch(0.32 0.045 82);
 	}
 
 	.drawer-col-type-binary {
@@ -800,9 +800,9 @@
 		align-items: center;
 		gap: var(--space-2);
 		padding: var(--space-2) var(--space-3);
-		border: 1px solid oklch(0.85 0.04 22);
-		background: oklch(0.97 0.01 22);
-		color: oklch(0.38 0.12 22);
+		border: 1px solid oklch(0.86 0.035 25);
+		background: oklch(0.97 0.008 25);
+		color: oklch(0.38 0.12 25);
 		border-radius: var(--radius-xs);
 		font-family: var(--font-body);
 		font-size: var(--text-xs);
@@ -822,8 +822,8 @@
 		flex-direction: column;
 		gap: var(--space-3);
 		padding: var(--space-3);
-		border: 1px solid oklch(0.85 0.04 22);
-		background: oklch(0.97 0.01 22);
+		border: 1px solid oklch(0.86 0.035 25);
+		background: oklch(0.97 0.008 25);
 		border-radius: var(--radius-sm);
 	}
 

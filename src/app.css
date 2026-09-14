@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* scan only real sources: repo-wide scanning makes tailwind re-emit this file on
+   ANY tree churn (logs, wiki writes, session state), which SvelteKit turns into a
+   full page reload — the /labs "hang" reload loop */
+@source './**/*.{svelte,ts,html}';
+@source '../app.html';
+
 @theme {
 	--font-display: 'Inter', sans-serif;
 	--font-body: 'Inter', sans-serif;

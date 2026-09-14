@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { sameDatum } from './fundament';
+import { sameDatum } from '../src/lib/charts/fundament';
 
 describe('sameDatum — position-based selection matching', () => {
 	type Cell = { mx: number; wy: number; cat: string };
@@ -29,7 +29,7 @@ describe('sameDatum — position-based selection matching', () => {
 	});
 });
 
-import { buildBars } from './fundament';
+import { buildBars } from '../src/lib/charts/fundament';
 
 describe('buildBars — aggregate rows into bar records', () => {
 	type Sale = { region: string; amount: number };

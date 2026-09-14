@@ -1,45 +1,34 @@
 <script lang="ts">
 	import BarChart from '$lib/components/charts/BarChart.svelte';
-	import { buildBars, type BarDatum } from '$lib/charts/fundament';
 
-	type Sale = { region: string; channel: string; amount: number };
+	// mirrors /labs/heatmap page logic: everything inline, only the chart
+	// component imported — no $lib/charts imports from the page
 
-	const REGIONS = ['EU', 'US', 'APAC', 'LATAM', 'MEA', 'CA', 'OCE', 'NORDICS'];
-	const CHANNELS = ['Online', 'Retail', 'Partner'];
+	type Bar = { category: string; value: number };
 
-	// deterministic pseudo-random from coords — stable across reloads
-	function rnd(i: number, j: number) {
-		const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
+	// deterministic pseudo-random — stable across reloads
+	function rnd(i: number) {
+		const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
 		return x - Math.floor(x);
 	}
 
-	const sales: Sale[] = [];
+	// aggregate synthetic sales into bars: top 5 + Other (kept last)
+	const REGIONS = ['EU', 'US', 'APAC', 'LATAM', 'MEA', 'CA', 'OCE', 'NORDICS'];
+	const sums = new Map<string, number>();
 	for (let i = 0; i < REGIONS.length; i++) {
-		for (let j = 0; j < CHANNELS.length; j++) {
-			const n = 1 + Math.floor(rnd(i, j) * 3);
-			for (let k = 0; k < n; k++) {
-				sales.push({
-					region: REGIONS[i],
-					channel: CHANNELS[j],
-					amount: Math.round(rnd(i * 7 + k, j * 13 + k) * 90_000 + 10_000),
-				});
-			}
+		for (let j = 0; j < 3; j++) {
+			sums.set(REGIONS[i], (sums.get(REGIONS[i]) ?? 0) + Math.round(rnd(i * 7 + j) * 90_000 + 10_000));
 		}
 	}
-
-	// data prep happens in the pure fundament — the component only renders
-	const bars: BarDatum[] = buildBars(
-		sales,
-		(d) => d.region,
-		(d) => d.amount,
-		{ topN: 5 }
-	);
+	const sorted = [...sums.entries()].map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
+	const bars: Bar[] = [...sorted.slice(0, 5), { category: 'Other', value: sorted.slice(5).reduce((s, b) => s + b.value, 0) }];
+	const total = bars.reduce((s, b) => s + b.value, 0);
 
 	const fmt = (v: number) => `${Math.round(v / 1000)}k`;
 	const fmtFull = (v: number) =>
 		new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
 
-	let selected: BarDatum | null = $state(null);
+	let selected: Bar | null = $state(null);
 </script>
 
 <svelte:head>
@@ -53,23 +42,23 @@
 	</div>
 
 	<p class="section-subtitle">
-		Aggregation via <code>buildBars</code> (top 5 + Other), rendering via svelteplot <code>BarY</code> — hover tooltip, click-to-select, mono chart labels, empty-data guard. Synthetic data.
+		svelteplot BarY — hover tooltip, click-to-select, mono chart labels, empty-data guard. Top 5 regions + Other, aggregated from synthetic sales. Same interaction model as the heatmap.
 	</p>
 
 	<BarChart
 		data={bars}
-		category={(d: BarDatum) => d.category}
-		value={(d: BarDatum) => d.value}
+		category={(d: Bar) => d.category}
+		value={(d: Bar) => d.value}
 		formatY={fmt}
-		labelFor={(d: BarDatum) => `${d.category} · ${fmtFull(d.value)}`}
+		labelFor={(d: Bar) => `${d.category} · ${fmtFull(d.value)}`}
 		title="Revenue by region"
-		subtitle="top 5 regions, rest lumped into Other — aggregated from raw sales rows"
+		subtitle="top 5 regions, rest lumped into Other"
 		bind:selected
 	>
 		{#snippet tooltip(d)}
 			<div class="font-semibold">{d.category}</div>
 			<div>Revenue: {fmtFull(d.value)}</div>
-			<div>Share: {Math.round((d.value / bars.reduce((s, b) => s + b.value, 0)) * 100)}%</div>
+			<div>Share: {Math.round((d.value / total) * 100)}%</div>
 		{/snippet}
 	</BarChart>
 </div>
@@ -113,11 +102,5 @@
 		margin: var(--space-3) 0 var(--space-4) 0;
 		max-width: 64ch;
 		line-height: var(--leading-relaxed);
-	}
-
-	.section-subtitle code {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		color: var(--color-accent-dark);
 	}
 </style>

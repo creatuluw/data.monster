@@ -31,5 +31,5 @@ Non-technical (finance-audience) edition of the LLM sensitive-data white paper, 
 
 ## Source
 
-- [llm-api-data-retention-no-training-no-storage-local-models-a](../../learnings/llm-api-data-retention-no-training-no-storage-local-models-a.md) and [llm-provider-retention-part-2-kimi-z-ai-together-qwen-kimi-p](../../learnings/llm-provider-retention-part-2-kimi-z-ai-together-qwen-kimi-p.md) — provider facts woven through the doc
+- [llm-api-data-retention-no-training-no-storage-local-models-a](../../learnings/llm-api-data-retention-no-training-no.md) and [llm-provider-retention-part-2-kimi-z-ai-together-qwen-kimi-p](../../learnings/llm-provider-retention-part-2-kimi-z-ai.md) — provider facts woven through the doc
 - [llm-sensitive-data-white-paper](./llm-sensitive-data-white-paper.md) — the technical original this edition rewrites for a business audience

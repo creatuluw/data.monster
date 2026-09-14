@@ -1,0 +1,11 @@
+# Learnings
+
+- ["Couldn't find callback id" Tauri warning is a benign reload artifact](./couldn-t-find-callback-id-tauri-warning-is-a-benign-reload-a.md) - `[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.` is benign. It appears when
+- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](./llm-api-data-retention-no-training-no-storage-local-models-a.md) - Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directly relevant to Data M
+- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](./llm-provider-retention-part-2-kimi-z-ai-together-qwen-kimi-p.md) - Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary docs. Extends [[llm
+- [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](./z-ai-401-code-1000-authentication-failed-means-the-key-itsel.md) - Symptom
+- [get_settings merges env/.env over settings.json — env is source of truth](./get-settings-merges-env-env-over-settings-json-env-is-source.md) - Discovered while wiring `.env` into the app (2026-09-11).
+- [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](./drive-data-monster-s-real-ui-over-cdp-with-remote-debugging-.md) - The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with `--remote-debugging-port` and drive
+- [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](./local-llm-blank-screen-delay-was-hidden-thinking-tokens-disa.md) - Symptom
+- [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](./never-tree-scan-archive-or-src-tauri-target-du-find-stall-on.md) - The repo contains very large generated/historical trees: `.archive/` (entire superseded old app + chart-engine trials) and `src-tauri/target/` (Rust build artif
+- [Stale-wiki file floods are ignored build artifacts — .wiki_ignore already covers them](./stale-wiki-file-floods-are-ignored-build-artifacts-wiki-igno.md) - Symptom

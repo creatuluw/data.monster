@@ -1,0 +1,31 @@
+# .wiki_ignore — files/dirs excluded from staleness detection
+# Add project-specific patterns below. Lines starting with # are comments.
+
+# Wiki self-ignore — wiki edits don't trigger staleness
+docs/wiki/
+
+# Common build/dependency/cache directories
+node_modules/
+dist/
+build/
+.next/
+.cache/
+__pycache__/
+.DS_Store
+
+# Project-specific: historical archives, tooling state, generated docs site
+.archive/
+.svelte-kit/
+.cargo/
+.work/
+.pi/
+.opencode/
+data.monster/
+
+# Data & secrets — never scan
+.env
+global_superstore.csv
+data/
+
+# Rust build tree (thousands of files)
+src-tauri/target/

@@ -1,0 +1,1538 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>picasso.js API Reference</title>
+<style>
+:root{--ivory:#FAF9F5;--slate:#141413;--clay:#D97757;--oat:#E3DACC;--olive:#788C5D;--gray-50:#F8F7F3;--gray-100:#F0EEE6;--gray-150:#E8E6DE;--gray-200:#D1CFC5;--gray-300:#B5B3AA;--gray-500:#87867F;--gray-700:#3D3D3A;--gray-900:#1a1a18;--serif:ui-serif,Georgia,"Times New Roman",serif;--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--ivory);color:var(--gray-700);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;padding:0}
+.page{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}@media(max-width:920px){.page{grid-template-columns:1fr}nav.side{display:none}.mobile-nav{display:flex!important}}
+a{color:var(--clay);text-decoration:none}a:hover{text-decoration:underline}code{font-family:var(--mono);font-size:13px;color:var(--olive)}
+h1{font-family:var(--serif);font-weight:500;font-size:28px;color:var(--slate);letter-spacing:-0.01em}h2{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--slate);margin:32px 0 12px;scroll-margin-top:20px}h3{font-family:var(--sans);font-weight:600;font-size:16px;color:var(--slate);margin:20px 0 8px;scroll-margin-top:20px}
+.badge{display:inline-block;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;vertical-align:middle;margin-left:6px}.badge-fn{background:#FFF3E0;color:#D97757}.badge-if{background:#E8F5E9;color:#4CAF50}.badge-obj{background:#E8EAF6;color:#5C6BC0}.badge-cls{background:#F3E5F5;color:#AB47BC}.badge-union{background:#FFF8E1;color:#F9A825}
+.mobile-nav{display:none;position:sticky;top:0;z-index:100;background:var(--ivory);border-bottom:1px solid var(--gray-200);padding:8px 16px;align-items:center;gap:8px}.mobile-nav select{flex:1;padding:8px;font-family:var(--mono);font-size:13px;border:1px solid var(--gray-200);border-radius:6px;background:var(--gray-50);color:var(--gray-700)}
+nav.side{background:var(--gray-50);border-right:1px solid var(--gray-200);padding:20px 0;overflow-y:auto;height:100vh;position:sticky;top:0}nav.side .nav-title{font-family:var(--serif);font-size:18px;color:var(--slate);padding:0 16px 4px;font-weight:500}nav.side .nav-sub{font-family:var(--mono);font-size:11px;color:var(--gray-500);padding:0 16px 20px;letter-spacing:0.04em}.search-wrap{position:relative;width:calc(100% - 24px);margin:0 12px 12px}nav.side input[type=search]{width:100%;padding:8px 10px 8px 28px;font-family:var(--mono);font-size:12px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;color:var(--gray-900);outline:none}nav.side input[type=search]:focus{border-color:var(--clay)}.search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--gray-500);pointer-events:none;font-size:13px;line-height:1}.search-suggest{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--gray-200);border-top:none;border-radius:0 0 6px 6px;max-height:260px;overflow-y:auto;display:none;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.08)}.search-suggest.open{display:block}.search-suggest .sug-item{display:flex;align-items:baseline;gap:6px;padding:6px 10px;font-size:13px;color:var(--gray-700);cursor:pointer;border-bottom:1px solid var(--gray-150)}.search-suggest .sug-item:last-child{border-bottom:none}.search-suggest .sug-item:hover,.search-suggest .sug-item.active{background:var(--gray-100);color:var(--slate)}.search-suggest .sug-item .sug-name{font-family:var(--mono);font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.search-suggest .sug-item .sug-name mark{background:rgba(217,119,87,0.2);color:inherit;font-weight:600;border-radius:2px;padding:0 1px}.search-suggest .sug-item .sug-badge{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:0.04em;flex-shrink:0}.search-suggest .sug-item .sug-cat{font-family:var(--mono);font-size:10px;color:var(--gray-500);flex-shrink:0}.search-suggest .sug-empty{padding:12px 10px;font-family:var(--mono);font-size:12px;color:var(--gray-500);text-align:center}.search-suggest .sug-count{padding:4px 10px;font-family:var(--mono);font-size:10px;color:var(--gray-500);background:var(--gray-50);border-bottom:1px solid var(--gray-150);letter-spacing:0.03em}nav.side .cat-header{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--clay);padding:8px 16px 4px;margin-top:4px}nav.side a{display:block;padding:4px 16px 4px 20px;color:var(--gray-700);font-size:13px;border-left:2px solid transparent;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}nav.side a:hover{color:var(--slate);border-left-color:var(--slate);text-decoration:none;background:var(--gray-100)}nav.side a.active{color:var(--clay);border-left-color:var(--clay);font-weight:600;background:var(--gray-100)}nav.side a.hidden{display:none}
+main{padding:32px 40px 120px;max-width:900px}main header{margin-bottom:16px}.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gray-500);margin-bottom:8px}.tldr{border:1.5px solid var(--gray-200);border-left:3px solid var(--clay);border-radius:10px;background:#fff;padding:16px 18px;margin-bottom:16px;font-size:14px;line-height:1.7}.tldr b{color:var(--slate)}.tldr code{font-size:12px}
+.def-card{border:1.5px solid var(--gray-200);border-radius:10px;background:#fff;margin:12px 0;overflow:hidden;scroll-margin-top:20px}.def-header{padding:14px 16px;cursor:pointer;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid var(--gray-200);background:var(--gray-50)}.def-header:hover{background:var(--gray-100)}.def-header .name{font-family:var(--serif);font-size:17px;color:var(--slate)}.def-body{padding:16px}.def-body p{font-size:14px;margin-bottom:8px;max-width:680px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 12px;border:1px solid var(--gray-200);border-radius:8px;overflow:hidden;background:#fff}thead{background:var(--gray-100)}th{text-align:left;padding:8px 10px;font-family:var(--mono);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--gray-500);border-bottom:1px solid var(--gray-200)}td{padding:6px 10px;border-bottom:1px solid var(--gray-150);vertical-align:top}td code{font-size:12px}
+.type-label{font-family:var(--mono);font-size:11px;color:var(--gray-500)}.prop-name{font-family:var(--mono);font-size:13px;color:var(--olive);font-weight:500}.method-name{font-family:var(--mono);font-size:13px;color:var(--clay);font-weight:500}.required{font-family:var(--mono);font-size:10px;color:var(--clay)}.default-val{font-family:var(--mono);font-size:11px;color:var(--gray-500)}.section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--gray-500);margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--gray-150)}
+.return-type{font-family:var(--mono);font-size:12px;color:var(--olive);background:var(--gray-100);padding:2px 8px;border-radius:4px;margin-left:4px}
+.callout{display:flex;gap:12px;border:1.5px solid var(--oat);background:rgba(227,218,204,0.25);border-radius:10px;padding:14px 16px;margin:16px 0;font-size:14px}.callout .ico{color:var(--clay);font-weight:600}
+@media(max-width:920px){main{padding:20px 16px 80px}h1{font-size:22px}h2{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="page">
+<nav class="side" id="sidebar">
+<div class="nav-title">picasso.js</div>
+<div class="nav-sub">API Reference</div>
+<div class="search-wrap"><span class="search-icon">&#x1F50D;&#xFE0E;</span><input type="search" id="search" placeholder="Search definitions..." autocomplete="off"><div class="search-suggest" id="suggest"></div></div>
+<div id="nav-list">
+<div class="cat-header">Entries</div><a href="#picassojs" data-name="picassojs">picassojs</a>
+<div class="cat-header">Core</div><a href="#Chart" data-name="Chart">Chart</a><a href="#ChartDefinition" data-name="ChartDefinition">ChartDefinition</a><a href="#ChartSettings" data-name="ChartSettings">ChartSettings</a><a href="#DockLayoutSettings" data-name="DockLayoutSettings">DockLayoutSettings</a>
+<div class="cat-header">Brush</div><a href="#Brush" data-name="Brush">Brush</a><a href="#BrushConfig" data-name="BrushConfig">BrushConfig</a><a href="#BrushConsumeSettings" data-name="BrushConsumeSettings">BrushConsumeSettings</a><a href="#BrushTargetConfig" data-name="BrushTargetConfig">BrushTargetConfig</a><a href="#BrushTriggerSettings" data-name="BrushTriggerSettings">BrushTriggerSettings</a>
+<div class="cat-header">Components</div><a href="#Component" data-name="Component">Component</a><a href="#ComponentSettings" data-name="ComponentSettings">ComponentSettings</a><a href="#ComponentTypes" data-name="ComponentTypes">ComponentTypes</a><a href="#ComponentAxis" data-name="ComponentAxis">ComponentAxis</a><a href="#ComponentBox" data-name="ComponentBox">ComponentBox</a><a href="#ComponentBrushArea" data-name="ComponentBrushArea">ComponentBrushArea</a><a href="#ComponentBrushAreaDir" data-name="ComponentBrushAreaDir">ComponentBrushAreaDir</a><a href="#ComponentBrushLasso" data-name="ComponentBrushLasso">ComponentBrushLasso</a><a href="#ComponentBrushRange" data-name="ComponentBrushRange">ComponentBrushRange</a><a href="#ComponentContainer" data-name="ComponentContainer">ComponentContainer</a><a href="#ComponentGridLine" data-name="ComponentGridLine">ComponentGridLine</a><a href="#ComponentLabels" data-name="ComponentLabels">ComponentLabels</a><a href="#ComponentLegendCat" data-name="ComponentLegendCat">ComponentLegendCat</a><a href="#ComponentLegendSeq" data-name="ComponentLegendSeq">ComponentLegendSeq</a><a href="#ComponentLine" data-name="ComponentLine">ComponentLine</a><a href="#ComponentPie" data-name="ComponentPie">ComponentPie</a><a href="#ComponentPoint" data-name="ComponentPoint">ComponentPoint</a><a href="#ComponentRefLine" data-name="ComponentRefLine">ComponentRefLine</a><a href="#ComponentText" data-name="ComponentText">ComponentText</a><a href="#ComponentTooltip" data-name="ComponentTooltip">ComponentTooltip</a>
+<div class="cat-header">Sub-types</div><a href="#ContinuousSettings" data-name="ContinuousSettings">ContinuousSettings</a><a href="#DiscreteSettings" data-name="DiscreteSettings">DiscreteSettings</a><a href="#MajorReference" data-name="MajorReference">MajorReference</a><a href="#Source" data-name="Source">Source</a><a href="#BarsLabelStrategy" data-name="BarsLabelStrategy">BarsLabelStrategy</a><a href="#RowsLabelStrategy" data-name="RowsLabelStrategy">RowsLabelStrategy</a><a href="#SlicesLabelStrategy" data-name="SlicesLabelStrategy">SlicesLabelStrategy</a><a href="#LayerSort" data-name="LayerSort">LayerSort</a><a href="#RefLine" data-name="RefLine">Line (ref-line)</a><a href="#LineLabel" data-name="LineLabel">LineLabel</a><a href="#GenericObject" data-name="GenericObject">GenericObject</a>
+<div class="cat-header">Data</div><a href="#Dataset" data-name="Dataset">Dataset</a><a href="#DataSource" data-name="DataSource">DataSource</a><a href="#Field" data-name="Field">Field</a><a href="#DataExtraction" data-name="DataExtraction">DataExtraction</a><a href="#DataFieldExtraction" data-name="DataFieldExtraction">DataFieldExtraction</a><a href="#Extract" data-name="Extract">Extract</a><a href="#DatumExtract" data-name="DatumExtract">DatumExtract</a><a href="#DatumBoolean" data-name="DatumBoolean">DatumBoolean</a><a href="#DatumNumber" data-name="DatumNumber">DatumNumber</a><a href="#DatumString" data-name="DatumString">DatumString</a><a href="#DatumConfig" data-name="DatumConfig">DatumConfig</a><a href="#datumAccessor" data-name="datumAccessor">datumAccessor</a>
+<div class="cat-header">Scales</div><a href="#Scale" data-name="Scale">Scale</a><a href="#ScaleDefinition" data-name="ScaleDefinition">ScaleDefinition</a><a href="#ScaleBand" data-name="ScaleBand">ScaleBand</a><a href="#ScaleLinear" data-name="ScaleLinear">ScaleLinear</a><a href="#ScaleCategoricalColor" data-name="ScaleCategoricalColor">ScaleCategoricalColor</a><a href="#ScaleSequentialColor" data-name="ScaleSequentialColor">ScaleSequentialColor</a><a href="#ScaleThresholdColor" data-name="ScaleThresholdColor">ScaleThresholdColor</a>
+<div class="cat-header">Renderer</div><a href="#Renderer" data-name="Renderer">Renderer</a><a href="#canvasRendererFactory" data-name="canvasRendererFactory">canvasRendererFactory</a><a href="#svgRendererFactory" data-name="svgRendererFactory">svgRendererFactory</a><a href="#RendererSettings" data-name="RendererSettings">RendererSettings</a><a href="#SceneNode" data-name="SceneNode">SceneNode</a>
+<div class="cat-header">Geometry</div><a href="#Point" data-name="Point">Point</a><a href="#Rect" data-name="Rect">Rect</a><a href="#Line" data-name="Line">Line</a><a href="#Circle" data-name="Circle">Circle</a><a href="#Path" data-name="Path">Path</a><a href="#Polygon" data-name="Polygon">Polygon</a><a href="#Polyline" data-name="Polyline">Polyline</a><a href="#Geopolygon" data-name="Geopolygon">Geopolygon</a><a href="#ArcSettings" data-name="ArcSettings">ArcSettings</a>
+<div class="cat-header">Interaction</div><a href="#Interaction" data-name="Interaction">Interaction</a><a href="#InteractionSettings" data-name="InteractionSettings">InteractionSettings</a><a href="#CollectionSettings" data-name="CollectionSettings">CollectionSettings</a>
+<div class="cat-header">Formatter</div><a href="#formatter" data-name="formatter">formatter</a><a href="#FormatterDefinition" data-name="FormatterDefinition">FormatterDefinition</a>
+<div class="cat-header">Registry</div><a href="#Registries" data-name="Registries">Registries</a><a href="#registry" data-name="registry">registry</a>
+<div class="cat-header">Lifecycle</div><a href="#Lifecycle" data-name="Lifecycle">Lifecycle Hooks</a>
+<div class="cat-header">Plugin</div><a href="#plugin" data-name="plugin">plugin</a><a href="#customLayoutFunction" data-name="customLayoutFunction">customLayoutFunction</a>
+</div>
+</nav>
+<div class="mobile-nav"><select id="mobile-jump"><option value="">Jump to...</option></select></div>
+<main id="content"><header><div class="eyebrow">API Reference</div><h1>picasso.js</h1><div class="tldr"><b>picasso.js</b> is a charting library streamlined for building visualizations for the Qlik Sense Analytics platform. This reference documents all 112+ definitions including the entry function, components, scales, brushes, renderers, geometric types, and lifecycle hooks.</div></header>
+<h2 id="entries">Entries</h2>
+<div class="def-card" id="picassojs">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">picassojs</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Entry point for creating picasso.js charts. Returns a picasso instance with chart creation and registry access.</p>
+<h3 class="section-label">Parameters</h3>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">cfg</code></td><td>object</td><td>&mdash;</td><td>Optional configuration object</td></tr>
+<tr><td><code class="prop-name">cfg.renderer</code></td><td>object</td><td>&mdash;</td><td>Renderer configuration</td></tr>
+<tr><td><code class="prop-name">cfg.renderer.prio</code> <span class="required">required</span></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Priority order of renderers (e.g. <code>['svg', 'canvas']</code>)</td></tr>
+<tr><td><code class="prop-name">cfg.logger</code></td><td>object</td><td>&mdash;</td><td>Logger configuration</td></tr>
+<tr><td><code class="prop-name">cfg.logger.level</code> <span class="required">required</span></td><td>0 | 1 | 2 | 3 | 4</td><td>&mdash;</td><td>Log verbosity level (0=off, 4=debug)</td></tr>
+<tr><td><code class="prop-name">cfg.style</code></td><td>object</td><td>&mdash;</td><td>Default style overrides</td></tr>
+<tr><td><code class="prop-name">cfg.palettes</code></td><td>Array&lt;object&gt;</td><td>&mdash;</td><td>Color palette definitions</td></tr>
+</tbody></table>
+<h3 class="section-label">Returns</h3>
+<p>picassojs instance with the following:</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">chart</code></td><td>function</td><td>&mdash;</td><td><code>chart(ChartDefinition)</code> &rarr; <code>Chart</code></td></tr>
+<tr><td><code class="prop-name">component</code></td><td>registry</td><td>&mdash;</td><td>Component registry</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>registry</td><td>&mdash;</td><td>Data registry</td></tr>
+<tr><td><code class="prop-name">formatter</code></td><td>registry</td><td>&mdash;</td><td>Formatter registry</td></tr>
+<tr><td><code class="prop-name">interaction</code></td><td>registry</td><td>&mdash;</td><td>Interaction registry</td></tr>
+<tr><td><code class="prop-name">renderer</code></td><td>registry</td><td>&mdash;</td><td>Renderer registry</td></tr>
+<tr><td><code class="prop-name">scale</code></td><td>registry</td><td>&mdash;</td><td>Scale registry</td></tr>
+<tr><td><code class="prop-name">use</code></td><td>function</td><td>&mdash;</td><td><code>use(plugin, options?)</code> registers a plugin</td></tr>
+<tr><td><code class="prop-name">version</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Library version string</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="core">Core</h2>
+<div class="def-card" id="Chart">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Chart</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>The main chart instance returned by <code>picassojs().chart()</code>. Provides access to all chart operations.</p>
+<h3 class="section-label">Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">brush(name)</code></td><td><span class="return-type">Brush</span></td><td>Get a brush instance by name</td></tr>
+<tr><td><code class="method-name">brushFromShapes(shapes, config)</code></td><td>&mdash;</td><td>Start brushing from shapes. <code>config.components</code> is a required Array&lt;BrushTargetConfig&gt;</td></tr>
+<tr><td><code class="method-name">component(key)</code></td><td><span class="return-type">Component</span></td><td>Get a component instance by key</td></tr>
+<tr><td><code class="method-name">componentsFromPoint(p)</code></td><td><span class="return-type">Array&lt;Component&gt;</span></td><td>Find components at a given point</td></tr>
+<tr><td><code class="method-name">dataset(key)</code></td><td><span class="return-type">Dataset</span></td><td>Get a dataset by key</td></tr>
+<tr><td><code class="method-name">destroy()</code></td><td>&mdash;</td><td>Destroy the chart instance</td></tr>
+<tr><td><code class="method-name">findShapes(selector)</code></td><td><span class="return-type">Array&lt;SceneNode&gt;</span></td><td>Find scene nodes matching a CSS-like selector</td></tr>
+<tr><td><code class="method-name">formatter(v)</code></td><td><span class="return-type">formatter</span></td><td>Get a formatter by string key or object definition</td></tr>
+<tr><td><code class="method-name">formatters()</code></td><td><span class="return-type">object</span></td><td>Get all registered formatters</td></tr>
+<tr><td><code class="method-name">getAffectedShapes(ctx, mode, props, key)</code></td><td><span class="return-type">Array&lt;object&gt;</span></td><td>Get shapes affected by brushing</td></tr>
+<tr><td><code class="method-name">layoutComponents(def?)</code></td><td>&mdash;</td><td>Trigger component layout</td></tr>
+<tr><td><code class="method-name">scale(v)</code></td><td><span class="return-type">Scale</span></td><td>Get a scale by string key or object definition</td></tr>
+<tr><td><code class="method-name">scales()</code></td><td><span class="return-type">object</span></td><td>Get all registered scales</td></tr>
+<tr><td><code class="method-name">shapesAt(shape, opts)</code></td><td><span class="return-type">Array&lt;SceneNode&gt;</span></td><td>Get shapes at geometry (Line | Rect | Point | Circle)</td></tr>
+<tr><td><code class="method-name">toggleBrushing(val?)</code></td><td>&mdash;</td><td>Toggle brushing on/off</td></tr>
+<tr><td><code class="method-name">update(def?)</code></td><td>&mdash;</td><td>Update the chart with a new definition</td></tr>
+</tbody></table>
+<h3 class="section-label">Properties</h3>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">interactions</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Interaction management: <code>{ instances: Array&lt;Interaction&gt;, off(), on() }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ChartDefinition">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ChartDefinition</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Configuration object passed to <code>picasso.chart()</code> to create or update a chart.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">element</code> <span class="required">required</span></td><td>HTMLElement</td><td>&mdash;</td><td>DOM element to mount the chart into</td></tr>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>Array&lt;DataSource&gt; | DataSource</td><td>&mdash;</td><td>Data source(s) for the chart</td></tr>
+<tr><td><code class="prop-name">settings</code> <span class="required">required</span></td><td>ChartSettings</td><td>&mdash;</td><td>Chart configuration settings</td></tr>
+</tbody></table>
+<h3 class="section-label">Lifecycle Hooks</h3>
+<table><thead><tr><th>Hook</th><th>Params</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">created</code></td><td>&mdash;</td><td>Called when chart is created</td></tr>
+<tr><td><code class="method-name">mounted</code></td><td><code>element</code>: HTMLElement</td><td>Called after chart is mounted to DOM</td></tr>
+<tr><td><code class="method-name">updated</code></td><td>&mdash;</td><td>Called after chart is updated</td></tr>
+<tr><td><code class="method-name">destroyed</code></td><td>&mdash;</td><td>Called when chart is destroyed</td></tr>
+<tr><td><code class="method-name">beforeMount</code></td><td>&mdash;</td><td>Called before mounting</td></tr>
+<tr><td><code class="method-name">beforeRender</code></td><td>&mdash;</td><td>Called before rendering</td></tr>
+<tr><td><code class="method-name">beforeUpdate</code></td><td>&mdash;</td><td>Called before updating</td></tr>
+<tr><td><code class="method-name">beforeDestroy</code></td><td>&mdash;</td><td>Called before destroying</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ChartSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ChartSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>The main settings object within a ChartDefinition. Configures components, scales, formatters, and more.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">components</code></td><td>Array&lt;ComponentTypes&gt;</td><td>&mdash;</td><td>Array of component configurations</td></tr>
+<tr><td><code class="prop-name">scales</code></td><td>object</td><td>&mdash;</td><td>Named scale definitions</td></tr>
+<tr><td><code class="prop-name">formatters</code></td><td>object</td><td>&mdash;</td><td>Named formatter definitions</td></tr>
+<tr><td><code class="prop-name">strategy</code></td><td>DockLayoutSettings</td><td>&mdash;</td><td>Dock layout strategy configuration</td></tr>
+<tr><td><code class="prop-name">interactions</code></td><td>Array&lt;InteractionSettings&gt;</td><td>&mdash;</td><td>Interaction configurations</td></tr>
+<tr><td><code class="prop-name">collections</code></td><td>Array&lt;CollectionSettings&gt;</td><td>&mdash;</td><td>Data collection configurations</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DockLayoutSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DockLayoutSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Controls how the dock layout allocates space to components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">logicalSize</code></td><td>object</td><td>&mdash;</td><td>Logical size overrides: <code>{ width, height, preserveAspectRatio, align }</code></td></tr>
+<tr><td><code class="prop-name">logicalSize.preserveAspectRatio</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Preserve aspect ratio when scaling</td></tr>
+<tr><td><code class="prop-name">logicalSize.align</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Alignment within available space</td></tr>
+<tr><td><code class="prop-name">center</code></td><td>object</td><td>&mdash;</td><td>Center area constraints: <code>{ minWidthRatio, minHeightRatio, minWidth, minHeight }</code></td></tr>
+<tr><td><code class="prop-name">center.minWidthRatio</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Minimum width as ratio of total</td></tr>
+<tr><td><code class="prop-name">center.minHeightRatio</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Minimum height as ratio of total</td></tr>
+<tr><td><code class="prop-name">layoutModes</code></td><td>object</td><td>&mdash;</td><td>Named layout mode size thresholds</td></tr>
+<tr><td><code class="prop-name">size</code></td><td>object</td><td>&mdash;</td><td>Explicit size: <code>{ width, height }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="brush">Brush</h2>
+<div class="def-card" id="Brush">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Brush</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Brush instance for managing data selections. Supports value-based and range-based brushing.</p>
+<h3 class="section-label">Events</h3>
+<table><thead><tr><th>Event</th><th>Args</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">start</code></td><td>&mdash;</td><td>Fired when brushing starts</td></tr>
+<tr><td><code class="method-name">end</code></td><td>&mdash;</td><td>Fired when brushing ends</td></tr>
+<tr><td><code class="method-name">update</code></td><td><code>added, removed</code></td><td>Fired when brush values change</td></tr>
+</tbody></table>
+<h3 class="section-label">Value Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">addValue(key, value)</code></td><td>&mdash;</td><td>Add a single value</td></tr>
+<tr><td><code class="method-name">addValues(items)</code></td><td>&mdash;</td><td>Add multiple values</td></tr>
+<tr><td><code class="method-name">removeValue(key, value)</code></td><td>&mdash;</td><td>Remove a single value</td></tr>
+<tr><td><code class="method-name">removeValues(items)</code></td><td>&mdash;</td><td>Remove multiple values</td></tr>
+<tr><td><code class="method-name">toggleValue(key, value)</code></td><td>&mdash;</td><td>Toggle a single value</td></tr>
+<tr><td><code class="method-name">toggleValues(items)</code></td><td>&mdash;</td><td>Toggle multiple values</td></tr>
+<tr><td><code class="method-name">setValues(items)</code></td><td>&mdash;</td><td>Replace all values</td></tr>
+<tr><td><code class="method-name">addAndRemoveValues(addItems, removeItems)</code></td><td>&mdash;</td><td>Atomically add and remove values</td></tr>
+<tr><td><code class="method-name">containsValue(key, value)</code></td><td><span class="return-type">boolean</span></td><td>Check if value exists in brush</td></tr>
+</tbody></table>
+<h3 class="section-label">Range Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">addRange(key, {min, max})</code></td><td>&mdash;</td><td>Add a range</td></tr>
+<tr><td><code class="method-name">addRanges(items)</code></td><td>&mdash;</td><td>Add multiple ranges</td></tr>
+<tr><td><code class="method-name">setRange(key, {min, max})</code></td><td>&mdash;</td><td>Set a range (replaces existing)</td></tr>
+<tr><td><code class="method-name">setRanges(items)</code></td><td>&mdash;</td><td>Set multiple ranges</td></tr>
+<tr><td><code class="method-name">removeRange(key, {min, max})</code></td><td>&mdash;</td><td>Remove a range</td></tr>
+<tr><td><code class="method-name">removeRanges(items)</code></td><td>&mdash;</td><td>Remove multiple ranges</td></tr>
+<tr><td><code class="method-name">toggleRange(key, {min, max})</code></td><td>&mdash;</td><td>Toggle a range</td></tr>
+<tr><td><code class="method-name">toggleRanges(items)</code></td><td>&mdash;</td><td>Toggle multiple ranges</td></tr>
+<tr><td><code class="method-name">containsRange(key, range)</code></td><td><span class="return-type">boolean</span></td><td>Check if range is contained</td></tr>
+<tr><td><code class="method-name">containsRangeValue(key, value)</code></td><td><span class="return-type">boolean</span></td><td>Check if value falls within range</td></tr>
+</tbody></table>
+<h3 class="section-label">Utility Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">brushes()</code></td><td><span class="return-type">object</span></td><td>Get all current brush state</td></tr>
+<tr><td><code class="method-name">clear()</code></td><td>&mdash;</td><td>Clear all brush values and ranges</td></tr>
+<tr><td><code class="method-name">start(args)</code></td><td>&mdash;</td><td>Programmatically start brushing</td></tr>
+<tr><td><code class="method-name">end(args)</code></td><td>&mdash;</td><td>Programmatically end brushing</td></tr>
+<tr><td><code class="method-name">isActive()</code></td><td><span class="return-type">boolean</span></td><td>Check if brush is active</td></tr>
+<tr><td><code class="method-name">configure(BrushConfig)</code></td><td>&mdash;</td><td>Update brush configuration</td></tr>
+<tr><td><code class="method-name">link(target)</code></td><td>&mdash;</td><td>Link this brush to another brush instance</td></tr>
+<tr><td><code class="method-name">intercept(name, ic)</code></td><td>&mdash;</td><td>Add an interceptor</td></tr>
+<tr><td><code class="method-name">removeInterceptor(name, ic)</code></td><td>&mdash;</td><td>Remove an interceptor</td></tr>
+<tr><td><code class="method-name">removeAllInterceptors(name?)</code></td><td>&mdash;</td><td>Remove all interceptors, optionally filtered by name</td></tr>
+<tr><td><code class="method-name">addKeyAlias(key, alias)</code></td><td>&mdash;</td><td>Add a key alias</td></tr>
+<tr><td><code class="method-name">removeKeyAlias(key)</code></td><td>&mdash;</td><td>Remove a key alias</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="BrushConfig">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">BrushConfig</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Configuration for range brushing behavior.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">ranges</code></td><td>Array&lt;Ranges&gt;</td><td>&mdash;</td><td>Range configuration items</td></tr>
+</tbody></table>
+<p>Each <strong>Ranges</strong> item: <code>{ includeMax: boolean (def: true), includeMin: boolean (def: true), key: string }</code></p>
+</div></div>
+
+<div class="def-card" id="BrushConsumeSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">BrushConsumeSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines how a component consumes brush events from other components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">context</code></td><td>string</td><td>&mdash;</td><td>Brush context to listen to</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Brush data keys to consume</td></tr>
+<tr><td><code class="prop-name">mode</code></td><td>string</td><td>&mdash;</td><td>Combination mode: <code>and</code> | <code>or</code> | <code>xor</code></td></tr>
+<tr><td><code class="prop-name">filter</code></td><td>function</td><td>&mdash;</td><td>Custom filter function for brush items</td></tr>
+<tr><td><code class="prop-name">style</code></td><td>object</td><td>&mdash;</td><td>Style overrides: <code>{ active: object, inactive: object }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="BrushTargetConfig">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">BrushTargetConfig</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines a brush target component and its behavior.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">key</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Component key to target</td></tr>
+<tr><td><code class="prop-name">contexts</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Brush contexts</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Data keys to brush on</td></tr>
+<tr><td><code class="prop-name">action</code></td><td>string</td><td><code class="default-val">set</code></td><td>Brush action type</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="BrushTriggerSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">BrushTriggerSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines how a component triggers brush events.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">on</code></td><td>string</td><td>&mdash;</td><td>Event name to trigger on</td></tr>
+<tr><td><code class="prop-name">action</code></td><td>string</td><td>&mdash;</td><td>Brush action to perform</td></tr>
+<tr><td><code class="prop-name">contexts</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Brush contexts to affect</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Data keys to brush</td></tr>
+<tr><td><code class="prop-name">propagation</code></td><td>string</td><td>&mdash;</td><td>Event propagation behavior</td></tr>
+<tr><td><code class="prop-name">globalPropagation</code></td><td>string</td><td>&mdash;</td><td>Global propagation behavior</td></tr>
+<tr><td><code class="prop-name">touchRadius</code></td><td>number</td><td>&mdash;</td><td>Touch detection radius</td></tr>
+<tr><td><code class="prop-name">mouseRadius</code></td><td>number</td><td>&mdash;</td><td>Mouse detection radius</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentBrushArea">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentBrushArea</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Brush area component (<code>type: "brush-area"</code>). Enables free-form rectangular brushing.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.brush.components</code> <span class="required">required</span></td><td>Array&lt;BrushTargetConfig&gt;</td><td>&mdash;</td><td>Target components for the brush</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentBrushAreaDir">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentBrushAreaDir</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Directional brush area component (<code>type: "brush-area-dir"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.brush.components</code> <span class="required">required</span></td><td>Array&lt;BrushTargetConfig&gt;</td><td>&mdash;</td><td>Target components</td></tr>
+<tr><td><code class="prop-name">direction</code></td><td>string</td><td><code class="default-val">vertical</code></td><td>Brush direction</td></tr>
+<tr><td><code class="prop-name">bubbles</code></td><td>object</td><td>&mdash;</td><td>Bubble config: <code>{ show, align, label(fn) }</code></td></tr>
+<tr><td><code class="prop-name">target</code></td><td>object</td><td>&mdash;</td><td>Target config: <code>{ components }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentBrushLasso">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentBrushLasso</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Lasso brush component (<code>type: "brush-lasso"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.lasso</code></td><td>object</td><td>&mdash;</td><td>Lasso styling: <code>{ fill, stroke, strokeWidth, opacity, strokeDasharray }</code></td></tr>
+<tr><td><code class="prop-name">settings.snapIndicator</code></td><td>object</td><td>&mdash;</td><td>Snap indicator: <code>{ threshold (75), strokeDasharray, stroke, strokeWidth, opacity }</code></td></tr>
+<tr><td><code class="prop-name">settings.startPoint</code></td><td>object</td><td>&mdash;</td><td>Start point: <code>{ r (10), stroke, strokeWidth, opacity }</code></td></tr>
+<tr><td><code class="prop-name">settings.brush.components</code> <span class="required">required</span></td><td>Array&lt;BrushTargetConfig&gt;</td><td>&mdash;</td><td>Target components</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentBrushRange">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentBrushRange</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Range brush component (<code>type: "brush-range"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">brush</code> <span class="required">required</span></td><td>string | object</td><td>&mdash;</td><td>Brush reference or configuration</td></tr>
+<tr><td><code class="prop-name">scale</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Named scale for range mapping</td></tr>
+<tr><td><code class="prop-name">direction</code></td><td>string</td><td><code class="default-val">vertical</code></td><td>Brush direction</td></tr>
+<tr><td><code class="prop-name">bubbles</code></td><td>object</td><td>&mdash;</td><td>Bubble config: <code>{ show, align, label(fn) }</code></td></tr>
+<tr><td><code class="prop-name">target</code></td><td>object</td><td>&mdash;</td><td>Target config: <code>{ components, selector, fillSelector }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentContainer">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentContainer</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Container component (<code>type: "container"</code>). <em>Experimental</em>.</p>
+</div></div>
+
+<div class="def-card" id="ComponentGridLine">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentGridLine</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Grid line component (<code>type: "grid-line"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.x.scale</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>X-axis scale reference</td></tr>
+<tr><td><code class="prop-name">settings.y.scale</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Y-axis scale reference</td></tr>
+<tr><td><code class="prop-name">ticks</code></td><td>object</td><td>&mdash;</td><td>Major tick styling: <code>{ show, stroke, strokeWidth, strokeDasharray }</code></td></tr>
+<tr><td><code class="prop-name">minorTicks</code></td><td>object</td><td>&mdash;</td><td>Minor tick styling: <code>{ show, stroke, strokeWidth, strokeDasharray }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentLabels">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentLabels</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Labels component (<code>type: "labels"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.sources</code> <span class="required">required</span></td><td>Array&lt;Source&gt;</td><td>&mdash;</td><td>Label source configurations</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="components">Components</h2>
+<div class="def-card" id="Component">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Component</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>A resolved component instance within a chart.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Component type identifier</td></tr>
+<tr><td><code class="prop-name">key</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Unique component key</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentSettings</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Base configuration interface for all chart components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Component type (see ComponentTypes)</td></tr>
+<tr><td><code class="prop-name">key</code></td><td>string</td><td>&mdash;</td><td>Unique key for this component</td></tr>
+<tr><td><code class="prop-name">show</code></td><td>boolean</td><td><code class="default-val">true</code></td><td>Whether the component is visible</td></tr>
+<tr><td><code class="prop-name">scale</code></td><td>string</td><td>&mdash;</td><td>Named scale reference</td></tr>
+<tr><td><code class="prop-name">formatter</code></td><td>string</td><td>&mdash;</td><td>Named formatter reference</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>DataExtraction | DataFieldExtraction</td><td>&mdash;</td><td>Data extraction configuration</td></tr>
+<tr><td><code class="prop-name">rendererSettings</code></td><td>RendererSettings</td><td>&mdash;</td><td>Renderer-specific settings</td></tr>
+<tr><td><code class="prop-name">brush</code></td><td>object</td><td>&mdash;</td><td>Brush config: <code>{ trigger: Array&lt;BrushTriggerSettings&gt;, consume: Array&lt;BrushConsumeSettings&gt;, sortNodes: function }</code></td></tr>
+<tr><td><code class="prop-name">layout</code></td><td>object</td><td>&mdash;</td><td>Layout: <code>{ displayOrder (0), prioOrder (0), minimumLayoutMode, dock }</code></td></tr>
+<tr><td><code class="prop-name">preferredSize</code></td><td>function</td><td>&mdash;</td><td>Function returning preferred size</td></tr>
+<tr><td><code class="prop-name">components</code></td><td>Array&lt;ComponentSettings&gt;</td><td>&mdash;</td><td>[Experimental] Nested components</td></tr>
+<tr><td><code class="prop-name">strategy</code></td><td>DockLayoutSettings | customLayoutFunction</td><td>&mdash;</td><td>[Experimental] Layout strategy</td></tr>
+</tbody></table>
+<h3 class="section-label">Lifecycle</h3>
+<p>Supports all lifecycle hooks: <code>created</code>, <code>beforeMount</code>, <code>mounted</code>, <code>beforeUpdate</code>, <code>updated</code>, <code>beforeRender</code>, <code>beforeDestroy</code>, <code>destroyed</code></p>
+</div></div>
+
+<div class="def-card" id="ComponentTypes">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentTypes</span><span class="badge badge-union">union</span></div>
+<div class="def-body">
+<p>String literal union of all available component type identifiers.</p>
+<p><code>axis</code> &middot; <code>box</code> &middot; <code>brush-area</code> &middot; <code>brush-area-dir</code> &middot; <code>brush-lasso</code> &middot; <code>brush-range</code> &middot; <code>container</code> &middot; <code>grid-line</code> &middot; <code>labels</code> &middot; <code>legend-cat</code> &middot; <code>legend-seq</code> &middot; <code>line</code> &middot; <code>pie</code> &middot; <code>point</code> &middot; <code>ref-line</code> &middot; <code>text</code> &middot; <code>tooltip</code></p>
+</div></div>
+
+<div class="def-card" id="ComponentAxis">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentAxis</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Axis component (<code>type: "axis"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">scale</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Named scale to use for the axis</td></tr>
+<tr><td><code class="prop-name">settings</code></td><td>DiscreteSettings | ContinuousSettings</td><td>&mdash;</td><td>Axis-specific display settings</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentBox">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentBox</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Box plot component (<code>type: "box"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Box data: <code>{ min, max, start, end, med }</code> (all number, required)</td></tr>
+<tr><td><code class="prop-name">settings.major</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Major axis: <code>{ scale (req), ref (def: "self") }</code></td></tr>
+<tr><td><code class="prop-name">settings.minor</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Minor axis: <code>{ scale (req) }</code></td></tr>
+<tr><td><code class="prop-name">settings.orientation</code></td><td>string</td><td><code class="default-val">vertical</code></td><td>Box orientation</td></tr>
+<tr><td><code class="prop-name">settings.box</code></td><td>object</td><td>&mdash;</td><td>Box styling: <code>{ show, fill, stroke, strokeWidth, strokeLinejoin, width, maxWidthPx, minWidthPx, minHeightPx }</code></td></tr>
+<tr><td><code class="prop-name">settings.line</code></td><td>object</td><td>&mdash;</td><td>Line styling: <code>{ show, stroke, strokeWidth }</code></td></tr>
+<tr><td><code class="prop-name">settings.whisker</code></td><td>object</td><td>&mdash;</td><td>Whisker styling: <code>{ show, stroke, strokeWidth, width }</code></td></tr>
+<tr><td><code class="prop-name">settings.median</code></td><td>object</td><td>&mdash;</td><td>Median styling: <code>{ show, stroke, strokeWidth }</code></td></tr>
+<tr><td><code class="prop-name">settings.oob</code></td><td>object</td><td>&mdash;</td><td>[Experimental] Out-of-bounds: <code>{ show, type, fill, stroke, strokeWidth, size, sides }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentRefLine">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentRefLine</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Reference line component (<code>type: "ref-line"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.lines</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Lines config: <code>{ x: Array&lt;Line&gt; (def: []), y: Array&lt;Line&gt; (def: []) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentText">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentText</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Text component (<code>type: "text"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">text</code> <span class="required">required</span></td><td>string | function</td><td>&mdash;</td><td>Text content or generator function</td></tr>
+<tr><td><code class="prop-name">paddingStart</code></td><td>number</td><td><code class="default-val">5</code></td><td>Start padding</td></tr>
+<tr><td><code class="prop-name">paddingEnd</code></td><td>number</td><td><code class="default-val">5</code></td><td>End padding</td></tr>
+<tr><td><code class="prop-name">paddingLeft</code></td><td>number</td><td><code class="default-val">0</code></td><td>Left padding</td></tr>
+<tr><td><code class="prop-name">paddingRight</code></td><td>number</td><td><code class="default-val">0</code></td><td>Right padding</td></tr>
+<tr><td><code class="prop-name">anchor</code></td><td>string</td><td><code class="default-val">center</code></td><td>Text anchor point</td></tr>
+<tr><td><code class="prop-name">join</code></td><td>string</td><td><code class="default-val">, </code></td><td>Separator for joining multiple values</td></tr>
+<tr><td><code class="prop-name">maxLengthPx</code></td><td>number</td><td>&mdash;</td><td>Maximum text width in pixels</td></tr>
+<tr><td><code class="prop-name">style.text</code></td><td>object</td><td>&mdash;</td><td>Text style: <code>{ fontSize ("12px"), fontFamily, fontWeight, fill, stroke, strokeWidth, opacity }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentTooltip">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentTooltip</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Tooltip component (<code>type: "tooltip"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">content</code></td><td>function</td><td>&mdash;</td><td><code>(ctx: {data, h}) =&gt; Array&lt;object&gt;</code> tooltip content generator</td></tr>
+<tr><td><code class="prop-name">extract</code></td><td>function</td><td>&mdash;</td><td><code>(ctx: {node: SceneNode}) =&gt; any</code></td></tr>
+<tr><td><code class="prop-name">filter</code></td><td>function</td><td>&mdash;</td><td><code>(nodes) =&gt; Array&lt;SceneNode&gt;</code></td></tr>
+<tr><td><code class="prop-name">isEqual</code></td><td>function</td><td>&mdash;</td><td><code>(prev, curr) =&gt; boolean</code></td></tr>
+<tr><td><code class="prop-name">delay</code></td><td>number</td><td><code class="default-val">500</code></td><td>Show delay in ms</td></tr>
+<tr><td><code class="prop-name">duration</code></td><td>number</td><td><code class="default-val">8000</code></td><td>Display duration in ms</td></tr>
+<tr><td><code class="prop-name">direction</code></td><td>string</td><td><code class="default-val">ltr</code></td><td>Text direction</td></tr>
+<tr><td><code class="prop-name">appendTo</code></td><td>HTMLElement</td><td>&mdash;</td><td>DOM element to append tooltip to</td></tr>
+<tr><td><code class="prop-name">placement</code></td><td>object</td><td>&mdash;</td><td>Placement: <code>{ area ("viewport"), dock ("auto"), offset (8), type ("pointer") }</code></td></tr>
+<tr><td><code class="prop-name">beforeShow</code></td><td>function</td><td>&mdash;</td><td>Hook before tooltip shows</td></tr>
+<tr><td><code class="prop-name">afterShow</code></td><td>function</td><td>&mdash;</td><td>Hook after tooltip shows</td></tr>
+<tr><td><code class="prop-name">beforeHide</code></td><td>function</td><td>&mdash;</td><td><code>(ctx: {element})</code> hook before hiding</td></tr>
+<tr><td><code class="prop-name">afterHide</code></td><td>function</td><td>&mdash;</td><td>Hook after tooltip hides</td></tr>
+<tr><td><code class="prop-name">onHide</code></td><td>function</td><td>&mdash;</td><td><code>(ctx: {element})</code> hook on hide</td></tr>
+<tr><td><code class="prop-name">tooltipClass</code></td><td>string</td><td>&mdash;</td><td>CSS class for tooltip container</td></tr>
+<tr><td><code class="prop-name">contentClass</code></td><td>string</td><td>&mdash;</td><td>CSS class for content area</td></tr>
+<tr><td><code class="prop-name">arrowClass</code></td><td>string</td><td>&mdash;</td><td>CSS class for arrow element</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentLegendCat">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentLegendCat</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Categorical legend component (<code>type: "legend-cat"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">scale</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Named categorical scale</td></tr>
+<tr><td><code class="prop-name">settings.item</code></td><td>object</td><td>&mdash;</td><td>Item config: <code>{ align (0.5), justify (0.5), label: { fontFamily, fontSize, lineHeight, maxLines, maxWidth, wordBreak }, shape: { size (12), type ("square") }, show }</code></td></tr>
+<tr><td><code class="prop-name">layout</code></td><td>object</td><td>&mdash;</td><td>Layout: <code>{ direction ("ltr"), scrollOffset (0), size (1) }</code></td></tr>
+<tr><td><code class="prop-name">navigation</code></td><td>object</td><td>&mdash;</td><td>Navigation: <code>{ button: { class, content(fn), tabIndex }, disabled (false) }</code></td></tr>
+<tr><td><code class="prop-name">title</code></td><td>object</td><td>&mdash;</td><td>Title: <code>{ anchor, fill, fontSize, fontFamily, lineHeight, maxLines, maxWidth, show, text, wordBreak }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentLegendSeq">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentLegendSeq</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Sequential legend component (<code>type: "legend-seq"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">settings.fill</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Named fill scale</td></tr>
+<tr><td><code class="prop-name">major</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Named major scale</td></tr>
+<tr><td><code class="prop-name">size</code></td><td>number</td><td><code class="default-val">15</code></td><td>Legend size</td></tr>
+<tr><td><code class="prop-name">length</code></td><td>number</td><td><code class="default-val">1</code></td><td>Legend length factor</td></tr>
+<tr><td><code class="prop-name">maxLengthPx</code></td><td>number</td><td><code class="default-val">250</code></td><td>Maximum length in pixels</td></tr>
+<tr><td><code class="prop-name">align</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Alignment</td></tr>
+<tr><td><code class="prop-name">justify</code></td><td>number</td><td><code class="default-val">0</code></td><td>Justification</td></tr>
+<tr><td><code class="prop-name">padding</code></td><td>object</td><td>&mdash;</td><td>Padding: <code>{ left (5), right (5), top (5), bottom (5) }</code></td></tr>
+<tr><td><code class="prop-name">tick</code></td><td>object</td><td>&mdash;</td><td>Tick config: <code>{ label(fn), fill, fontSize, fontFamily, maxLengthPx, anchor, padding }</code></td></tr>
+<tr><td><code class="prop-name">title</code></td><td>object</td><td>&mdash;</td><td>Title: <code>{ show, text, fill, fontSize, fontFamily, maxLengthPx, padding, anchor, wordBreak, hyphens, maxLines, lineHeight }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentLine">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentLine</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Line component (<code>type: "line"</code>). Renders line and area charts.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">connect</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Connect disconnected data points</td></tr>
+<tr><td><code class="prop-name">coordinates</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Coordinate mapping: <code>{ defined (DatumBoolean), layerId (0), major (0.5), minor (0.5) }</code></td></tr>
+<tr><td><code class="prop-name">layers</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Layer config: <code>{ area: { fill, opacity (0.8), show }, curve ("linear"), line: { opacity, show, showMinor0, stroke, strokeDasharray, strokeLinejoin, strokeWidth }, show (true), sort (LayerSort) }</code></td></tr>
+<tr><td><code class="prop-name">orientation</code></td><td>string</td><td><code class="default-val">horizontal</code></td><td>Chart orientation</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentPie">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentPie</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Pie component (<code>type: "pie"</code>).</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">startAngle</code></td><td>number</td><td><code class="default-val">0</code></td><td>Start angle in radians</td></tr>
+<tr><td><code class="prop-name">endAngle</code></td><td>number</td><td>&mdash;</td><td>End angle in radians</td></tr>
+<tr><td><code class="prop-name">slice</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Slice config: <code>{ arc (1), cornerRadius (0), fill ("#333"), innerRadius (0), offset (0), opacity (1), outerRadius (0.8), show (true), stroke ("#ccc"), strokeLinejoin ("round"), strokeWidth (1) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ComponentPoint">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ComponentPoint</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Point component (<code>type: "point"</code>). Renders scatter plots and bubble charts.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">x</code></td><td>DatumNumber</td><td><code class="default-val">0.5</code></td><td>X coordinate mapping</td></tr>
+<tr><td><code class="prop-name">y</code></td><td>DatumNumber</td><td><code class="default-val">0.5</code></td><td>Y coordinate mapping</td></tr>
+<tr><td><code class="prop-name">size</code></td><td>DatumNumber</td><td><code class="default-val">1</code></td><td>Point size mapping</td></tr>
+<tr><td><code class="prop-name">shape</code></td><td>DatumString</td><td><code class="default-val">circle</code></td><td>Point shape mapping</td></tr>
+<tr><td><code class="prop-name">fill</code></td><td>DatumString</td><td><code class="default-val">#333</code></td><td>Fill color mapping</td></tr>
+<tr><td><code class="prop-name">stroke</code></td><td>DatumString</td><td><code class="default-val">#ccc</code></td><td>Stroke color mapping</td></tr>
+<tr><td><code class="prop-name">strokeWidth</code></td><td>DatumNumber</td><td><code class="default-val">0</code></td><td>Stroke width mapping</td></tr>
+<tr><td><code class="prop-name">strokeDasharray</code></td><td>DatumString</td><td><code class="default-val"></code></td><td>Stroke dash pattern</td></tr>
+<tr><td><code class="prop-name">strokeLinejoin</code></td><td>DatumString</td><td><code class="default-val">miter</code></td><td>Stroke line join</td></tr>
+<tr><td><code class="prop-name">opacity</code></td><td>DatumNumber</td><td><code class="default-val">1</code></td><td>Opacity mapping</td></tr>
+<tr><td><code class="prop-name">show</code></td><td>DatumBoolean</td><td><code class="default-val">true</code></td><td>Visibility mapping</td></tr>
+<tr><td><code class="prop-name">label</code></td><td>DatumString</td><td><code class="default-val"></code></td><td>Label mapping</td></tr>
+<tr><td><code class="prop-name">sizeLimits</code></td><td>object</td><td>&mdash;</td><td>Size limits: <code>{ maxPx, maxRelDiscrete, maxRelExtent, minPx, minRelDiscrete, minRelExtent }</code></td></tr>
+<tr><td><code class="prop-name">imageSettings</code></td><td>object</td><td>&mdash;</td><td>Image settings: <code>{ height, imageScalingFactor, imageSrc, position, symbol, width }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="subtypes">Sub-types</h2>
+<div class="def-card" id="ContinuousSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ContinuousSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Axis settings for continuous (numeric) scales.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">arc</code></td><td>ArcSettings</td><td>&mdash;</td><td>Arc rendering settings for radial axes</td></tr>
+<tr><td><code class="prop-name">align</code></td><td>string</td><td><code class="default-val">auto</code></td><td>Label alignment</td></tr>
+<tr><td><code class="prop-name">labels</code></td><td>object</td><td>&mdash;</td><td>Label config: <code>{ align (0.5), centerEndLabels (false), filterOverlapping (true), margin (4), maxLengthPx (150), minLengthPx (0), offset (0), show (true) }</code></td></tr>
+<tr><td><code class="prop-name">line</code></td><td>object</td><td>&mdash;</td><td>Axis line: <code>{ show (true) }</code></td></tr>
+<tr><td><code class="prop-name">minorTicks</code></td><td>object</td><td>&mdash;</td><td>Minor ticks: <code>{ margin (0), show (false), tickSize (3) }</code></td></tr>
+<tr><td><code class="prop-name">ticks</code></td><td>object</td><td>&mdash;</td><td>Major ticks: <code>{ margin (0), show (true), tickSize (8) }</code></td></tr>
+<tr><td><code class="prop-name">paddingEnd</code></td><td>number</td><td><code class="default-val">10</code></td><td>End padding</td></tr>
+<tr><td><code class="prop-name">paddingStart</code></td><td>number</td><td><code class="default-val">0</code></td><td>Start padding</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DiscreteSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DiscreteSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Axis settings for discrete (categorical) scales.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">align</code></td><td>string</td><td><code class="default-val">auto</code></td><td>Label alignment</td></tr>
+<tr><td><code class="prop-name">labels</code></td><td>object</td><td>&mdash;</td><td>Label config: <code>{ align (0.5), filterOverlapping (false), margin (4), maxEdgeBleed, maxGlyphCount, maxLengthPx (150), minLengthPx (0), mode ("auto"), offset (0), show (true), tiltAngle (40), tiltThreshold (0.7) }</code></td></tr>
+<tr><td><code class="prop-name">line</code></td><td>object</td><td>&mdash;</td><td>Axis line: <code>{ show (false) }</code></td></tr>
+<tr><td><code class="prop-name">ticks</code></td><td>object</td><td>&mdash;</td><td>Ticks: <code>{ margin (0), show (false), tickSize (4) }</code></td></tr>
+<tr><td><code class="prop-name">paddingEnd</code></td><td>number</td><td><code class="default-val">10</code></td><td>End padding</td></tr>
+<tr><td><code class="prop-name">paddingStart</code></td><td>number</td><td><code class="default-val">0</code></td><td>Start padding</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="MajorReference">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">MajorReference</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines a major scale reference range.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">start</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Start scale reference</td></tr>
+<tr><td><code class="prop-name">end</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>End scale reference</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Source">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Source</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines a label data source for the labels component.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">component</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Source component key</td></tr>
+<tr><td><code class="prop-name">selector</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>CSS-like shape selector</td></tr>
+<tr><td><code class="prop-name">strategy</code> <span class="required">required</span></td><td>BarsLabelStrategy | RowsLabelStrategy | SlicesLabelStrategy</td><td>&mdash;</td><td>Label placement strategy</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="BarsLabelStrategy">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">BarsLabelStrategy</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Label strategy for bar-type components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Must be <code>"bar"</code></td></tr>
+<tr><td><code class="prop-name">settings</code></td><td>object</td><td>&mdash;</td><td><code>{ direction ("up"), orientation ("auto"), fontFamily ("Arial"), fontSize (12), labels: Array&lt;object&gt; (req) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="RowsLabelStrategy">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">RowsLabelStrategy</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Label strategy for row-type components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Must be <code>"rows"</code></td></tr>
+<tr><td><code class="prop-name">settings</code></td><td>object</td><td>&mdash;</td><td><code>{ fontFamily ("Arial"), fontSize (12), justify (0.5), padding (4), labels: Array&lt;object&gt; (req) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="SlicesLabelStrategy">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">SlicesLabelStrategy</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Label strategy for pie slice-type components.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Must be <code>"slice"</code></td></tr>
+<tr><td><code class="prop-name">settings</code></td><td>object</td><td>&mdash;</td><td><code>{ direction ("horizontal"), fontFamily ("Arial"), fontSize (12), labels: Array&lt;object&gt; (req) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="LayerSort">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">LayerSort</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Sort function for line chart layers.</p>
+<h3 class="section-label">Signature</h3>
+<p><code>LayerSort(a, b) =&gt; number</code></p>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">a</code></td><td><code>{ id: string, data: Array&lt;DatumExtract&gt; }</code></td><td>First layer</td></tr>
+<tr><td><code class="prop-name">b</code></td><td><code>{ id: string, data: Array&lt;DatumExtract&gt; }</code></td><td>Second layer</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="RefLine">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Line (ref-line)</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>A single reference line definition within the ref-line component.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">value</code> <span class="required">required</span></td><td>number | function</td><td>&mdash;</td><td>Line position value or generator function</td></tr>
+<tr><td><code class="prop-name">scale</code></td><td>string</td><td>&mdash;</td><td>Named scale for value mapping</td></tr>
+<tr><td><code class="prop-name">line</code></td><td>GenericObject</td><td>&mdash;</td><td>Line styling overrides</td></tr>
+<tr><td><code class="prop-name">label</code></td><td>LineLabel</td><td>&mdash;</td><td>Label configuration</td></tr>
+<tr><td><code class="prop-name">slope</code></td><td>number</td><td><code class="default-val">0</code></td><td>Slope for diagonal lines</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="LineLabel">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">LineLabel</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Label configuration for a reference line.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">padding</code></td><td>number</td><td><code class="default-val">5</code></td><td>Label padding</td></tr>
+<tr><td><code class="prop-name">text</code></td><td>string</td><td><code class="default-val"></code></td><td>Label text content</td></tr>
+<tr><td><code class="prop-name">fontSize</code></td><td>string</td><td><code class="default-val">12px</code></td><td>Font size</td></tr>
+<tr><td><code class="prop-name">fontFamily</code></td><td>string</td><td><code class="default-val">Arial</code></td><td>Font family</td></tr>
+<tr><td><code class="prop-name">stroke</code></td><td>string</td><td><code class="default-val">transparent</code></td><td>Text stroke color</td></tr>
+<tr><td><code class="prop-name">strokeWidth</code></td><td>number</td><td><code class="default-val">0</code></td><td>Text stroke width</td></tr>
+<tr><td><code class="prop-name">opacity</code></td><td>number</td><td><code class="default-val">1</code></td><td>Label opacity</td></tr>
+<tr><td><code class="prop-name">align</code></td><td>number</td><td><code class="default-val">0</code></td><td>Horizontal alignment (0&ndash;1)</td></tr>
+<tr><td><code class="prop-name">vAlign</code></td><td>number</td><td><code class="default-val">0</code></td><td>Vertical alignment (0&ndash;1)</td></tr>
+<tr><td><code class="prop-name">maxWidth</code></td><td>number</td><td><code class="default-val">1</code></td><td>Max width as fraction</td></tr>
+<tr><td><code class="prop-name">maxWidthPx</code></td><td>number</td><td><code class="default-val">9999</code></td><td>Max width in pixels</td></tr>
+<tr><td><code class="prop-name">background</code></td><td>LineLabelBackground</td><td>&mdash;</td><td>Background styling</td></tr>
+<tr><td><code class="prop-name">show</code></td><td>boolean</td><td><code class="default-val">true</code></td><td>Visibility</td></tr>
+<tr><td><code class="prop-name">showValue</code></td><td>boolean</td><td><code class="default-val">true</code></td><td>Show the value alongside label text</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="GenericObject">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">GenericObject</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Generic styling object used for fill, stroke, and other visual properties.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">fill</code></td><td>string</td><td><code class="default-val">#fff</code></td><td>Fill color</td></tr>
+<tr><td><code class="prop-name">stroke</code></td><td>string</td><td><code class="default-val">transparent</code></td><td>Stroke color</td></tr>
+<tr><td><code class="prop-name">strokeWidth</code></td><td>number</td><td><code class="default-val">0</code></td><td>Stroke width</td></tr>
+<tr><td><code class="prop-name">opacity</code></td><td>number</td><td><code class="default-val">1</code></td><td>Opacity</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="LineLabelBackground">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">LineLabelBackground</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Background styling for reference line labels.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">fill</code></td><td>string</td><td><code class="default-val">#fff</code></td><td>Background fill</td></tr>
+<tr><td><code class="prop-name">stroke</code></td><td>string</td><td><code class="default-val">transparent</code></td><td>Background stroke</td></tr>
+<tr><td><code class="prop-name">strokeWidth</code></td><td>number</td><td><code class="default-val">0</code></td><td>Background stroke width</td></tr>
+<tr><td><code class="prop-name">opacity</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Background opacity</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="data">Data</h2>
+<div class="def-card" id="Dataset">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Dataset</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Dataset interface for accessing extracted data, fields, and metadata.</p>
+<h3 class="section-label">Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">extract(config)</code></td><td><span class="return-type">Array&lt;DatumExtract&gt;</span></td><td>Extract data using configuration</td></tr>
+<tr><td><code class="method-name">field(query)</code></td><td><span class="return-type">Field</span></td><td>Get a field by query</td></tr>
+<tr><td><code class="method-name">fields()</code></td><td><span class="return-type">Array&lt;Field&gt;</span></td><td>Get all fields</td></tr>
+<tr><td><code class="method-name">hierarchy()</code></td><td><span class="return-type">null</span></td><td>Get hierarchy (not implemented)</td></tr>
+<tr><td><code class="method-name">key()</code></td><td><span class="return-type">string</span></td><td>Get dataset key</td></tr>
+<tr><td><code class="method-name">raw()</code></td><td><span class="return-type">any</span></td><td>Get raw data</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DataSource">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DataSource</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines a data source for the chart.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">key</code></td><td>string</td><td>&mdash;</td><td>Unique data source key</td></tr>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Data source type identifier</td></tr>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>any</td><td>&mdash;</td><td>The raw data payload</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Field">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Field</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Represents a data field with metadata and extracted items.</p>
+<h3 class="section-label">Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">formatter()</code></td><td><span class="return-type">formatter</span></td><td>Get the field formatter</td></tr>
+<tr><td><code class="method-name">id()</code></td><td><span class="return-type">string</span></td><td>Get the field id</td></tr>
+<tr><td><code class="method-name">items()</code></td><td><span class="return-type">Array&lt;DatumExtract&gt;</span></td><td>Get extracted items</td></tr>
+<tr><td><code class="method-name">key()</code></td><td><span class="return-type">string</span></td><td>Get the field key</td></tr>
+<tr><td><code class="method-name">max()</code></td><td><span class="return-type">number</span></td><td>Get maximum value</td></tr>
+<tr><td><code class="method-name">min()</code></td><td><span class="return-type">number</span></td><td>Get minimum value</td></tr>
+<tr><td><code class="method-name">raw()</code></td><td><span class="return-type">any</span></td><td>Get raw data</td></tr>
+<tr><td><code class="method-name">tags()</code></td><td><span class="return-type">Array&lt;string&gt;</span></td><td>Get field tags</td></tr>
+<tr><td><code class="method-name">title()</code></td><td><span class="return-type">string</span></td><td>Get field title</td></tr>
+<tr><td><code class="method-name">type()</code></td><td><span class="return-type">'dimension' | 'measure'</span></td><td>Get field type</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DataExtraction">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DataExtraction</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Configuration for extracting data from a dataset with optional stacking, filtering, and sorting.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">extract</code> <span class="required">required</span></td><td>Extract | Array&lt;Extract&gt;</td><td>&mdash;</td><td>Extraction configuration(s)</td></tr>
+<tr><td><code class="prop-name">stack</code></td><td>object</td><td>&mdash;</td><td>Stack config: <code>{ stackKey (StackKeyCallback req), value (StackValueCallback req), stackByKey }</code></td></tr>
+<tr><td><code class="prop-name">filter</code></td><td>FilterCallback</td><td>&mdash;</td><td>Filter function for extracted data</td></tr>
+<tr><td><code class="prop-name">sort</code></td><td>SortCallback</td><td>&mdash;</td><td>Sort function for extracted data</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DataFieldExtraction">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DataFieldExtraction</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Simplified data extraction referencing a single field from a source.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">source</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Data source key</td></tr>
+<tr><td><code class="prop-name">field</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Field name to extract</td></tr>
+<tr><td><code class="prop-name">value</code></td><td>ValueFn | string | number | boolean</td><td>&mdash;</td><td>Value accessor or static value</td></tr>
+<tr><td><code class="prop-name">label</code></td><td>LabelFn | string | number | boolean</td><td>&mdash;</td><td>Label accessor or static value</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Extract">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Extract</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Defines how to extract a single field from a data source.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">source</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Data source key</td></tr>
+<tr><td><code class="prop-name">field</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Field name to extract</td></tr>
+<tr><td><code class="prop-name">value</code></td><td>ValueFn | string | number | boolean</td><td>&mdash;</td><td>Value accessor or static value</td></tr>
+<tr><td><code class="prop-name">label</code></td><td>LabelFn | string | number | boolean</td><td>&mdash;</td><td>Label accessor or static value</td></tr>
+<tr><td><code class="prop-name">trackBy</code></td><td>TrackByFn</td><td>&mdash;</td><td>Track-by function for identity</td></tr>
+<tr><td><code class="prop-name">reduce</code></td><td>ReduceFn | string</td><td>&mdash;</td><td>Reduce function or label</td></tr>
+<tr><td><code class="prop-name">reduceLabel</code></td><td>ReduceLabelFn | string</td><td>&mdash;</td><td>Reduce label function</td></tr>
+<tr><td><code class="prop-name">filter</code></td><td>FilterFn</td><td>&mdash;</td><td>Filter function for cells</td></tr>
+<tr><td><code class="prop-name">props</code></td><td>object</td><td>&mdash;</td><td>Additional properties: <code>{ field (req), value, label }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DatumExtract">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DatumExtract</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>A single extracted data point with value, label, and source metadata.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">value</code> <span class="required">required</span></td><td>any</td><td>&mdash;</td><td>The extracted value</td></tr>
+<tr><td><code class="prop-name">label</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Display label</td></tr>
+<tr><td><code class="prop-name">source</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Source metadata: <code>{ key (string req), field (string req) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="DatumBoolean">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DatumBoolean</span><span class="badge badge-union">union</span></div>
+<div class="def-body">
+<p>Accepts a boolean, a DatumConfig object, or a datumAccessor function.</p>
+<p><code>boolean</code> &middot; <code>DatumConfig</code> &middot; <code>datumAccessor</code></p>
+</div></div>
+
+<div class="def-card" id="DatumNumber">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DatumNumber</span><span class="badge badge-union">union</span></div>
+<div class="def-body">
+<p>Accepts a number, a DatumConfig object, or a datumAccessor function.</p>
+<p><code>number</code> &middot; <code>DatumConfig</code> &middot; <code>datumAccessor</code></p>
+</div></div>
+
+<div class="def-card" id="DatumString">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DatumString</span><span class="badge badge-union">union</span></div>
+<div class="def-body">
+<p>Accepts a string, a DatumConfig object, or a datumAccessor function.</p>
+<p><code>string</code> &middot; <code>DatumConfig</code> &middot; <code>datumAccessor</code></p>
+</div></div>
+
+<div class="def-card" id="DatumConfig">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">DatumConfig</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Configuration object for dynamic data mapping.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">scale</code></td><td>string</td><td>&mdash;</td><td>Named scale to apply</td></tr>
+<tr><td><code class="prop-name">fn</code></td><td>datumAccessor</td><td>&mdash;</td><td>Accessor function</td></tr>
+<tr><td><code class="prop-name">ref</code></td><td>string</td><td>&mdash;</td><td>Reference to another property</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="datumAccessor">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">datumAccessor</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Function that maps a DatumExtract to any value.</p>
+<h3 class="section-label">Signature</h3>
+<p><code>datumAccessor(d) =&gt; any</code></p>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">d</code> <span class="required">required</span></td><td>DatumExtract</td><td>The extracted data point</td></tr>
+</tbody></table>
+</div></div>
+
+<h3 class="section-label" style="margin-top:24px">Callback Functions</h3>
+<div class="callout"><span class="ico">lambda</span><div>These callback types are used throughout the data extraction and component configuration APIs.</div></div>
+
+<div class="def-card" id="FilterCallback">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">FilterCallback</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Filters extracted data items.</p>
+<p><code>FilterCallback(datum: DatumExtract) =&gt; boolean</code></p>
+</div></div>
+
+<div class="def-card" id="SortCallback">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">SortCallback</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Sorts extracted data items.</p>
+<p><code>SortCallback(a: DatumExtract, b: DatumExtract) =&gt; number</code></p>
+</div></div>
+
+<div class="def-card" id="StackKeyCallback">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">StackKeyCallback</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Returns the stack key for a data item.</p>
+<p><code>StackKeyCallback(datum: DatumExtract) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="StackValueCallback">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">StackValueCallback</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Returns the stack value for a data item.</p>
+<p><code>StackValueCallback(datum: DatumExtract) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="FilterFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">FilterFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Filters a data cell value.</p>
+<p><code>FilterFn(cell: any) =&gt; boolean</code></p>
+</div></div>
+
+<div class="def-card" id="LabelFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">LabelFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Returns a label string for a data cell.</p>
+<p><code>LabelFn(cell: any) =&gt; string</code></p>
+</div></div>
+
+<div class="def-card" id="ValueFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ValueFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Returns a value for a data cell.</p>
+<p><code>ValueFn(cell: any) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="TrackByFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">TrackByFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Returns a unique identity for a data cell, used for tracking across updates.</p>
+<p><code>TrackByFn(cell: any) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="ReduceFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ReduceFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Reduces an array of values to a single value.</p>
+<p><code>ReduceFn(values: Array&lt;any&gt;) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="ReduceLabelFn">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ReduceLabelFn</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Reduces an array of labels to a single label string.</p>
+<p><code>ReduceLabelFn(labels: Array&lt;any&gt;, value: any) =&gt; string</code></p>
+</div></div>
+
+<h2 id="scales">Scales</h2>
+<div class="def-card" id="Scale">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Scale</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Base scale interface.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Scale type identifier</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleDefinition">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleDefinition</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Base scale configuration object.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td>&mdash;</td><td>Scale type identifier</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>DataExtraction | DataFieldExtraction</td><td>&mdash;</td><td>Data extraction configuration</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleBand">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleBand</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Band (ordinal) scale for discrete data.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td><code class="default-val">band</code></td><td>Scale type</td></tr>
+<tr><td><code class="prop-name">padding</code></td><td>number</td><td><code class="default-val">0</code></td><td>Padding between bands (0&ndash;1)</td></tr>
+<tr><td><code class="prop-name">paddingInner</code></td><td>number</td><td><code class="default-val">0</code></td><td>Inner padding between bands</td></tr>
+<tr><td><code class="prop-name">paddingOuter</code></td><td>number</td><td><code class="default-val">0</code></td><td>Outer padding at edges</td></tr>
+<tr><td><code class="prop-name">align</code></td><td>number</td><td><code class="default-val">0.5</code></td><td>Alignment within range (0&ndash;1)</td></tr>
+<tr><td><code class="prop-name">invert</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Invert the scale direction</td></tr>
+<tr><td><code class="prop-name">maxPxStep</code></td><td>number</td><td>&mdash;</td><td>Maximum pixel step size</td></tr>
+<tr><td><code class="prop-name">label</code></td><td>function</td><td>&mdash;</td><td>Label accessor function</td></tr>
+<tr><td><code class="prop-name">value</code></td><td>function</td><td>&mdash;</td><td>Value accessor function</td></tr>
+<tr><td><code class="prop-name">range</code></td><td>Array</td><td><code class="default-val">[0, 1]</code></td><td>Output range</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleLinear">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleLinear</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Linear (continuous) scale for numeric data.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td><code class="default-val">linear</code></td><td>Scale type</td></tr>
+<tr><td><code class="prop-name">expand</code></td><td>number</td><td>&mdash;</td><td>Expand the domain by a factor</td></tr>
+<tr><td><code class="prop-name">invert</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Invert the scale direction</td></tr>
+<tr><td><code class="prop-name">include</code></td><td>Array&lt;number&gt;</td><td>&mdash;</td><td>Values to include in domain</td></tr>
+<tr><td><code class="prop-name">min</code></td><td>number</td><td>&mdash;</td><td>Minimum domain value</td></tr>
+<tr><td><code class="prop-name">max</code></td><td>number</td><td>&mdash;</td><td>Maximum domain value</td></tr>
+<tr><td><code class="prop-name">ticks</code></td><td>object</td><td>&mdash;</td><td>Tick config: <code>{ tight (false), forceBounds (false), distance (100), values, count }</code></td></tr>
+<tr><td><code class="prop-name">minorTicks</code></td><td>object</td><td>&mdash;</td><td>Minor ticks: <code>{ count (3) }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleCategoricalColor">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleCategoricalColor</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Categorical color scale.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td><code class="default-val">categorical-color</code></td><td>Scale type</td></tr>
+<tr><td><code class="prop-name">range</code></td><td>Array&lt;string&gt;</td><td><code class="default-val">false</code></td><td>Color range (palette)</td></tr>
+<tr><td><code class="prop-name">unknown</code></td><td>string</td><td>&mdash;</td><td>Color for unmapped values</td></tr>
+<tr><td><code class="prop-name">explicit</code></td><td>object</td><td>&mdash;</td><td>Explicit mapping: <code>{ domain: [], range: [] }</code></td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleSequentialColor">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleSequentialColor</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Sequential color scale.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td><code class="default-val">sequential-color</code></td><td>Scale type</td></tr>
+<tr><td><code class="prop-name">range</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Color range (gradient stops)</td></tr>
+<tr><td><code class="prop-name">invert</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Invert the scale direction</td></tr>
+<tr><td><code class="prop-name">min</code></td><td>number</td><td>&mdash;</td><td>Minimum domain value</td></tr>
+<tr><td><code class="prop-name">max</code></td><td>number</td><td>&mdash;</td><td>Maximum domain value</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ScaleThresholdColor">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ScaleThresholdColor</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Threshold color scale.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td><code class="default-val">threshold-color</code></td><td>Scale type</td></tr>
+<tr><td><code class="prop-name">domain</code></td><td>Array&lt;number&gt;</td><td>&mdash;</td><td>Threshold values</td></tr>
+<tr><td><code class="prop-name">range</code></td><td>Array&lt;string&gt;</td><td>&mdash;</td><td>Color for each bucket</td></tr>
+<tr><td><code class="prop-name">invert</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Invert the scale direction</td></tr>
+<tr><td><code class="prop-name">min</code></td><td>number</td><td>&mdash;</td><td>Minimum domain value</td></tr>
+<tr><td><code class="prop-name">max</code></td><td>number</td><td>&mdash;</td><td>Maximum domain value</td></tr>
+<tr><td><code class="prop-name">nice</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Round domain to nice values</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="renderer">Renderer</h2>
+<div class="def-card" id="Renderer">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Renderer</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Renderer interface for SVG and Canvas backends.</p>
+<h3 class="section-label">Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">appendTo(element)</code></td><td><span class="return-type">HTMLElement</span></td><td>Append renderer to a DOM element</td></tr>
+<tr><td><code class="method-name">clear()</code></td><td><span class="return-type">Renderer</span></td><td>Clear all rendered content</td></tr>
+<tr><td><code class="method-name">destory()</code></td><td>&mdash;</td><td>Destroy the renderer</td></tr>
+<tr><td><code class="method-name">element()</code></td><td><span class="return-type">HTMLElement</span></td><td>Get the root DOM element</td></tr>
+<tr><td><code class="method-name">findShapes(selector)</code></td><td><span class="return-type">Array&lt;SceneNode&gt;</span></td><td>Find shapes matching a selector</td></tr>
+<tr><td><code class="method-name">itemsAt(geometry)</code></td><td><span class="return-type">Array&lt;SceneNode&gt;</span></td><td>Get shapes at geometry (Point | Circle | Rect | Line | Polygon | Geopolygon)</td></tr>
+<tr><td><code class="method-name">measureText({text, fontSize, fontFamily})</code></td><td><span class="return-type">{width, height}</span></td><td>Measure text dimensions</td></tr>
+<tr><td><code class="method-name">render(nodes)</code></td><td><span class="return-type">boolean</span></td><td>Render an array of scene nodes</td></tr>
+<tr><td><code class="method-name">root()</code></td><td><span class="return-type">HTMLElement</span></td><td>Get the root element</td></tr>
+<tr><td><code class="method-name">settings(settings?)</code></td><td>&mdash;</td><td>Get or update renderer settings</td></tr>
+<tr><td><code class="method-name">size(opts?)</code></td><td><span class="return-type">SizeDefinition</span></td><td>Get or set the renderer size</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="canvasRendererFactory">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">canvasRendererFactory</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Factory function that creates a Canvas-based renderer.</p>
+<p><code>canvasRendererFactory(sceneFn: function) =&gt; Renderer</code></p>
+</div></div>
+
+<div class="def-card" id="svgRendererFactory">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">svgRendererFactory</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Factory function that creates an SVG-based renderer.</p>
+<p><code>svgRendererFactory(treeFactory: function, ns: string, sceneFn: function) =&gt; Renderer</code></p>
+</div></div>
+
+<div class="def-card" id="RendererSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">RendererSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Renderer-specific settings. <em>Experimental</em>.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">transform</code></td><td>TransformFunction</td><td>&mdash;</td><td>Transform function for coordinate mapping</td></tr>
+<tr><td><code class="prop-name">canvasBufferSize</code></td><td>CanvasBufferSize</td><td>&mdash;</td><td>Canvas buffer size configuration</td></tr>
+<tr><td><code class="prop-name">progressive</code></td><td>ProgressiveObject</td><td>&mdash;</td><td>Progressive rendering config</td></tr>
+<tr><td><code class="prop-name">disableScreenReader</code></td><td>boolean</td><td><code class="default-val">false</code></td><td>Disable screen reader support</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ProgressiveObject">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ProgressiveObject</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Progressive rendering configuration. <em>Experimental</em>.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">start</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Start index for progressive rendering</td></tr>
+<tr><td><code class="prop-name">end</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>End index for progressive rendering</td></tr>
+<tr><td><code class="prop-name">isFirst</code> <span class="required">required</span></td><td>boolean</td><td>&mdash;</td><td>Whether this is the first chunk</td></tr>
+<tr><td><code class="prop-name">isLast</code> <span class="required">required</span></td><td>boolean</td><td>&mdash;</td><td>Whether this is the last chunk</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="TransformObject">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">TransformObject</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>2D affine transform matrix values.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">horizontalScaling</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Horizontal scale factor</td></tr>
+<tr><td><code class="prop-name">horizontalSkewing</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Horizontal skew factor</td></tr>
+<tr><td><code class="prop-name">verticalSkewing</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Vertical skew factor</td></tr>
+<tr><td><code class="prop-name">verticalScaling</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Vertical scale factor</td></tr>
+<tr><td><code class="prop-name">horizontalMoving</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Horizontal translation</td></tr>
+<tr><td><code class="prop-name">verticalMoving</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Vertical translation</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="scene">Scene</h2>
+<div class="def-card" id="SceneNode">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">SceneNode</span><span class="badge badge-cls">class</span></div>
+<div class="def-body">
+<p>A node in the scene graph with geometry, styling, and hierarchy.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">attrs</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Visual attributes</td></tr>
+<tr><td><code class="prop-name">bounds</code> <span class="required">required</span></td><td>Rect</td><td>&mdash;</td><td>Bounding rectangle</td></tr>
+<tr><td><code class="prop-name">children</code> <span class="required">required</span></td><td>Array&lt;SceneNode&gt;</td><td>&mdash;</td><td>Child scene nodes</td></tr>
+<tr><td><code class="prop-name">collider</code> <span class="required">required</span></td><td>Line | Rect | Circle | Path</td><td>&mdash;</td><td>Collision geometry</td></tr>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>any</td><td>&mdash;</td><td>Bound data</td></tr>
+<tr><td><code class="prop-name">desc</code> <span class="required">required</span></td><td>object</td><td>&mdash;</td><td>Description metadata</td></tr>
+<tr><td><code class="prop-name">element</code> <span class="required">required</span></td><td>HTMLElement</td><td>&mdash;</td><td>Associated DOM element</td></tr>
+<tr><td><code class="prop-name">key</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Unique node key</td></tr>
+<tr><td><code class="prop-name">localBounds</code> <span class="required">required</span></td><td>Rect</td><td>&mdash;</td><td>Local-space bounding rect</td></tr>
+<tr><td><code class="prop-name">parent</code> <span class="required">required</span></td><td>SceneNode</td><td>&mdash;</td><td>Parent scene node</td></tr>
+<tr><td><code class="prop-name">tag</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Tag name (e.g. "rect", "circle")</td></tr>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Node type</td></tr>
+</tbody></table>
+<h3 class="section-label">Methods</h3>
+<table><thead><tr><th>Method</th><th>Returns</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">boundsRelativeTo(target, includeTransform?)</code></td><td><span class="return-type">Rect</span></td><td>Get bounds relative to target. <code>includeTransform</code> defaults to <code>true</code></td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="geometry">Geometry</h2>
+<div class="def-card" id="Point">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Point</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">x</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>X coordinate</td></tr>
+<tr><td><code class="prop-name">y</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Y coordinate</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Rect">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Rect</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">x</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>X coordinate of top-left</td></tr>
+<tr><td><code class="prop-name">y</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Y coordinate of top-left</td></tr>
+<tr><td><code class="prop-name">width</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Rectangle width</td></tr>
+<tr><td><code class="prop-name">height</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Rectangle height</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Line">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Line</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">x1</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Start X coordinate</td></tr>
+<tr><td><code class="prop-name">y1</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Start Y coordinate</td></tr>
+<tr><td><code class="prop-name">x2</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>End X coordinate</td></tr>
+<tr><td><code class="prop-name">y2</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>End Y coordinate</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Circle">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Circle</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">cx</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Center X coordinate</td></tr>
+<tr><td><code class="prop-name">cy</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Center Y coordinate</td></tr>
+<tr><td><code class="prop-name">r</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Radius</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Path">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Path</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">d</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>SVG path data string</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Polygon">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Polygon</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">points</code> <span class="required">required</span></td><td>Array&lt;Point&gt;</td><td>&mdash;</td><td>Array of vertex points</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Polyline">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Polyline</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">points</code> <span class="required">required</span></td><td>Array&lt;Point&gt;</td><td>&mdash;</td><td>Array of vertex points</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="Geopolygon">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Geopolygon</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">polygons</code> <span class="required">required</span></td><td>Array&lt;Polygon&gt;</td><td>&mdash;</td><td>Array of polygon rings</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="ArcSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">ArcSettings</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Arc rendering settings for radial axes.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">startAngle</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Start angle in radians</td></tr>
+<tr><td><code class="prop-name">endAngle</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>End angle in radians</td></tr>
+<tr><td><code class="prop-name">radius</code> <span class="required">required</span></td><td>number</td><td>&mdash;</td><td>Arc radius</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="interaction">Interaction</h2>
+<div class="def-card" id="Interaction">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Interaction</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Interaction instance with lifecycle management.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">on</code> <span class="required">required</span></td><td>function</td><td>&mdash;</td><td>Enable the interaction</td></tr>
+<tr><td><code class="prop-name">off</code> <span class="required">required</span></td><td>function</td><td>&mdash;</td><td>Disable the interaction</td></tr>
+<tr><td><code class="prop-name">destroy</code> <span class="required">required</span></td><td>function</td><td>&mdash;</td><td>Destroy the interaction</td></tr>
+<tr><td><code class="prop-name">key</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Interaction key identifier</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="InteractionSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">InteractionSettings</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Configuration for a chart interaction.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">type</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Interaction type identifier</td></tr>
+<tr><td><code class="prop-name">key</code></td><td>string</td><td>&mdash;</td><td>Unique interaction key</td></tr>
+<tr><td><code class="prop-name">enable</code> <span class="required">required</span></td><td>function | boolean</td><td>&mdash;</td><td>Enable condition</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="CollectionSettings">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">CollectionSettings</span><span class="badge badge-if">interface</span></div>
+<div class="def-body">
+<p>Configuration for a data collection.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">key</code> <span class="required">required</span></td><td>string</td><td>&mdash;</td><td>Collection key</td></tr>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>DataExtraction</td><td>&mdash;</td><td>Data extraction configuration</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="formatter">Formatter</h2>
+<div class="def-card" id="formatter">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">formatter</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Formatter function that transforms values for display.</p>
+<p><code>formatter(value) =&gt; any</code></p>
+</div></div>
+
+<div class="def-card" id="FormatterDefinition">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">FormatterDefinition</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Configuration for defining a formatter.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">formatter</code></td><td>string</td><td>&mdash;</td><td>Formatter reference or function</td></tr>
+<tr><td><code class="prop-name">type</code></td><td>string</td><td>&mdash;</td><td>Formatter type</td></tr>
+<tr><td><code class="prop-name">format</code></td><td>string</td><td>&mdash;</td><td>Format string</td></tr>
+<tr><td><code class="prop-name">data</code></td><td>DataExtraction | DataFieldExtraction</td><td>&mdash;</td><td>Data extraction for formatter</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="registry">Registry</h2>
+<div class="def-card" id="Registries">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Registries</span><span class="badge badge-obj">object</span></div>
+<div class="def-body">
+<p>Collection of all picasso.js registries.</p>
+<table><thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="prop-name">component</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Component registry</td></tr>
+<tr><td><code class="prop-name">data</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Data registry</td></tr>
+<tr><td><code class="prop-name">formatter</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Formatter registry</td></tr>
+<tr><td><code class="prop-name">interaction</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Interaction registry</td></tr>
+<tr><td><code class="prop-name">renderer</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Renderer registry</td></tr>
+<tr><td><code class="prop-name">scale</code> <span class="required">required</span></td><td>registry</td><td>&mdash;</td><td>Scale registry</td></tr>
+</tbody></table>
+</div></div>
+
+<div class="def-card" id="registry">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">registry</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Registry function for registering and retrieving types.</p>
+<p><code>registry(key: string, value: any) =&gt; any</code></p>
+</div></div>
+
+<h2 id="lifecycle">Lifecycle</h2>
+<div class="callout"><span class="ico">hooks</span><div>Lifecycle hooks are callback functions that execute at specific points during the chart rendering pipeline. They can be defined on <code>ChartDefinition</code> or <code>ComponentSettings</code>.</div></div>
+<div class="def-card" id="Lifecycle">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">Lifecycle Hooks</span><span class="badge badge-fn">functions</span></div>
+<div class="def-body">
+<table><thead><tr><th>Hook</th><th>Params</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code class="method-name">beforeDestroy</code></td><td>&mdash;</td><td>Called before the chart/component is destroyed</td></tr>
+<tr><td><code class="method-name">beforeMount</code></td><td>&mdash;</td><td>Called before mounting to the DOM</td></tr>
+<tr><td><code class="method-name">beforeRender</code></td><td>&mdash;</td><td>Called before each render cycle</td></tr>
+<tr><td><code class="method-name">beforeUpdate</code></td><td>&mdash;</td><td>Called before updating the chart/component</td></tr>
+<tr><td><code class="method-name">created</code></td><td>&mdash;</td><td>Called after the chart/component is created</td></tr>
+<tr><td><code class="method-name">destroyed</code></td><td>&mdash;</td><td>Called after the chart/component is destroyed</td></tr>
+<tr><td><code class="method-name">mounted</code></td><td><code>element</code>: HTMLElement</td><td>Called after mounting to the DOM</td></tr>
+<tr><td><code class="method-name">updated</code></td><td>&mdash;</td><td>Called after the chart/component is updated</td></tr>
+</tbody></table>
+</div></div>
+
+<h2 id="plugin">Plugin</h2>
+<div class="def-card" id="plugin">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">plugin</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Plugin function for extending picasso.js functionality.</p>
+<p><code>plugin(registries: Registries, options: object)</code></p>
+</div></div>
+
+<div class="def-card" id="customLayoutFunction">
+<div class="def-header" onclick="toggleCard(this)"><span class="name">customLayoutFunction</span><span class="badge badge-fn">function</span></div>
+<div class="def-body">
+<p>Custom layout function for component positioning.</p>
+<p><code>customLayoutFunction(rect: Rect, components: Array&lt;object&gt;)</code></p>
+</div></div>
+</main></div>
+
+<script>
+function toggleCard(header) {
+  var body = header.nextElementSibling;
+  if (body) {
+    var isHidden = body.style.display === 'none';
+    body.style.display = isHidden ? '' : 'none';
+  }
+}
+
+(function() {
+  var input = document.getElementById('search');
+  var suggest = document.getElementById('suggest');
+  var navLinks = document.querySelectorAll('#nav-list a');
+  var activeIdx = -1;
+
+  var items = [];
+  navLinks.forEach(function(a) {
+    var badge = '';
+    var card = document.getElementById(a.getAttribute('href').slice(1));
+    if (card) {
+      var b = card.querySelector('.badge');
+      if (b) badge = b.textContent.trim();
+    }
+    var catEl = a.previousElementSibling;
+    var cat = '';
+    while (catEl && !catEl.classList.contains('cat-header')) { catEl = catEl.previousElementSibling; }
+    if (catEl) cat = catEl.textContent.trim();
+    items.push({ name: (a.getAttribute('data-name') || a.textContent).trim(), href: a.getAttribute('href'), badge: badge, cat: cat });
+  });
+
+  function highlight(text, q) {
+    if (!q) return text;
+    var i = text.toLowerCase().indexOf(q);
+    if (i === -1) return text;
+    return text.slice(0, i) + '\u200B<mark>' + text.slice(i, i + q.length) + '</mark>' + text.slice(i + q.length);
+  }
+
+  function render(results, q) {
+    suggest.innerHTML = '';
+    if (results.length === 0) {
+      suggest.innerHTML = '<div class="sug-empty">No results found</div>';
+    } else {
+      var count = document.createElement('div');
+      count.className = 'sug-count';
+      count.textContent = results.length + ' result' + (results.length > 1 ? 's' : '');
+      suggest.appendChild(count);
+      results.forEach(function(r, i) {
+        var d = document.createElement('div');
+        d.className = 'sug-item';
+        d.setAttribute('data-idx', i);
+        d.innerHTML = '<span class="sug-name">' + highlight(r.name, q) + '</span>' +
+          (r.badge ? '<span class="sug-badge">' + r.badge + '</span>' : '') +
+          (r.cat ? '<span class="sug-cat">' + r.cat + '</span>' : '');
+        d.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          navigate(r);
+        });
+        suggest.appendChild(d);
+      });
+    }
+    activeIdx = -1;
+    suggest.classList.add('open');
+  }
+
+  function navigate(r) {
+    var el = document.getElementById(r.href.slice(1));
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      var body = el.querySelector('.def-body');
+      if (body && body.style.display === 'none') body.style.display = '';
+    }
+    suggest.classList.remove('open');
+    input.value = r.name;
+    input.blur();
+  }
+
+  function setActive(idx) {
+    var sugItems = suggest.querySelectorAll('.sug-item');
+    sugItems.forEach(function(s, i) {
+      s.classList.toggle('active', i === idx);
+    });
+    if (sugItems[idx]) sugItems[idx].scrollIntoView({ block: 'nearest' });
+    activeIdx = idx;
+  }
+
+  input.addEventListener('input', function() {
+    var q = input.value.trim().toLowerCase();
+    if (!q) { suggest.classList.remove('open'); return; }
+    var results = items.filter(function(it) {
+      return it.name.toLowerCase().indexOf(q) !== -1;
+    });
+    render(results, q);
+  });
+
+  input.addEventListener('keydown', function(e) {
+    var sugItems = suggest.querySelectorAll('.sug-item');
+    if (!suggest.classList.contains('open') || sugItems.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      var next = activeIdx + 1;
+      if (next >= sugItems.length) next = 0;
+      setActive(next);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      var prev = activeIdx - 1;
+      if (prev < 0) prev = sugItems.length - 1;
+      setActive(prev);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIdx >= 0 && sugItems[activeIdx]) {
+        sugItems[activeIdx].dispatchEvent(new MouseEvent('mousedown'));
+      }
+    } else if (e.key === 'Escape') {
+      suggest.classList.remove('open');
+      input.blur();
+    }
+  });
+
+  input.addEventListener('focus', function() {
+    if (input.value.trim()) {
+      var q = input.value.trim().toLowerCase();
+      var results = items.filter(function(it) { return it.name.toLowerCase().indexOf(q) !== -1; });
+      render(results, q);
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!suggest.contains(e.target) && e.target !== input) {
+      suggest.classList.remove('open');
+    }
+  });
+})();
+
+var navLinks = document.querySelectorAll('nav.side a[href^="#"]');
+var sections = [];
+navLinks.forEach(function(link) {
+  var id = link.getAttribute('href').slice(1);
+  var el = document.getElementById(id);
+  if (el) sections.push({ el: el, link: link });
+});
+
+window.addEventListener('scroll', function() {
+  var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  var active = null;
+  sections.forEach(function(s) {
+    if (s.el.offsetTop - 60 <= scrollTop) active = s;
+  });
+  navLinks.forEach(function(l) { l.classList.remove('active'); });
+  if (active) active.link.classList.add('active');
+});
+
+var sel = document.getElementById('mobile-jump');
+if (sel) {
+  document.querySelectorAll('#nav-list a').forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a.getAttribute('href');
+    opt.textContent = a.getAttribute('data-name') || a.textContent;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', function() {
+    if (sel.value) {
+      var target = document.getElementById(sel.value.slice(1));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+}
+</script>
+</body>
+</html>

@@ -2,8 +2,10 @@
 	import { RefreshCw, Share, Table, Bookmark, Copy, Upload, Play, FileText, XCircle, PlusCircle, Database, ArrowLeft, Trash2, Tag } from 'lucide-svelte';
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
-	import { runPagedQuery, executeQuery, saveTableSource, saveTableLabels, getTableMeta, getAllTableMeta, type PagedQueryResult, type TableMeta, listSavedQueries, saveQuery, updateSavedQuery, deleteSavedQuery as deleteSavedQueryOp, type SavedQuery as SavedQueryOp, extractErrorMessage } from '$lib/db-operations';
+	import { runPagedQuery, executeQuery, saveTableSource, saveTableLabels, getTableMeta, getAllTableMeta, type PagedQueryResult, type TableMeta, listSavedQueries, saveQuery, updateSavedQuery, deleteSavedQuery as deleteSavedQueryOp, type SavedQuery as SavedQueryOp, extractErrorMessage, listFieldFunctions, type FieldFunction, type ColumnInfo } from '$lib/db-operations';
+	import { generateFunctionSQL } from '$lib/field-functions/library';
 	import TagInput from '$lib/components/TagInput.svelte';
+	import ColumnFunctionDrawer from '$lib/components/ColumnFunctionDrawer.svelte';
 	import { onMount } from 'svelte';
 
 	interface SavedQuery {
@@ -48,6 +50,14 @@
 	let selectedTableName = $state<string | null>(null);
 	let tableMetas = $state<TableMeta[]>([]);
 	let isLoadingMetas = $state(false);
+
+	let fieldFunctions = $state<FieldFunction[]>([]);
+	let showColumnDrawer = $state(false);
+	let drawerColumnName = $state('');
+	let drawerColumnType = $state('');
+	let drawerActiveFns = $state<string[]>([]);
+	let drawerSourceTable = $state('');
+	let columnTypesMap = $state<Map<string, ColumnInfo[]>>(new Map());
 
 	let savedQueries = $state<SavedQuery[]>([]);
 	let showSavedQueriesModal = $state(false);
@@ -237,6 +247,7 @@
 		selectedTableName = tableName;
 		try {
 			const meta = await getTableMeta(tableName);
+			columnTypesMap.set(tableName, meta.columns);
 			const columnList = meta.columns.map(c => `  "${c.name}"`).join(',\n');
 			const query = `-- ${meta.columnCount} columns, ${meta.rowCount.toLocaleString()} rows\nSELECT\n${columnList}\nFROM "${tableName}"\nLIMIT 100;`;
 			updateTab({ query, name: `${tableName}.sql` });
@@ -245,6 +256,134 @@
 			updateTab({ query, name: `${tableName}.sql` });
 		}
 		handleRunQuery();
+	}
+
+	function handleColumnDrawerClose() {
+		showColumnDrawer = false;
+		drawerColumnName = '';
+	}
+
+	async function handleColumnClick(colName: string) {
+		if (fieldFunctions.length === 0) {
+			try { fieldFunctions = await listFieldFunctions(); } catch {}
+		}
+
+		let colType = '';
+		let sourceTable = '';
+		for (const [table, cols] of columnTypesMap) {
+			const found = cols.find(c => c.name === colName);
+			if (found) {
+				colType = found.type;
+				sourceTable = table;
+				break;
+			}
+		}
+		if (!colType) {
+			colType = 'VARCHAR';
+		}
+
+		drawerColumnName = colName;
+		drawerColumnType = colType;
+		drawerSourceTable = sourceTable;
+
+		const sql = activeTab.query;
+		const activeIds = getActiveFunctionIds(sql, colName);
+		drawerActiveFns = activeIds;
+
+		showColumnDrawer = true;
+	}
+
+	function getActiveFunctionIds(sql: string, colName: string): string[] {
+		const ids: string[] = [];
+		for (const fn of fieldFunctions) {
+			const alias = `"${colName}_${fn.id}"`;
+			if (sql.includes(alias)) {
+				ids.push(fn.id);
+			}
+		}
+		return ids;
+	}
+
+	function handleFunctionApply(functionIds: string[]) {
+		let sql = activeTab.query;
+		const colName = drawerColumnName;
+
+		for (const fn of fieldFunctions) {
+			const aliasQuoted = `"${colName}_${fn.id}"`;
+			const expr = generateFunctionSQL(fn, colName, `${colName}_${fn.id}`);
+			const wasActive = sql.includes(aliasQuoted);
+			const wantsActive = functionIds.includes(fn.id);
+
+			if (wantsActive && !wasActive) {
+				sql = injectExpression(sql, colName, expr);
+			} else if (!wantsActive && wasActive) {
+				sql = removeExpression(sql, aliasQuoted);
+			}
+		}
+
+		sql = cleanSelectTrailingCommas(sql);
+		updateTab({ query: sql });
+	}
+
+	function injectExpression(sql: string, colName: string, expr: string): string {
+		const lines = sql.split('\n');
+		const quotedCol = `"${colName}"`;
+
+		for (let i = 0; i < lines.length; i++) {
+			if (lines[i].includes(quotedCol)) {
+				lines.splice(i + 1, 0, `  ${expr}`);
+				return lines.join('\n');
+			}
+		}
+
+		for (let i = 0; i < lines.length; i++) {
+			if (/^\s*SELECT\s*$/i.test(lines[i])) {
+				lines.splice(i + 1, 0, `  ${expr}`);
+				return lines.join('\n');
+			}
+		}
+
+		return sql.replace(/SELECT\s+/i, `SELECT\n  ${expr}\n`);
+	}
+
+	function removeExpression(sql: string, aliasQuoted: string): string {
+		const lines = sql.split('\n');
+		const filtered = lines.filter((line) => !line.includes(aliasQuoted));
+		return filtered.join('\n');
+	}
+
+	function cleanSelectTrailingCommas(sql: string): string {
+		const lines = sql.split('\n');
+		let inSelect = false;
+		const selectItems: { idx: number; line: string }[] = [];
+
+		for (let i = 0; i < lines.length; i++) {
+			const trimmed = lines[i].trim();
+			if (/^\s*SELECT\s*$/i.test(lines[i])) {
+				inSelect = true;
+				continue;
+			}
+			if (inSelect && /^\s*FROM\s+/i.test(lines[i])) {
+				inSelect = false;
+				break;
+			}
+			if (inSelect && trimmed) {
+				selectItems.push({ idx: i, line: lines[i] });
+			}
+		}
+
+		for (let j = 0; j < selectItems.length; j++) {
+			const { idx, line } = selectItems[j];
+			const trimmed = line.trimEnd();
+			const isLast = j === selectItems.length - 1;
+			if (isLast && trimmed.endsWith(',')) {
+				lines[idx] = trimmed.slice(0, -1);
+			} else if (!isLast && !trimmed.endsWith(',')) {
+				lines[idx] = trimmed + ',';
+			}
+		}
+
+		return lines.join('\n');
 	}
 
 	async function loadSavedQueries() {
@@ -461,6 +600,10 @@
 
 	onMount(() => {
 		(async () => {
+			try {
+				fieldFunctions = await listFieldFunctions();
+			} catch {}
+
 			if (app.pendingBatchIngest) {
 				const batch = app.pendingBatchIngest;
 				app.pendingBatchIngest = null;
@@ -759,7 +902,7 @@
 								<thead>
 									<tr>
 										{#each activeTab.result.columns as col}
-											<th>{col}</th>
+											<th class="col-header-clickable" onclick={() => handleColumnClick(col)} title="Add function to {col}">{col}</th>
 										{/each}
 									</tr>
 								</thead>
@@ -992,6 +1135,18 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+<!-- Column Function Drawer -->
+{#if showColumnDrawer}
+	<ColumnFunctionDrawer
+		columnName={drawerColumnName}
+		columnType={drawerColumnType}
+		fieldFunctions={fieldFunctions}
+		activeFunctions={drawerActiveFns}
+		onclose={handleColumnDrawerClose}
+		onapply={handleFunctionApply}
+	/>
 {/if}
 
 <!-- Ingest as Table Modal -->
@@ -1917,5 +2072,13 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	:global(.data-table th) {
+		cursor: pointer;
+		user-select: none;
+	}
+
+	:global(.data-table th:hover) {
+		background: var(--color-surface-sunken);
 	}
 </style>

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BarChart2, Palette, Sparkles, Layers, FlaskConical, PieChart } from 'lucide-svelte';
+	import { Grid3x3, BarChart3 } from 'lucide-svelte';
 </script>
 
 <svelte:head>
@@ -9,82 +9,33 @@
 <div class="labs-page">
 	<div class="section-header">
 		<span class="section-number">LABS</span>
-		<h1 class="section-title">Experiments</h1>
+		<h1 class="section-title">Chart types</h1>
 	</div>
 
 	<p class="section-subtitle">
-		Chart rendering engines under evaluation. Each library has different strengths — try all three and compare.
+		One card per chart type we are building here, each with its own playground. Heatmap first.
 	</p>
 
 	<div class="labs-grid">
-		<a href="/labs/picasso-charts" class="lab-card">
+		<a href="/labs/heatmap" class="lab-card">
 			<div class="lab-icon">
-				<FlaskConical size={18} />
+				<Grid3x3 size={18} />
 			</div>
 			<div class="lab-info">
-				<span class="lab-title">Picasso Charts</span>
-				<span class="lab-desc">Canvas-based charting by Qlik. Declarative component model with built-in brushing, interactions, and SQL-driven live data — renders to `<canvas>`.</span>
+				<span class="lab-title">Heatmap</span>
+				<span class="lab-desc">Threshold-colored grid with in-cell labels, hover tooltips, click-to-select and no-data cells. Built on svelteplot.</span>
 			</div>
 		</a>
 
-		<a href="/labs/observable-charts" class="lab-card">
+		<a href="/labs/bar-chart" class="lab-card">
 			<div class="lab-icon">
-				<FlaskConical size={18} />
+				<BarChart3 size={18} />
 			</div>
 			<div class="lab-info">
-				<span class="lab-title">Observable Charts</span>
-				<span class="lab-desc">Grammar-of-graphics charting by Observable. Renders SVG with concise Plot API, faceting, and mark composition — a battle-tested standard for exploratory data visualization.</span>
+				<span class="lab-title">Bar chart</span>
+				<span class="lab-desc">Aggregation via buildBars (top N + Other), svelteplot BarY rendering, hover tooltip, click-to-select. First chart on the shared fundament.</span>
 			</div>
 		</a>
-
-		<a href="/labs/svelteplot-charts" class="lab-card">
-			<div class="lab-icon">
-				<Sparkles size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">SveltePlot</span>
-				<span class="lab-desc">Svelte-native wrapper around Observable Plot. Renders SVG with idiomatic Svelte components, linked interactions, and first-class reactivity — no canvas layer.</span>
-			</div>
-		</a>
-
-		<a href="/labs/chart-lib" class="lab-card">
-			<div class="lab-icon">
-				<Layers size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">LayerChart</span>
-				<span class="lab-desc">Layered grammar-of-graphics for Svelte. Composable marks, scales, and axes that compile to SVG — built on top of D3 with full Svelte reactivity.</span>
-			</div>
-		</a>
-
-		<a href="/labs/unovis-charts" class="lab-card">
-			<div class="lab-icon">
-				<FlaskConical size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">Unovis</span>
-				<span class="lab-desc">Framework-independent visualization by F5. SVG bar charts with built-in tooltip, bullet legend, and click-to-filter interactions powered by @unovis/ts.</span>
-			</div>
-		</a>
-
-		<a href="/labs/echarts-charts" class="lab-card">
-			<div class="lab-icon">
-				<PieChart size={18} />
-			</div>
-			<div class="lab-info">
-				<span class="lab-title">Apache ECharts</span>
-				<span class="lab-desc">Production-grade Canvas/SVG charting by Apache. Rich interactivity, built-in tooltip, zoom, and click-to-filter with bar dimming powered by echarts.</span>
-			</div>
-		</a>
-	</div>
-
-	<div class="showcase-section">
-		<a href="/labs/charts" class="showcase-link">
-			<BarChart2 size={16} />
-			<span>View chart type showcase</span>
-			<span class="showcase-arrow">&rarr;</span>
-		</a>
-		<span class="showcase-hint">All chart types we are building across the three libraries</span>
 	</div>
 </div>
 
@@ -189,47 +140,5 @@
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
-	}
-
-	.showcase-section {
-		margin-top: var(--space-4);
-		padding-top: var(--space-4);
-		border-top: 1px dashed var(--color-border);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
-	.showcase-link {
-		display: inline-flex;
-		align-items: center;
-		gap: var(--space-2);
-		font-family: var(--font-display);
-		font-size: var(--text-sm);
-		font-weight: 600;
-		color: var(--color-text);
-		text-decoration: none;
-		transition: color var(--duration-fast) ease;
-	}
-
-	.showcase-link:hover {
-		color: var(--color-accent);
-	}
-
-	.showcase-arrow {
-		color: var(--color-text-tertiary);
-		transition: transform var(--duration-fast) ease;
-	}
-
-	.showcase-link:hover .showcase-arrow {
-		transform: translateX(2px);
-	}
-
-	.showcase-hint {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		color: var(--color-text-tertiary);
-		letter-spacing: 0.02em;
-		padding-left: var(--space-6);
 	}
 </style>

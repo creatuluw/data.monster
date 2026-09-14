@@ -1,0 +1,1 @@
+in /labs we have a chart example with layerchart, now i want you to build the example with the specs in @.specs\chart-lib/ but now use https://svelteplot.dev/examples/bar/linked-bars notes: https://svelteplot.dev/getting-started#Use-SveltePlot-in-Svelte-5, https://svelteplot.dev/examples and then add this chart to /labs/svelteplot-charts/ and add a link to the /labs page as well

@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-line-chart",
+  "main": "9709cf4637c4e7fd@192.js",
+  "version": "192.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-line-chart",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

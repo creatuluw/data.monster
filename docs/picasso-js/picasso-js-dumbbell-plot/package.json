@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-dumbbell-plot",
+  "main": "1e49f00a7e40d49c@89.js",
+  "version": "89.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-dumbbell-plot",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

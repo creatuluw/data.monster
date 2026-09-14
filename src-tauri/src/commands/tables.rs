@@ -7,24 +7,28 @@ use crate::utils::metadata_helpers::{get_table_source_row, register_table_metada
 #[tauri::command]
 pub fn list_tables(state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
     eprintln!("[tables] Listing");
-    let state_conn = state.conn.lock();
-    let conn = state_conn
-        .as_ref()
-        .ok_or("DuckDB not initialized")?;
+    let table_names: Vec<String> = {
+        let state_conn = state.conn.lock();
+        let conn = state_conn
+            .as_ref()
+            .ok_or("DuckDB not initialized")?;
 
-    let mut stmt = conn
-        .prepare(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' ORDER BY table_name",
-        )
-        .map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' AND table_name NOT LIKE '%__base' ORDER BY table_name",
+            )
+            .map_err(|e| e.to_string())?;
 
-    let tables: Vec<serde_json::Value> = stmt
-        .query_map([], |row| {
-            let name: String = row.get(0)?;
-            Ok(json!({ "name": name }))
-        })
-        .map_err(|e| e.to_string())?
-        .filter_map(|r| r.ok())
+        stmt
+            .query_map([], |row| row.get::<_, String>(0))
+            .map_err(|e| e.to_string())?
+            .filter_map(|r| r.ok())
+            .collect()
+    };
+
+    let tables: Vec<serde_json::Value> = table_names
+        .into_iter()
+        .map(|name| json!({ "name": name }))
         .collect();
 
     Ok(json!({ "tables": tables }))
@@ -46,7 +50,7 @@ pub fn drop_table(table_name: String, state: State<'_, DuckDbState>) -> Result<(
 
     conn.execute(
         "DELETE FROM d8a_monster_table_labels WHERE table_name = ?",
-        [&table_name],
+        duckdb::params![&table_name],
     )
     .map_err(|e| format!("Failed to remove labels: {}", e))?;
 
@@ -228,7 +232,7 @@ fn determine_table_type(source_type: &Option<String>) -> String {
 #[cfg(test)]
 mod tests {
     use crate::commands::database::initialize_schema;
-use crate::utils::metadata_helpers::{get_table_source_row, register_table_metadata, remove_table_metadata, rename_table_metadata};
+    use crate::utils::metadata_helpers::{register_table_metadata, remove_table_metadata, rename_table_metadata};
     use duckdb::Connection;
 
     fn setup() -> Connection {
@@ -240,7 +244,7 @@ use crate::utils::metadata_helpers::{get_table_source_row, register_table_metada
     fn list_user_tables(conn: &Connection) -> Vec<String> {
         let mut stmt = conn
             .prepare(
-                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' ORDER BY table_name",
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'main' AND table_name NOT LIKE 'd8a_monster_%' AND table_name NOT LIKE '%__base' ORDER BY table_name",
             )
             .unwrap();
         stmt.query_map([], |row| row.get::<_, String>(0))

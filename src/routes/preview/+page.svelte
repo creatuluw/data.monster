@@ -303,4 +303,5 @@
 	.spinner-icon {
 		animation: spin 1s linear infinite;
 	}
+
 </style>

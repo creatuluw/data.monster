@@ -1,0 +1,78 @@
+{
+  "categories": [
+    {
+      "id": "exploration",
+      "name": "Exploration & Planning",
+      "templates": [
+        { "id": "01", "slug": "code-approaches", "file": "01-exploration-code-approaches.html", "description": "Side-by-side comparison of approaches with trade-offs" },
+        { "id": "02", "slug": "visual-designs", "file": "02-exploration-visual-designs.html", "description": "Visual direction exploration with live renders" },
+        { "id": "16", "slug": "implementation-plan", "file": "16-implementation-plan.html", "description": "Milestones, data-flow diagram, mockups, risk table" }
+      ]
+    },
+    {
+      "id": "code-review",
+      "name": "Code Review & Understanding",
+      "templates": [
+        { "id": "03", "slug": "pr-annotated", "file": "03-code-review-pr.html", "description": "Annotated diff with margin notes and severity tags" },
+        { "id": "17", "slug": "pr-writeup", "file": "17-pr-writeup.html", "description": "PR writeup for reviewers with motivation and file tour" },
+        { "id": "04", "slug": "module-map", "file": "04-code-understanding.html", "description": "Module architecture with boxes, arrows, hot path" }
+      ]
+    },
+    {
+      "id": "design",
+      "name": "Design",
+      "templates": [
+        { "id": "05", "slug": "design-system", "file": "05-design-system.html", "description": "Design tokens as swatches: colors, type, spacing" },
+        { "id": "06", "slug": "component-variants", "file": "06-component-variants.html", "description": "Component variant matrix with interactive controls" }
+      ]
+    },
+    {
+      "id": "prototyping",
+      "name": "Prototyping",
+      "templates": [
+        { "id": "07", "slug": "animation-sandbox", "file": "07-prototype-animation.html", "description": "Animation sandbox with duration/easing sliders" },
+        { "id": "08", "slug": "clickable-flow", "file": "08-prototype-interaction.html", "description": "Clickable multi-screen interaction prototype" }
+      ]
+    },
+    {
+      "id": "diagrams",
+      "name": "Illustrations & Diagrams",
+      "templates": [
+        { "id": "10", "slug": "svg-figures", "file": "10-svg-illustrations.html", "description": "Inline SVG figure sheet with standalone download" },
+        { "id": "13", "slug": "flowchart", "file": "13-flowchart-diagram.html", "description": "Annotated clickable flowchart" }
+      ]
+    },
+    {
+      "id": "decks",
+      "name": "Decks",
+      "templates": [
+        { "id": "09", "slug": "slide-deck", "file": "09-slide-deck.html", "description": "Arrow-key navigable slide deck" }
+      ]
+    },
+    {
+      "id": "research",
+      "name": "Research & Learning",
+      "templates": [
+        { "id": "14", "slug": "feature-explainer", "file": "14-research-feature-explainer.html", "description": "Feature explainer with collapsible steps, tabs, FAQ" },
+        { "id": "15", "slug": "concept-explainer", "file": "15-research-concept-explainer.html", "description": "Concept explainer with interactive demo, comparison table, glossary" }
+      ]
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "templates": [
+        { "id": "11", "slug": "status-report", "file": "11-status-report.html", "description": "Weekly status with shipped/slipped and metrics chart" },
+        { "id": "12", "slug": "incident-report", "file": "12-incident-report.html", "description": "Incident post-mortem with timeline and action items" }
+      ]
+    },
+    {
+      "id": "editors",
+      "name": "Custom Editing Interfaces",
+      "templates": [
+        { "id": "18", "slug": "triage-board", "file": "18-editor-triage-board.html", "description": "Drag-sort triage board with markdown export" },
+        { "id": "19", "slug": "flag-editor", "file": "19-editor-feature-flags.html", "description": "Feature flag toggles with dependency warnings" },
+        { "id": "20", "slug": "prompt-tuner", "file": "20-editor-prompt-tuner.html", "description": "Editable template with live preview and slot highlighting" }
+      ]
+    }
+  ]
+}

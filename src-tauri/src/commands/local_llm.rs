@@ -21,10 +21,10 @@ pub(crate) struct LoadedModel {
 }
 
 pub struct LlmState {
-    pub backend: LlamaBackend,
-    pub loaded_model: Mutex<Option<LoadedModel>>,
-    pub download_cancel: Mutex<Option<Arc<AtomicBool>>>,
-    pub generate_cancel: Arc<AtomicBool>,
+    pub(crate) backend: LlamaBackend,
+    pub(crate) loaded_model: Mutex<Option<LoadedModel>>,
+    pub(crate) download_cancel: Mutex<Option<Arc<AtomicBool>>>,
+    pub(crate) generate_cancel: Arc<AtomicBool>,
 }
 
 unsafe impl Send for LlmState {}
@@ -569,5 +569,98 @@ fn generate_loop_inner(
 #[tauri::command]
 pub fn stop_generation(state: tauri::State<'_, LlmState>) -> Result<(), String> {
     state.generate_cancel.store(true, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn remote_chat(
+    app: tauri::AppHandle,
+    url: String,
+    api_key: String,
+    model: String,
+    messages: Vec<serde_json::Value>,
+    system_prompt: String,
+) -> Result<(), String> {
+    let state = app.state::<LlmState>();
+    state.generate_cancel.store(false, Ordering::Relaxed);
+    let cancel = state.generate_cancel.clone();
+
+    std::thread::spawn(move || {
+        if let Err(e) = remote_chat_inner(&app, &cancel, &url, &api_key, &model, &messages, &system_prompt) {
+            let _ = app.emit("local-llm:error", serde_json::json!({ "error": e }));
+        }
+    });
+    Ok(())
+}
+
+// Streams an OpenAI-compatible chat completion from Rust (webview fetch is blocked by CORS).
+fn remote_chat_inner(
+    app: &tauri::AppHandle,
+    cancel: &AtomicBool,
+    url: &str,
+    api_key: &str,
+    model: &str,
+    messages: &[serde_json::Value],
+    system_prompt: &str,
+) -> Result<(), String> {
+    let mut all = vec![serde_json::json!({ "role": "system", "content": system_prompt })];
+    all.extend_from_slice(messages);
+
+    let body = serde_json::json!({ "model": model, "messages": all, "stream": true, "temperature": 0.6, "thinking": { "type": "disabled" } });
+
+    let client = reqwest::blocking::Client::new();
+    let resp = client
+        .post(url)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("Content-Type", "application/json")
+        .body(body.to_string())
+        .send()
+        .map_err(|e| format!("API request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let text = resp.text().unwrap_or_default();
+        return Err(format!("API error {}: {}", status, text));
+    }
+
+    let mut resp = resp;
+    let mut chunk = vec![0u8; 8192];
+    let mut pending = String::new();
+
+    loop {
+        if cancel.load(Ordering::Relaxed) {
+            break;
+        }
+        let n = resp
+            .read(&mut chunk)
+            .map_err(|e| format!("Stream read failed: {}", e))?;
+        if n == 0 {
+            break;
+        }
+        pending.push_str(&String::from_utf8_lossy(&chunk[..n]));
+
+        let Some(idx) = pending.rfind('\n') else { continue; };
+        let complete: String = pending.drain(..=idx).collect();
+
+        for line in complete.split('\n') {
+            let line = line.trim();
+            if !line.starts_with("data: ") {
+                continue;
+            }
+            let data = &line[6..];
+            if data == "[DONE]" {
+                continue;
+            }
+            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(data) {
+                if let Some(delta) = parsed["choices"][0]["delta"]["content"].as_str() {
+                    if !delta.is_empty() {
+                        let _ = app.emit("local-llm:token", serde_json::json!({ "token": delta }));
+                    }
+                }
+            }
+        }
+    }
+
+    let _ = app.emit("local-llm:done", serde_json::json!({}));
     Ok(())
 }

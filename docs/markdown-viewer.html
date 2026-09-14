@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Markdown Viewer</title>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github.min.css"
+            media="all"
+            id="hljs-light"
+            disabled
+        />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark.min.css"
+            media="all"
+            id="hljs-dark"
+            disabled
+        />
+        <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/highlight.min.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@400;600;700&family=Dosis:wght@400;500;600;700&family=Figtree:wght@400;500;600;700&family=Jost:wght@400;500;600;700&family=Lexend:wght@400;500;600;700&family=Libre+Caslon+Text:wght@400;700&family=Libre+Franklin:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Overpass:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Sora:wght@400;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #ffffff;
+                --surface: #f6f8fa;
+                --surface-hover: #eaeef2;
+                --border: #d0d7de;
+                --text: #1f2328;
+                --text-secondary: #656d76;
+                --accent: #0969da;
+                --accent-hover: #0550ae;
+                --code-bg: #f6f8fa;
+                --code-text: #1f2328;
+                --pre-bg: #ffffff;
+                --quote-border: #d0d7de;
+                --quote-bg: #f6f8fa;
+                --table-stripe: #f6f8fa;
+                --link: #0969da;
+                --hr: #d8dee4;
+                --danger: #cf222e;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+            html[data-theme="dark"],
+            html[data-theme="auto"].system-dark {
+                --bg: #0d1117;
+                --surface: #161b22;
+                --surface-hover: #1c2128;
+                --border: #30363d;
+                --text: #e6edf3;
+                --text-secondary: #8b949e;
+                --accent: #58a6ff;
+                --accent-hover: #79c0ff;
+                --code-bg: #161b22;
+                --code-text: #e6edf3;
+                --pre-bg: #0d1117;
+                --quote-border: #30363d;
+                --quote-bg: #161b22;
+                --table-stripe: #161b22;
+                --link: #58a6ff;
+                --hr: #21262d;
+                --danger: #f85149;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            }
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                -webkit-text-size-adjust: 100%;
+            }
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
+                    Helvetica, Arial, sans-serif;
+                font-size: 16px;
+                line-height: 1.7;
+                color: var(--text);
+                background: var(--bg);
+                min-height: 100vh;
+            }
+
+            /* ─── Dropzone ─── */
+            .dropzone {
+                position: fixed;
+                inset: 0;
+                display: flex;
+                align-items: flex-start;
+                justify-content: center;
+                flex-direction: column;
+                gap: 24px;
+                z-index: 10;
+                padding: 0vh 32px 32px;
+            }
+            .dropzone.hidden {
+                display: none;
+            }
+            .dropzone-prompt {
+                width: 100%;
+                max-width: 480px;
+                border: 2px dashed var(--border);
+                border-radius: 12px;
+                padding: 48px 72px;
+                text-align: center;
+                color: var(--text-secondary);
+                cursor: pointer;
+                transition:
+                    border-color 0.2s,
+                    background 0.2s;
+                margin: 0 auto;
+            }
+            .dropzone-prompt:hover,
+            .dropzone-prompt.dragover {
+                border-color: var(--accent);
+                background: var(--surface);
+            }
+            .dropzone-prompt svg {
+                margin-bottom: 16px;
+                opacity: 0.5;
+            }
+            .dropzone-prompt p {
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+            .dropzone-prompt small {
+                font-size: 13px;
+                color: var(--text-secondary);
+            }
+            #fileInput {
+                display: none;
+            }
+
+            /* ─── Recent files ─── */
+            .recent-files {
+                width: 100%;
+                max-width: 480px;
+                margin: 0 auto;
+            }
+            .recent-files-title {
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--text-secondary);
+                margin-bottom: 10px;
+                padding-left: 4px;
+            }
+            .recent-list {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .recent-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background 0.15s;
+                color: var(--text);
+                font-size: 14px;
+            }
+            .recent-item:hover {
+                background: var(--surface);
+            }
+            .recent-item svg {
+                flex-shrink: 0;
+                color: var(--text-secondary);
+            }
+            .recent-item-name {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: 500;
+            }
+            .recent-item-path {
+                font-size: 12px;
+                color: var(--text-secondary);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 180px;
+            }
+            .recent-item-remove {
+                flex-shrink: 0;
+                background: none;
+                border: none;
+                color: var(--text-secondary);
+                cursor: pointer;
+                padding: 2px;
+                border-radius: 4px;
+                display: flex;
+                opacity: 0;
+                transition:
+                    opacity 0.15s,
+                    color 0.15s;
+            }
+            .recent-item:hover .recent-item-remove {
+                opacity: 1;
+            }
+            .recent-item-remove:hover {
+                color: var(--danger);
+            }
+            .recent-empty {
+                font-size: 13px;
+                color: var(--text-secondary);
+                padding: 4px 12px;
+                font-style: italic;
+            }
+
+            /* ─── Toolbar ─── */
+            .toolbar {
+                position: sticky;
+                top: 0;
+                z-index: 20;
+                background: var(--surface);
+                border-bottom: 1px solid var(--border);
+                padding: 8px 24px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                box-shadow: var(--shadow);
+            }
+            .toolbar.hidden {
+                display: none;
+            }
+            .toolbar .file-name {
+                font-weight: 600;
+                font-size: 14px;
+                color: var(--text);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+                min-width: 0;
+            }
+            .font-selectors {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            .font-selectors.hidden {
+                display: none;
+            }
+            .toolbar button {
+                background: var(--accent);
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                padding: 6px 14px;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background 0.15s;
+            }
+            .toolbar button:hover {
+                background: var(--accent-hover);
+            }
+
+            /* ─── Theme toggle ─── */
+            .theme-toggle {
+                background: none !important;
+                color: var(--text) !important;
+                border: 1px solid var(--border) !important;
+                padding: 5px 8px !important;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 13px !important;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+            .theme-toggle:hover {
+                background: var(--surface-hover) !important;
+            }
+            .theme-toggle svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            /* ─── Font selectors ─── */
+            .font-selector {
+                position: relative;
+            }
+            .font-selector-btn {
+                background: none;
+                color: var(--text);
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-size: 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+                max-width: 200px;
+                transition:
+                    background 0.15s,
+                    border-color 0.15s;
+            }
+            .font-selector-btn:hover {
+                background: var(--surface-hover);
+                border-color: var(--text-secondary);
+            }
+            .font-selector-btn .btn-label {
+                color: var(--text-secondary);
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
+            }
+            .font-selector-btn .btn-value {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                font-weight: 500;
+            }
+            .font-selector-btn .chevron {
+                flex-shrink: 0;
+                color: var(--text-secondary);
+                transition: transform 0.15s;
+            }
+            .font-selector.open .font-selector-btn .chevron {
+                transform: rotate(180deg);
+            }
+            .font-selector.open .font-selector-btn {
+                border-color: var(--text-secondary);
+            }
+            .font-dropdown {
+                position: absolute;
+                top: calc(100% + 6px);
+                right: 0;
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                min-width: 220px;
+                max-height: 320px;
+                overflow-y: auto;
+                z-index: 100;
+                display: none;
+                padding: 4px;
+            }
+            html[data-theme="dark"] .font-dropdown,
+            html[data-theme="auto"].system-dark .font-dropdown {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            }
+            .font-selector.open .font-dropdown {
+                display: block;
+            }
+            .font-dropdown-item {
+                display: block;
+                width: 100%;
+                text-align: left;
+                background: none;
+                border: none;
+                color: var(--text);
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.1s;
+            }
+            .font-dropdown-item:hover {
+                background: var(--surface);
+            }
+            .font-dropdown-item.active {
+                background: var(--surface);
+                font-weight: 600;
+            }
+            .font-dropdown-item .preview {
+                display: block;
+                font-size: 12px;
+                color: var(--text-secondary);
+                margin-top: 2px;
+            }
+
+            /* ─── Content ─── */
+            .container {
+                max-width: 980px;
+                margin: 0 auto;
+                padding: 40px 32px 80px;
+            }
+            .container.hidden {
+                display: none;
+            }
+
+            .md-body h1,
+            .md-body h2,
+            .md-body h3,
+            .md-body h4,
+            .md-body h5,
+            .md-body h6 {
+                margin-top: 24px;
+                margin-bottom: 16px;
+                font-weight: 600;
+                line-height: 1.25;
+            }
+            .md-body h1 {
+                font-size: 2em;
+                padding-bottom: 0.3em;
+                border-bottom: 1px solid var(--hr);
+            }
+            .md-body h2 {
+                font-size: 1.5em;
+                padding-bottom: 0.3em;
+                border-bottom: 1px solid var(--hr);
+            }
+            .md-body h3 {
+                font-size: 1.25em;
+            }
+            .md-body h4 {
+                font-size: 1em;
+            }
+            .md-body h5 {
+                font-size: 0.875em;
+            }
+            .md-body h6 {
+                font-size: 0.85em;
+                color: var(--text-secondary);
+            }
+            .md-body h1:first-child,
+            .md-body h2:first-child,
+            .md-body h3:first-child {
+                margin-top: 0;
+            }
+            .md-body p {
+                margin-bottom: 16px;
+            }
+            .md-body a {
+                color: var(--link);
+                text-decoration: none;
+            }
+            .md-body a:hover {
+                text-decoration: underline;
+            }
+            .md-body strong {
+                font-weight: 600;
+            }
+            .md-body del {
+                text-decoration: line-through;
+                color: var(--text-secondary);
+            }
+            .md-body ul,
+            .md-body ol {
+                margin-bottom: 16px;
+                padding-left: 2em;
+            }
+            .md-body ul {
+                list-style-type: disc;
+            }
+            .md-body ol {
+                list-style-type: decimal;
+            }
+            .md-body li {
+                margin-bottom: 4px;
+            }
+            .md-body li > p {
+                margin-bottom: 8px;
+            }
+            .md-body li > ul,
+            .md-body li > ol {
+                margin-bottom: 4px;
+                margin-top: 4px;
+            }
+            .md-body blockquote {
+                margin: 0 0 16px;
+                padding: 8px 16px;
+                border-left: 4px solid var(--quote-border);
+                background: var(--quote-bg);
+                color: var(--text-secondary);
+            }
+            .md-body blockquote p:last-child {
+                margin-bottom: 0;
+            }
+            .md-body code {
+                font-family:
+                    "SFMono-Regular", Consolas, "Liberation Mono", Menlo,
+                    monospace;
+                font-size: 85%;
+                background: var(--code-bg);
+                padding: 0.2em 0.4em;
+                border-radius: 6px;
+                color: var(--code-text);
+            }
+            .md-body pre {
+                margin-bottom: 16px;
+                padding: 16px;
+                overflow: auto;
+                border-radius: 8px;
+                background: var(--pre-bg);
+                line-height: 1.5;
+            }
+            .md-body pre code {
+                display: block;
+                background: none;
+                padding: 0;
+                border-radius: 0;
+                font-size: 13px;
+                white-space: pre;
+                word-wrap: normal;
+            }
+            .md-body table {
+                border-collapse: collapse;
+                width: 100%;
+                margin-bottom: 16px;
+                overflow: auto;
+            }
+            .md-body th,
+            .md-body td {
+                border: 1px solid var(--border);
+                padding: 8px 13px;
+            }
+            .md-body th {
+                font-weight: 600;
+                background: var(--surface);
+            }
+            .md-body tr:nth-child(even) td {
+                background: var(--table-stripe);
+            }
+            .md-body hr {
+                border: none;
+                border-top: 2px solid var(--hr);
+                margin: 24px 0;
+            }
+            .md-body img {
+                max-width: 100%;
+                border-radius: 8px;
+                margin: 8px 0;
+            }
+            .md-body input[type="checkbox"] {
+                margin-right: 6px;
+                accent-color: var(--accent);
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    padding: 24px 16px 60px;
+                }
+                .dropzone-prompt {
+                    padding: 40px 32px;
+                }
+                .recent-item-path {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="dropzone" id="dropzone">
+            <div class="dropzone-prompt" id="prompt">
+                <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                >
+                    <path
+                        d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                    />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="12" y1="18" x2="12" y2="12" />
+                    <polyline points="9 15 12 12 15 15" />
+                </svg>
+                <p>Open a Markdown file</p>
+                <small
+                    >Click to browse or drag &amp; drop a .md file here</small
+                >
+            </div>
+            <input
+                type="file"
+                id="fileInput"
+                accept=".md,.markdown,.mdown,.mkd,.mkdn,.mdwn,.mdtxt,.mdtext,.txt,.text"
+            />
+            <div class="recent-files hidden" id="recentFiles">
+                <div class="recent-files-title">Recent files</div>
+                <ul class="recent-list" id="recentList"></ul>
+            </div>
+        </div>
+
+        <div class="toolbar hidden" id="toolbar">
+            <span class="file-name" id="fileName"></span>
+            <div class="font-selectors hidden" id="fontSelectors">
+                <div class="font-selector" id="headingFontSelector">
+                    <button class="font-selector-btn" type="button">
+                        <span class="btn-label">H</span>
+                        <span class="btn-value" id="headingFontValue"
+                            >Libre Caslon Text</span
+                        >
+                        <svg
+                            class="chevron"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="font-dropdown" id="headingFontDropdown"></div>
+                </div>
+                <div class="font-selector" id="bodyFontSelector">
+                    <button class="font-selector-btn" type="button">
+                        <span class="btn-label">Aa</span>
+                        <span class="btn-value" id="bodyFontValue">Jost</span>
+                        <svg
+                            class="chevron"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="font-dropdown" id="bodyFontDropdown"></div>
+                </div>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                <svg
+                    id="themeIcon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <circle cx="12" cy="12" r="5" />
+                    <line x1="12" y1="1" x2="12" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="23" />
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                    <line x1="1" y1="12" x2="3" y2="12" />
+                    <line x1="21" y1="12" x2="23" y2="12" />
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+            </button>
+            <button id="openAnother">Open another</button>
+        </div>
+
+        <div class="container hidden" id="container">
+            <article class="md-body" id="output"></article>
+        </div>
+
+        <script>
+            (function () {
+                var HEADING_FONTS = [
+                    "Libre Caslon Text",
+                    "Libre Franklin",
+                    "Anton",
+                    "Chakra Petch",
+                    "Source Serif 4",
+                    "Sora",
+                ];
+                var BODY_FONTS = [
+                    "Jost",
+                    "Overpass",
+                    "Dosis",
+                    "Raleway",
+                    "Figtree",
+                    "Lexend",
+                    "Manrope",
+                ];
+
+                var dropzone = document.getElementById("dropzone");
+                var prompt = document.getElementById("prompt");
+                var fileInput = document.getElementById("fileInput");
+                var toolbar = document.getElementById("toolbar");
+                var container = document.getElementById("container");
+                var output = document.getElementById("output");
+                var fileNameEl = document.getElementById("fileName");
+                var openAnother = document.getElementById("openAnother");
+                var recentFilesEl = document.getElementById("recentFiles");
+                var recentListEl = document.getElementById("recentList");
+                var themeToggle = document.getElementById("themeToggle");
+                var themeIcon = document.getElementById("themeIcon");
+                var hljsLight = document.getElementById("hljs-light");
+                var hljsDark = document.getElementById("hljs-dark");
+                var fontSelectors = document.getElementById("fontSelectors");
+                var headingFontSelector = document.getElementById(
+                    "headingFontSelector",
+                );
+                var bodyFontSelector =
+                    document.getElementById("bodyFontSelector");
+                var headingFontValue =
+                    document.getElementById("headingFontValue");
+                var bodyFontValue = document.getElementById("bodyFontValue");
+                var headingFontDropdown = document.getElementById(
+                    "headingFontDropdown",
+                );
+                var bodyFontDropdown =
+                    document.getElementById("bodyFontDropdown");
+
+                var dragCounter = 0;
+
+                var SUN_PATH =
+                    '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+                var MOON_PATH =
+                    '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+
+                /* ─── Theme ─── */
+                function getStoredTheme() {
+                    try {
+                        return localStorage.getItem("mdv-theme") || "auto";
+                    } catch (e) {
+                        return "auto";
+                    }
+                }
+
+                function applyTheme(theme) {
+                    var html = document.documentElement;
+                    html.setAttribute("data-theme", theme);
+                    var isDark =
+                        theme === "dark" ||
+                        (theme === "auto" &&
+                            window.matchMedia("(prefers-color-scheme: dark)")
+                                .matches);
+                    html.classList.toggle(
+                        "system-dark",
+                        theme === "auto" &&
+                            window.matchMedia("(prefers-color-scheme: dark)")
+                                .matches,
+                    );
+                    if (isDark) {
+                        hljsLight.disabled = true;
+                        hljsDark.disabled = false;
+                    } else {
+                        hljsLight.disabled = false;
+                        hljsDark.disabled = true;
+                    }
+                    updateThemeIcon(theme);
+                }
+
+                function updateThemeIcon(theme) {
+                    if (
+                        theme === "dark" ||
+                        (theme === "auto" &&
+                            window.matchMedia("(prefers-color-scheme: dark)")
+                                .matches)
+                    ) {
+                        themeIcon.innerHTML = SUN_PATH;
+                        themeToggle.title = "Switch to light mode";
+                    } else {
+                        themeIcon.innerHTML = MOON_PATH;
+                        themeToggle.title = "Switch to dark mode";
+                    }
+                }
+
+                function cycleTheme() {
+                    var current = getStoredTheme();
+                    var next =
+                        current === "auto"
+                            ? "light"
+                            : current === "light"
+                              ? "dark"
+                              : "auto";
+                    try {
+                        localStorage.setItem("mdv-theme", next);
+                    } catch (e) {}
+                    applyTheme(next);
+                }
+
+                applyTheme(getStoredTheme());
+                themeToggle.addEventListener("click", cycleTheme);
+                window
+                    .matchMedia("(prefers-color-scheme: dark)")
+                    .addEventListener("change", function () {
+                        if (getStoredTheme() === "auto") applyTheme("auto");
+                    });
+
+                /* ─── Font selectors ─── */
+                function getStoredFont(key, fallback) {
+                    try {
+                        return localStorage.getItem(key) || fallback;
+                    } catch (e) {
+                        return fallback;
+                    }
+                }
+
+                function applyFonts(headingFont, bodyFont) {
+                    var article = document.getElementById("output");
+                    article.style.setProperty(
+                        "--heading-font",
+                        '"' + headingFont + '"',
+                    );
+                    article.style.fontFamily =
+                        '"' +
+                        bodyFont +
+                        '", -apple-system, BlinkMacSystemFont, sans-serif';
+                    article.querySelectorAll("h1, h2").forEach(function (h) {
+                        h.style.fontFamily =
+                            '"' +
+                            headingFont +
+                            '", -apple-system, BlinkMacSystemFont, sans-serif';
+                    });
+                }
+
+                function buildDropdown(dropdownEl, fonts, current, onSelect) {
+                    dropdownEl.innerHTML = fonts
+                        .map(function (f) {
+                            var cls = f === current ? " active" : "";
+                            return (
+                                '<button class="font-dropdown-item' +
+                                cls +
+                                '" style="font-family:\'' +
+                                f +
+                                '\', sans-serif" data-font="' +
+                                f +
+                                '">' +
+                                escapeHtml(f) +
+                                '<span class="preview">The quick brown fox</span>' +
+                                "</button>"
+                            );
+                        })
+                        .join("");
+                    dropdownEl.addEventListener("click", function (e) {
+                        var btn = e.target.closest("[data-font]");
+                        if (!btn) return;
+                        onSelect(btn.getAttribute("data-font"));
+                        closeAllDropdowns();
+                    });
+                }
+
+                function closeAllDropdowns() {
+                    headingFontSelector.classList.remove("open");
+                    bodyFontSelector.classList.remove("open");
+                }
+
+                var currentHeading = getStoredFont(
+                    "mdv-heading-font",
+                    HEADING_FONTS[0],
+                );
+                var currentBody = getStoredFont("mdv-body-font", BODY_FONTS[0]);
+
+                function setHeadingFont(font) {
+                    currentHeading = font;
+                    headingFontValue.textContent = font;
+                    headingFontValue.style.fontFamily = '"' + font + '"';
+                    try {
+                        localStorage.setItem("mdv-heading-font", font);
+                    } catch (e) {}
+                    applyFonts(currentHeading, currentBody);
+                    buildDropdown(
+                        headingFontDropdown,
+                        HEADING_FONTS,
+                        currentHeading,
+                        setHeadingFont,
+                    );
+                }
+
+                function setBodyFont(font) {
+                    currentBody = font;
+                    bodyFontValue.textContent = font;
+                    bodyFontValue.style.fontFamily = '"' + font + '"';
+                    try {
+                        localStorage.setItem("mdv-body-font", font);
+                    } catch (e) {}
+                    applyFonts(currentHeading, currentBody);
+                    buildDropdown(
+                        bodyFontDropdown,
+                        BODY_FONTS,
+                        currentBody,
+                        setBodyFont,
+                    );
+                }
+
+                headingFontValue.textContent = currentHeading;
+                headingFontValue.style.fontFamily = '"' + currentHeading + '"';
+                bodyFontValue.textContent = currentBody;
+                bodyFontValue.style.fontFamily = '"' + currentBody + '"';
+
+                buildDropdown(
+                    headingFontDropdown,
+                    HEADING_FONTS,
+                    currentHeading,
+                    setHeadingFont,
+                );
+                buildDropdown(
+                    bodyFontDropdown,
+                    BODY_FONTS,
+                    currentBody,
+                    setBodyFont,
+                );
+
+                headingFontSelector
+                    .querySelector(".font-selector-btn")
+                    .addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        var wasOpen =
+                            headingFontSelector.classList.contains("open");
+                        closeAllDropdowns();
+                        if (!wasOpen) headingFontSelector.classList.add("open");
+                    });
+                bodyFontSelector
+                    .querySelector(".font-selector-btn")
+                    .addEventListener("click", function (e) {
+                        e.stopPropagation();
+                        var wasOpen =
+                            bodyFontSelector.classList.contains("open");
+                        closeAllDropdowns();
+                        if (!wasOpen) bodyFontSelector.classList.add("open");
+                    });
+                document.addEventListener("click", closeAllDropdowns);
+
+                /* ─── IndexedDB for file content cache ─── */
+                var IDB_NAME = "mdv-cache";
+                var IDB_VER = 1;
+                var idb = null;
+
+                function openIDB(cb) {
+                    if (idb) return cb(idb);
+                    var req = indexedDB.open(IDB_NAME, IDB_VER);
+                    req.onupgradeneeded = function (e) {
+                        var db = e.target.result;
+                        if (!db.objectStoreNames.contains("files")) {
+                            db.createObjectStore("files", { keyPath: "name" });
+                        }
+                    };
+                    req.onsuccess = function (e) {
+                        idb = e.target.result;
+                        cb(idb);
+                    };
+                    req.onerror = function () {
+                        cb(null);
+                    };
+                }
+
+                function storeFileContent(name, content) {
+                    openIDB(function (db) {
+                        if (!db) return;
+                        try {
+                            var tx = db.transaction("files", "readwrite");
+                            tx.objectStore("files").put({
+                                name: name,
+                                content: content,
+                                ts: Date.now(),
+                            });
+                        } catch (e) {}
+                    });
+                }
+
+                function getFileContent(name, cb) {
+                    openIDB(function (db) {
+                        if (!db) return cb(null);
+                        try {
+                            var tx = db.transaction("files", "readonly");
+                            var req = tx.objectStore("files").get(name);
+                            req.onsuccess = function () {
+                                cb(req.result ? req.result.content : null);
+                            };
+                            req.onerror = function () {
+                                cb(null);
+                            };
+                        } catch (e) {
+                            cb(null);
+                        }
+                    });
+                }
+
+                function deleteFileContent(name) {
+                    openIDB(function (db) {
+                        if (!db) return;
+                        try {
+                            var tx = db.transaction("files", "readwrite");
+                            tx.objectStore("files").delete(name);
+                        } catch (e) {}
+                    });
+                }
+
+                function pruneFileCache(keepNames) {
+                    openIDB(function (db) {
+                        if (!db) return;
+                        try {
+                            var tx = db.transaction("files", "readwrite");
+                            var store = tx.objectStore("files");
+                            var req = store.getAllKeys();
+                            req.onsuccess = function () {
+                                req.result.forEach(function (key) {
+                                    if (keepNames.indexOf(key) === -1)
+                                        store.delete(key);
+                                });
+                            };
+                        } catch (e) {}
+                    });
+                }
+
+                /* ─── Recent files ─── */
+                var STORAGE_KEY = "mdv-recent";
+
+                function getRecent() {
+                    try {
+                        var data = JSON.parse(
+                            localStorage.getItem(STORAGE_KEY),
+                        );
+                        return Array.isArray(data) ? data : [];
+                    } catch (e) {
+                        return [];
+                    }
+                }
+
+                function saveRecent(entry, content) {
+                    var list = getRecent();
+                    list = list.filter(function (r) {
+                        return r.name !== entry.name;
+                    });
+                    list.unshift(entry);
+                    if (list.length > 10) list = list.slice(0, 10);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+                    } catch (e) {}
+                    if (content) storeFileContent(entry.name, content);
+                    pruneFileCache(
+                        list.map(function (r) {
+                            return r.name;
+                        }),
+                    );
+                    renderRecent();
+                }
+
+                function removeRecent(index) {
+                    var list = getRecent();
+                    var removed = list.splice(index, 1)[0];
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+                    } catch (e) {}
+                    if (removed) deleteFileContent(removed.name);
+                    renderRecent();
+                }
+
+                function renderRecent() {
+                    var list = getRecent();
+                    if (!list.length) {
+                        recentFilesEl.classList.add("hidden");
+                        recentListEl.innerHTML = "";
+                        return;
+                    }
+                    recentFilesEl.classList.remove("hidden");
+                    recentListEl.innerHTML = list
+                        .map(function (item, i) {
+                            return (
+                                '<li class="recent-item" data-index="' +
+                                i +
+                                '">' +
+                                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+                                '<span class="recent-item-name">' +
+                                escapeHtml(item.name) +
+                                "</span>" +
+                                '<span class="recent-item-path">' +
+                                escapeHtml(item.path || "") +
+                                "</span>" +
+                                '<button class="recent-item-remove" data-rm="' +
+                                i +
+                                '" title="Remove">' +
+                                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+                                "</button>" +
+                                "</li>"
+                            );
+                        })
+                        .join("");
+                }
+
+                function showContent(name, text) {
+                    dropzone.classList.add("hidden");
+                    toolbar.classList.remove("hidden");
+                    fontSelectors.classList.remove("hidden");
+                    container.classList.remove("hidden");
+                    fileNameEl.textContent = name;
+                    render(text);
+                }
+
+                recentListEl.addEventListener("click", function (e) {
+                    var rmBtn = e.target.closest("[data-rm]");
+                    if (rmBtn) {
+                        e.stopPropagation();
+                        removeRecent(
+                            parseInt(rmBtn.getAttribute("data-rm"), 10),
+                        );
+                        return;
+                    }
+                    var item = e.target.closest(".recent-item");
+                    if (item) {
+                        var idx = parseInt(item.getAttribute("data-index"), 10);
+                        var entry = getRecent()[idx];
+                        if (entry) {
+                            getFileContent(entry.name, function (content) {
+                                if (content !== null) {
+                                    showContent(entry.name, content);
+                                }
+                            });
+                        }
+                    }
+                });
+
+                renderRecent();
+
+                /* ─── Rendering ─── */
+                function escapeHtml(s) {
+                    return s
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;");
+                }
+
+                function render(text) {
+                    var html;
+                    if (typeof marked !== "undefined") {
+                        marked.setOptions({ gfm: true, breaks: false });
+                        html = marked.parse(text);
+                    } else {
+                        html = "<pre>" + escapeHtml(text) + "</pre>";
+                    }
+                    output.innerHTML = html;
+
+                    if (typeof hljs !== "undefined") {
+                        output
+                            .querySelectorAll("pre code")
+                            .forEach(function (block) {
+                                hljs.highlightElement(block);
+                            });
+                    }
+
+                    output.querySelectorAll("a").forEach(function (a) {
+                        a.setAttribute("target", "_blank");
+                        a.setAttribute("rel", "noopener noreferrer");
+                    });
+
+                    applyFonts(currentHeading, currentBody);
+                }
+
+                function loadFile(file) {
+                    if (!file) return;
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var text = e.target.result;
+                        saveRecent(
+                            {
+                                name: file.name,
+                                path: file.path || "",
+                                ts: Date.now(),
+                            },
+                            text,
+                        );
+                        showContent(file.name, text);
+                    };
+                    reader.readAsText(file);
+                }
+
+                /* ─── Event handlers ─── */
+                prompt.addEventListener("click", function () {
+                    fileInput.click();
+                });
+                fileInput.addEventListener("change", function () {
+                    if (fileInput.files.length) loadFile(fileInput.files[0]);
+                });
+
+                dropzone.addEventListener("dragenter", function (e) {
+                    e.preventDefault();
+                    dragCounter++;
+                    prompt.classList.add("dragover");
+                });
+                dropzone.addEventListener("dragleave", function (e) {
+                    e.preventDefault();
+                    dragCounter--;
+                    if (dragCounter <= 0) {
+                        dragCounter = 0;
+                        prompt.classList.remove("dragover");
+                    }
+                });
+                dropzone.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                });
+                dropzone.addEventListener("drop", function (e) {
+                    e.preventDefault();
+                    dragCounter = 0;
+                    prompt.classList.remove("dragover");
+                    if (e.dataTransfer.files.length)
+                        loadFile(e.dataTransfer.files[0]);
+                });
+
+                openAnother.addEventListener("click", function () {
+                    var input = document.createElement("input");
+                    input.type = "file";
+                    input.accept =
+                        ".md,.markdown,.mdown,.mkd,.mkdn,.mdwn,.mdtxt,.mdtext,.txt,.text";
+                    input.onchange = function () {
+                        if (input.files.length) loadFile(input.files[0]);
+                    };
+                    input.click();
+                });
+
+                document.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                });
+                document.addEventListener("drop", function (e) {
+                    e.preventDefault();
+                });
+            })();
+        </script>
+    </body>
+</html>

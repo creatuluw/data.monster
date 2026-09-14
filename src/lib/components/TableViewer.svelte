@@ -90,6 +90,8 @@
 		flex-direction: column;
 		gap: var(--space-4);
 		padding: var(--space-6);
+		height: 100%;
+		overflow: hidden;
 	}
 
 	.viewer-header {
@@ -107,9 +109,24 @@
 	}
 
 	.viewer-table-wrap {
-		overflow-x: auto;
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: auto;
 		border: 1px solid var(--color-border);
 		background: var(--color-surface);
+	}
+
+	.viewer-table-wrap table {
+		flex: 1;
+	}
+
+	.viewer-table-wrap thead th {
+		position: sticky;
+		top: 0;
+		z-index: 1;
+		background: var(--color-surface-raised);
 	}
 
 	.viewer-footer-bar {

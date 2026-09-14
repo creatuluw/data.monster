@@ -1,0 +1,14 @@
+{
+  "name": "@miralemd/picasso-js-point-matrix",
+  "main": "3b67f7ef8f5ec756@63.js",
+  "version": "63.0.0",
+  "homepage": "https://observablehq.com/@miralemd/picasso-js-point-matrix",
+  "author": {
+    "name": "Miralem Drek",
+    "url": "https://observablehq.com/@miralemd"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "@observablehq/runtime": "4 - 5"
+  }
+}

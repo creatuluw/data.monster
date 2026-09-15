@@ -262,9 +262,10 @@
 	}
 
 	.brand-logo {
-		width: 24px;
-		height: 25px;
+		width: 30px;
+		height: 32px;
 		display: block;
+		margin-right: var(--space-1);
 	}
 
 	.brand-logo-lg {

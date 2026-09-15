@@ -136,6 +136,7 @@
 				Data Monster
 			</a>
 			{#if app.workspacePath}
+				<span class="brand-divider" aria-hidden="true">&middot;</span>
 				<span class="workspace-label" title={app.workspacePath}>{app.workspacePath}</span>
 			{/if}
 		</div>
@@ -278,6 +279,11 @@
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
+	}
+
+	.brand-divider {
+		color: var(--color-text-tertiary);
+		font-size: var(--text-md);
 	}
 
 	.workspace-label {

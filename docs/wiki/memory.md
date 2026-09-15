@@ -8,7 +8,7 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09:36:11.969Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T11:29:53.096Z.
 
 ## Recent Decisions
 
@@ -42,6 +42,9 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09
 
 ## Recent Learnings — development patterns
 
+- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md) — Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP `Input.dispatchMouseEvent` DOES click svelteplot marks … (2026-09-15)
+- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, eve… (2026-09-15)
+- [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted. (2026-09-15)
 - [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview) (2026-09-15)
 - [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/componen… (2026-09-15)
 - [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom (2026-09-15)
@@ -59,9 +62,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09
 - [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with `--remote-debugg… (2026-09-11)
 - [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring `.env` into the app (2026-09-11). (2026-09-11)
 - [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom (2026-09-11)
-- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary… (2026-09-11)
-- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directl… (2026-09-11)
-- ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — `[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.` is beni… (2026-09-11)
 
 ## Architecture
 

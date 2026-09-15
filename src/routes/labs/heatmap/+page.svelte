@@ -1,15 +1,17 @@
 <script lang="ts">
-	import Heatmap from '$lib/components/Heatmap.svelte';
+	import HeatmapRenderer from '$lib/components/charts/renderers/HeatmapRenderer.svelte';
+	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 
-	type Row = { monthOffset: number; week: number; utilization: number; hours: number; tasks: number };
+	setupChartRegistry();
 
-	// deterministic pseudo-random from grid coords — stable across reloads, no seed state
+	// engine-shaped rows: two dimensions (month, week) + one measure (utilization)
+	type Row = { month: string; week: string; utilization: number };
+
 	function rnd(i: number, j: number) {
 		const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
 		return x - Math.floor(x);
 	}
 
-	// 12 months ahead of this month, inclusive
 	const now = new Date();
 	const monthLabels = Array.from({ length: 12 }, (_, i) =>
 		new Date(now.getFullYear(), now.getMonth() + i, 1).toLocaleDateString('en-US', {
@@ -18,20 +20,21 @@
 		}),
 	);
 
-	const CAPACITY = 36; // hours per week
+	const weeks = ['W1', 'W2', 'W3', 'W4', 'W5'];
 
-	// heatmap: weekly utilization grid — x = month, y = week-of-month
+	// holes (no rows) render as no-data cells in the renderer's full grid
 	const rows: Row[] = [];
 	for (let m = 0; m < 12; m++) {
-		for (let w = 1; w <= 5; w++) {
-			const empty = rnd(m, w) < 0.08;
-			const utilization = empty ? 0 : 0.2 + rnd(m, w + 50) * 1.1;
-			const hours = Math.round(utilization * CAPACITY);
-			rows.push({ monthOffset: m, week: w, utilization, hours, tasks: Math.round(hours / 3.5) });
+		for (let w = 0; w < weeks.length; w++) {
+			if (rnd(m, w + 1) < 0.08) continue; // no-data week
+			const utilization = 0.2 + rnd(m, w + 50) * 1.1;
+			rows.push({ month: monthLabels[m], week: weeks[w], utilization });
 		}
 	}
 
-	let selected: Row | null = $state(null);
+	let selected = $state<{ dimension: string; value: string } | null>(null);
+	let scheme = $state<'orrd' | 'blues' | 'greens'>('orrd');
+	let heightVh = $state(0.3);
 </script>
 
 <svelte:head>
@@ -44,65 +47,68 @@
 	</div>
 
 	<p class="section-subtitle">
-		Threshold-colored grid on svelteplot — in-cell labels, hover tooltips, click-to-select, no-data cells, axis flip on narrow widths. Synthetic data.
+		Registry entry <code>heatmap</code> — pivot hook grid, threshold colors from the data max, no-data holes, click-to-select. Synthetic data.
 	</p>
 
-	<Heatmap
-		data={rows}
-		x={(d: Row) => d.monthOffset}
-		y={(d: Row) => d.week}
-		value={(d: Row) => d.utilization}
-		threshold={[0.5, 0.75, 0.9, 1.0, 1.25]}
-		xTicks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]}
-		formatX={(i) => monthLabels[i]}
-		yTicks={[1, 2, 3, 4, 5]}
-		formatY={(w) => `W${w}`}
-		isEmpty={(d: Row) => d.tasks === 0}
-		label={(d: Row) => `${Math.round(d.utilization * 100)}%`}
-		labelFor={(d: Row) => `${monthLabels[d.monthOffset]} · Week ${d.week} · ${Math.round(d.utilization * 100)}%`}
+	<HeatmapRenderer
+		{rows}
+		dimensionAliases={['month', 'week']}
+		measureAliases={['utilization']}
+		options={{ scheme, threshold: 5 }}
+		annotations={[]}
 		title="Utilization per week"
 		subtitle="booked hours divided by weekly capacity"
-		bind:selected
+		tooltip={{ template: '{month} · {week}: {utilization}' }}
+		{selected}
+		onSelect={(s) => (selected = s)}
+		colorScale={{ colorOf: () => '#888888' }}
+		fmts={{ utilization: (v) => `${Math.round(Number(v) * 100)}%` }}
+		{heightVh}
 	>
-		{#snippet tooltip(d)}
-			<div class="font-semibold">{monthLabels[d.monthOffset]} · Week {d.week}</div>
-			{#if d.tasks === 0}
-				<div class="opacity-75">No tasks this week</div>
-			{:else}
-				<div>Utilization: {Math.round(d.utilization * 100)}%</div>
-				<div>Hours: {d.hours}u / {CAPACITY}u</div>
-				<div>Tasks: {d.tasks}</div>
-			{/if}
+		{#snippet config()}
+			<div class="field">
+				<label class="field-label" for="cfg-scheme">scheme — enum</label>
+				<select class="input" id="cfg-scheme" bind:value={scheme}>
+					<option value="orrd">orrd</option>
+					<option value="blues">blues</option>
+					<option value="greens">greens</option>
+				</select>
+			</div>
+			<div class="field">
+				<label class="field-label" for="cfg-height">heightVh — viewport fraction</label>
+				<input class="range-input" id="cfg-height" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
+				<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
+			</div>
 		{/snippet}
-	</Heatmap>
+	</HeatmapRenderer>
 </div>
 
 <style>
 	.heatmap-page {
-		flex: 1;
-		overflow-y: auto;
-		padding: var(--space-6);
+		max-width: 48rem;
+		margin: 0 auto;
+		padding: 2rem 1.5rem 4rem;
 	}
 
 	.section-header {
-		display: flex;
-		align-items: baseline;
-		gap: var(--space-4);
+		margin-bottom: 1rem;
 	}
 
 	.section-title {
 		font-family: var(--font-display);
-		font-size: var(--text-xl);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		margin: 0;
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: var(--color-text);
 	}
 
 	.section-subtitle {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-		margin: var(--space-1) 0 var(--space-4) 0;
-		max-width: 64ch;
-		line-height: var(--leading-relaxed);
+		color: #71717a;
+		font-size: 0.875rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.code {
+		font-family: var(--font-mono);
+		font-size: 0.8em;
 	}
 </style>

@@ -36,7 +36,7 @@
 					data-block={id}
 					style={`grid-column: span ${span} / span ${span};${selectedId === id ? ' box-shadow: 0 0 0 2px oklch(0.44 0.1 158); border-radius: 8px;' : ''}`}
 					onclick={(e) => { e.stopPropagation(); onSelect?.(id); }}
-				>>>
+				>
 					{#if block.type === 'text'}
 						<div class="bg-white rounded-lg border border-zinc-200 p-6 mb-16 text-sm text-zinc-700 whitespace-pre-wrap">
 							{block.text}

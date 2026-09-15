@@ -8,6 +8,8 @@ timestamp: "2026-09-15T10:55:52.612Z"
 
 # CDP e2e cannot synthesize trusted clicks on svelteplot marks
 
+> ⚠️ **SUPERSEDED — this conclusion was wrong.** CDP `Input.dispatchMouseEvent` DOES click svelteplot marks; the failures were stale coordinates, `element.click()` (no clientX for hit-testing), and an accidentally closed page target. See [[cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with]].
+
 Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs pages where manual clicks work. Hit 2026-09-15 while CDP-smoke-testing the central-charts build (`tests/smoke-cdp.mjs`): 11/11 checks passed except click interactions had to be excluded.
 
 What this means for testing strategy:

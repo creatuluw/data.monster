@@ -8,7 +8,7 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13:14:38.610Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13:18:42.461Z.
 
 ## Recent Decisions
 
@@ -30,6 +30,7 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13
 
 ## Active Rules
 
+- [App content is capped at 1440px by the shared layout — never set per-page max-width](rules/app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) — Guideline (2026-09-15)
 - [Card spacing comes from the grid gap, never per-card margins](rules/card-spacing-comes-from-the-grid-gap-never-per-card-margins.md) — In any grid of chart/component cards (page editor canvas, labs), inter-card (2026-09-15)
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) — Guideline (2026-09-15)
 - [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline (2026-09-15)

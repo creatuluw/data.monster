@@ -7,3 +7,4 @@
 - [Interview the user one question at a time with lettered multiple-choice options](./interview-one-question-at-a-time.md) - Guideline
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](./spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) - Guideline
 - [Card spacing comes from the grid gap, never per-card margins](./card-spacing-comes-from-the-grid-gap-never-per-card-margins.md) - In any grid of chart/component cards (page editor canvas, labs), inter-card
+- [App content is capped at 1440px by the shared layout — never set per-page max-width](./app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) - Guideline

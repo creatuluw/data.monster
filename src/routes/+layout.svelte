@@ -359,6 +359,11 @@
 		margin-right: auto;
 	}
 
+	/* full-bleed pages (analyst, data, page editor) span the whole window */
+	.app-main > :global(.full-bleed) {
+		max-width: none;
+	}
+
 	.app-error {
 		padding: var(--space-3) var(--space-4);
 		margin-bottom: var(--space-4);

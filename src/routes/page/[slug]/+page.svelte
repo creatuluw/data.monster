@@ -170,7 +170,7 @@
 
 <svelte:head><title>{doc.title || slug} — data.monster</title></svelte:head>
 
-<div class="max-w-7xl mx-auto px-6 py-8">
+<div class="page-shell" style="padding: var(--space-6);">
 	<div class="flex items-center gap-3 mb-6">
 		<a href="/pages" class="text-zinc-400 hover:text-zinc-900" title="Back to pages"><ArrowLeft size={18} /></a>
 		<input

@@ -5,7 +5,7 @@
 	import { getChartType } from '$lib/charts/registry';
 	import TableRenderer from './renderers/TableRenderer.svelte';
 	import ChartCard from './ChartCard.svelte';
-	import { Settings } from 'lucide-svelte';
+	import { Bolt } from 'lucide-svelte';
 
 	setupChartRegistry();
 
@@ -103,7 +103,7 @@
 							title="Configure"
 							aria-label="Configure block"
 						>
-							<Settings size={14} />
+							<Bolt size={14} />
 						</button>
 						{@render renderBlock(block, id)}
 					</div>

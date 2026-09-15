@@ -15,7 +15,7 @@
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import { invoke } from '@tauri-apps/api/core';
-	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2, Settings } from 'lucide-svelte';
+	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2, Bolt } from 'lucide-svelte';
 
 	setupChartRegistry();
 
@@ -251,7 +251,7 @@
 			<!-- inspector -->
 			<aside class="w-80 shrink-0 sticky top-8 space-y-3">
 				<div class="bg-white rounded-lg border border-zinc-200 p-4 text-sm text-zinc-400">
-					Click the <Settings size={13} class="inline-block -mt-0.5" /> on a block to configure it — or add one below.
+					Click the <Bolt size={13} class="inline-block -mt-0.5" /> on a block to configure it — or add one below.
 				</div>
 				{#if doc.rows?.length}
 					<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-2">

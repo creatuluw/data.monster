@@ -13,7 +13,8 @@
 		bi,
 		schemas,
 		items,
-		relationships
+		relationships,
+		onremove
 	}: {
 		doc: PageDoc;
 		ri: number;
@@ -21,6 +22,8 @@
 		schemas: TableSchemas;
 		items: MasterItem[];
 		relationships: Relationship[];
+		/** fired when the block is removed (lets the host close its drawer) */
+		onremove?: () => void;
 	} = $props();
 
 	const block = $derived(doc.rows![ri].blocks[bi]);
@@ -41,6 +44,7 @@
 	function removeBlock() {
 		doc.rows![ri].blocks.splice(bi, 1);
 		if (doc.rows![ri].blocks.length === 0) doc.rows!.splice(ri, 1);
+		onremove?.();
 	}
 	function addDimension() {
 		if (chart) chart.dimensions.push({ col: tableCols[0] ?? '' });
@@ -74,9 +78,16 @@
 		</label>
 		<label class="space-y-1">
 			<span class="text-xs text-zinc-500">Title</span>
-			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.type === 'text' ? '' : (block as { title?: string }).title ?? ''} onchange={(e) => ((block as { title?: string }).title = (e.target as HTMLInputElement).value || undefined)} />
+			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.type === 'chart' ? (chart!.title ?? '') : block.type === 'table' ? (block.title ?? '') : ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value || undefined; if (block.type === 'chart') chart!.title = v; else if (block.type === 'table') block.title = v; }} />
 		</label>
 	</div>
+
+	{#if chart}
+		<label class="block space-y-1">
+			<span class="text-xs text-zinc-500">Subtitle</span>
+			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.subtitle ?? ''} onchange={(e) => (chart.subtitle = (e.target as HTMLInputElement).value || undefined)} />
+		</label>
+	{/if}
 
 	{#if block.type === 'text'}
 		<label class="block space-y-1">

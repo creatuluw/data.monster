@@ -9,12 +9,13 @@
 	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 	import PageGrid from '$lib/components/charts/PageGrid.svelte';
 	import BlockInspector from '$lib/components/charts/BlockInspector.svelte';
+	import ChartConfigDrawer from '$lib/components/charts/ChartConfigDrawer.svelte';
 	import type { PageDoc } from '$lib/charts/spec-types';
 	import type { TableSchemas } from '$lib/charts/query/compile';
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import { invoke } from '@tauri-apps/api/core';
-	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2 } from 'lucide-svelte';
+	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2, Settings } from 'lucide-svelte';
 
 	setupChartRegistry();
 
@@ -34,7 +35,7 @@
 	let items = $state<MasterItem[]>([]);
 	let relationships = $state<Relationship[]>([]);
 
-	let selId = $state<string | null>(null);
+	let configId = $state<string | null>(null);
 	let runtime = $state<ReturnType<typeof createPageRuntime> | null>(null);
 
 	// live re-render: deep-track the doc (inspector mutates in place), debounce
@@ -151,13 +152,20 @@
 					: { type: 'text', span, text: 'Text…' };
 		if (!doc.rows?.length) doc.rows = [{ blocks: [] }];
 		doc.rows[doc.rows.length - 1].blocks.push(block as never);
-		selId = `r${doc.rows.length - 1}-b${doc.rows[doc.rows.length - 1].blocks.length - 1}`;
+		configId = `r${doc.rows.length - 1}-b${doc.rows[doc.rows.length - 1].blocks.length - 1}`;
 
 	}
 
-	function selectBlock(id: string) {
-		selId = selId === id ? null : id;
+	function configureBlock(id: string) {
+		configId = id;
 	}
+
+	const configBlock = $derived.by(() => {
+		if (configId === null) return null;
+		const [ri, bi] = configId.replace('r', '').split('-b').map(Number);
+		const block = doc.rows?.[ri]?.blocks[bi];
+		return block ? { ri, bi, block } : null;
+	});
 </script>
 
 <svelte:head><title>{doc.title || slug} — data.monster</title></svelte:head>
@@ -209,12 +217,26 @@
 				<p class="text-xs text-zinc-400">Valid — switching to Design applies the document.</p>
 			{/if}
 		</div>
+	{:else if configBlock && runtime}
+		<!-- focused config view: configured chart left, 50vw drawer right, other blocks hidden -->
+		<div class="w-1/2 pr-8">
+			<PageGrid {doc} {runtime} configureId={configId} />
+		</div>
+		<ChartConfigDrawer
+			open={true}
+			title={configBlock.block.type === 'chart' ? (configBlock.block.chart.title ?? 'Chart configuration') : `${configBlock.block.type} configuration`}
+			width="50vw"
+			overlay={false}
+			onClosed={() => (configId = null)}
+		>
+			<BlockInspector {doc} ri={configBlock.ri} bi={configBlock.bi} {schemas} {items} {relationships} onremove={() => (configId = null)} />
+		</ChartConfigDrawer>
 	{:else}
 		<div class="flex gap-6 items-start">
 			<!-- canvas -->
 			<div class="flex-1 min-w-0 space-y-4">
 				{#if runtime}
-					<PageGrid {doc} {runtime} selectedId={selId} onSelect={(id) => selectBlock(id)} />
+					<PageGrid {doc} {runtime} onConfigure={(id) => configureBlock(id)} />
 				{/if}
 
 				<div class="flex items-center gap-2 pt-2">
@@ -228,16 +250,9 @@
 
 			<!-- inspector -->
 			<aside class="w-80 shrink-0 sticky top-8 space-y-3">
-				{#if selId !== null}
-					{@const [sri, sbi] = selId.replace('r', '').split('-b').map(Number)}
-					{#if doc.rows?.[sri]?.blocks[sbi]}
-						<BlockInspector {doc} ri={sri} bi={sbi} {schemas} {items} {relationships} />
-					{/if}
-				{:else}
-					<div class="bg-white rounded-lg border border-zinc-200 p-4 text-sm text-zinc-400">
-						Click a block on the page to edit it — or add one below.
-					</div>
-				{/if}
+				<div class="bg-white rounded-lg border border-zinc-200 p-4 text-sm text-zinc-400">
+					Click the <Settings size={13} class="inline-block -mt-0.5" /> on a block to configure it — or add one below.
+				</div>
 				{#if doc.rows?.length}
 					<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-2">
 						<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Rows</span>

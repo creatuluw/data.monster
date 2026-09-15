@@ -8,10 +8,14 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09:18:53.755Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T14:41:18.592Z.
 
 ## Recent Decisions
 
+- [Page editor route nests under /pages/<slug> (was /page/<slug>); /data goes full-width](decisions/page-editor-route-nests-under-pages-slug-was-page-slug-data-.md) — Context (2026-09-15)
+- [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](decisions/page-editor-is-tri-mode-design-code-page-settings-right-side.md) — Context (2026-09-15)
+- [Page editor block config: focused two-panel mode via cog icon (no selection ring)](decisions/page-editor-block-config-focused-two-panel-mode-via-cog-icon.md) — Context (2026-09-15)
+- [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — Context (2026-09-15)
 - [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) — Context (2026-09-15)
 - [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](decisions/q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) — Context (2026-09-15)
 - [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) — Context (2026-09-15)
@@ -23,13 +27,12 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09
 - [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md) — Context (2026-09-15)
 - [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) — Context (2026-09-15)
 - [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md) — Context (2026-09-15)
-- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) — Context (2026-09-15)
-- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context (2026-09-15)
-- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) — Context (2026-09-15)
-- [Two-surface report pages: code mode edits a declarative spec, not Svelte source](decisions/two-surface-report-page-format.md) — Q3 LOCKED (A): the report page is one declarative spec document edited by both surfaces — parity by construction. C (registry escape hatch) … (2026-09-15)
 
 ## Active Rules
 
+- [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-comes-from-one-global-rule-in-app-css.md) — Guideline (2026-09-15)
+- [App content is capped at 1440px by the shared layout — opt out only via the full-bleed class](rules/app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) — Guideline (2026-09-15)
+- [Card spacing comes from the grid gap, never per-card margins](rules/card-spacing-comes-from-the-grid-gap-never-per-card-margins.md) — In any grid of chart/component cards (page editor canvas, labs), inter-card (2026-09-15)
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) — Guideline (2026-09-15)
 - [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline (2026-09-15)
 - [Each /labs chart owns its config panel](rules/each-labs-chart-owns-its-config-panel.md) — Guideline (2026-09-15)
@@ -40,8 +43,20 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09
 - [Inter for UI text, Geist Mono only for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Guideline (2026-09-14)
 - [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline (2026-09-11)
 
+## Preferences & Conventions
+
+- [Never start npm run dev / tauri dev — the user owns the dev app](preferences/never-start-npm-run-dev-tauri-dev-the-user-owns-the-dev-app.md) — The LLM must never launch the dev app itself — no `npm run dev`, `npx tauri dev`, or background dev-server starts. The user starts and owns … (2026-09-15)
+
 ## Recent Learnings — development patterns
 
+- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-in-the-flex-column-app-main-disable-flex-stretc.md) — Symptom (2026-09-15)
+- [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-not-textcontent-probe-l.md) — Symptom: a CDP DOM probe checking for the label `"Rows"` failed on the Page (2026-09-15)
+- [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-must-walk-the-ancestor-opacity-display-vis.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15): (2026-09-15)
+- [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-after-dev-server-restarts-stale-hmr-webview-.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel). (2026-09-15)
+- [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-has-block-title-and-chart-title-charts-render-only-c.md) — In the central-charts [[chart-page-spec-spec-types-validator]] `PageDoc`, a block carries a **block-level `title`** *and* (for chart blocks)… (2026-09-15)
+- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md) — Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP `Input.dispatchMouseEvent` DOES click svelteplot marks … (2026-09-15)
+- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, eve… (2026-09-15)
+- [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted. (2026-09-15)
 - [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview) (2026-09-15)
 - [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/componen… (2026-09-15)
 - [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom (2026-09-15)
@@ -54,14 +69,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T09
 - [kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4](learnings/kees-reference-ports-cleanly.md) — `E:\kees.pippeloi.nl` (esp. `src/routes/work/high-level`) is the reference project for chart-type components being ported into Labs. (2026-09-14)
 - [WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite](learnings/webview2-cdp-gotchas-env-var-flag-stale.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit while verifying the 2026-09-12 redesign: (2026-09-12)
 - [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES. (2026-09-12)
-- [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: `.archive/` (entire superseded old app + chart-engine trials) and `src-tauri/target… (2026-09-12)
-- [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](learnings/local-llm-blank-screen-delay-was-hidden.md) — Symptom (2026-09-11)
-- [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with `--remote-debugg… (2026-09-11)
-- [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring `.env` into the app (2026-09-11). (2026-09-11)
-- [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom (2026-09-11)
-- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary… (2026-09-11)
-- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directl… (2026-09-11)
-- ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — `[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.` is beni… (2026-09-11)
 
 ## Architecture
 

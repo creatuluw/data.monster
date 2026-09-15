@@ -126,7 +126,7 @@
 	--duration-slow: 450ms;
 	--duration-enter: 600ms;
 
-	--max-width: 72rem;
+	--max-width: 90rem; /* 1440px — app-wide content container cap */
 	--gutter: clamp(1rem, 3vw, 2rem);
 }
 
@@ -603,4 +603,17 @@ textarea,
 	.spinner {
 		animation-duration: 2s;
 	}
+}
+
+/* App-wide: every interactive element gets the pointer cursor (browsers —
+   especially Windows/Chrome — default buttons to the arrow cursor). */
+button:not(:disabled),
+a,
+select:not(:disabled),
+summary,
+label[for],
+[role='button']:not(:disabled),
+[role='tab']:not(:disabled),
+[onclick]:not(:disabled) {
+	cursor: pointer;
 }

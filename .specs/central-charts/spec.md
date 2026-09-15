@@ -11,7 +11,9 @@ First chart/block citizens, per decision:
 - **table** (block type) — renders query rows, reusing existing table-view machinery
 - **text** (block type) — trivial, included since it is free
 
-Out of scope for this phase (later, additive): master-item library, relationship-graph auto-JOIN, per-type custom panels, annotation marks beyond `ruleY`, linked-hover sync, remaining 28 chart types, `plotOptions` escape hatch UI.
+**In scope (amendment, locked 2026-09-15):** the semantic layer — master items (measures/dimensions as table-bound expressions in a workspace library) and the relationship graph with auto-JOIN — plus its `/data` editors: a relationship editor under Relationships, and Measures | Dimensions tabs.
+
+Out of scope for this phase (later, additive): per-type custom panels, annotation marks beyond `ruleY`, linked-hover sync, remaining 28 chart types, `plotOptions` escape hatch UI.
 
 ## Success Criteria
 
@@ -20,7 +22,7 @@ Out of scope for this phase (later, additive): master-item library, relationship
 - Design mode: click a block → inspector edits its spec fields (schema-driven); add-block menu offers chart (bar/heatmap), table, text; blocks live-re-render
 - Code mode: the same document as editable JSON text with live validation; switching modes is lossless
 - Selecting a dimension value on a chart cross-filters the other charts and the table via re-query (source chart excluded, Qlik-style); click-away clears
-- Bar and heatmap lab pages (`/labs/bar-chart`, `/labs/heatmap`) render through the registry without losing current behavior
+- Master items and relationships are managed from `/data` (relationship editor + Measures | Dimensions tabs) and used in the page editor's role inputs
 - Shared behaviors work identically on both charts: page-consistent colors, declarative tooltips, `heightVh`, empty/error/missing-role states
 - All pure logic (validation, query compilation, registry resolution, color scale, tooltip templating) is unit-tested in `tests/` (vitest, out of `src/`)
 
@@ -39,7 +41,8 @@ Out of scope for this phase (later, additive): master-item library, relationship
 - Test files live in `tests/`, never in `src/` (vite dep-optimizer rule).
 - Charts query the workspace DuckDB via the existing `$lib/db-operations` pipeline.
 - The old draft `/pages` (charts on first table) is replaced by the list page; its draft `src/lib/components/BarChart.svelte` (top-level) is retired.
-- Data roles v1: exactly what bar/heatmap/table need. No master-item refs yet (`ref` field reserved in types, resolver returns a "missing master item" state when encountered).
+- Data roles v1: exactly what bar/heatmap/table need. Master-item `ref`s resolve via FR-14; missing refs render a "missing master item" state.
+- Every chart binds one `source.table`; columns from related tables are only reachable through master items bound to those tables (auto-JOIN via FR-15). No raw `from`-clause escape this phase.
 
 ## Functional Requirements
 
@@ -124,6 +127,30 @@ Design mode: `PageGrid` preview + selected-block inspector (schema-driven fields
 `/labs/bar-chart` + `/labs/heatmap` pages mount registry entries (thin pages); retire old draft `src/lib/components/BarChart.svelte` and the `pages - Copy` route; `ChartConfigDrawer` generalized only as far as the inspector needs (no speculative API).
 
 - **Acceptance**: labs unchanged visually; no dead components/routes left; `svelte-check` clean.
+
+### FR-14 Master-item model + storage
+
+`d8a_monster_items` in the internal DB (`id` text PK, `kind` 'measure'|'dimension', `table`, `label`, `expr`, `fmt?`, `description?`, timestamps); Rust commands `list_items/get_item/save_item(upsert)/delete_item` in an `items.rs` module following the `saved_queries` pattern; `$lib` wrapper. Chart specs resolve `measures[].ref`/`dimensions[].ref` against the loaded library — inline `{expr,label,fmt}` and `ref` are the two allowed forms; a `ref` that no longer exists yields a **missing master item** block state (never silent breakage).
+
+- **Acceptance**: `tests/items.test.ts` — resolution of ref vs inline, missing ref detection, expression extraction (`{expr, alias}` pairs for the compiler); commands verified per FR-10 precedent; all green.
+
+### FR-15 Relationship model + auto-JOIN compiler
+
+`d8a_monster_relationships` (`id`, `from_table`, `from_column`, `to_table`, `to_column`, `kind?`); Rust commands following the same pattern. Compiler: given chart `source.table` + resolved items/columns, determine the set of involved tables; walk the relationship graph (shortest path, BFS) to generate `JOIN` clauses in dependency order. A chart may use an item only if its bound table is the source table or reachable via relationships (Q7-B) — `availableItems(sourceTable, items, relationships)` is pure and unit-tested.
+
+- **Acceptance**: `tests/relationships.test.ts` — direct join, two-hop join, unreachable table rejected, cycle-safe BFS, JOIN clause ordering; all green.
+
+### FR-16 `/data` relationship editor
+
+Under `/data` → Relationships: list existing relationships (from → to), create/edit/delete with table + column pickers fed by the app's table metadata; validation (no duplicate edges, no self-join unless explicitly typed).
+
+- **Acceptance**: create a relationship between two real tables; it appears in the list, persists, and a chart using a cross-table item auto-JOINs (CDP smoke).
+
+### FR-17 `/data` Measures | Dimensions tabs
+
+Two new tabs beside Relationships: list/create/edit/delete master items — kind-appropriate form (label, bound table, expression editor with schema autocomplete, fmt, description). Deleting an item used by pages leaves those blocks in the missing-item state (verified).
+
+- **Acceptance**: create a measure and a dimension from `/data`; use both in a page chart via the inspector picker; delete → block shows missing-item state.
 
 ## Task Logging
 

@@ -19,6 +19,7 @@ The app-wide styling layer: design tokens in `src/app.css`, the `src/lib/compone
   - `sage-*` ramp re-harmonized to brand green; status hues: danger ≈ hue 25, warning ≈ 85, success = brand
 - **Typography**: Inter for all UI text (display + body, tabular figures so numbers align), Geist Mono reserved for data detail (SQL, chart tick/data labels). Spectral, Public Sans and Lekton were removed from the `src/app.html` font stack (2026-09-14)
 - **Chart palettes**: category palettes lead with brand green; blue is allowed as a categorical data hue, never as brand
+- **Layout**: `--max-width` = 90rem (1440px); `.app-main > :global(*)` in `src/routes/+layout.svelte` caps + centers every page root (2026-09-15)
 - **Anti-pattern**: 3px border-left blockquote stripe is a banned AI-tell — use full hairline border + sunken background instead
 
 ## Key rules / properties
@@ -35,3 +36,4 @@ The app-wide styling layer: design tokens in `src/app.css`, the `src/lib/compone
 
 - 2026-09-12: copper/editorial theme replaced by ledger-green/Spectral/Public Sans professional-finance theme via token re-valuation (rollback point: `git reset --hard f728c70`)
 - 2026-09-14: typography re-paired to Inter (UI) + Geist Mono (data); Picasso canvases switched Lekton → Geist Mono; Labs page reorganized to one card per chart type
+- 2026-09-15: app-wide 1440px content cap via shared layout lever; `--max-width` 72rem → 90rem (PR #4)

@@ -80,7 +80,7 @@
 	<title>Data Analyst — Data Monster</title>
 </svelte:head>
 
-<div class="overview">
+<div class="overview full-bleed">
 	<div class="overview-header">
 		<h2 class="overview-title">Data Analyst</h2>
 		<span class="tag tag-accent">{tables.length} table{tables.length !== 1 ? 's' : ''}</span>

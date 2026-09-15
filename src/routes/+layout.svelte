@@ -132,10 +132,11 @@
 	<header class="app-header">
 		<div class="app-brand-group">
 			<a href="/" class="app-brand">
-				<span class="brand-mark"></span>
+				<img src="/monster-on-white.svg" alt="Data Monster logo" class="brand-logo" />
 				Data Monster
 			</a>
 			{#if app.workspacePath}
+				<span class="brand-divider" aria-hidden="true">&middot;</span>
 				<span class="workspace-label" title={app.workspacePath}>{app.workspacePath}</span>
 			{/if}
 		</div>
@@ -196,7 +197,7 @@
 	{#if showWorkspacePicker && !app.dbReady}
 		<div class="workspace-picker">
 			<div class="workspace-card">
-				<span class="brand-mark-lg"></span>
+				<img src="/monster-on-white.svg" alt="Data Monster logo" class="brand-logo brand-logo-lg" />
 				<h2 class="workspace-title">Welcome to Data Monster</h2>
 				<p class="workspace-desc">Choose a folder to store your data. Everything is saved to disk.</p>
 				<button class="btn btn-primary" onclick={handleSelectWorkspace}>
@@ -261,29 +262,28 @@
 		text-decoration: none;
 	}
 
-	.brand-mark {
-		width: 20px;
-		height: 20px;
-		border: 2px solid var(--color-accent);
-		border-radius: var(--radius-xs);
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
+	.brand-logo {
+		width: 30px;
+		height: 32px;
+		display: block;
+		margin-right: var(--space-3);
 	}
 
-	.brand-mark::after {
-		content: "";
-		width: 6px;
-		height: 6px;
-		background: var(--color-accent);
-		border-radius: 1px;
+	.brand-logo-lg {
+		width: 72px;
+		height: 76px;
+		margin: 0 auto var(--space-4);
 	}
 
 	.app-brand-group {
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
+	}
+
+	.brand-divider {
+		color: var(--color-text-tertiary);
+		font-size: var(--text-md);
 	}
 
 	.workspace-label {
@@ -351,6 +351,20 @@
 		padding: 0;
 	}
 
+	/* app-wide content cap: every page's root container maxes out and centers
+	   at 1440px (token --max-width) */
+	.app-main > :global(*) {
+		width: 100%;
+		max-width: var(--max-width);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
+	/* full-bleed pages (analyst, data, page editor) span the whole window */
+	.app-main > :global(.full-bleed) {
+		max-width: none;
+	}
+
 	.app-error {
 		padding: var(--space-3) var(--space-4);
 		margin-bottom: var(--space-4);
@@ -376,25 +390,7 @@
 		padding: var(--space-12) var(--space-8);
 	}
 
-	.brand-mark-lg {
-		width: 64px;
-		height: 64px;
-		border: 2px solid var(--color-accent);
-		border-radius: var(--radius-md);
-		position: relative;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-accent-muted);
-	}
 
-	.brand-mark-lg::after {
-		content: "";
-		width: 24px;
-		height: 24px;
-		background: var(--color-accent);
-		border-radius: var(--radius-xs);
-	}
 
 	.workspace-title {
 		font-family: var(--font-display);

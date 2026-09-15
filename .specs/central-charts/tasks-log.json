@@ -1,0 +1,155 @@
+[
+  {
+    "task_id": "core-001",
+    "title": "FR-1 Spec types + validation",
+    "summary": "Created src/lib/charts/spec-types.ts (PageDoc, ChartBlock/TableBlock/TextBlock, measures as expressions or master-item refs, grain/filter/sort/annotation/tooltip/axes types) and src/lib/charts/validate.ts \u00e2\u20ac\u201d pure structural validator returning {path,message}[], never throws. TDD: tests/validate.test.ts written first (RED: module missing), 22 tests green; total suite 31/31.",
+    "is_working": true,
+    "timestamp": "2026-09-15T09:34:00Z",
+    "notes": "Block/chart type lists hardcoded in validate.ts with ponytail comment \u00e2\u20ac\u201d FR-3 registry swaps them. Role-count validation deliberately deferred to FR-3 (registry owns roles).",
+    "decisions_made": "DimensionSpec/MeasureSpec are discriminated by ref-vs-(col|expr) presence; empty expr reports at .expr path; exactly-one-of ref/expr enforced at measure level."
+  },
+  {
+    "task_id": "core-002",
+    "title": "FR-2 Query compiler",
+    "summary": "src/lib/charts/query/compile.ts \u2014 compileChartQuery (canonical + topN/Other wrapper + grain date_trunc/strftime), compileTableQuery (no aggregation), toGrid pivot helper. Schema guard rejects unknown tables/columns (injection), filter literals escaped, cross-filter WHERE injection. TDD: tests/compile.test.ts (20 tests) red->green; suite 51/51.",
+    "is_working": true,
+    "timestamp": "2026-09-15T09:52:00Z",
+    "notes": "Unresolved master-item refs throw \u2014 resolver (FR-14) runs before compile. Joins accepted pre-built via opts.joins (FR-15).",
+    "decisions_made": "Dimension without grain+label emits no AS; unlabeled measures alias m0/m1; topN applies to single-dimension charts only; grid pivot is client-side (toGrid), not SQL."
+  },
+  {
+    "task_id": "core-003",
+    "title": "FR-3 Registry core",
+    "summary": "src/lib/charts/registry.ts \u2014 ChartTypeDefinition (roles, optionsSchema, hooks, annotation whitelist, defaults), resolveChartBlock with role under/overflow errors, mergeOptions defaults merging. registry-setup.svelte.ts registers bar+heatmap and wires renderer components. TDD: tests/registry.test.ts (8) red->green.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "core-004",
+    "title": "FR-4 Color scale + tooltip",
+    "summary": "color-scale.ts (page-level colorOf, first-seen palette, overrides) + tooltip.ts ({field} template, fmt map, named formats hours/usd/pct/int). TDD: color-and-tooltip.test.ts.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "semantic-001",
+    "title": "FR-14 Master items (frontend)",
+    "summary": "items.ts \u2014 resolveItems: ref vs inline resolution, missing-ref collection (missing-master-item state), involvedTables for auto-JOIN. Rust storage done by delegated worker (items.rs, cargo tests pass). TDD: items.test.ts.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "semantic-002",
+    "title": "FR-15 Relationships + auto-JOIN",
+    "summary": "relationships.ts \u2014 availableItems gate (Q7-B), buildJoins BFS shortest-path with cycle safety, undirected traversal, unreachable throws. Rust storage (relationships.rs) by worker. TDD: relationships.test.ts \u2014 found+fixed a real bug (unreachable table silently skipped).",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "render-001",
+    "title": "FR-5 ChartCard shell",
+    "summary": "ChartCard.svelte \u2014 card frame extracted from labs BarChart: title/subtitle, inline selection label, bolt config slot, ok/loading/empty/error/missing states. Note: prop named status not state ($state rune collision).",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "render-002",
+    "title": "FR-6 Bar renderer",
+    "summary": "renderers/BarChartRenderer.svelte \u2014 BarX/BarY by options.orientation, topN via engine, sameDatum selection, scale:null fill bypass, shared tooltip, ruleY annotations. Labs page ported onto it.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "render-003",
+    "title": "FR-7 Heatmap renderer",
+    "summary": "renderers/HeatmapRenderer.svelte \u2014 toGrid pivot, threshold domain from data max, no-data holes, in-cell labels, narrow-width axis flip, scheme option. Labs page ported.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "render-004",
+    "title": "FR-8 Table renderer",
+    "summary": "renderers/TableRenderer.svelte \u2014 compact page table, sticky header, limit default 50.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "page-001",
+    "title": "FR-9 Page runtime",
+    "summary": "page-runtime.svelte.ts \u2014 createPageRuntime: per-block query state ($state proxy \u2014 mutations must go through states[id], raw-object mutation was a real bug found via CDP), selection bus cross-filter re-query (source excluded), shared colorScale, annotation scalar evaluation, bar default sort desc. PageGrid.svelte 12-col grid + registry dispatch + missing/error/loading states. TDD: page-runtime.test.ts (bus helpers).",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "persist-001",
+    "title": "FR-10 pages storage",
+    "summary": "Delegated worker: pages.rs (d8a_monster_pages), items.rs (d8a_monster_items), relationships.rs (d8a_monster_relationships) + command registration + CREATE TABLEs in database.rs. cargo check clean, 8 cargo tests pass. central-api.ts $lib wrappers.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "routes-001",
+    "title": "FR-11 /pages list",
+    "summary": "Rebuilt /pages as page list + create (name->slug->editor) + delete; old draft and pages-Copy removed.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "routes-002",
+    "title": "FR-12 dual-mode editor",
+    "summary": "/page/[slug]: Design mode (PageGrid + BlockInspector: schema-driven options, roles with master-item pickers, tooltip template, annotations, heightVh, span, rows) + Code mode (JSON textarea + live validation + lossless switch). Debounced deep-tracked runtime recreation. CDP smoke: 11/11 PASS incl. create->chart->code->save->reload loop.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "semantic-003",
+    "title": "FR-16 /data relationships",
+    "summary": "RelationshipEditor.svelte in /data Relationships tab (was an empty placeholder): list/create/delete with table+column pickers.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "semantic-004",
+    "title": "FR-17 /data measures|dimensions",
+    "summary": "ItemEditor.svelte \u2014 one component, two tabs (Measures/Dimensions): master-item CRUD with table binding, expression editor, fmt for measures.",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  },
+  {
+    "task_id": "cleanup-001",
+    "title": "FR-13 labs migration + cleanup",
+    "summary": "/labs/bar-chart + /labs/heatmap mount registry renderers as thin pages; retired top-level BarChart.svelte, Heatmap.svelte, pages/chart route, 'pages - Copy'. svelte-check: only 2 pre-existing errors remain (ModelManager, TableDrawer \u2014 untouched).",
+    "is_working": true,
+    "timestamp": "2026-09-15T12:40:00Z",
+    "notes": "",
+    "decisions_made": ""
+  }
+]

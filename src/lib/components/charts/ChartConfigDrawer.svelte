@@ -5,34 +5,48 @@
 	let {
 		open = $bindable(false),
 		title = 'Chart configuration',
+		width = '30vw',
+		overlay = true,
+		onClosed,
 		children,
 	}: {
 		open?: boolean;
 		title?: string;
+		/** drawer width, any CSS length (labs default 30vw; page config view 50vw) */
+		width?: string;
+		/** dim + click-away overlay; off in the focused config view (left chart stays live) */
+		overlay?: boolean;
 		/** config fields — plain inputs, styled via .field/.input below */
 		children: Snippet;
+		/** fired on close (overlay click / X) — for non-bound usage */
+		onClosed?: () => void;
 	} = $props();
 
 	function close() {
 		open = false;
+		onClosed?.();
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="drawer-overlay" class:drawer-overlay-visible={open} onclick={close} onkeydown={() => {}}>
+<!-- dim backdrop only in overlay mode — the drawer itself must NEVER sit inside
+     the overlay: opacity:0 on the overlay hides its whole subtree (that made the
+     overlay=false drawer exist but invisible) -->
+{#if overlay}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<section class="drawer" class:drawer-open={open} onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
-		<div class="drawer-header">
-			<h2 class="drawer-title">{title}</h2>
-			<button class="drawer-close" onclick={close} title="Close">
-				<X size={16} />
-			</button>
-		</div>
-		<div class="drawer-body">
-			{@render children()}
-		</div>
-	</section>
-</div>
+	<div class="drawer-overlay" class:drawer-overlay-visible={open} onclick={close} onkeydown={() => {}}></div>
+{/if}
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<section class="drawer" class:drawer-open={open} style={`width: ${width};`} onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
+	<div class="drawer-header">
+		<h2 class="drawer-title">{title}</h2>
+		<button class="drawer-close" onclick={close} title="Close">
+			<X size={16} />
+		</button>
+	</div>
+	<div class="drawer-body">
+		{@render children()}
+	</div>
+</section>
 
 <style>
 	.drawer-overlay {

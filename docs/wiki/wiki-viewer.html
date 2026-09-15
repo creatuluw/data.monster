@@ -12230,6 +12230,44 @@ timestamp: "2026-09-11T21:35:13.611Z"
 ├── tsconfig.json []
 └── vite.config.ts []
 `,
+  "decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md": `---
+type: Decision
+title: "Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred"
+description: Context
+tags: [central-charts, report-pages, scope, v1]
+status: accepted
+timestamp: "2026-09-15T09:18:44.117Z"
+---
+
+# Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred
+
+## Context
+
+The central reusable-chart build (report pages: charts + blocks on a 12-col grid, dual-mode editor) starts from \`.specs/central-charts/spec.md\` — 13 FRs in 5 phases. The interview had already locked Q3–Q16 (spec format, expressions-as-measures, master items, auto-JOIN, query engine, option panels, cross-filter, tooltips, shared colors, grid, annotations, routes). This decision records the **v1 scope calls** made while writing the spec (reported to the user for veto, none vetoed at time of writing).
+
+## Choice — v1 ships bar chart, heatmap, and table as the first page objects
+
+Plus a text block. Six scope calls:
+
+1. **Master items + relationship auto-JOIN deferred** to the next phase. v1 uses inline expressions only; a \`ref\` field is reserved in the spec types so master items slot in later without a breaking change.
+2. **Annotations v1 = \`ruleY\` on bar only** — one mark from the Q15 basic-marks whitelist; heatmap opts out; other types additive later.
+3. **Text block included** — locked in Q14-B and nearly free.
+4. **Old draft \`/pages\` is replaced**; top-level \`BarChart.svelte\` and the \`pages - Copy\` route retired (FR-13 cleanup).
+5. **No new dependencies** — hand-rolled spec validator, no zod.
+6. **Table block = plain query rows** — no aggregation, limit 50, respects cross-filter selection.
+
+## Alternatives considered
+
+- Building master items + auto-JOIN now (rejected: biggest risk surface, delays first renderable page).
+- Richer annotation set from day one (rejected: per-type whitelisting makes it additive; ruleY proves the pipeline).
+- zod for spec validation (rejected: adds a dependency for a schema we own end-to-end).
+
+## Consequences
+
+- First user-visible page can be composed from bar + heatmap + table + text on the grid.
+- The \`ref\` reservation means master-item adoption later is non-breaking.
+- Phase 5 explicitly deletes the draft \`/pages\` and the copied route — no legacy page format survives.
+`,
   "decisions/consolidate-chart-engines-to-picasso-js.md": `---
 type: Decision
 title: Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot
@@ -12270,6 +12308,22 @@ Deleted entirely: \`echarts-charts/\`, \`observable-charts/\`, \`svelteplot-char
 - [Proxy remote LLM calls through Rust, not webview fetch](./proxy-remote-llm-calls-through-rust-not-webview-fetch.md) - Context
 - [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](./consolidate-chart-engines-to-picasso-js-layerchart-drop-echa.md) - Context
 - [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](./labs-catalog-placeholder-first.md) - Context
+- [Two-surface report pages: code mode edits a declarative spec, not Svelte source (Q3, pending)](./two-surface-report-page-format.md) - Context
+- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](./measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) - Context
+- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](./master-item-library-table-binding-q6.md) - Context
+- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](./q7-locked-relationship-graph-drives-chart-item-availability-.md) - Context
+- [Q8 locked: one canonical query engine with per-type hooks](./q8-locked-one-canonical-query-engine-with-per-type-hooks.md) - Context
+- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](./q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) - Context
+- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](./q10-locked-chart-selections-cross-filter-other-charts-via-re.md) - Context
+- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](./q11-locked-tooltips-are-declarative-fields-one-template-stri.md) - Context
+- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](./q12-locked-page-level-consistent-colors-via-shared-scale-opt.md) - Context
+- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](./q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md) - Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](./q15-locked-reference-annotations-are-a-declarative-list-refe.md) - Context
+- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](./q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md) - Context
+- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](./q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) - Context
+- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](./q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) - Context
+- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](./central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) - Context
+- [Master-items amendment: semantic layer moves early into central-charts v1](./master-items-amendment-semantic-layer-moves-early-into-centr.md) - Context
 `,
   "decisions/labs-catalog-placeholder-first.md": `---
 type: Decision
@@ -12338,6 +12392,127 @@ After [consolidating chart engines](consolidate-chart-engines-to-picasso-js.md),
 - Future chart types each get a card + playground; port from the kees reference when a match exists (see [kees reference learning](../learnings/kees-reference-ports-cleanly.md)).
 - The reference's task-breakdown drawer was NOT ported (kees-specific data model); revisit when the heatmap hooks into real query results.
 `,
+  "decisions/master-item-library-table-binding-q6.md": `---
+type: Decision
+title: "Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth"
+description: Context
+tags: [chart-spec, report-pages, master-items, measures, dimensions, qlik]
+status: accepted
+timestamp: "2026-09-15T08:32:28.659Z"
+---
+
+# Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth
+
+## Context
+
+Continuation of the 2026-09-15 chart-spec/report-page design interview. Q5 ([[measures-dimensions-are-duckdb-expressions-not-column-agg-su]]) settled measures/dimensions as arbitrary DuckDB expression strings and left **Q6 open**: where the master-item library (reusable dimensions/measures) lives.
+
+The user answered **A** to Q6 and added a requirement: *each measure/dimension is associated with the table/data model it was created for, and this needs smart logic.*
+
+## Choice
+
+**A locked — workspace-level master library, plus explicit table binding:**
+
+- Master items live workspace-level in the internal DB (à la \`d8a_monster_master_items\`), **referenced by stable id** from chart specs — renames propagate; deletion surfaces a "missing master item" state instead of silently breaking.
+- Every master item carries a **binding to the table/data model it was created for** (e.g. \`table: "bookings"\`). Binding is explicit metadata on the item, not inferred.
+
+## Q7 open — how the binding drives chart item availability ("smart logic")
+
+- **A) Strict table matching** — a chart on table X sees exactly the items bound to X; save-time validation parses the expression's columns against that table. Simple, siloed.
+- **B) Table matching + relationship graph** — chart on X offers items from X **and tables related via the table-relationships model** (existing PRD); picking an item from a related table makes the chart's query auto-\`JOIN\` along the declared relationship (\`bookings ⋈ clients\`). Qlik-association feel.
+- **C) Inference-first** — no explicit binding; parse expressions and match against all schemas (ambiguities → user resolves). Most "smart", least predictable — renames or shared column names shift associations silently.
+
+**Assistant lean: B** — it reuses the table-relationships PRD as the source of truth for "smart" instead of inventing inference magic, and keeps the explicit binding greppable in the spec.
+
+## Consequences
+
+- The master library schema needs at minimum: \`{ id, label, expr, fmt, table }\`.
+- Table-relationships (\`.prds/table-relationships\`) becomes a load-bearing dependency of chart item availability if B is picked.
+- Chart SQL generation gains a JOIN-planning responsibility for cross-table items under B.
+
+## Source
+
+- Design interview turn, 2026-09-15 (user's Q6 answer "A + table binding with smart logic"; Q7 posed with lean B).
+`,
+  "decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md": `---
+type: Decision
+title: "Master-items amendment: semantic layer moves early into central-charts v1"
+description: Context
+tags: [central-charts, master-items, semantic-layer, planning]
+status: proposed
+timestamp: "2026-09-15T09:31:01.992Z"
+---
+
+# Master-items amendment: semantic layer moves early into central-charts v1
+
+## Context
+
+The central-charts v1-scope decision ([central-charts-v1-scope](../decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md)) explicitly **deferred** the master-item library and relationship-graph auto-JOIN out of phase 1, and the written spec (\`.specs/central-charts/spec.md\`, FR-1..13) reflects that deferral.
+
+At the end of the design session (2026-09-15) the user amended this: master items + auto-JOIN + editors should be built **as part of the central-charts build, inserted early** — the semantic layer feeds the query engine, so it belongs before it.
+
+## The amendment (agreed, not yet written into the spec)
+
+- **~4 new FRs/todos** inserted early in the task list: master-item library, relationship graph + auto-JOIN, and the three \`/data\` editors — a **relationship editor** plus **Measures | Dimensions tabs** under \`/data\`.
+- Internal DB tables: \`d8a_monster_pages\`, \`d8a_monster_items\`, \`d8a_monster_relationships\` (note: the design doc says \`d8a_monster_master_items\`; the amendment proposes \`d8a_monster_items\` — name pending confirmation).
+- Cleanup confirmed as part of the plan: old draft \`/pages\` replaced, top-level \`src/lib/components/BarChart.svelte\` and the \`pages - Copy\` route retired (already FR-13).
+
+## Pending confirmations (asked, not yet answered)
+
+1. Amendment tweaks — scope of the ~4 new FRs.
+2. Cleanup OK — retire \`BarChart.svelte\` (top-level) + \`pages - Copy\`.
+3. Table names — the three \`d8a_monster_*\` names above.
+
+## Consequences
+
+- Supersedes **only the deferral clause** of the v1-scope decision; bar + heatmap + table + text blocks remain the chart/block citizens.
+- Once confirmed, \`.specs/central-charts/spec.md\` + \`tasks.json\` get the new FRs/todos inserted before the query-engine FR (semantic layer first).
+- [[q6]] master-item model (stable ids, table-bound) and [[q7]] relationship-graph auto-JOIN become v1 requirements instead of follow-ups.
+
+## Source
+
+- Session summary turn, 2026-09-15 (assistant's three pre-build confirmation questions).
+`,
+  "decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md": `---
+type: Decision
+title: Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)
+description: Context
+tags: [chart-spec, report-pages, measures, dimensions, qlik]
+status: accepted
+timestamp: "2026-09-15T08:28:20.004Z"
+---
+
+# Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)
+
+## Context
+
+During the 2026-09-15 report-page/chart-spec design interview, the user asked for Qlik Sense-style analysis: expressions like \`sum(if(type = 'class', hours))\` instead of picking a column + aggregation, plus reusable **master dimensions/measures** they define once and customize, then add to any chart.
+
+Related: [[two-surface-report-page-format]] (the spec document this feeds into) and [[chart-authoring-two-surfaces-serializable-spec]].
+
+## Choice
+
+**Measures and dimensions are arbitrary DuckDB expression strings, not \`{col, agg}\` sugar.**
+
+- A measure = \`{ label: "Class hours", expr: "sum(if(type = 'class', hours))", fmt: "..." }\` — any valid DuckDB expression.
+- The UI's column/agg dropdowns are **autocomplete sugar that writes expressions**; the stored chart spec always holds the expression string.
+- Chart templates slot expressions into generated SQL: \`SELECT {{dimensions}}, {{measures}} ... GROUP BY {{dimensions}}\`.
+
+## Alternatives considered
+
+- Structured \`{column, aggregation}\` model — rejected: cannot express conditionals, arithmetic, or multi-column measures like \`sum(if(...))\`; the user explicitly needs them.
+- Expression-only UI (no dropdowns) — rejected as UX: dropdowns stay as sugar, but the persisted model is the expression.
+
+## Consequences
+
+- The serializable chart spec stores expression strings; validity is whatever DuckDB accepts.
+- Master items (reusable dimensions/measures) become named \`{label, expr, fmt}\` records — same shape, referenced by charts.
+- **Q6 open**: where the master-item library lives — (A) workspace-level in internal DB (\`d8a_monster_master_items\`, referenced by stable id), (B) page-level inside the page spec, or (C) both with a promotion flow (page-local → workspace), resolving page-local first. Pair A/C with **stable id** references so renames propagate and deletion surfaces a "missing master item" state instead of breaking silently.
+
+## Source
+
+- Design interview turn, 2026-09-15 (user request for Qlik-style measures/dimensions and master items).
+`,
   "decisions/professional-finance-redesign-ledger.md": `---
 type: Decision
 title: "Professional-finance redesign: ledger green + Spectral/Public Sans"
@@ -12401,6 +12576,430 @@ Proxy ALL remote LLM calls through Rust:
 - One streaming contract (\`local-llm:*\` events) covers all LLM modes in the frontend.
 - Rust changes require a dev-server restart to take effect.
 `,
+  "decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md": `---
+type: Decision
+title: "Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)"
+description: Context
+tags: [chart-spec, selection, cross-filter, interview, report-pages]
+status: accepted
+timestamp: "2026-09-15T08:42:11.113Z"
+---
+
+# Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)
+
+## Context
+
+Part of the ongoing Q&A locking the central reusable-chart / report-page spec design (Q3, Q5, Q6, Q7, Q8 already locked). Q10 asked how chart selections behave. User answered **B** (2026-09-15).
+
+## Decision
+
+- **Selection on a chart cross-filters the OTHER charts** on the page by **re-querying** the data with the selection applied as a filter — Qlik-style.
+- **The chart that owns the selection excludes its own selection from its own filter** (so it keeps showing the full distribution; other charts narrow).
+- **Selections are transient exploration state, never persisted** in the chart/report spec. Saved selections were explicitly deferred ("flag me if you want 'saved selections' someday").
+
+## Alternatives / ruled out
+
+- Selection that only highlights within its own chart (no cross-chart filtering) — rejected.
+- Persisted/saved selections as part of the spec — rejected for now; keeps the spec purely about structure, not exploration state.
+
+## Consequences
+
+- Cross-filtering runs through [[q8-locked-one-canonical-query-engine-with-per-type-hooks]] — every chart re-queries on selection change; no client-side filtering layer to invent.
+- With [[q7-locked-relationship-graph-drives-chart-item-availability-]] auto-JOIN, a selection on one table's field filters charts joined from related tables via the relationship graph.
+- Selection state lives outside the serializable spec (page-level runtime state), keeping the two-surface code/no-code parity ([[two-surface-report-page-format]]) clean.
+
+## Related open question
+
+Q11 (tooltips: declarative fields + optional template string vs. snippet hatch) posed same day, not yet locked.
+`,
+  "decisions/q11-locked-tooltips-are-declarative-fields-one-template-stri.md": `---
+type: Decision
+title: "Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type"
+description: Context
+tags: [chart-spec, tooltip, interview, report-pages]
+status: accepted
+timestamp: "2026-09-15T08:53:44.610Z"
+---
+
+# Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type
+
+## Context
+
+Part of the ongoing Q&A locking the central reusable-chart / report-page spec design (Q3, Q5, Q6, Q7, Q8, Q9, Q10 already locked). Q11 asked how tooltips work. User answered **B** (2026-09-15).
+
+## Decision
+
+- **Tooltips are declarative**: the chart spec carries tooltip config as declarative fields (which values to show) plus **one optional template string** for custom formatting.
+- **One shared tooltip renderer per chart type** — the chart-type component owns a single tooltip renderer that consumes those fields. No per-chart custom tooltip code in the spec layer.
+
+## Alternatives / ruled out
+
+- **Snippet hatch** (custom tooltip code/snippet per chart) — ruled out; would break serializability and the two-surface parity ([[two-surface-report-page-format]]). Custom rendering stays in shared per-type component code, not the spec.
+- Note: the existing \`/labs\` chart components use a tooltip *snippet* pattern at the component level ([[chart-fundament]]) — that stays; this decision governs the report-page spec layer on top.
+
+## Consequences
+
+- Tooltip config serializes into the declarative chart spec — editable from both surfaces ([[two-surface-report-page-format]]).
+- Consistent with [[q9-locked-chart-option-panels-are-schema-driven-with-a-custo]]: schema-driven config with custom logic living in shared component code, not in specs.
+- Template string is the single escape hatch for formatting — keeps 99% of tooltips pure fields.
+
+## Related open question
+
+Q12 (chart colors: per-chart vs. page-consistent shared scale vs. master-dimension value colors) posed same day, not yet locked.
+`,
+  "decisions/q12-locked-page-level-consistent-colors-via-shared-scale-opt.md": `---
+type: Decision
+title: "Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec"
+description: Context
+tags: [chart-spec, colors, interview, report-pages]
+status: accepted
+timestamp: "2026-09-15T08:55:45.302Z"
+---
+
+# Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec
+
+## Context
+
+Part of the ongoing Q&A locking the central reusable-chart / report-page spec design (Q3, Q5–Q11 already locked). Q12 asked how chart colors work: per-chart palettes vs. page-consistent shared scale vs. master-dimension value colors. User answered **B** (2026-09-15).
+
+## Decision
+
+- **Colors are consistent at page level via a shared scale**: charts on a report page that encode the same dimension share one color scale, so the same category is the same color across every chart on the page.
+- The spec carries **optional manual color overrides** — defaults come from the shared scale, and a chart (or item) can pin an explicit color when the user wants manual control.
+
+## Alternatives / ruled out
+
+- **Per-chart colors** (each chart picks its own palette) — ruled out; breaks cross-chart readability, the point of putting several charts on one page.
+- **Master-dimension value colors** (value→color mapping stored on master items, Qlik-style) — deferred/ruled out for now; heavier metadata commitment than the current master-item model ([[master-item-library-table-binding-q6]]) warrants.
+
+## Consequences
+
+- The shared scale lives at the report-page layer, not per-chart — chart-type components consume resolved colors rather than each owning a palette.
+- Overrides stay declarative in the spec, preserving two-surface parity ([[two-surface-report-page-format]]) and serializability.
+- Complements the declarative-config pattern of [[q11-locked-tooltips-are-declarative-fields-one-template-stri]] and [[q9-locked-chart-option-panels-are-schema-driven-with-a-custo]]: defaults are automatic, manual control is fields in the spec.
+
+## Related open question
+
+Q13 posed same day, not yet locked: page layout model — flow with \`width\` per block (Evidence model, assistant's lean) vs. explicit 12-col grid vs. free canvas.
+`,
+  "decisions/q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md": `---
+type: Decision
+title: "Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)"
+description: "Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)"
+tags: [chart-spec, layout, grid, interview, report-pages]
+status: accepted
+timestamp: "2026-09-15T08:56:45.848Z"
+---
+
+# Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+
+# Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+
+## Context
+
+Part of the ongoing Q&A locking the central reusable-chart / report-page spec design (Q3, Q5–Q12 already locked). Q13 asked the page layout model — flow with \`width\` per block (Evidence.dev model, assistant's lean) vs. explicit 12-col grid vs. free canvas. User answered **B** (2026-09-15).
+
+## Decision
+
+- The report page is an **explicit grid**: the spec declares **rows**, and every block carries a **column span on a 12-column grid** (e.g. \`rows: [ { blocks: [ { span: 6, ...blockSpec } ] } ]\`).
+- Layout is fully declared in the spec — no auto-placement inference and no free-form positioning.
+
+## Alternatives / ruled out
+
+- **Flow layout with \`width\` per block** (Evidence.dev model) — ruled out; implicit row breaking is harder to reason about and round-trip in spec text than explicit rows.
+- **Free canvas** — ruled out; absolute positioning bloats the spec and fights two-surface parity ([[two-surface-report-page-format]]).
+
+## Consequences
+
+- \`span\` is a declarative field on the block, so both surfaces (code editor + no-code UI) produce identical layout from the same spec.
+- Sits on top of [[q12-locked-page-level-consistent-colors-via-shared-scale-opt]]: the page layer now owns both grid structure and the shared color scale.
+- Sets up Q14: what the blocks are (charts only vs. a general block envelope with a registry).
+
+## Related open question
+
+Q14 posed same turn, not yet locked: is the page a list of charts (v1) or a general block system from day one — every cell \`{ type, span, props }\` resolved via a **block registry** (\`chart\` wrapping a chart-type spec + \`text\` today; \`table\`, \`kpi\`, \`image\` later) — or the full set built now. Assistant leans the block envelope (B).
+`,
+  "decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md": `---
+type: Decision
+title: "Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted"
+description: Context
+tags: [charts, spec-design, annotations, q15, svelteplot]
+status: accepted
+supersedes: decisions/q15-reframed-annotations-should-speak-svelteplot-s-own-mark-
+timestamp: "2026-09-15T09:03:48.900Z"
+---
+
+# Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted
+
+## Context
+
+Follow-up to [[q15-reframed-annotations-should-speak-svelteplot-s-own-mark-]] (proposed option A: whitelisted svelteplot marks). The user added the concrete basic-marks set to the annotation vocabulary, which locks the pick and pins the whitelist.
+
+## Choice
+
+Annotation vocabulary = **svelteplot basic marks: Arrow, Dot, Line, Text, Rect** — per chart type whitelisted; values are **literals or measure expressions** (engine-evaluated, per [[measures-dimensions-are-duckdb-expressions-not-column-agg-su]]).
+
+- Each chart type's registry entry declares which of the five marks it hosts (non-cartesian types opt out, as in the Q15 lock).
+- **RuleX/RuleY** ride along as Line's axis-anchored siblings — the docs' canonical one-line reference line mark. Flagged to the user as an inclusion; awaiting a shout if Line alone should cover it.
+- No-code surface lists the type's supported marks + fields ("Add annotation" menu).
+
+## Alternatives considered
+
+- Evidence.dev's \`reference_line/area/point\` trio (original Q15 lock) — re-invents types svelteplot already names; superseded by the mark whitelist.
+- Arbitrary layered marks — power users get that via the \`plot_options\` escape hatch instead.
+
+## Consequences
+
+- Spec's \`annotations\` list entries speak svelteplot mark names directly (old \`type: "line"\` becomes \`mark: "ruleY"\` etc.).
+- Registry needs a draw hook per hosted mark per chart type.
+- Keeps spec serializable → code-mode/UI-mode parity ([[two-surface-report-page-format]]).
+
+## Related
+
+- Supersedes the *proposal* record for Q15's reframe; mechanism (declarative list, engine-evaluated \`at\`, per-type whitelist) unchanged from [[q15-locked-reference-annotations-are-a-declarative-list-refe]].
+- Builds on [[svelteplot-sole-chart-engine]].
+
+(Next open question in the series: **Q16** — no-code editing surface. Assistant leans A: dual-mode Design⇄Code page editor in \`/pages\`, inspector = labs bolt drawer generalized. Not locked; do not treat as decided.)
+`,
+  "decisions/q15-locked-reference-annotations-are-a-declarative-list-refe.md": `---
+type: Decision
+title: "Q15 locked: reference annotations are a declarative list; reference_line only in v1"
+description: Context
+tags: [charts, spec-design, annotations, q15]
+status: accepted
+timestamp: "2026-09-15T08:57:57.725Z"
+---
+
+# Q15 locked: reference annotations are a declarative list; reference_line only in v1
+
+## Context
+
+Question 15 in the chart/report spec design interview (series that locked Q3, Q5–Q13). Evidence.dev charts get annotations via \`reference_line\` / \`reference_area\` / \`reference_point\` children — the classic "one chart needs a target line" case. We had to decide whether annotations enter the declarative spec in v1, and if so how.
+
+## Choice (B — reference_line only, now)
+
+Chart spec gets an \`annotations\` list, v1 entry \`reference_line\`:
+
+\`\`\`json
+"annotations": [{ "type": "line", "on": "y", "at": <measure expr or number>, "label": "Target", "color": null }]
+\`\`\`
+
+- The **engine computes the value** — \`at\` can be a master-measure expression (e.g. *avg hours target*) or a literal number.
+- Every chart type declares **how it draws a y-line via its registry mark** (~1 line for most cartesian charts; heatmap/pie opt out).
+- Serializes trivially → code-mode/UI-mode parity by construction (consistent with [[two-surface-report-page-format]]).
+
+## Alternatives considered
+
+- **A — Defer**: not in v1; a chart needing a target line waits.
+- **C — Full set now** (line + area band + point highlight): complete Evidence parity, but three render paths per chart type up front.
+
+## Rationale
+
+The mechanism is the real design: an annotation list + engine-evaluated value + per-type draw hook. \`area\` and \`point\` later are just new entries in the same list — no new architecture. B builds the mechanism without paying C's per-type render cost for features nobody has asked for yet.
+
+## Consequences
+
+- Spec carries a typed \`annotations\` array; the block/chart registry needs a "draw a y-line" hook per chart type.
+- Non-cartesian types (heatmap, pie) must explicitly opt out.
+- \`area\`/\`point\` annotations slot in later as new \`type\` values.
+
+## Related
+
+- Extends [[measures-dimensions-are-duckdb-expressions-not-column-agg-su]] — \`at\` accepts a master-measure expression, evaluated by the engine.
+- Extends [[q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu]] — annotations live inside a chart block's spec.
+- Same serialization-first posture as [[two-surface-report-page-format]].
+`,
+  "decisions/q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md": `---
+type: Decision
+title: "Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)"
+description: Context
+tags: [charts, spec-design, annotations, q15, svelteplot]
+status: proposed
+timestamp: "2026-09-15T09:01:40.281Z"
+---
+
+# Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)
+
+## Context
+
+Reframe of [[q15-locked-reference-annotations-are-a-declarative-list-refe]] (Q15: annotations are a declarative list, engine-evaluated \`at\`, per-type draw hook — that mechanism survives). In the follow-up interview the user pointed at https://svelteplot.dev/features/marks: since [[svelteplot-sole-chart-engine]] (svelteplot renders everything), we don't need to invent Evidence.dev's \`reference_line/area/point\` vocabulary — svelteplot already names ~20 marks (area, arrow, bar, box, brush, cell, dot, frame, grid, line, link, pointer, raster, rect, regression, rule, text, tick, trail, vector, waffle, …). Q15 was re-asked as "how far does the annotation spec go in svelteplot's vocabulary?"
+
+## Options on the table
+
+- **A — Whitelisted annotation marks** (assistant's lean): spec gets \`annotations: [...]\` where each entry is a svelteplot mark + values, e.g. \`{ "mark": "ruleY", "at": 120 | { "expr": "avg(hours) * 1.1" }, "label": "Target", "color": null }\`. \`at\` accepts a literal or a **measure expression** (engine evaluates against the chart's data). Each chart type's registry entry declares **which annotation marks it hosts** (cartesian: rule/dot/text; heatmap: none). No-code surface: an "Add annotation" menu listing the type's supported marks + fields.
+- **B — Fixed trio, svelteplot underneath**: only line/area/point in the spec, mapped internally to ruleY/ruleX, rect/area, dot. Smaller vocabulary but re-invents types svelteplot already names; "add a tick/text label" later means new spec types again. (Closest to the original Q15 lock.)
+- **C — A + arbitrary layered marks**: any svelteplot mark with data refs, extra channels, own dataset (second series layered in). Max power — but that's a second chart-engine DSL inside the spec; the \`plot_options\` escape hatch (Q1-C) already serves power users.
+
+## Current lean
+
+**A** — svelteplot's own vocabulary, bounded by a per-type whitelist, expressions allowed for values. B re-invents what svelteplot names; C is what the escape hatch is for.
+
+## Status
+
+Proposed — awaiting the user's pick. If **A** is locked, this **supersedes** the v1 vocabulary of the original Q15 lock (its \`type: "line"\` entry becomes \`mark: "ruleY"\`, etc.); if **B**, the original lock stands. The \`annotations\` list + engine-evaluated \`at\` + per-type registry hook mechanism is common to all options.
+
+## Related
+
+- Builds on [[svelteplot-sole-chart-engine]] — one engine, so its mark names are the vocabulary.
+- Extends [[measures-dimensions-are-duckdb-expressions-not-column-agg-su]] — \`at\` accepts measure expressions.
+- Same serialization-first posture as [[two-surface-report-page-format]] — annotations must stay spec-serializable for code/UI parity.
+`,
+  "decisions/q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md": `---
+type: Decision
+title: "Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor"
+description: Context
+tags: [report-pages, routing, q16, interview]
+status: accepted
+timestamp: "2026-09-15T09:06:28.612Z"
+---
+
+# Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor
+
+## Context
+
+Report-pages design interview (Q-series, 2026-09-15). Q3 locked the two-surface format: one declarative spec document edited by both Design and Code mode. Q15's decision left open **Q16 — the no-code editing surface**. The user then specified the flow directly: a user creates pages in \`/pages\`, a new page opens at \`/page/<slug>\`, and the user builds the page there with content/components ("the A-pattern" = the dual-mode editor).
+
+## Decision
+
+**Locked (Q16):** \`/pages\` is the index + creation surface only. Creating a page immediately routes to \`/page/<slug>\`, which hosts the dual-mode (Design ⇄ Code) editor over the single declarative spec. All editing happens at the slug route, never in the list.
+
+- Route split: \`/pages\` (list, create) → \`/page/<slug>\` (edit, full canvas).
+- The slug is the page's identity in routes.
+- Follows [[two-surface-report-page-format]] (Q3): both surfaces edit the same spec; Q16 adds *where* they live.
+
+## Alternatives considered
+
+- **Modal / in-list editing** — rejected: page authoring with grids, charts, and annotations needs full-canvas space, not a dialog.
+- **One route with editor-mode tabs** — rejected: separates concerns poorly; list and editor have different data needs (index vs full spec).
+
+## Consequences
+
+- Q17 opened immediately after: **where the spec document physically lives** — internal DuckDB (\`d8a_monster_pages\`), workspace files, or files+DB cache. Not yet locked (assistant lean: A, internal DuckDB, consistent with master items Q6 and saved queries).
+- Implementation must add the \`/page/[slug]\` SvelteKit route (does not exist yet at time of decision).
+
+## Related
+
+- [[two-surface-report-page-format]] — Q3: dual-surface editing of one spec
+- [[q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu]] — layout model the editor will expose
+- [[master-item-library-table-binding-q6]] — items the page editor consumes
+`,
+  "decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md": `---
+type: Decision
+title: "Q7 locked: relationship graph drives chart item availability and auto-JOIN"
+description: Context
+tags: [chart-spec, report-pages, master-items, table-relationships, auto-join, qlik]
+status: accepted
+timestamp: "2026-09-15T08:33:48.687Z"
+---
+
+# Q7 locked: relationship graph drives chart item availability and auto-JOIN
+
+## Context
+
+Continuation of the 2026-09-15 chart-spec/report-page design interview. Q6 ([[master-item-library-table-binding-q6]]) locked the workspace-level master-item library with explicit table binding and left **Q7 open**: how the binding drives chart item availability.
+
+The user answered **B** to Q7.
+
+## Choice
+
+**B locked — table matching + relationship graph.** The relationship graph drives both sides of the data path:
+
+- A chart bound to table X offers master items from X **and tables related via the table-relationships model** (\`.prds/table-relationships\` PRD).
+- Picking an item from a related table makes the chart's query auto-\`JOIN\` along the declared relationship (\`bookings ⋈ clients\`) — Qlik-association feel.
+
+This closes the data path: stable-id master items + explicit table binding + relationship-driven availability/auto-JOIN.
+
+## Alternatives considered
+
+- **A) Strict table matching** — simple and siloed; rejected because it can't deliver the requested "smart logic" across related tables.
+- **C) Inference-first** (parse expressions, match against all schemas) — most "smart", least predictable; renames or shared column names shift associations silently.
+
+## Consequences
+
+- Table-relationships (\`.prds/table-relationships\`) becomes a **load-bearing dependency** of chart item availability — not just a documentation PRD.
+- Chart SQL generation gains a **JOIN-planning responsibility** for cross-table items.
+- This reopened Q5's follow-up as **Q8 (open)**: who generates the SQL — one shared query engine for all 32 chart types (chart type = pure renderer + role schema), per-type query templates, or shared engine + per-type hooks (date grain transform, top-N + Other, funnel ordering). Assistant lean: shared engine + type hooks (C) — one canonical query covers ~28 types, the few needing reshaping (heatmap grid pivot, funnel) get a hook instead of a forked engine.
+
+## Source
+
+- Design interview turn, 2026-09-15 (user's Q7 answer "B"; Q8 posed with lean C).
+`,
+  "decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md": `---
+type: Decision
+title: "Q8 locked: one canonical query engine with per-type hooks"
+description: Context
+tags: [chart-spec, report-pages, query-engine, labs, registry-hooks, svelteplot]
+status: accepted
+timestamp: "2026-09-15T08:37:38.178Z"
+---
+
+# Q8 locked: one canonical query engine with per-type hooks
+
+## Context
+
+Continuation of the 2026-09-15 chart-spec/report-page design interview. Q7 ([[q7-locked-relationship-graph-drives-chart-item-availability-]]) left **Q8 open**: who generates the SQL — one shared query engine for all 32 chart types, per-type query templates, or shared engine + per-type hooks.
+
+The user answered **C**.
+
+## Choice
+
+**C locked — one canonical query engine + per-type hooks.** One shared query engine turns filled data roles into SQL for every chart type (chart type = pure renderer + role schema). The few shapes that need reshaping register hooks on the engine instead of forking it: **grain** (date transforms), **top-N + "Other"** bucketing, **grid pivot** (heatmap), **funnel ordering**. One canonical query covers ~28 types; hooks cover the rest.
+
+## Alternatives considered
+
+- **A) One engine for all, no hooks** — can't express grain/pivot/funnel reshaping.
+- **B) Per-type query templates** — 32 forks of query logic guarantee drift and untested corners.
+
+## Consequences
+
+- Query generation stays in one tested place; special shapes are declarative per-type hooks. Pairs with [[chart-fundament]] (buildBars aggregation) as the shared core every /labs chart builds on.
+- Same turn proposed the **prop taxonomy** (not yet locked): a shared base every chart gets — roles (from Q8), titles (\`title\`/\`subtitle\`), per-role \`fmt\` (one format library), legend, axis groups (title/ticks/gridlines/min-max/fit/labels/rotate), size (\`heightVh\`), states (empty, error, loading, *missing master item*), selection (\`sameDatum\`) — while the registry declares per-type mark options (scatter \`size\`, line \`missing_values\`/curve, heatmap \`scheme\`/\`threshold\`, bar \`topN\`/Other/orientation/stacked). Consistent with [[evidence-chart-architecture]].
+- **Q9 (open)**: how per-type options reach the no-code UI — (A) hand-built panels per type (current rule, [[each-labs-chart-owns-its-config-panel]]), (B) schema-driven panels auto-rendered from a registry options schema (field name, kind, default, min/max; JSON in code mode; unknown field → validation error), (C) **B + custom panel snippet escape hatch** (schema still declares the field so both surfaces stay consistent). Assistant lean: **C**.
+
+## Source
+
+- Design interview turn, 2026-09-15 (user's Q8 answer "C"; prop taxonomy proposed, Q9 posed with lean C).
+`,
+  "decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md": `---
+type: Decision
+title: "Q9 locked: chart option panels are schema-driven with a custom-panel hatch"
+description: Context
+tags: [chart-spec, report-pages, options-schema, config-panel, two-surface, labs]
+status: accepted
+timestamp: "2026-09-15T08:42:03.695Z"
+---
+
+# Q9 locked: chart option panels are schema-driven with a custom-panel hatch
+
+## Context
+
+Continuation of the 2026-09-15 chart-spec/report-page design interview. Q8 ([[q8-locked-one-canonical-query-engine-with-per-type-hooks]]) left **Q9 open**: how per-type chart options reach the no-code UI — hand-built panels per type (the current [[each-labs-chart-owns-its-config-panel]] rule), schema-driven panels auto-rendered from a registry options schema, or B + a custom-panel escape hatch.
+
+The user answered **C**.
+
+## Choice
+
+**C locked — schema-driven options + custom-panel hatch.** Each chart type's options are declared once in its registry options schema (field name, kind, default, min/max); the option panel is auto-rendered from that schema, and code mode edits the same schema as JSON (unknown field → validation error). When the generated panel can't express a chart's needs, the chart supplies a custom panel — but the schema **still declares the field**, so both surfaces (code + no-code) stay consistent.
+
+## Alternatives considered
+
+- **A) Hand-built panels per type** — 32 bespoke panels, maximum freedom, guaranteed drift between code mode and UI mode.
+- **B) Pure schema-driven, no hatch** — consistent and cheap, but the first chart needing bespoke UI forces a fork.
+
+## Consequences
+
+- The options schema becomes part of each chart type's contract alongside its role schema (from Q8) — one declaration drives rendering, the option panel, and code-mode JSON.
+- Refines (does not supersede) [[each-labs-chart-owns-its-config-panel]]: ownership stays per-chart; panel construction is schema-generated, custom panel is the exception.
+- Keeps [[two-surface-report-page-format]] parity by construction: schema is the single source both surfaces edit.
+
+## Related open question
+
+**Q10 (open, lean B)** — what a click/selection does on a published page: (A) local highlight only, (B) **cross-filter** — selection becomes a \`WHERE\` on the dimension, other charts re-query DuckDB (Qlik-style, the payoff of the Q8 query engine), (C) B + Evidence-style \`sync\` (linked tooltips/crosshair/zoom). Evidence separates \`sync\` (linked visuals) from \`filters\` (propagation) — useful distinction for when Q10 locks.
+
+## Source
+
+- Design interview turn, 2026-09-15 (user's Q9 answer "C"; Q10 posed with lean B).
+`,
   "decisions/svelteplot-sole-chart-engine.md": `---
 type: Decision
 title: SveltePlot is the sole chart engine — all legacy chart libraries removed
@@ -12435,6 +13034,70 @@ The 2026-09-12 decision (consolidate to Picasso.js + LayerChart) left several en
 
 Source: PR creatuluw/data.monster#1 (commits incl. \`62a9162\`).
 `,
+  "decisions/two-surface-report-page-format.md": `---
+type: Decision
+title: "Two-surface report pages: code mode edits a declarative spec, not Svelte source"
+description: "Q3 LOCKED (A): the report page is one declarative spec document edited by both surfaces — parity by construction. C (registry escape hatch) stays a future growth path."
+tags: [charts, pages, architecture, interview, code-no-code]
+status: accepted
+timestamp: "2026-09-15T08:16:22.375Z"
+---
+
+# Two-surface report pages: code mode edits a declarative spec, not Svelte source
+
+## Context
+
+Interview (2026-09-15), Q3. User requirement: charts must be addable to a report page from **two interchangeable surfaces** — code mode and no-code mode — and either surface can **create/edit the same page** with identical chart appearance, design, and logic. This is the Evidence model itself: one document that both the built-in editor and VS Code edit. It extends the chart-level requirement in [[chart-authoring-two-surfaces-serializable-spec]] to the whole report page.
+
+This forces the central decision of the entire two-surface design: **what the "code" in code mode actually is**, because that defines the parity contract.
+
+## The options presented (Q3)
+
+1. **A — Constrained declarative spec**: the page is a document (JSON / JSON5 / small DSL) holding a list of chart blocks (\`{ type, data: { table, x, y, series }, title, options }\`). Code mode edits the text; no-code mode edits the same document via UI. **Perfect parity by construction** — nothing expressible in code lacks a UI representation (worst case the UI falls back to a raw JSON field, Evidence's \`echarts_options\` approach).
+2. **B — Real Svelte markup**: code mode writes actual \`<Chart>\` components with snippets/functions/full JS. Maximum power, but no-code cannot round-trip arbitrary code — the page becomes partially UI-editable; unrepresentable parts render read-only or get clobbered.
+3. **C — A + registry escape hatch**: declarative spec as the page format, plus custom blocks referencing registered components by name (\`{ type: "custom:myRadar" }\`). Custom *visuals* stay code-authored in app source; any *instance* stays UI-configurable via its declared props schema. Evidence has no equivalent — this is the "32-chart catalog as the registry" play (see [[labs-catalog-placeholder-first]]).
+
+## Recommendation (assistant lean — user answer pending)
+
+**A for the page/document format, C as the growth path** — C is A plus registration discipline, which the catalog already implies.
+
+## Rationale
+
+- Parity is a hard user requirement; only A guarantees it by construction rather than by ongoing enforcement.
+- B permanently breaks the parity contract the user just stated.
+- C preserves A's guarantees for built-in types while giving power users a code escape hatch that instances of still round-trip.
+
+## Consequences
+
+- Page persistence format must be a serializable document, not Svelte source (aligns with [[evidence-chart-architecture]] and [[chart-fundament]]).
+- If C is adopted later, chart components need declared props schemas so the no-code surface can configure custom-block instances.
+
+## Data binding (Q4 — answered 2026-09-15)
+
+**User chose B, refined: each chart carries its own template query whose dimension/measure slots are filled dynamically** by what the chart declares — the query always aggregates exactly what the chart needs (a mini semantic layer per chart):
+
+\`\`\`sql
+SELECT {{dimensions}}, {{measures}}
+FROM bookings
+GROUP BY {{dimensions}}
+ORDER BY {{measures_desc}}
+\`\`\`
+
+with the chart declaring \`dimensions: ["month"]\`, \`measures: [{ col: "hours", agg: "sum" }]\` → \`sum(hours) AS hours\`.
+
+**Open follow-up (Q5)** — template *ownership*, which decides how much SQL users ever see:
+
+- **A** per chart instance — each chart block stores its own template text + bindings (max SQL freedom)
+- **B** per chart type — the 32-type registry ships each type's standard aggregation template; an instance declares only \`table\`, \`dimensions\`, \`measures\`, \`filters\` (no per-chart SQL exists)
+- **C** layered — registry default per type + optional per-instance override (A's escape hatch, still a serializable string + slots)
+
+Sub-point pending confirmation: aggregation is declared **on the measure** (\`{ col, agg }\`), never written as free text.
+
+## Status
+
+**Accepted — user locked A (2026-09-15).** The page is a declarative spec document; both surfaces edit it; parity is guaranteed by construction. C (registered custom-block escape hatch) was not chosen now but remains the natural growth path if power users need it.
+
+Q4 locked (2026-09-15): chart blocks bind data via per-chart template queries with dynamic dimension/measure slots — see "Data binding (Q4)" above. Q5 (template ownership: instance / registry / layered) is the open question.`,
   "decisions/typography-inter-mono-for-data.md": `---
 type: Decision
 title: "Typography: Inter for all UI, Geist Mono reserved for data detail"
@@ -12512,7 +13175,7 @@ okf_version: "0.1"
 <!-- wiki-nav:start -->
 ## Navigation map
 
-Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 4 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-11T21:35:23.730Z.
+Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 72 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-15T10:54:02.467Z.
 
 Each entry: [title](concept-id.md) — description. Links are clickable in /wiki; pass the concept-id (link target minus .md) to wiki_get.
 
@@ -12527,7 +13190,84 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 
 ### Pages
 
+- [Central chart component design](pages/artifacts/central-chart-component-design.md) — What it documents
+- [Central-charts spec &amp; task list](pages/artifacts/central-charts-spec-amp-task-list.md) — The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
+- [Central charts spec & tasks](pages/artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [LLM Sensitive Data Privacy Research](pages/artifacts/llm-sensitive-data-privacy-research.md) — Research report (15 cited sources) on how to use LLMs with sensitive data in a data-analyst app. Compiled 2026-09-12 from web research; motivated by Data Monste
+- [LLM & Sensitive Data White Paper](pages/artifacts/llm-sensitive-data-white-paper.md) — Dutch-language white paper ("LLM's & Gevoelige Data") condensing the LLM privacy research into a single self-contained HTML file designed for mobile reading.
+- [LLM Sensitive-Data White Paper — Finance Edition](pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md) — Non-technical (finance-audience) edition of the LLM sensitive-data white paper, in Dutch. Fully rewritten 2026-09-12 around one spine: *"wie traint er mee, en w
+- [BarChart component](pages/entities/barchart-component.md) — What is it?
+- [Chart fundament](pages/entities/chart-fundament.md) — Shared, tested pure-TS core under every /labs chart component — buildBars aggregation and sameDatum positional selection matching; components stay thin renderers.
+- [Chart page spec (spec-types + validator)](pages/entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
+- [ChartConfigDrawer component](pages/entities/chartconfigdrawer-component.md) — A reusable drawer shell for chart configuration panels in \`/labs\`, hosted **inside each chart component**: a chart accepts an optional \`config\` snippet and togg
+- [Design system (app.css tokens + /ui showcase)](pages/entities/design-system-app-css-tokens-ui-showcase.md) — The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/components/\` + \`src/lib/components/ds/\` component libraries, the \`/ui\` showcase page, a
+- [Field Functions library](pages/entities/field-functions-library.md) — A user-extensible library of SQL field functions (e.g. formatting, extraction, math) that can be applied to table columns from the column drawer, backed by the
+- [Heatmap component](pages/entities/heatmap-component.md) — Reusable SveltePlot-based heatmap component (generic \`<T>\`, cell grid with threshold colors), ported 2026-09-14 from the kees.pippeloi.nl reference. First compo
+- [LabsPlaceholder component](pages/entities/labsplaceholder-component.md) — A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
+- [remote_chat command](pages/entities/remote-chat-command.md) — Tauri command that proxies remote LLM chat completions (e.g. z.ai \`/chat/completions\`) through the Rust backend, streaming tokens back as \`local-llm:*\` events. 
+- [.wiki_ignore staleness policy](pages/entities/wiki-ignore-staleness-policy.md) — Project-level additive ignore config layered on the wiki-context extension's built-in ignores.
 - [Page Templates](pages/TEMPLATES.md) — Reference templates for Concept, Entity, and Artifact pages. Follow these when using wiki_note_page.
+
+### Decisions
+
+- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) — Context
+- [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](decisions/consolidate-chart-engines-to-picasso-js.md) — Context
+- [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](decisions/labs-catalog-placeholder-first.md) — Context
+- [Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component](decisions/labs-per-chart-type.md) — Labs goes per-chart-type; first chart (heatmap) built on SveltePlot
+- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context
+- [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — Context
+- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) — Context
+- [Professional-finance redesign: ledger green + Spectral/Public Sans](decisions/professional-finance-redesign-ledger.md) — Context
+- [Proxy remote LLM calls through Rust, not webview fetch](decisions/proxy-remote-llm-calls-through-rust-not.md) — Context
+- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md) — Context
+- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](decisions/q11-locked-tooltips-are-declarative-fields-one-template-stri.md) — Context
+- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](decisions/q12-locked-page-level-consistent-colors-via-shared-scale-opt.md) — Context
+- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](decisions/q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md) — Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) — Context
+- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](decisions/q15-locked-reference-annotations-are-a-declarative-list-refe.md) — Context
+- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](decisions/q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md) — Context
+- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](decisions/q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) — Context
+- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) — Context
+- [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md) — Context
+- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) — Context
+- [SveltePlot is the sole chart engine — all legacy chart libraries removed](decisions/svelteplot-sole-chart-engine.md) — Context
+- [Two-surface report pages: code mode edits a declarative spec, not Svelte source](decisions/two-surface-report-page-format.md) — Q3 LOCKED (A): the report page is one declarative spec document edited by both surfaces — parity by construction. C (registry escape hatch) stays a future growth path.
+- [Typography: Inter for all UI, Geist Mono reserved for data detail](decisions/typography-inter-mono-for-data.md) — Context
+
+### Rules
+
+- [Each /labs chart owns its config panel](rules/each-labs-chart-owns-its-config-panel.md) — Guideline
+- [Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal](rules/feature-loop-hard-rules.md) — Guideline
+- [Inter for UI text, Geist Mono only for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Guideline
+- [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline
+- [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/
+- [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament
+- [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css
+- [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline
+- [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) — Guideline
+
+### Learnings
+
+- [CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface](learnings/cdp-repro-traps-duckdb-lock.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] and [[webview2-cdp-gotchas-env-var-flag-stale]] — two more repro-environment traps hit while chasing the 
+- [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview)
+- ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is benign. It appears when 
+- [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with \`--remote-debugging-port\` and drive 
+- [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
+- [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring \`.env\` into the app (2026-09-11).
+- [kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4](learnings/kees-reference-ports-cleanly.md) — \`E:\\kees.pippeloi.nl\` (esp. \`src/routes/work/high-level\`) is the reference project for chart-type components being ported into Labs.
+- [Labs bar-chart "hang" is an infinite vite reconnect/reload loop, not a component bug](learnings/labs-hang-vite-reload-loop.md) — Reported 2026-09-14: clicking the bar chart card in /labs hung the page (heatmap fine). Root cause found same day: vitest import reachable from src via $lib/charts tripped vite's dep-optimizer, amplified by tailwind re-emitting app.css on any file churn. Fixed in PR #3 (commit 9f18749).
+- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directly relevant to Data M
+- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary docs. Extends [[llm
+- [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](learnings/local-llm-blank-screen-delay-was-hidden.md) — Symptom
+- [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: \`.archive/\` (entire superseded old app + chart-engine trials) and \`src-tauri/target/\` (Rust build artif
+- [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES.
+- [Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash](learnings/stash-pop-silent-conflict-recovery.md) — Discovered 2026-09-14 while committing session work (PR #3).
+- [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](learnings/svelteplot-barx-bar-y-orientation.md) — Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
+- [SveltePlot internals: match datums by position, not identity; guard empty data](learnings/svelteplot-datum-identity-empty-guard.md) — Two engine-level gotchas discovered while porting [[heatmap-component]] (2026-09-14), from the explanation of the SveltePlot 0.14.2 implementation. They apply t
+- [SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse](learnings/svelteplot-ordinal-domain-sorts-alphabetically.md) — Discovered 2026-09-14 while making the /labs bar chart sort desc: page-side data sorting had **no visible effect** because svelteplot's ordinal scales **sort th
+- [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom
+- [WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite](learnings/webview2-cdp-gotchas-env-var-flag-stale.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit while verifying the 2026-09-12 redesign:
+- [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom
 <!-- wiki-nav:end -->
 
 An [OKF](https://github.com/earendil-works/okf) bundle documenting this project.
@@ -12536,6 +13276,46 @@ An [OKF](https://github.com/earendil-works/okf) bundle documenting this project.
 - [File tree](./architecture/file-tree.md) — Complete project file listing
 - [Glossary](./glossary.md) — Key terms for this project
 - [Pages](./pages/) — Concepts, entities, and artifacts of this project
+`,
+  "learnings/cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md": `---
+type: Learning
+title: CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot
+description: "Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via "
+tags: [cdp, e2e, svelteplot, central-charts]
+timestamp: "2026-09-15T11:29:53.059Z"
+---
+
+# CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot
+
+Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via \`addEventHandlers\` addEventListener fires, selection + cross-filter re-query verified end-to-end, 2026-09-15).
+
+What actually broke the first attempts:
+
+1. **Coordinate staleness** — measuring \`getBoundingClientRect()\` in one \`Runtime.evaluate\`, then dispatching later, risks a moved/resized viewport (the app window resized between sessions). Re-measure and dispatch immediately in the same probe run.
+2. **\`element.click()\` / synthetic \`new MouseEvent\` don't work** — svelteplot's wrapped handler reads \`event.clientX/clientY\` for scale inversion; \`element.click()\` has clientX=0 → hit-test lands nowhere. Always use \`Input.dispatchMouseEvent\` (real trusted events with real coordinates).
+3. **A closed page target kills the webview content** — never call \`/json/close/<id>\` on the app's only page (blank window; restart required). Also a webview recycle can silently drop the \`--remote-debugging-port\` (stale \`msedgewebview2.exe\` processes) — kill all \`msedgewebview2.exe\` before relaunching.
+
+Working recipe (see \`tests/smoke-cdp.mjs\` + \`probe20/21\` pattern): navigate → sleep → measure widest bar rect → \`Input.dispatchMouseEvent\` mousePressed+mouseReleased at its center → assert selection label + cross-filtered table row count.
+`,
+  "learnings/cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md": `---
+type: Learning
+title: CDP e2e cannot synthesize trusted clicks on svelteplot marks
+description: "Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs"
+tags: [cdp, e2e, svelteplot, testing]
+timestamp: "2026-09-15T10:55:52.612Z"
+---
+
+# CDP e2e cannot synthesize trusted clicks on svelteplot marks
+
+Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs pages where manual clicks work. Hit 2026-09-15 while CDP-smoke-testing the central-charts build (\`tests/smoke-cdp.mjs\`): 11/11 checks passed except click interactions had to be excluded.
+
+What this means for testing strategy:
+
+- CDP smoke can verify render, persistence, routes, and data presence — but **not** interactions that depend on trusted/pointer-event semantics inside svelteplot marks.
+- Cover selection logic with unit tests + port click handlers verbatim from code verified manually; ask a human to click a bar to confirm cross-filtering.
+- \`tests/smoke-cdp.mjs\` stays the repeatable e2e (needs the app running with \`--remote-debugging-port=9222\`).
+
+Extends [[drive-data-monster-s-real-ui-over-cdp]] and [[cdp-repro-traps-duckdb-lock]] — same repro environment, one more limitation.
 `,
   "learnings/cdp-repro-traps-duckdb-lock.md": `---
 type: Learning
@@ -12555,6 +13335,34 @@ Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] and [[webview2-cdp-gotcha
 ## Why it matters
 
 Both traps burn hours by producing misleading symptoms (blocked navigation, phantom exceptions) that look like app bugs but are repro-harness artifacts. Check for a second instance and mock Tauri before trusting any probe result.
+`,
+  "learnings/chart-authoring-two-surfaces-serializable-spec.md": `---
+type: Learning
+title: Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec
+description: Requirement (user-stated, 2026-09-15 interview)
+tags: [charts, labs, design, architecture, reusable-charts]
+timestamp: "2026-09-15T08:08:11.840Z"
+---
+
+# Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec
+
+## Requirement (user-stated, 2026-09-15 interview)
+
+Charts must be addable via **two surfaces** later on:
+
+1. **Code only** — writing markup / a spec object (the code surface).
+2. **Interacting with UI elements/behaviors** — an interactive builder surface.
+
+## Why it matters
+
+Whatever the code surface can express, the UI surface must be able to **produce and persist** (and vice versa: code authors need a stable target to hand-write). That pushes the chart contract toward a **serializable chart spec object** that both surfaces consume — not just Svelte props bound at authoring time.
+
+This is a hard constraint on the central reusable-chart design being interviewed right now (see [[evidence-chart-architecture]] and [[chart-fundament]]): any design that can't round-trip a chart instance to/from a persisted spec will fail the second surface.
+
+## Still open (interview in progress)
+
+- Q2 pending: do the surfaces author chart **instances** (configure existing types), **new chart types** (add to the 32-card catalog), or instances-now/types-code-only?
+- If instances: where do UI-authored charts persist — \`/pages\`, a new "charts" store, or exported code?
 `,
   "learnings/couldn-t-find-callback-id-tauri-warning.md": `---
 type: Learning
@@ -12593,6 +13401,41 @@ The changelog-e2e skill's technique transfers from the changelog.monster app to 
 ## Why it matters
 
 Static code reading missed the bug class the user is reporting; driving the real UI reproduces it directly. This gives data.monster the same e2e debugging capability that changelog.monster already has, with zero new tooling.
+`,
+  "learnings/evidence-chart-architecture.md": `---
+type: Learning
+title: "Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy"
+description: Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
+tags: [charts, svelteplot, evidence, design, labs]
+timestamp: "2026-09-15T08:03:14.305Z"
+---
+
+# Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy
+
+Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and /core-concepts/components first).
+
+## Key architectural insight
+
+Evidence does **not** have one god chart component. It has one typed component **per chart type** (\`scatter_chart\`, \`bar_chart\`, …), each built over shared machinery (query builder + ECharts + shared prop vocabulary). Consistency lives in a **standardized attribute taxonomy**, not in a single \`<Chart type=…>\` component. This is the reference model for our central chart design: shared shell + shared prop types + one thin component per chart type (proposed default (b) in the interview; god components rot with 32 chart types).
+
+## Evidence's prop taxonomy (distilled)
+
+- **Data binding**: \`data\` (table), \`x\`/\`y\`/\`y2\` columns, \`series\`, \`size\` (scatter), \`sort\`, \`limit\`, filters — aggregation is part of the binding (\`x="avg(avg_transaction_value)"\`, in-query)
+- **Title block**: \`title\`, \`subtitle\`, \`info\`/\`info_link\` — every component has it
+- **Value formatting**: \`x_fmt\`, \`y_fmt\`, per-label \`fmt\` — one shared format vocabulary
+- **Axis options**: typed option groups (\`title, ticks, baseline, labels, gridlines, min, max, fit_to_data, interval, label_rotate\`) — same shape for x/y/y2
+- **Legend**: \`legend\`, \`legend_position\`, \`series_order\`
+- **Styling**: \`chart_options\` (palette, series colors, zoom), \`opacity\`, and \`echarts_options\` — a raw escape hatch deep-merged over the config
+- **Data labels**: position/fmt/size/rotate/show_overlap
+- **Missing values**: \`connect | gaps | zero\` (time-series semantics)
+- **Overlays**: \`reference_line\` / \`reference_area\` / \`reference_point\` as composable children
+- **Cross-chart linking**: shared \`link\` id syncs tooltips/zoom across charts
+
+## Where we already stand
+
+[[chart-fundament]] (buildBars + sameDatum), generic accessor props \`<T>\`, bindable positional selection, tooltip snippet, empty guard, \`heightVh\`, and the per-chart config drawer rule ([[each-labs-chart-owns-its-config-panel]], [[labs-charts-reusable-fundament]]) already cover roughly 60% of this taxonomy — it just isn't written down as one central design yet. The pending interview decides: shared \`ChartShell\` + shared \`AxisOptions\`/\`fmt\`/\`seriesColors\` vocabulary vs per-chart props; centralized \`aggregate()\` fundament API (opt-in for scatter/line); single-select as standard.
+
+Related: [[barchart-component]], [[heatmap-component]].
 `,
   "learnings/get-settings-merges-env-env-over.md": `---
 type: Learning
@@ -12636,6 +13479,12 @@ Discovered while wiring \`.env\` into the app (2026-09-11).
 - [CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface](./cdp-repro-traps-duckdb-lock.md) - Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] and [[webview2-cdp-gotchas-env-var-flag-stale]] — two more repro-environment traps hit while chasing the
 - [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](./svelteplot-barx-bar-y-orientation.md) - Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
 - [SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse](./svelteplot-ordinal-domain-sorts-alphabetically.md) - Discovered 2026-09-14 while making the /labs bar chart sort desc: page-side data sorting had **no visible effect** because svelteplot's ordinal scales **sort th
+- [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](./svelteplot-scale-null-not-false.md) - Symptom
+- [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](./evidence-chart-architecture.md) - Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
+- [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](./chart-authoring-two-surfaces-serializable-spec.md) - Requirement (user-stated, 2026-09-15 interview)
+- [svelteplot band axis crashes on empty aliases (duplicate key)](./svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md) - Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
+- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](./cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md) - Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs
+- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](./cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md) - Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via 
 `,
   "learnings/kees-reference-ports-cleanly.md": `---
 type: Learning
@@ -12862,6 +13711,24 @@ The pop conflicted: the background **wiki-recap agent** had written newer recap 
 ## Prevention
 After ANY stash pop in this repo, sanity-check that the expected number of modified files is actually present before editing further — concurrent wiki-recap writes make silent conflicts the norm, not the exception.
 `,
+  "learnings/svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md": `---
+type: Learning
+title: svelteplot band axis crashes on empty aliases (duplicate key)
+description: "Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted."
+tags: [svelteplot, central-charts]
+timestamp: "2026-09-15T10:55:52.612Z"
+---
+
+# svelteplot band axis crashes on empty aliases (duplicate key)
+
+Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
+
+Root cause: charts mounted before their dimension/measure **aliases** were resolved — empty-string aliases made multiple bands share the same key. Fix: don't mount the chart until aliases are resolved.
+
+General rule: svelteplot axis marks derive keys from scale domains; an empty/placeholder alias that repeats across bands is enough to crash. Guard mounting on resolved spec fields, not just on data presence.
+
+Related smoke-bug from the same session: ChartCard renderers initially **masked query errors as "No data"** — always distinguish "query failed" from "query returned zero rows" in chart state machines. Extends [[svelteplot-datum-identity-empty-guard]].
+`,
   "learnings/svelteplot-barx-bar-y-orientation.md": `---
 type: Learning
 title: "SveltePlot BarX vs BarY: BarX is the horizontal bar mark"
@@ -12932,6 +13799,41 @@ If sorting "doesn't work" on an svelteplot bar/axis, suspect silent alphabetical
 
 Applies to [[barchart-component]] (\`src/lib/components/charts/BarChart.svelte\`) and any [[labs-per-chart-type]] chart using ordinal scales. Related: [[svelteplot-barx-bar-y-orientation]], [[svelteplot-datum-identity-empty-guard]].
 `,
+  "learnings/svelteplot-scale-null-not-false.md": `---
+type: Learning
+title: "SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale"
+description: Symptom
+tags: [svelteplot, charts, labs, gotcha]
+timestamp: "2026-09-15T06:49:08.558Z"
+---
+
+# SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale
+
+## Symptom
+
+In \`/labs/bar-chart\`, per-bar selection colors rendered wrong: selecting the top bar made it blue, any other bar orange — instead of the intended literal colors (\`#888888\` deselected, DS green selected).
+
+## Root cause
+
+The BarChart's \`BarX\` fill channel was declared as \`fill={{ scale: false, value: fillOf }}\`. SveltePlot 0.14.2's \`getUsedScales\` checks \`scale !== null\` — so \`false\` does **not** bypass the scale. The literal color strings returned by \`fillOf\` leaked into the default categorical color scale and got remapped to palette colors (hence blue/orange).
+
+## Fix
+
+Only \`scale: null\` bypasses svelteplot's scales:
+
+\`\`\`svelte
+fill={{ scale: null, value: (d: any) => fillOf(d as T) }}
+\`\`\`
+
+The [[heatmap-component]] already used \`scale: null\` for its stroke and in-cell Text fill channels — that's why it never showed the bug.
+
+## Applies to
+
+Any literal per-datum color in a svelteplot mark channel (\`fill\`, \`stroke\`, …) that must NOT be scaled: declare \`scale: null\`, never \`scale: false\`.
+
+- Fixed 2026-09-14 in \`src/lib/components/charts/BarChart.svelte\` (also switched deselected color to \`#888888\`, selected to DS green \`oklch(0.44 0.1 158)\`).
+- Related engine gotchas: [[svelteplot-datum-identity-empty-guard]], [[svelteplot-ordinal-domain-sorts-alphabetically]]
+`,
   "learnings/webview2-cdp-gotchas-env-var-flag-stale.md": `---
 type: Learning
 title: "WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite"
@@ -12994,20 +13896,31 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-14T10:15:13.086Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T11:29:53.096Z.
 
 ## Recent Decisions
 
-- [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](decisions/labs-catalog-placeholder-first.md) — Context (2026-09-14)
-- [SveltePlot is the sole chart engine — all legacy chart libraries removed](decisions/svelteplot-sole-chart-engine.md) — Context (2026-09-14)
-- [Typography: Inter for all UI, Geist Mono reserved for data detail](decisions/typography-inter-mono-for-data.md) — Context (2026-09-14)
-- [Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component](decisions/labs-per-chart-type.md) — Labs goes per-chart-type; first chart (heatmap) built on SveltePlot (2026-09-14)
-- [Professional-finance redesign: ledger green + Spectral/Public Sans](decisions/professional-finance-redesign-ledger.md) — Context (2026-09-12)
-- [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](decisions/consolidate-chart-engines-to-picasso-js.md) — Context (2026-09-12)
-- [Proxy remote LLM calls through Rust, not webview fetch](decisions/proxy-remote-llm-calls-through-rust-not.md) — Context (2026-09-11)
+- [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — Context (2026-09-15)
+- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) — Context (2026-09-15)
+- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](decisions/q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) — Context (2026-09-15)
+- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) — Context (2026-09-15)
+- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](decisions/q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md) — Context (2026-09-15)
+- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](decisions/q15-locked-reference-annotations-are-a-declarative-list-refe.md) — Context (2026-09-15)
+- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](decisions/q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md) — Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col) (2026-09-15)
+- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](decisions/q12-locked-page-level-consistent-colors-via-shared-scale-opt.md) — Context (2026-09-15)
+- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](decisions/q11-locked-tooltips-are-declarative-fields-one-template-stri.md) — Context (2026-09-15)
+- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md) — Context (2026-09-15)
+- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) — Context (2026-09-15)
+- [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md) — Context (2026-09-15)
+- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) — Context (2026-09-15)
+- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context (2026-09-15)
+- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) — Context (2026-09-15)
 
 ## Active Rules
 
+- [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) — Guideline (2026-09-15)
+- [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline (2026-09-15)
+- [Each /labs chart owns its config panel](rules/each-labs-chart-owns-its-config-panel.md) — Guideline (2026-09-15)
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css (2026-09-14)
 - [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/ (2026-09-14)
 - [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament (2026-09-14)
@@ -13017,6 +13930,12 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-14T10
 
 ## Recent Learnings — development patterns
 
+- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md) — Correction to [[cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks … (2026-09-15)
+- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, eve… (2026-09-15)
+- [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted. (2026-09-15)
+- [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview) (2026-09-15)
+- [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/componen… (2026-09-15)
+- [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom (2026-09-15)
 - [SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse](learnings/svelteplot-ordinal-domain-sorts-alphabetically.md) — Discovered 2026-09-14 while making the /labs bar chart sort desc: page-side data sorting had **no visible effect** because svelteplot's ordi… (2026-09-14)
 - [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](learnings/svelteplot-barx-bar-y-orientation.md) — Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Ba… (2026-09-14)
 - [Labs bar-chart "hang" is an infinite vite reconnect/reload loop, not a component bug](learnings/labs-hang-vite-reload-loop.md) — Reported 2026-09-14: clicking the bar chart card in /labs hung the page (heatmap fine). Root cause found same day: vitest import reachable f… (2026-09-14)
@@ -13031,9 +13950,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-14T10
 - [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with \`--remote-debugg… (2026-09-11)
 - [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring \`.env\` into the app (2026-09-11). (2026-09-11)
 - [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom (2026-09-11)
-- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary… (2026-09-11)
-- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directl… (2026-09-11)
-- ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is beni… (2026-09-11)
 
 ## Architecture
 
@@ -13058,12 +13974,113 @@ Organization is split between product code and process artifacts. Product code l
 
 History and experimentation are deliberately quarantined. \`.archive/\` keeps superseded versions — including the original browser-only app (\`data-monster-old\`, DuckDB-WASM with a Node server) and chart-engine trials (echarts, svelteplot, observable) — while the nested \`data.monster/\` project generates the design-system documentation site, and \`build/\` is static-export output. \`global_superstore.csv\` at the root is the sample retail dataset used for demos and testing.
 `,
+  "pages/artifacts/central-chart-component-design.md": `---
+type: Artifact
+title: Central chart component design
+description: What it documents
+tags: [charts, design, report-pages, architecture]
+timestamp: "2026-09-15T09:08:33.566Z"
+---
+
+# Central chart component design
+
+## What it documents
+
+- [chart-fundament](../entities/chart-fundament.md) — the design formalizes and extends it into an 8-layer architecture
+- The future report-page system (\`/pages\` list → \`/page/<slug>\` dual-mode editor)
+- Master-item library + relationship-graph smart association
+
+## Summary
+
+Complete design for one central chart component, distilled from a 17-question interview (2026-09-15) informed by Evidence.dev's prop taxonomy and SveltePlot's mark system. Core model: every chart = a declarative spec block resolved through shared pipeline (semantic layer → canonical query engine with per-type hooks → chart-type registry → shell) into a SveltePlot render. Two editor surfaces (no-code Design / code mode) edit the same spec document in \`d8a_monster_pages\` — parity by construction. Dimensions/measures are DuckDB expressions with a workspace-level master-item library (stable ids, table-bound, relationship-graph auto-JOIN). Selection cross-filters via re-query; page-consistent colors; tooltips declarative fields + template; annotations in SveltePlot basic-mark vocabulary whitelisted per type; explicit 12-col grid; general block envelope with registry.
+
+## Source
+
+- \`docs/design/central-chart-component-design.md\` — the full design
+- Evidence.dev docs (scatter_chart + core-concepts/components) — prop-taxonomy reference
+- svelteplot.dev marks — annotation vocabulary
+`,
+  "pages/artifacts/central-charts-spec-amp-task-list.md": `---
+type: Artifact
+title: Central-charts spec &amp; task list
+description: "The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit"
+tags: [central-charts, spec, report-pages]
+timestamp: "2026-09-15T09:18:53.742Z"
+---
+
+# Central-charts spec &amp; task list
+
+The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) editor over one declarative spec.
+
+## What it documents
+
+- The **v1 scope**: bar chart, heatmap, and table as the first page objects, plus a text block — see [central-charts-v1-scope-bar-heatmap-table-blocks-master-item](../../decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md).
+- 13 FRs across 5 phases:
+
+| Phase | FRs | What lands |
+|---|---|---|
+| 1 Core (pure TS, all TDD) | 1–4 | spec types + validation, query compiler, registry, color scale + tooltip resolver |
+| 2 Renderers | 5–8 | ChartCard shell, bar + heatmap registry entries, table block |
+| 3 Page runtime | 9 | 12-col grid + cross-filter selection bus |
+| 4 Persistence & routes | 10–11 | \`d8a_monster_pages\` (Rust), \`/pages\` list + create |
+| 5 Editor & cleanup | 12–13 | \`/page/[slug]\` Design ⇄ Code editor, labs migration |
+
+- \`tasks.json\` mirrors the FRs; todos live in \`.pi/todos\` per [spec-driven-features-tdd-karpathy-skills-referenced-in-every](../../rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md).
+
+## Details
+
+- **Location**: \`.specs/central-charts/spec.md\`, \`.specs/central-charts/tasks.json\`
+- **Format**: markdown spec (FRs/phases) + JSON task list
+- Renderers build on the existing labs assets: [chart-fundament](../entities/chart-fundament.md), [barchart-component](../entities/barchart-component.md), [heatmap-component](../entities/heatmap-component.md).
+
+## Source
+
+- \`.specs/central-charts/spec.md\` — the spec itself
+`,
+  "pages/artifacts/central-charts-spec-tasks.md": `---
+type: Artifact
+title: Central charts spec & tasks
+description: "The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida"
+tags: [central-charts, spec, tasks, planning, charts]
+timestamp: "2026-09-15T09:31:01.992Z"
+---
+
+# Central charts spec & tasks
+
+The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/validation, query compiler, registry, color/tooltip), Renderers (ChartCard shell, bar, heatmap, table), Page runtime (grid + cross-filter bus), Persistence & routes (\`d8a_monster_pages\` + Rust \`pages.rs\`, \`/pages\` list + create, \`/page/[slug]\` dual-mode editor), and Cleanup (labs migration, retire top-level \`BarChart.svelte\` + \`pages - Copy\`).
+
+## What it documents
+
+- Phase-1 v1 scope: bar + heatmap + table + text blocks only; master items, auto-JOIN, custom panels, annotations beyond \`ruleY\` explicitly out of scope (see [central-chart-component-design](./central-chart-component-design.md) and the proposed master-items amendment that reverses the deferral)
+- Per-task methodology: TDD (RED-GREEN-REFACTOR) for all pure logic in \`tests/\` (never \`src/\`), Karpathy minimal-diff review before done, completion logged to \`.specs/central-charts/tasks-log.json\` per repo convention — instantiating the rule [spec-driven-features-tdd-karpathy-skills-referenced-in-every](../../rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md)
+- Key FR map: FR-1 spec types + pure validator (\`{path,message}[]\`, never throws), FR-2 SQL string-builder compiler with escaping + injection guard, FR-3 registry (\`ChartTypeDefinition\` roles/optionsSchema/hooks/annotation whitelist), FR-9 selection bus, FR-10 persistence, FR-12 Design ⇄ Code editor
+
+## Details
+
+- **Format**: Spec-driven markdown (\`.specs/central-charts/spec.md\`) + machine-readable tasks (\`.specs/central-charts/tasks.json\` with acceptanceCriteria per task)
+- **Constraint carried in spec**: no new npm dependencies (hand-rolled validation, no zod); test files live in \`tests/\`, never \`src/\`
+
+## Relationships
+
+- [central-chart-component-design](./central-chart-component-design.md) — the design doc this spec implements
+- [chart-fundament](../entities/chart-fundament.md) — L0 of the design; \`buildBars\` becomes the \`topN\` query hook
+- [central-charts-v1-scope decision](../../decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) — defines the phase-1 scope the spec encodes
+- [Master-items amendment (proposed)](../../decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — pending change that inserts the semantic layer early
+
+## Source
+
+- \`.specs/central-charts/spec.md\` — the 13 FRs
+- \`.specs/central-charts/tasks.json\` — the 13 tasks with acceptance criteria
+`,
   "pages/artifacts/index.md": `# Artifacts
 
 _Documents, diagrams, and deliverables will be listed here._
 - [LLM Sensitive Data Privacy Research](./llm-sensitive-data-privacy-research.md) - Research report (15 cited sources) on how to use LLMs with sensitive data in a data-analyst app. Compiled 2026-09-12 from web research; motivated by Data Monste
 - [LLM & Sensitive Data White Paper](./llm-sensitive-data-white-paper.md) - Dutch-language white paper ("LLM's & Gevoelige Data") condensing the LLM privacy research into a single self-contained HTML file designed for mobile reading.
 - [LLM Sensitive-Data White Paper — Finance Edition](./llm-sensitive-data-white-paper-finance-edition.md) - Non-technical (finance-audience) edition of the LLM sensitive-data white paper, in Dutch. Fully rewritten 2026-09-12 around one spine: *"wie traint er mee, en w
+- [Central chart component design](./central-chart-component-design.md) - What it documents
+- [Central-charts spec &amp; task list](./central-charts-spec-amp-task-list.md) - The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
+- [Central charts spec & tasks](./central-charts-spec-tasks.md) - The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
 `,
   "pages/artifacts/llm-sensitive-data-privacy-research.md": `---
 type: Artifact
@@ -13172,16 +14189,16 @@ _Abstract ideas and definitions will be listed here._
   "pages/entities/barchart-component.md": `---
 type: Entity
 title: BarChart component
-description: Reusable SveltePlot horizontal bar chart (BarX — measure on x number axis, dimension on y band axis), generic over the row type; second /labs chart-type after the heatmap.
+description: What is it?
 tags: [charts, svelteplot, labs]
-timestamp: "2026-09-14T12:07:47.002Z"
+timestamp: "2026-09-15T07:33:47.551Z"
 ---
 
 # BarChart component
 
 ## What is it?
 
-Reusable SveltePlot-based bar chart component (\`BarChart.svelte\`), generic over the caller's row type. The second \`/labs\` chart-type card (after [heatmap-component](./heatmap-component.md)), built on the [chart-fundament](./chart-fundament.md).
+Reusable SveltePlot-based bar chart component (\`BarChart.svelte\`), generic over the caller's row type. The second \`/labs\` chart-type built (after [heatmap-component](./heatmap-component.md)) — its card now leads the reordered Labs grid (Barchart → Line → Area → Scatter → Heatmap → …). Built on the [chart-fundament](./chart-fundament.md).
 
 ## Why it matters?
 
@@ -13190,10 +14207,12 @@ Second instance of the reusable-chart contract — proves the pattern generalize
 ## Details
 
 - **Location**: \`src/lib/components/charts/BarChart.svelte\`; playground route \`src/routes/labs/bar-chart/\`; card in \`src/routes/labs/+page.svelte\`
-- **Orientation**: horizontal — \`BarX\` mark, measure on the x number axis (grid + \`tickFormat\` via the renamed \`formatValue\` prop), dimension on the y band axis (\`padding: 0.3\`). The y domain is built explicitly from data order with \`reverse: true\`, so the caller's sort wins over svelteplot's alphabetical ordinal default (see [[svelteplot-ordinal-domain-sorts-alphabetically]]).
+- **Orientation**: horizontal — \`BarX\` mark, measure on the x number axis (grid + \`tickFormat\` via the renamed \`formatValue\` prop), dimension on the y band axis (\`padding: 0.3\`). The y domain is built explicitly from data order with \`reverse: true\`, so the caller's sort wins over svelteplot's alphabetical ordinal default (see [svelteplot-ordinal-domain-sorts-alphabetically](../../learnings/svelteplot-ordinal-domain-sorts-alphabetically.md)).
 - **Interface**: accessor props (\`category\`, \`value\` accessors, generic \`<T>\`), bindable selection (matched via \`sameDatum\`, not identity), tooltip snippet (anchored x=value, y=category), mono data labels, empty-data guard
-- **Styling**: bars zinc-500 by default (\`color\` prop); selection fills the bar black via \`fillOf\` (replaces the old black-stroke highlight)
-- **Height**: derived \`plotHeight = max(clientWidth / 2, innerHeight * 0.25)\` — 2:1 aspect that never collapses below 25vh, same rule as the heatmap
+- **Config panel**: optional \`config\` snippet prop — when passed, a \`<Bolt />\` button at the top-right of the chart card toggles the chart's own [chartconfigdrawer-component](./chartconfigdrawer-component.md) (title \`<title> configuration\`); the page renders its fields via \`{#snippet config()}\` (see [each-labs-chart-owns-its-config-panel](../../rules/each-labs-chart-owns-its-config-panel.md))
+- **Selection label**: inline right of the card title, vertically centered, \`·\` divider — \`Booked hours per month · May 25 · 122h\` (no floating pill). Card click-to-deselect ignores \`button\` clicks so toggling config doesn't clear the selection
+- **Styling**: bars \`#888888\` deselected (\`color\` prop); selected bar fills DS green \`oklch(0.44 0.1 158)\` via \`fillOf\`. The fill channel passes \`scale: null\` so the literal color strings bypass svelteplot's color scale — \`scale: false\` does NOT bypass it (see [svelteplot-scale-bypass-needs-scale-null](../../learnings/svelteplot-scale-null-not-false.md))
+- **Height**: \`plotHeight = innerHeight * heightVh\` — default \`heightVh = 0.3\` (30vh), overridable per call (e.g. \`<BarChart heightVh={0.5}>\`); same rule as the heatmap
 - **Configuration**: optional \`topN\`/\`otherLabel\` aggregation opts passed to \`buildBars\`
 - Type gotchas solved during build: Svelte 5 generic needs a \`type\` alias (not \`interface\`) for the implicit index signature; svelteplot \`tickFormat\` wants a \`TickFormatFunction\` (RawValue param) — wrap typed props
 
@@ -13201,13 +14220,17 @@ Second instance of the reusable-chart contract — proves the pattern generalize
 
 - [chart-fundament](./chart-fundament.md) — supplies \`buildBars\` + \`sameDatum\`
 - [heatmap-component](./heatmap-component.md) — sibling, first chart on the same contract
+- [chartconfigdrawer-component](./chartconfigdrawer-component.md) — hosted per-chart via the \`config\` snippet + Bolt toggle
 - [labs-charts-reusable-fundament](../../rules/labs-charts-reusable-fundament.md) — the rule both follow
 
 ## Lifecycle
 
 - First added: 2026-09-14 via PR creatuluw/data.monster#1 (commit \`62a9162\`), TDD-first
-- 2026-09-14: playground page rebuilt as a structural mirror of the heatmap page (everything inline, only the component imported — no \`$lib/charts\` import from the page) to fix the vite reload-loop hang (PR creatuluw/data.monster#3, commit \`9f18749\`; see [[labs-hang-vite-reload-loop]])
-- 2026-09-14: flipped from vertical BarY to horizontal BarX (see [[svelteplot-barx-bar-y-orientation]]); playground now charts real synthetic data — 12 months of booked hours, one dimension + one measure, sorted desc so the longest bar lands topmost
+- 2026-09-14: playground page rebuilt as a structural mirror of the heatmap page (everything inline, only the component imported — no \`$lib/charts\` import from the page) to fix the vite reload-loop hang (PR creatuluw/data.monster#3, commit \`9f18749\`; see [labs-hang-vite-reload-loop](../../learnings/labs-hang-vite-reload-loop.md))
+- 2026-09-14: flipped from vertical BarY to horizontal BarX (see [svelteplot-barx-bar-y-orientation](../../learnings/svelteplot-barx-bar-y-orientation.md)); playground now charts real synthetic data — 12 months of booked hours, one dimension + one measure, sorted desc so the longest bar lands topmost
+- 2026-09-14: selection colors fixed — deselected \`#888888\`, selected DS green; \`scale: false\` had leaked the fill strings into svelteplot's default categorical scale (rendered blue/orange). the heatmap adopted this same height rule
+- 2026-09-15: height switched from the width-derived 2:1 aspect (never below 25vh) to a fixed viewport fraction — \`heightVh\` prop, default 0.3 (30vh), in both charts
+- 2026-09-15: config moved into the chart — optional \`config\` snippet + \`<Bolt />\` toggle top-right of the card, page-level Configure button/drawer removed; selection label moved inline next to the title with a \`·\` divider; click-deselect now ignores \`button\` clicks
 `,
   "pages/entities/chart-fundament.md": `---
 type: Entity
@@ -13243,6 +14266,86 @@ It is the concrete implementation of the [labs-charts-reusable-fundament](../../
 
 - First added: 2026-09-14, built TDD-first alongside the bar chart lab (PR creatuluw/data.monster#1)
 - 2026-09-14: \`fundament.test.ts\` moved to \`tests/\` to fix the /labs bar-chart vite hang (PR creatuluw/data.monster#3)
+`,
+  "pages/entities/chart-page-spec-spec-types-validator.md": `---
+type: Entity
+title: Chart page spec (spec-types + validator)
+description: "Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src"
+tags: [central-charts, spec, types, validation, charts]
+timestamp: "2026-09-15T09:36:11.957Z"
+---
+
+# Chart page spec (spec-types + validator)
+
+Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src/lib/charts/spec-types.ts\`) plus the pure structural validator (\`src/lib/charts/validate.ts\`). Everything is plain serializable data; this is the single source of truth both editing surfaces (Design inspector ⇄ Code JSON) read and write.
+
+## What is it?
+
+The data contract of the central chart system. A \`PageDoc\` is \`{ slug, title, rows[] }\`; each row holds blocks (\`chart\` | \`table\` | \`text\`) with optional 12-column \`span\`. Measures are DuckDB expressions (\`{ expr, label?, fmt? }\`), dimensions are columns with optional \`grain\` — or master-item \`{ ref }\` references per the master-items amendment. Annotations use whitelisted svelteplot marks (\`arrow dot line ruleX ruleY text rect\`).
+
+## Why it matters
+
+Every later FR builds on it: the query compiler (FR-2) compiles these specs to SQL, the registry (FR-3) defines per-type roles, the dual-mode editor round-trips them. \`validatePageDoc(doc)\` returns \`{path, message}[]\` and **never throws** — used by Code mode, save, and render-time guards. Hand-rolled, no zod (spec constraint: no new npm deps).
+
+## Details
+
+- **Location**: \`src/lib/charts/spec-types.ts\`, \`src/lib/charts/validate.ts\`; tests in \`tests/validate.test.ts\` (22 tests, suite 31/31)
+- **Interface**: \`validatePageDoc(doc: unknown): ValidationError[]\`; type exports \`PageDoc\`, \`ChartBlock/TableBlock/TextBlock\`, \`ChartBlockSpec\`, \`MeasureSpec\`, \`DimensionSpec\`, \`FilterSpec\`, \`SortSpec\`, \`AnnotationSpec\`, \`TooltipSpec\`, \`AxisOptions\`
+- **Configuration**: block/chart-type/grain/op whitelists are hardcoded in \`validate.ts\` with a \`ponytail:\` note — FR-3 swaps them for registry lookups
+- **Span rule**: integer 1–12, matching the Q13 explicit-grid decision
+- [chart-authoring-two-surfaces-serializable-spec](../../learnings/chart-authoring-two-surfaces-serializable-spec.md) — the user-stated requirement this module implements
+- [central-charts-spec-tasks](../artifacts/central-charts-spec-tasks.md) — the spec/task plan (FR-1 = this module)
+- [measures-dimensions-are-duckdb-expressions-not-column-agg-su](../../decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) — why MeasureSpec is \`expr\`, not column+agg sugar
+- [q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro](../../decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) — the AnnotationMark whitelist
+- [chart-fundament](./chart-fundament.md) — L0 /labs sibling; \`buildBars\` becomes the \`topN\` query hook
+
+## Lifecycle
+
+- First added: 2026-09-15, TDD red→green (FR-1 of 17). Build started from git tag \`restore-point/central-charts-start\` (commit \`e936b7f\`, pushed to GitHub) — the master restore point before the central-charts build.
+- Planned: FR-3 moves the validator's hardcoded whitelists into the registry.
+`,
+  "pages/entities/chartconfigdrawer-component.md": `---
+type: Entity
+title: ChartConfigDrawer component
+description: "A reusable drawer shell for chart configuration panels in \`/labs\`, hosted **inside each chart component**: a chart accepts an optional \`config\` snippet and togg"
+tags: [labs, charts, component, svelte]
+timestamp: "2026-09-15T07:33:47.551Z"
+---
+
+# ChartConfigDrawer component
+
+A reusable drawer shell for chart configuration panels in \`/labs\`, hosted **inside each chart component**: a chart accepts an optional \`config\` snippet and toggles its own drawer via a \`<Bolt />\` button at the top-right of the chart card. First used by the BarChart component at \`/labs/bar-chart\`.
+
+## Details
+
+- **Location**: \`src/lib/components/charts/ChartConfigDrawer.svelte\`
+- **Interface / Schema**: props are \`open\` (bindable), \`title\`, and a \`children\` snippet for the fields. Ships shared \`.field\` / \`.field-label\` / \`.field-hint\` / \`.input\` styles for whatever the chart renders inside. Charts open it with the title \`<title> configuration\`.
+- **Hosting pattern** (2026-09-15): the chart component renders the drawer when the caller passes a \`config\` snippet — the Bolt toggle only appears if the snippet is passed (opt-in; heatmap doesn't have it yet). Before this, the *page* hosted the drawer via a Configure button + Settings2 icon — superseded.
+- **Pattern source**: the drawer shell (overlay + slide-in panel + header/close) reuses the established \`ColumnFunctionDrawer.svelte\` pattern rather than a new abstraction — pages stay thin, no generic field renderer needed.
+- **Marked \`data-drawer\`** and card click-to-deselect ignores \`button\` clicks, so configuring never clears a selection.
+
+## Config-vs-accessor convention
+
+When exposing "reusable config variables" for a chart, only **config props** get UI controls — not data accessors or state:
+
+- \`title\`, \`subtitle\` (strings) → text input
+- \`color\` (hex) → native color picker
+- \`heightVh\` (viewport fraction) → range slider with live readout
+
+Props like \`category\`, \`value\`, \`tooltip\`, \`labelFor\`, \`selected\` are data accessors/state and stay out of config drawers.
+
+## Relationships
+
+- Hosted inside [barchart-component](./barchart-component.md) via its \`config\` snippet + Bolt toggle
+- [each-labs-chart-owns-its-config-panel](../../rules/each-labs-chart-owns-its-config-panel.md) — the hosting rule
+- Supports all charts built on the [chart-fundament](./chart-fundament.md) per [labs-charts-reusable-fundament](../../rules/labs-charts-reusable-fundament.md)
+- Sibling shell pattern: ColumnFunctionDrawer (\`src/lib/components/ColumnFunctionDrawer.svelte\`)
+- Fits the placeholder-first labs catalog plan — [labs-per-chart-type](../../decisions/labs-per-chart-type.md)
+
+## Lifecycle
+
+- First added: 2026-09-15 — bar-chart config drawer request; four live-bound fields (title, subtitle, color, heightVh), edits apply immediately. Originally page-hosted (Configure button, Settings2 icon).
+- 2026-09-15: hosting moved into the chart component — optional \`config\` snippet prop + \`<Bolt />\` toggle top-right of the chart card; page-level button and drawer removed; drawer title now \`<title> configuration\`.
 `,
   "pages/entities/design-system-app-css-tokens-ui-showcase.md": `---
 type: Entity
@@ -13324,7 +14427,7 @@ type: Entity
 title: Heatmap component
 description: Reusable SveltePlot-based heatmap component (generic \`<T>\`, cell grid with threshold colors), ported 2026-09-14 from the kees.pippeloi.nl reference. First compo
 tags: [charts, labs, svelteplot]
-timestamp: "2026-09-14T07:26:30.635Z"
+timestamp: "2026-09-15T07:17:33.098Z"
 ---
 
 # Heatmap component
@@ -13335,13 +14438,13 @@ Reusable SveltePlot-based heatmap component (generic \`<T>\`, cell grid with thr
 
 - **Location**: \`src/lib/components/Heatmap.svelte\`; playground at \`src/routes/labs/heatmap/+page.svelte\`
 - **Interface**: props \`data, x, y, value, threshold, scheme (orrd default), isEmpty, tooltip, labelFor, label, selected ($bindable), xTicks, formatX…\`; built on svelteplot \`Plot, Cell, HTMLTooltip, Text, ColorLegend\`
-- **Features**: threshold color bands, in-cell labels, HTML tooltip, click-to-select pill, no-data cells, narrow-width axis flip, responsive height (\`plotHeight = max(width / aspect, 25vh)\` — aspect by width class, never collapses below a quarter viewport)
+- **Features**: threshold color bands, in-cell labels, HTML tooltip, click-to-select pill, no-data cells, narrow-width axis flip, responsive height (\`plotHeight = innerHeight * heightVh\`, default \`heightVh = 0.3\` = 30vh, overridable per call — the same rule as [barchart-component](./barchart-component.md); \`clientWidth\` is read only for the narrow-screen axis flip)
 - **Deviation from reference**: header font uses the app's \`--font-display\`; kees's task-breakdown drawer not ported (kees-specific data model)
 
 ## Relationships
 
 - SveltePlot 0.14.2 — rendering engine ([labs-per-chart-type](../../decisions/labs-per-chart-type.md))
-- \`src/routes/labs/heatmap/+page.svelte\` — demo playground (weekly-utilization + activity-by-category synthetic grids)
+- \`src/routes/labs/heatmap/+page.svelte\` — demo playground (weekly-utilization synthetic grid; the second activity-by-category grid was removed 2026-09-15)
 
 ## Source
 
@@ -13354,13 +14457,17 @@ _Concrete named things will be listed here._
 - [.wiki_ignore staleness policy](./wiki-ignore-staleness-policy.md) - What is it?
 - [Field Functions library](./field-functions-library.md) - A user-extensible library of SQL field functions (e.g. formatting, extraction, math) that can be applied to table columns from the column drawer, backed by the
 - [LabsPlaceholder component](./labsplaceholder-component.md) - A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
+- [ChartConfigDrawer component](./chartconfigdrawer-component.md) - A reusable drawer shell for chart configuration panels in \`/labs\`, hosted **inside each chart component**: a chart accepts an optional \`config\` snippet and togg
+- [BarChart component](./barchart-component.md) - What is it?
+- [Chart page spec (spec-types + validator)](./chart-page-spec-spec-types-validator.md) - Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
+- [Pages & master-items storage (Rust)](./pages-master-items-storage-rust.md) - The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD
 `,
   "pages/entities/labsplaceholder-component.md": `---
 type: Entity
 title: LabsPlaceholder component
 description: A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
 tags: [labs, charts, svelte, frontend]
-timestamp: "2026-09-14T10:02:32.926Z"
+timestamp: "2026-09-15T07:14:56.316Z"
 ---
 
 # LabsPlaceholder component
@@ -13371,7 +14478,7 @@ A one-prop Svelte 5 component that renders the standard Labs page shell with "Pl
 
 - **Location**: \`src/lib/components/LabsPlaceholder.svelte\`
 - **Interface**: single prop \`title: string\` — rendered as the page \`<h1>\` and \`<svelte:head>\` title (\`{title} — Labs — Data Monster\`)
-- **Style**: same \`section-header\` shell as other Labs pages (LABS eyebrow tag in mono font, display-font title)
+- **Style**: same \`section-header\` shell as other Labs pages (display-font title only; the LABS eyebrow badge was removed 2026-09-15 from all chart pages — the \`/labs\` catalog index keeps its own header)
 
 ## Relationships
 
@@ -13388,6 +14495,31 @@ A one-prop Svelte 5 component that renders the standard Labs page shell with "Pl
 
 - \`src/lib/components/LabsPlaceholder.svelte\`
 - \`src/routes/labs/*/+page.svelte\` — consumers
+`,
+  "pages/entities/pages-master-items-storage-rust.md": `---
+type: Entity
+title: Pages & master-items storage (Rust)
+description: "The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD"
+tags: [central-charts, rust, duckdb, storage]
+timestamp: "2026-09-15T10:55:52.612Z"
+---
+
+# Pages & master-items storage (Rust)
+
+The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageDoc\`s, workspace-level master items (measures/dimensions), and the table relationship graph.
+
+Backs the \`/pages\` → \`/page/<slug>\` dual-mode editor and the \`/data\` Relationships + Measures/Dimensions tabs. Master items implement [master-item-library-table-binding-q6](../../decisions/master-item-library-table-binding-q6.md); the relationship graph implements [q7-locked-relationship-graph-drives-chart-item-availability-](../../decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) (BFS auto-JOIN lives frontend-side in the query compiler).
+
+## Details
+
+- **Tables**: \`d8a_monster_pages\` (page docs by slug), \`d8a_monster_items\` (master items, stable ids, created in \`commands/database.rs\`), \`d8a_monster_relationships\` (relationship graph)
+- **Commands**: \`commands/pages.rs\` — \`list_pages\`, \`get_page(slug)\`, \`save_page\`, \`delete_page\`; \`commands/items.rs\` — \`list_master_items\` + CRUD; \`commands/relationships.rs\` — graph CRUD
+- **Tests**: 8 cargo tests (e.g. upsert preserves \`created_at\`)
+- Persists documents described by [chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md); first shipped 2026-09-15 on branch \`feature/central-charts\` (all 17 FRs of the central-charts build).
+
+## Lifecycle
+
+- First added: 2026-09-15, central-charts build (commits \`ae48ef2\` + \`35966c6\`), CDP-smoke-verified end to end (create → save → persist → list).
 `,
   "pages/entities/remote-chat-command.md": `---
 type: Entity
@@ -13484,6 +14616,13 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [.wiki_ignore staleness policy](./entities/wiki-ignore-staleness-policy.md) — What is it?
 - [Field Functions library](./entities/field-functions-library.md) — A user-extensible library of SQL field functions (e.g. formatting, extraction, math) that can be applied to table columns from the column drawer, backed by the
 - [LabsPlaceholder component](./entities/labsplaceholder-component.md) — A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
+- [ChartConfigDrawer component](./entities/chartconfigdrawer-component.md) — A reusable drawer shell for chart configuration panels in \`/labs\`. Any labs chart page can host its own config UI by rendering fields into the shared \`children\`
+- [BarChart component](./entities/barchart-component.md) — What is it?
+- [Central chart component design](./artifacts/central-chart-component-design.md) — What it documents
+- [Central-charts spec &amp; task list](./artifacts/central-charts-spec-amp-task-list.md) — The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
+- [Central charts spec & tasks](./artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [Chart page spec (spec-types + validator)](./entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
+- [Pages & master-items storage (Rust)](./entities/pages-master-items-storage-rust.md) — The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD
 `,
   "pages/TEMPLATES.md": `---
 type: Concept
@@ -13557,6 +14696,37 @@ a stable structure so pages are consistent, skimmable, and well-linked.
 - Generated from: [what data, process, or session produced it]
 \`\`\`
 `,
+  "rules/each-labs-chart-owns-its-config-panel.md": `---
+type: Rule
+title: Each /labs chart owns its config panel
+description: Guideline
+tags: [labs, charts, config]
+timestamp: "2026-09-15T07:33:25.479Z"
+---
+
+# Each /labs chart owns its config panel
+
+## Guideline
+
+In \`/labs\`, chart configuration UI lives **inside the chart component**, never on the page:
+
+- The chart component accepts an optional \`config\` snippet prop.
+- When the snippet is passed, the component renders a \`<Bolt />\` icon button at the **top-right of the chart card**; clicking it toggles the chart's own [[chartconfigdrawer-component]] (drawer title = \`<title> configuration\`).
+- The page renders its fields into \`{#snippet config()}\` and passes them to the chart. Page-level "Configure" buttons and page-hosted drawers are removed.
+
+## When it applies
+
+Every chart-type component built on the [[chart-fundament]] (bar chart done; heatmap gets it with one prop pass when its page needs a panel; applies to the 30 charts still to come).
+
+## Rationale
+
+A labs page can host many chart cards — a page-level drawer can only configure one of them. Per-chart panels scale to the catalog. Requested explicitly 2026-09-15 ("each chart has its own panel for config"); the \`/labs/bar-chart\` page was migrated the same day.
+
+## Gotchas
+
+- Card click-to-deselect must ignore \`button\` clicks (and the drawer carries \`data-drawer\`) so toggling config doesn't clear the bar selection.
+- Only **config props** get UI controls — data accessors/state stay out of drawers (see [[chartconfigdrawer-component]]).
+`,
   "rules/feature-loop-hard-rules.md": `---
 type: Rule
 title: "Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal"
@@ -13590,6 +14760,9 @@ Stated by the user as "hard rules — no exceptions" (2026-09-14 feature-loop ru
 - [Route external API calls through Rust commands, never webview fetch](./route-external-api-calls-through-rust-commands-never-webview.md) - Guideline
 - [Keep test files and vitest imports out of src/](./keep-test-files-and-vitest-imports-out-of-src.md) - Keep test files and vitest imports out of src/
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](./pin-tailwind-source-scanning.md) - Pin Tailwind @source scanning to src/ and app.html in app.css
+- [Each /labs chart owns its config panel](./each-labs-chart-owns-its-config-panel.md) - Guideline
+- [Interview the user one question at a time with lettered multiple-choice options](./interview-one-question-at-a-time.md) - Guideline
+- [Spec-driven features: TDD + Karpathy skills referenced in every todo](./spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) - Guideline
 `,
   "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md": `---
 type: Rule
@@ -13612,6 +14785,28 @@ Any new component, route, or chart. If the text renders a data value or helps re
 
 ## Rationale
 User decision (2026-09-14, see [[typography-inter-mono-for-data]]): mono visually marks "machine data" vs UI chrome, and \`tabular-nums\` alignment in mono keeps dense tables legible. Never hardcode a font-family — use the CSS vars so token changes propagate.
+`,
+  "rules/interview-one-question-at-a-time.md": `---
+type: Rule
+title: Interview the user one question at a time with lettered multiple-choice options
+description: Guideline
+tags: [interviews, prd, design, working-method]
+timestamp: "2026-09-15T08:05:17.711Z"
+---
+
+# Interview the user one question at a time with lettered multiple-choice options
+
+## Guideline
+
+When conducting any interview with the user (PRD, design, spec, scoping), ask questions **one at a time**, with multiple-choice answers labeled **A) B) C)…** (or numbered). Before the first question, give a short shared-context block (vocabulary, what was studied, where we already stand) so each question lands on common ground. It is fine to state a lean/recommendation for the options — but let the user pick.
+
+## When it applies
+
+Every interactive question-and-answer flow where the assistant gathers requirements or decisions from the user — e.g. \`.prds/\` PRD interviews, the central reusable-chart design interview (2026-09-15), wizard-style flows.
+
+## Rationale
+
+The user asked for this format explicitly at the start of the chart-design interview ("ask me all questions 1-by-1 using letters/numbers for multi choice responses"). Single lettered questions are answerable in one short reply, keep complex decisions from collapsing into wall-of-text answers, and make the chosen option unambiguous in the transcript (useful when the final decision gets recorded to docs/wiki later).
 `,
   "rules/keep-test-files-and-vitest-imports-out-of-src.md": `---
 type: Rule
@@ -13739,6 +14934,34 @@ The Analyst page's remote LLM chat was completely broken because \`fetch\` to \`
 
 Fetching user-supplied data URLs during Connect/ingest is already handled on the Rust side for the same reason.
 `,
+  "rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md": `---
+type: Rule
+title: "Spec-driven features: TDD + Karpathy skills referenced in every todo"
+description: Guideline
+tags: [spec, tdd, todos, conventions]
+timestamp: "2026-09-15T09:18:44.117Z"
+---
+
+# Spec-driven features: TDD + Karpathy skills referenced in every todo
+
+## Guideline
+
+New spec-driven features follow the **chart-lib pattern**:
+
+- Spec lives at \`.specs/<name>/spec.md\` — FRs grouped into phases.
+- Tasks mirror the FRs in \`.specs/<name>/tasks.json\`.
+- Todos are created in \`.pi/todos\`, each tagged with its phase.
+- **Every todo instructs reading the \`tdd-workflow\` and \`karpathy-guidelines\` skills before starting** — TDD and Karpathy constraints are baked into each task's acceptance criteria, not left to the implementer's judgment.
+- On completion, a task-log entry is appended to the spec.
+
+## When it applies
+
+Any new feature large enough to warrant a spec (central-charts, chart-lib, field-function-library, local-llm, tauri-migration all follow it).
+
+## Rationale
+
+Keeps acceptance criteria uniform across sessions and implementers; the skills-loaded-first instruction prevents TDD from silently degrading to test-after on later todos.
+`,
 };
 var WIKI_PAGES = [
     { path: "index.md", label: "Project Knowledge Wiki", group: "" },
@@ -13746,17 +14969,37 @@ var WIKI_PAGES = [
     { path: "memory.md", label: "Memory — the live contract", group: "" },
     { path: "overview.md", label: "Overview", group: "" },
     { path: "architecture/file-tree.md", label: "File tree", group: "Architecture" },
+    { path: "decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md", label: "Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred", group: "Decisions" },
     { path: "decisions/consolidate-chart-engines-to-picasso-js.md", label: "Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot", group: "Decisions" },
     { path: "decisions/index.md", label: "Decisions", group: "Decisions" },
     { path: "decisions/labs-catalog-placeholder-first.md", label: "Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first", group: "Decisions" },
     { path: "decisions/labs-per-chart-type.md", label: "Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component", group: "Decisions" },
+    { path: "decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md", label: "Master-items amendment: semantic layer moves early into central-charts v1", group: "Decisions" },
+    { path: "decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md", label: "Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)", group: "Decisions" },
     { path: "decisions/professional-finance-redesign-ledger.md", label: "Professional-finance redesign: ledger green + Spectral/Public Sans", group: "Decisions" },
     { path: "decisions/proxy-remote-llm-calls-through-rust-not.md", label: "Proxy remote LLM calls through Rust, not webview fetch", group: "Decisions" },
+    { path: "decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md", label: "Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)", group: "Decisions" },
+    { path: "decisions/q11-locked-tooltips-are-declarative-fields-one-template-stri.md", label: "Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type", group: "Decisions" },
+    { path: "decisions/q12-locked-page-level-consistent-colors-via-shared-scale-opt.md", label: "Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec", group: "Decisions" },
+    { path: "decisions/q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md", label: "Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)", group: "Decisions" },
+    { path: "decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md", label: "Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted", group: "Decisions" },
+    { path: "decisions/q15-locked-reference-annotations-are-a-declarative-list-refe.md", label: "Q15 locked: reference annotations are a declarative list; reference_line only in v1", group: "Decisions" },
+    { path: "decisions/q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md", label: "Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)", group: "Decisions" },
+    { path: "decisions/q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md", label: "Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor", group: "Decisions" },
+    { path: "decisions/master-item-library-table-binding-q6.md", label: "Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth", group: "Decisions" },
+    { path: "decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md", label: "Q7 locked: relationship graph drives chart item availability and auto-JOIN", group: "Decisions" },
+    { path: "decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md", label: "Q8 locked: one canonical query engine with per-type hooks", group: "Decisions" },
+    { path: "decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md", label: "Q9 locked: chart option panels are schema-driven with a custom-panel hatch", group: "Decisions" },
     { path: "decisions/svelteplot-sole-chart-engine.md", label: "SveltePlot is the sole chart engine — all legacy chart libraries removed", group: "Decisions" },
+    { path: "decisions/two-surface-report-page-format.md", label: "Two-surface report pages: code mode edits a declarative spec, not Svelte source", group: "Decisions" },
     { path: "decisions/typography-inter-mono-for-data.md", label: "Typography: Inter for all UI, Geist Mono reserved for data detail", group: "Decisions" },
+    { path: "learnings/cdp-can-click-svelteplot-marks-input-dispatchmouseevent-with.md", label: "CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot", group: "Learnings" },
+    { path: "learnings/cdp-e2e-cannot-synthesize-trusted-clicks-on-svelteplot-marks.md", label: "CDP e2e cannot synthesize trusted clicks on svelteplot marks", group: "Learnings" },
     { path: "learnings/cdp-repro-traps-duckdb-lock.md", label: "CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface", group: "Learnings" },
+    { path: "learnings/chart-authoring-two-surfaces-serializable-spec.md", label: "Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec", group: "Learnings" },
     { path: "learnings/couldn-t-find-callback-id-tauri-warning.md", label: "Couldn't find callback id\" Tauri warning is a benign reload artifact", group: "Learnings" },
     { path: "learnings/drive-data-monster-s-real-ui-over-cdp.md", label: "Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging", group: "Learnings" },
+    { path: "learnings/evidence-chart-architecture.md", label: "Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy", group: "Learnings" },
     { path: "learnings/get-settings-merges-env-env-over.md", label: "get_settings merges env/.env over settings.json — env is source of truth", group: "Learnings" },
     { path: "learnings/kees-reference-ports-cleanly.md", label: "kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4", group: "Learnings" },
     { path: "learnings/labs-hang-vite-reload-loop.md", label: "Labs bar-chart \"hang\" is an infinite vite reconnect/reload loop, not a component bug", group: "Learnings" },
@@ -13767,14 +15010,19 @@ var WIKI_PAGES = [
     { path: "learnings/never-tree-scan-archive-or-src-tauri.md", label: "Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees", group: "Learnings" },
     { path: "learnings/stale-wiki-file-floods-are-ignored.md", label: "Stale-wiki file floods — only noise if an ignore pattern actually matches the tree", group: "Learnings" },
     { path: "learnings/stash-pop-silent-conflict-recovery.md", label: "Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash", group: "Learnings" },
+    { path: "learnings/svelteplot-band-axis-crashes-on-empty-aliases-duplicate-key.md", label: "svelteplot band axis crashes on empty aliases (duplicate key)", group: "Learnings" },
     { path: "learnings/svelteplot-barx-bar-y-orientation.md", label: "SveltePlot BarX vs BarY: BarX is the horizontal bar mark", group: "Learnings" },
     { path: "learnings/svelteplot-datum-identity-empty-guard.md", label: "SveltePlot internals: match datums by position, not identity; guard empty data", group: "Learnings" },
     { path: "learnings/svelteplot-ordinal-domain-sorts-alphabetically.md", label: "SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse", group: "Learnings" },
+    { path: "learnings/svelteplot-scale-null-not-false.md", label: "SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale", group: "Learnings" },
     { path: "learnings/webview2-cdp-gotchas-env-var-flag-stale.md", label: "WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite", group: "Learnings" },
     { path: "learnings/z-ai-401-code-1000-authentication.md", label: "z.ai 401 \"code 1000 Authentication Failed\" means the key itself is bad — verify with curl, not app code", group: "Learnings" },
     { path: "pages/TEMPLATES.md", label: "Page Templates", group: "Pages" },
     { path: "pages/index.md", label: "Pages", group: "Pages" },
     { path: "pages/artifacts/index.md", label: "Artifacts", group: "Pages / Artifacts" },
+    { path: "pages/artifacts/central-chart-component-design.md", label: "Central chart component design", group: "Pages / Artifacts" },
+    { path: "pages/artifacts/central-charts-spec-tasks.md", label: "Central charts spec & tasks", group: "Pages / Artifacts" },
+    { path: "pages/artifacts/central-charts-spec-amp-task-list.md", label: "Central-charts spec &amp; task list", group: "Pages / Artifacts" },
     { path: "pages/artifacts/llm-sensitive-data-white-paper.md", label: "LLM & Sensitive Data White Paper", group: "Pages / Artifacts" },
     { path: "pages/artifacts/llm-sensitive-data-privacy-research.md", label: "LLM Sensitive Data Privacy Research", group: "Pages / Artifacts" },
     { path: "pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md", label: "LLM Sensitive-Data White Paper — Finance Edition", group: "Pages / Artifacts" },
@@ -13782,19 +15030,25 @@ var WIKI_PAGES = [
     { path: "pages/entities/wiki-ignore-staleness-policy.md", label: ".wiki_ignore staleness policy", group: "Pages / Entities" },
     { path: "pages/entities/barchart-component.md", label: "BarChart component", group: "Pages / Entities" },
     { path: "pages/entities/chart-fundament.md", label: "Chart fundament", group: "Pages / Entities" },
+    { path: "pages/entities/chart-page-spec-spec-types-validator.md", label: "Chart page spec (spec-types + validator)", group: "Pages / Entities" },
+    { path: "pages/entities/chartconfigdrawer-component.md", label: "ChartConfigDrawer component", group: "Pages / Entities" },
     { path: "pages/entities/design-system-app-css-tokens-ui-showcase.md", label: "Design system (app.css tokens + /ui showcase)", group: "Pages / Entities" },
     { path: "pages/entities/index.md", label: "Entities", group: "Pages / Entities" },
     { path: "pages/entities/field-functions-library.md", label: "Field Functions library", group: "Pages / Entities" },
     { path: "pages/entities/heatmap-component.md", label: "Heatmap component", group: "Pages / Entities" },
     { path: "pages/entities/labsplaceholder-component.md", label: "LabsPlaceholder component", group: "Pages / Entities" },
+    { path: "pages/entities/pages-master-items-storage-rust.md", label: "Pages & master-items storage (Rust)", group: "Pages / Entities" },
     { path: "pages/entities/remote-chat-command.md", label: "remote_chat command", group: "Pages / Entities" },
     { path: "rules/labs-charts-reusable-fundament.md", label: "All /labs charts are built on the shared reusable-chart fundament", group: "Rules" },
+    { path: "rules/each-labs-chart-owns-its-config-panel.md", label: "Each /labs chart owns its config panel", group: "Rules" },
     { path: "rules/feature-loop-hard-rules.md", label: "Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal", group: "Rules" },
     { path: "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md", label: "Inter for UI text, Geist Mono only for data detail", group: "Rules" },
+    { path: "rules/interview-one-question-at-a-time.md", label: "Interview the user one question at a time with lettered multiple-choice options", group: "Rules" },
     { path: "rules/keep-test-files-and-vitest-imports-out-of-src.md", label: "Keep test files and vitest imports out of src/", group: "Rules" },
     { path: "rules/pin-tailwind-source-scanning.md", label: "Pin Tailwind @source scanning to src/ and app.html in app.css", group: "Rules" },
     { path: "rules/route-external-api-calls-through-rust.md", label: "Route external API calls through Rust commands, never webview fetch", group: "Rules" },
-    { path: "rules/index.md", label: "Rules", group: "Rules" }
+    { path: "rules/index.md", label: "Rules", group: "Rules" },
+    { path: "rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md", label: "Spec-driven features: TDD + Karpathy skills referenced in every todo", group: "Rules" }
 ];
 (function(){
 var a=document.getElementById("hljs-light"),d=document.getElementById("hljs-dark"),t=document.getElementById("themeToggle"),i=document.getElementById("themeIcon");

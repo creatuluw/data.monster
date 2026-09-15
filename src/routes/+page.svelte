@@ -9,7 +9,7 @@
 
 <div class="home">
 	<div class="hero">
-		<span class="brand-mark-lg"></span>
+		<img src="/monster-on-white.svg" alt="Data Monster logo" class="home-logo" />
 		<h1 class="home-title">Data Monster</h1>
 		<p class="home-desc">Connect data, query, explore.</p>
 		<div class="home-actions">
@@ -57,24 +57,12 @@
 		padding-top: 10vh;
 	}
 
-	.brand-mark-lg {
-		width: 64px;
-		height: 64px;
-		border: 2px solid var(--color-accent);
-		border-radius: var(--radius-md);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		background: var(--color-accent-muted);
+	.home-logo {
+		width: 96px;
+		height: 101px;
+		margin-bottom: var(--space-4);
 	}
 
-	.brand-mark-lg::after {
-		content: "";
-		width: 24px;
-		height: 24px;
-		background: var(--color-accent);
-		border-radius: var(--radius-xs);
-	}
 
 	.home-title {
 		margin-top: var(--space-2);

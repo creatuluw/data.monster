@@ -265,7 +265,7 @@
 		width: 30px;
 		height: 32px;
 		display: block;
-		margin-right: var(--space-1);
+		margin-right: var(--space-3);
 	}
 
 	.brand-logo-lg {

@@ -35,7 +35,7 @@
 	{@const [ri, bi] = id.replace('r', '').split('-b').map(Number)}
 	{@const state = stateFor(ri, bi)}
 	{#if block.type === 'text'}
-		<div class="bg-white rounded-lg border border-zinc-200 p-6 mb-16 text-sm text-zinc-700 whitespace-pre-wrap">
+		<div class="bg-white rounded-lg border border-zinc-200 p-6 text-sm text-zinc-700 whitespace-pre-wrap">
 			{block.text}
 		</div>
 	{:else if block.type === 'table'}
@@ -90,7 +90,7 @@
 		{/each}
 	{/each}
 {:else}
-	<div class="space-y-4">
+	<div class="space-y-4 pb-16">
 		{#each doc.rows ?? [] as row, ri}
 			<div class="grid grid-cols-12 gap-4 items-start">
 				{#each row.blocks as block, bi (ri + '-' + bi)}

@@ -8,10 +8,11 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T12:12:18.370Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13:10:13.899Z.
 
 ## Recent Decisions
 
+- [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](decisions/page-editor-is-tri-mode-design-code-page-settings-right-side.md) — Context (2026-09-15)
 - [Page editor block config: focused two-panel mode via cog icon (no selection ring)](decisions/page-editor-block-config-focused-two-panel-mode-via-cog-icon.md) — Context (2026-09-15)
 - [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — Context (2026-09-15)
 - [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) — Context (2026-09-15)
@@ -26,7 +27,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T12
 - [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) — Context (2026-09-15)
 - [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md) — Context (2026-09-15)
 - [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) — Context (2026-09-15)
-- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context (2026-09-15)
 
 ## Active Rules
 

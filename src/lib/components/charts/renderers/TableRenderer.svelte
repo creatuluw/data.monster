@@ -17,7 +17,7 @@
 	const cols = $derived(columns.length ? columns : rows[0] ? Object.keys(rows[0]) : []);
 </script>
 
-<div class="relative bg-white rounded-lg border border-zinc-200 p-6 mb-16">
+<div class="relative bg-white rounded-lg border border-zinc-200 p-6">
 	{#if title}
 		<h2 class="text-lg font-semibold text-zinc-900 tracking-tight mb-4" style="font-family: var(--font-display)">{title}</h2>
 	{/if}

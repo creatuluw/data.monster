@@ -26,9 +26,10 @@
 	let configOpen = $state(false);
 </script>
 
-<!-- card frame shared by every registry chart (FR-5). mb-16: HTMLTooltip
-     layout boxes overflow the card bottom row; no clipping allowed. -->
-<div class="chart-card relative bg-white rounded-lg border border-zinc-200 p-6 mb-16" role="presentation">
+<!-- card frame shared by every registry chart (FR-5). No vertical margin:
+     spacing comes from the page grid gap; tooltip overflow room lives on the
+     grid container (PageGrid pb-16 / labs page padding). -->
+<div class="chart-card relative bg-white rounded-lg border border-zinc-200 p-6" role="presentation">
 	<div class="mb-4">
 		<div class="flex items-center gap-2 flex-wrap">
 			<h2 class="chart-card-title text-lg font-semibold text-zinc-900 tracking-tight">{title}</h2>

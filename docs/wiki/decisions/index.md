@@ -20,3 +20,4 @@
 - [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](./central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) - Context
 - [Master-items amendment: semantic layer moves early into central-charts v1](./master-items-amendment-semantic-layer-moves-early-into-centr.md) - Context
 - [Page editor block config: focused two-panel mode via cog icon (no selection ring)](./page-editor-block-config-focused-two-panel-mode-via-cog-icon.md) - Context
+- [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](./page-editor-is-tri-mode-design-code-page-settings-right-side.md) - Context

@@ -15,14 +15,14 @@
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import { invoke } from '@tauri-apps/api/core';
-	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2, Bolt } from 'lucide-svelte';
+	import { Plus, Code, LayoutGrid, Save, ArrowLeft, Trash2, FileCog } from 'lucide-svelte';
 
 	setupChartRegistry();
 
 	const slug = $derived(pageState.params.slug ?? '');
 
 	let doc = $state<PageDoc>({ slug: '', title: '', rows: [] });
-	let mode = $state<'design' | 'code'>('design');
+	let mode = $state<'design' | 'code' | 'page'>('design');
 	let codeText = $state('');
 	let codeErrors = $state<{ path: string; message: string }[]>([]);
 	let saveError = $state('');
@@ -99,9 +99,9 @@
 		}
 	}
 
-	function switchMode(m: 'design' | 'code') {
+	function switchMode(m: 'design' | 'code' | 'page') {
 		if (m === 'code') codeText = JSON.stringify(doc, null, '\t');
-		else applyCode();
+		else if (mode === 'code') applyCode();
 		mode = m;
 	}
 
@@ -183,6 +183,7 @@
 		<div class="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
 			<button class:active={mode === 'design'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'design' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('design')}><LayoutGrid size={14} /> Design</button>
 			<button class:active={mode === 'code'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'code' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('code')}><Code size={14} /> Code</button>
+			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
 		</div>
 		<button
 			class="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2 disabled:opacity-50"
@@ -231,40 +232,47 @@
 		>
 			<BlockInspector {doc} ri={configBlock.ri} bi={configBlock.bi} {schemas} {items} {relationships} onremove={() => (configId = null)} />
 		</ChartConfigDrawer>
-	{:else}
-		<div class="flex gap-6 items-start">
-			<!-- canvas -->
-			<div class="flex-1 min-w-0 space-y-4">
-				{#if runtime}
-					<PageGrid {doc} {runtime} onConfigure={(id) => configureBlock(id)} />
-				{/if}
-
-				<div class="flex items-center gap-2 pt-2">
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 inline-flex items-center gap-1.5" onclick={addRow}><Plus size={14} /> Row</button>
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('chart', 'bar')}>+ Bar chart</button>
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('chart', 'heatmap')}>+ Heatmap</button>
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('table')}>+ Table</button>
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('text')}>+ Text</button>
-				</div>
+	{:else if mode === 'page'}
+		<!-- page settings: only non-visual configuration lives here -->
+		<div class="max-w-xl space-y-4">
+			<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3">
+				<label class="block space-y-1">
+					<span class="text-xs text-zinc-500">Page title</span>
+					<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" bind:value={doc.title} />
+				</label>
+				<label class="block space-y-1">
+					<span class="text-xs text-zinc-500">Slug (read-only)</span>
+					<input type="text" class="w-full border border-zinc-200 rounded px-2 py-1.5 text-sm text-zinc-400 font-mono bg-zinc-50" value={doc.slug} disabled />
+				</label>
 			</div>
-
-			<!-- inspector -->
-			<aside class="w-80 shrink-0 sticky top-8 space-y-3">
-				<div class="bg-white rounded-lg border border-zinc-200 p-4 text-sm text-zinc-400">
-					Click the <Bolt size={13} class="inline-block -mt-0.5" /> on a block to configure it — or add one below.
-				</div>
+			<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-2">
+				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Rows</span>
 				{#if doc.rows?.length}
-					<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-2">
-						<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Rows</span>
-						{#each doc.rows as _, ri (ri)}
-							<div class="flex items-center justify-between text-sm">
-								<span class="text-zinc-600">Row {ri + 1} · {doc.rows![ri].blocks.length} blocks</span>
-								<button class="text-zinc-300 hover:text-red-500" onclick={() => removeRow(ri)} title="Remove row"><Trash2 size={13} /></button>
-							</div>
-						{/each}
-					</div>
+					{#each doc.rows as _, ri (ri)}
+						<div class="flex items-center justify-between text-sm">
+							<span class="text-zinc-600">Row {ri + 1} · {doc.rows![ri].blocks.length} blocks</span>
+							<button class="text-zinc-300 hover:text-red-500" onclick={() => removeRow(ri)} title="Remove row"><Trash2 size={13} /></button>
+						</div>
+					{/each}
+				{:else}
+					<p class="text-sm text-zinc-400">No rows yet — add one in Design mode.</p>
 				{/if}
-			</aside>
+			</div>
+		</div>
+	{:else}
+		<!-- canvas: visualizations and data only -->
+		<div class="space-y-4">
+			{#if runtime}
+				<PageGrid {doc} {runtime} onConfigure={(id) => configureBlock(id)} />
+			{/if}
+
+			<div class="flex items-center gap-2 pt-2">
+				<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 inline-flex items-center gap-1.5" onclick={addRow}><Plus size={14} /> Row</button>
+				<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('chart', 'bar')}>+ Bar chart</button>
+				<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('chart', 'heatmap')}>+ Heatmap</button>
+				<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('table')}>+ Table</button>
+				<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50" onclick={() => addBlock('text')}>+ Text</button>
+			</div>
 		</div>
 	{/if}
 </div>

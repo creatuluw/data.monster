@@ -106,12 +106,16 @@
 	{:else}
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
 			{#each pages as p (p.slug)}
-				<div class="group relative bg-white border border-zinc-200 rounded-xl p-5 hover:border-zinc-400 hover:shadow-sm transition-colors cursor-pointer flex flex-col min-h-32" onclick={() => goto(`/page/${p.slug}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/page/${p.slug}`)} role="button" tabindex="0">
-					<FileText size={18} class="text-zinc-400 mb-3" />
-					<p class="font-medium text-zinc-900 leading-snug">{p.title}</p>
-					<p class="text-xs text-zinc-400 font-mono mt-1">/{p.slug}</p>
-					<div class="mt-auto pt-4 flex items-center justify-between">
-						<span class="text-xs text-zinc-400">{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</span>
+				<!-- compact card: 3 rows — title / slug+date / empty footer -->
+				<div class="group relative bg-white border border-zinc-200 rounded-xl p-4 hover:border-zinc-400 hover:shadow-sm transition-colors cursor-pointer flex flex-col" onclick={() => goto(`/page/${p.slug}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/page/${p.slug}`)} role="button" tabindex="0">
+					<FileText size={16} class="absolute top-3.5 right-3.5 text-zinc-400" />
+					<p class="font-medium text-zinc-900 leading-snug truncate pr-6">{p.title}</p>
+					<div class="flex items-center justify-between gap-2 mt-1">
+						<span class="text-xs text-zinc-400 font-mono truncate">/{p.slug}</span>
+						<span class="text-xs text-zinc-400 shrink-0">{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</span>
+					</div>
+					<!-- footer row: no content, delete reveals on hover -->
+					<div class="mt-auto pt-3 min-h-7 flex items-center justify-end">
 						{#if confirmDelete === p.slug}
 							<span class="flex items-center gap-2 text-xs">
 								<span class="text-red-500">Delete?</span>
@@ -120,7 +124,7 @@
 							</span>
 						{:else}
 							<button class="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page">
-								<Trash2 size={14} />
+								<Trash2 size={13} />
 							</button>
 						{/if}
 					</div>

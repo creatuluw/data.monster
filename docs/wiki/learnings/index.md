@@ -23,3 +23,4 @@
 - [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](./apparent-ui-bug-after-dev-server-restarts-stale-hmr-webview-.md) - Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel).
 - [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](./visibility-probes-must-walk-the-ancestor-opacity-display-vis.md) - CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15):
 - [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](./css-text-transform-changes-innertext-not-textcontent-probe-l.md) - Symptom: a CDP DOM probe checking for the label `"Rows"` failed on the Page
+- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](./auto-margins-in-the-flex-column-app-main-disable-flex-stretc.md) - Symptom

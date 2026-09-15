@@ -8,10 +8,11 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13:18:42.461Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T14:41:18.592Z.
 
 ## Recent Decisions
 
+- [Page editor route nests under /pages/<slug> (was /page/<slug>); /data goes full-width](decisions/page-editor-route-nests-under-pages-slug-was-page-slug-data-.md) — Context (2026-09-15)
 - [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](decisions/page-editor-is-tri-mode-design-code-page-settings-right-side.md) — Context (2026-09-15)
 - [Page editor block config: focused two-panel mode via cog icon (no selection ring)](decisions/page-editor-block-config-focused-two-panel-mode-via-cog-icon.md) — Context (2026-09-15)
 - [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early-into-centr.md) — Context (2026-09-15)
@@ -26,11 +27,11 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13
 - [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](decisions/q10-locked-chart-selections-cross-filter-other-charts-via-re.md) — Context (2026-09-15)
 - [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) — Context (2026-09-15)
 - [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-locked-one-canonical-query-engine-with-per-type-hooks.md) — Context (2026-09-15)
-- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) — Context (2026-09-15)
 
 ## Active Rules
 
-- [App content is capped at 1440px by the shared layout — never set per-page max-width](rules/app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) — Guideline (2026-09-15)
+- [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-comes-from-one-global-rule-in-app-css.md) — Guideline (2026-09-15)
+- [App content is capped at 1440px by the shared layout — opt out only via the full-bleed class](rules/app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) — Guideline (2026-09-15)
 - [Card spacing comes from the grid gap, never per-card margins](rules/card-spacing-comes-from-the-grid-gap-never-per-card-margins.md) — In any grid of chart/component cards (page editor canvas, labs), inter-card (2026-09-15)
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) — Guideline (2026-09-15)
 - [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline (2026-09-15)
@@ -42,8 +43,13 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13
 - [Inter for UI text, Geist Mono only for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Guideline (2026-09-14)
 - [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline (2026-09-11)
 
+## Preferences & Conventions
+
+- [Never start npm run dev / tauri dev — the user owns the dev app](preferences/never-start-npm-run-dev-tauri-dev-the-user-owns-the-dev-app.md) — The LLM must never launch the dev app itself — no `npm run dev`, `npx tauri dev`, or background dev-server starts. The user starts and owns … (2026-09-15)
+
 ## Recent Learnings — development patterns
 
+- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-in-the-flex-column-app-main-disable-flex-stretc.md) — Symptom (2026-09-15)
 - [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-not-textcontent-probe-l.md) — Symptom: a CDP DOM probe checking for the label `"Rows"` failed on the Page (2026-09-15)
 - [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-must-walk-the-ancestor-opacity-display-vis.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15): (2026-09-15)
 - [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-after-dev-server-restarts-stale-hmr-webview-.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel). (2026-09-15)
@@ -63,7 +69,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-15T13
 - [kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4](learnings/kees-reference-ports-cleanly.md) — `E:\kees.pippeloi.nl` (esp. `src/routes/work/high-level`) is the reference project for chart-type components being ported into Labs. (2026-09-14)
 - [WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite](learnings/webview2-cdp-gotchas-env-var-flag-stale.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit while verifying the 2026-09-12 redesign: (2026-09-12)
 - [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES. (2026-09-12)
-- [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: `.archive/` (entire superseded old app + chart-engine trials) and `src-tauri/target… (2026-09-12)
 
 ## Architecture
 

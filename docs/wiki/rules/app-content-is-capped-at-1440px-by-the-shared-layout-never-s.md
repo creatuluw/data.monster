@@ -10,11 +10,11 @@ timestamp: "2026-09-15T13:18:42.420Z"
 
 ## Guideline
 
-Every page's content container is capped at **1440px and auto-centered** by a single lever in the shared layout — `.app-main > :global(*)` in `src/routes/+layout.svelte` sets `max-width: var(--max-width); margin-inline: auto;` on every direct child of the main scroll container. The token `--max-width` in `src/app.css` is **90rem (1440px)**.
+Every page's content container is capped at **1440px and auto-centered** by a single lever in the shared layout — `.app-main > :global(*)` in `src/routes/+layout.svelte` sets `width: 100%; max-width: var(--max-width); margin-inline: auto;` on every direct child of the main scroll container. (The `width: 100%` is load-bearing: auto margins in a flex column disable stretch, so without it full-bleed children shrink to content width — see [[auto-margins-in-the-flex-column-app-main-disable-flex-stretc]].) The token `--max-width` in `src/app.css` is **90rem (1440px)**.
 
 **The only escape hatch is the `full-bleed` class**: `.app-main > :global(.full-bleed) { max-width: none; }`. Add `full-bleed` to the page's root element and nothing else. **Never set a per-page max-width on a page root.** The old `/pages` 1024px self-cap was exactly this anti-pattern and was removed (2026-09-15, PR #4).
 
-Full-bleed pages (2026-09-15, PR #4) — data-dense surfaces that need the whole window: `/analyst`, `/data`, `/page/[slug]` (editor), `/pages`. Everything else (`/`, `/labs/*`, `/settings`, …) stays capped and centered.
+Full-bleed pages (2026-09-15, PR #4) — data-dense surfaces that need the whole window: `/analyst`, `/data`, `/pages/[slug]` (editor), `/pages`. Everything else (`/`, `/labs/*`, `/settings`, …) stays capped and centered.
 
 ## When it applies
 
@@ -24,7 +24,7 @@ Full-bleed pages (2026-09-15, PR #4) — data-dense surfaces that need the whole
 
 ## Rationale
 
-One lever + one opt-out class = zero drift. Per-page caps diverge (1024 vs 1440) and every future cap change becomes a sweep across routes. Verified on `/`, `/analyst`, `/data`, `/pages`, `/page/smoke-test`, `/labs/bar-chart` (2026-09-15, PR #4).
+One lever + one opt-out class = zero drift. Per-page caps diverge (1024 vs 1440) and every future cap change becomes a sweep across routes. Verified on `/`, `/analyst`, `/data`, `/pages`, `/pages/smoke-test`, `/labs/bar-chart` (2026-09-15, PR #4).
 
 ## Source
 

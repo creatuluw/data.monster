@@ -118,7 +118,9 @@
 		position: absolute;
 		top: var(--space-3, 12px);
 		right: var(--space-3, 12px);
-		z-index: 10;
+		/* above the svelteplot overlay svgs, which otherwise swallow pointer hits
+		   at the card's top-right (elementFromPoint returned the plot svg) */
+		z-index: 30;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;

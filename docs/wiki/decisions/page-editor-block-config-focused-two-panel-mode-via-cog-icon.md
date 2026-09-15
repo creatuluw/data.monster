@@ -15,7 +15,7 @@ On `/page/<slug>` (the dual-mode editor, see [[q16-locked-pages-lists-amp-create
 
 ## Choice
 
-**Focused config mode.** Clicking a chart is plain chart interaction again — no border/ring. Every block carries a **cog icon** (⚙ top-right); clicking it enters a dedicated config UI:
+**Focused config mode.** Clicking a chart is plain chart interaction again — no border/ring. Every block carries the **⚡ Bolt config icon** top-right — same icon, size, and hover as /labs (initially a ⚙ cog; swapped in PR #4 for cross-surface consistency); clicking it enters a dedicated config UI:
 
 - The clicked chart alone renders on the **left**
 - A **50vw** drawer (overlay mode) on the **right** hosts the full [[chartconfigdrawer-component]]-shelled BlockInspector (title/subtitle, roles + master-item pickers, schema-driven options, tooltip template, annotations, heightVh, span)

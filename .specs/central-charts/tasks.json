@@ -1,0 +1,197 @@
+{
+  "project": "central-charts",
+  "spec": ".specs/central-charts/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "core-001",
+      "phase": "Core",
+      "title": "FR-1 Spec types + validation",
+      "description": "Create src/lib/charts/spec-types.ts (PageDoc, ChartBlock/TableBlock/TextBlock, measures-as-expressions, reserved ref) and src/lib/charts/validate.ts returning {path,message}[] (never throws).",
+      "acceptanceCriteria": [
+        "TDD: tests/validate.test.ts RED first — valid doc, unknown block type, unknown chart type, bad span, missing roles, empty expr, bad filter op",
+        "Validator is pure TS, no dependencies added",
+        "Karpathy: no speculative fields beyond the spec; types use `type` aliases (Svelte 5 generic rule)",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "core-002",
+      "phase": "Core",
+      "title": "FR-2 Query compiler (canonical + topN/pivot/plain + escaping)",
+      "description": "src/lib/charts/query/compile.ts — pure SQL string builder: dimensions+expression measures, grain mapping, filter literal escaping, sort/limit, topN+Other, heatmap pivot, table (no GROUP BY), cross-filter WHERE injection; column-name validation against table schema.",
+      "acceptanceCriteria": [
+        "TDD: tests/compile.test.ts RED first — SQL assertions for every variant listed in FR-2, incl. quote-escaping and injection rejection",
+        "No query execution here — compilation only, execution stays in db-operations",
+        "Karpathy: one module, no class hierarchy, string template + small helpers only",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "core-003",
+      "phase": "Core",
+      "title": "FR-3 Registry core + role validation",
+      "description": "src/lib/charts/registry.ts — ChartTypeDefinition/BlockTypeDefinition (roles, optionsSchema, hooks, annotation whitelist, component, defaults), resolveBlock(), role validation per type, defaults merging.",
+      "acceptanceCriteria": [
+        "TDD: tests/registry.test.ts RED first — register/resolve, unknown type, role under/overflow, defaults merge",
+        "Karpathy: registry is a plain Map + pure functions; components referenced lazily",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "core-004",
+      "phase": "Core",
+      "title": "FR-4 Page color scale + tooltip template resolver",
+      "description": "src/lib/charts/color-scale.ts (colorOf: first-seen DS-palette assignment, seriesColors override) and src/lib/charts/tooltip.ts ({field} placeholder resolution with fmt + missing-field fallback).",
+      "acceptanceCriteria": [
+        "TDD: tests/color-scale.test.ts + tests/tooltip.test.ts RED first",
+        "Palette sourced from DS tokens; no new deps",
+        "Karpathy: two small pure modules, nothing speculative (no theme system)",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "render-001",
+      "phase": "Renderers",
+      "title": "FR-5 ChartCard shell",
+      "description": "src/lib/components/charts/ChartCard.svelte — extract card frame from current BarChart card: title/subtitle, inline selection label, empty/error/missing-role states, heightVh rule, config-toggle slot.",
+      "acceptanceCriteria": [
+        "Bar + heatmap render through the shell with states visible",
+        "Verified via labs pages + CDP smoke check",
+        "Karpathy: extraction only — no new features beyond the four states",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "render-002",
+      "phase": "Renderers",
+      "title": "FR-6 Bar renderer + registry entry (+ ruleY annotation)",
+      "description": "renderers/BarChartRenderer.svelte — thin BarX renderer on engine rows (topN hook = buildBars), sameDatum selection, scale:null fill bypass, shared tooltip anchored at bar, ruleY annotation rendering; options schema: orientation/topN/otherLabel.",
+      "acceptanceCriteria": [
+        "TDD: annotation value evaluation + topN mapping covered in tests (pure parts)",
+        "/labs/bar-chart renders via registry entry with visuals intact",
+        "Karpathy: renderer stays thin — no data prep inside the component",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "render-003",
+      "phase": "Renderers",
+      "title": "FR-7 Heatmap renderer + registry entry",
+      "description": "renderers/HeatmapRenderer.svelte — port Heatmap.svelte onto engine rows (pivot hook); options schema: scheme/threshold; annotation whitelist empty.",
+      "acceptanceCriteria": [
+        "/labs/heatmap renders via registry entry",
+        "Karpathy: port, don't redesign — keep threshold bands, in-cell labels, HTMLTooltip swap to shared renderer only if trivial",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-7"
+    },
+    {
+      "id": "render-004",
+      "phase": "Renderers",
+      "title": "FR-8 Table block renderer",
+      "description": "renderers/TableRenderer.svelte — engine rows (no aggregation) in app table style, compact page variant, limit default 50, respects cross-filter re-query.",
+      "acceptanceCriteria": [
+        "Table block renders on demo page and re-queries on cross-filter",
+        "Karpathy: reuse TableViewer patterns; no virtualization unless existing code has it",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-8"
+    },
+    {
+      "id": "page-001",
+      "phase": "Page runtime",
+      "title": "FR-9 Page runtime: grid + selection/cross-filter bus",
+      "description": "src/lib/charts/page-runtime.svelte.ts — resolve page doc → per-block queries/rows/loading/error $state; selection bus {chartId,dimension,value} → others recompile+requery, source excluded, clear restores; shared colorOf. PageGrid.svelte mounts blocks via registry on 12-col rows.",
+      "acceptanceCriteria": [
+        "TDD: bus logic (which blocks requery, WHERE injection, clear) tested pure — tests/page-runtime.test.ts",
+        "Demo page: bar select filters heatmap + table, bar unchanged",
+        "Karpathy: no event-emitter framework — one $state object + derived functions",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 3,
+      "status": "pending",
+      "mapsTo": "FR-9"
+    },
+    {
+      "id": "persist-001",
+      "phase": "Persistence & routes",
+      "title": "FR-10 d8a_monster_pages + Rust commands",
+      "description": "pages.rs module following saved_queries pattern: d8a_monster_pages (slug PK, title, spec JSON, timestamps), commands list_pages/get_page/save_page(upsert)/delete_page; $lib wrapper.",
+      "acceptanceCriteria": [
+        "TDD-style: command behavior verified via a tiny Rust test or integration check per repo precedent; SQL upsert semantics verified",
+        "spec stored as JSON text, validated client-side before save",
+        "Karpathy: mirror saved_queries module shape exactly, nothing extra",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 4,
+      "status": "pending",
+      "mapsTo": "FR-10"
+    },
+    {
+      "id": "routes-001",
+      "phase": "Persistence & routes",
+      "title": "FR-11 /pages list + create",
+      "description": "Rebuild /pages as list (title, block count, updated_at, open/delete) + New page (name → slug) → /page/<slug>; remove old draft content.",
+      "acceptanceCriteria": [
+        "List reflects storage; create routes to editor; delete works; old draft + 'pages - Copy' gone",
+        "Karpathy: reuse existing list/card components from /data patterns",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 4,
+      "status": "pending",
+      "mapsTo": "FR-11"
+    },
+    {
+      "id": "routes-002",
+      "phase": "Persistence & routes",
+      "title": "FR-12 /page/[slug] dual-mode editor (Design ⇄ Code)",
+      "description": "Design mode: PageGrid preview + selected-block inspector (schema-driven per FR-3 + shared fields, column/expression inputs with schema autocomplete) + add-block menu + row add/remove. Code mode: JSON textarea + live validation + save-gate. Lossless mode switch. Save → FR-10.",
+      "acceptanceCriteria": [
+        "Build bar+heatmap+table+text page purely in Design mode; edit same page in Code mode — identical render",
+        "Invalid JSON shows errors, save disabled",
+        "Karpathy: inspector renders from optionsSchema — no per-type hand-built panels",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 5,
+      "status": "pending",
+      "mapsTo": "FR-12"
+    },
+    {
+      "id": "cleanup-001",
+      "phase": "Cleanup",
+      "title": "FR-13 Labs migration + dead-code cleanup",
+      "description": "/labs/bar-chart + /labs/heatmap mount registry entries as thin pages; retire top-level src/lib/components/BarChart.svelte and 'pages - Copy' route; ChartConfigDrawer generalized only as far as inspector needs.",
+      "acceptanceCriteria": [
+        "Labs visually unchanged; svelte-check clean; no dead components/routes",
+        "Karpathy: delete more than you add in this task",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 5,
+      "status": "pending",
+      "mapsTo": "FR-13"
+    }
+  ]
+}

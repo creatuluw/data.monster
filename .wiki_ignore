@@ -29,3 +29,9 @@ data/
 
 # Rust build tree (thousands of files)
 src-tauri/target/
+
+# CDP / vite debugging scratch (2026-09-14 bar-chart hang investigation)
+.tmp-cdp-profile/
+.tmp-*
+.tmp-wv2-cdp/
+.vite-dev.log

@@ -1,34 +1,42 @@
 <script lang="ts">
 	import BarChart from '$lib/components/charts/BarChart.svelte';
 
-	// mirrors /labs/heatmap page logic: everything inline, only the chart
-	// component imported — no $lib/charts imports from the page
+	type Row = { category: string; value: number };
 
-	type Bar = { category: string; value: number };
-
-	// deterministic pseudo-random — stable across reloads
-	function rnd(i: number) {
-		const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+	// deterministic pseudo-random from grid coords — stable across reloads, no seed state
+	function rnd(i: number, j: number) {
+		const x = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
 		return x - Math.floor(x);
 	}
 
-	// aggregate synthetic sales into bars: top 5 + Other (kept last)
-	const REGIONS = ['EU', 'US', 'APAC', 'LATAM', 'MEA', 'CA', 'OCE', 'NORDICS'];
-	const sums = new Map<string, number>();
-	for (let i = 0; i < REGIONS.length; i++) {
-		for (let j = 0; j < 3; j++) {
-			sums.set(REGIONS[i], (sums.get(REGIONS[i]) ?? 0) + Math.round(rnd(i * 7 + j) * 90_000 + 10_000));
-		}
-	}
-	const sorted = [...sums.entries()].map(([category, value]) => ({ category, value })).sort((a, b) => b.value - a.value);
-	const bars: Bar[] = [...sorted.slice(0, 5), { category: 'Other', value: sorted.slice(5).reduce((s, b) => s + b.value, 0) }];
-	const total = bars.reduce((s, b) => s + b.value, 0);
+	// 12 months ahead of this month, inclusive
+	const now = new Date();
+	const monthLabels = Array.from({ length: 12 }, (_, i) =>
+		new Date(now.getFullYear(), now.getMonth() + i, 1).toLocaleDateString('en-US', {
+			month: 'short',
+			year: '2-digit',
+		}),
+	);
 
-	const fmt = (v: number) => `${Math.round(v / 1000)}k`;
-	const fmtFull = (v: number) =>
-		new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(v);
+	const CAPACITY = 36; // hours per week
 
-	let selected: Bar | null = $state(null);
+	// one dimension (month) + one measure (booked hours in the month)
+	const rows: Row[] = monthLabels
+		.map((category, m) => ({
+			category,
+			value: Math.round((0.2 + rnd(m, 60) * 1.1) * CAPACITY * 4),
+		}))
+		// desc on the measure — component renders domain[0] topmost, so the
+		// longest bar lands at the top
+		.sort((a, b) => b.value - a.value);
+
+	let selected: Row | null = $state(null);
+
+	// live-configurable BarChart props — mirrored into the config drawer
+	let chartTitle = $state('Booked hours per month');
+	let chartSubtitle = $state('synthetic utilization × 4-week capacity');
+	let barColor = $state('#888888');
+	let heightVh = $state(0.3);
 </script>
 
 <svelte:head>
@@ -37,28 +45,43 @@
 
 <div class="bar-page">
 	<div class="section-header">
-		<span class="section-number">LABS</span>
 		<h1 class="section-title">Bar chart</h1>
 	</div>
 
-	<p class="section-subtitle">
-		svelteplot BarY — hover tooltip, click-to-select, mono chart labels, empty-data guard. Top 5 regions + Other, aggregated from synthetic sales. Same interaction model as the heatmap.
-	</p>
-
 	<BarChart
-		data={bars}
-		category={(d: Bar) => d.category}
-		value={(d: Bar) => d.value}
-		formatY={fmt}
-		labelFor={(d: Bar) => `${d.category} · ${fmtFull(d.value)}`}
-		title="Revenue by region"
-		subtitle="top 5 regions, rest lumped into Other"
+		data={rows}
+		category={(d: Row) => d.category}
+		value={(d: Row) => d.value}
+		color={barColor}
+		{heightVh}
+		title={chartTitle}
+		subtitle={chartSubtitle}
+		labelFor={(d: Row) => `${d.category} · ${d.value}h`}
 		bind:selected
 	>
+		{#snippet config()}
+			<div class="field">
+				<label class="field-label" for="cfg-title">title — string</label>
+				<input class="input" id="cfg-title" type="text" bind:value={chartTitle} />
+			</div>
+			<div class="field">
+				<label class="field-label" for="cfg-subtitle">subtitle — string</label>
+				<input class="input" id="cfg-subtitle" type="text" bind:value={chartSubtitle} />
+			</div>
+			<div class="field">
+				<label class="field-label" for="cfg-color">color — hex</label>
+				<input class="input color-input" id="cfg-color" type="color" bind:value={barColor} />
+				<span class="field-hint">deselected bar fill; selected stays DS green</span>
+			</div>
+			<div class="field">
+				<label class="field-label" for="cfg-height">heightVh — viewport fraction</label>
+				<input class="range-input" id="cfg-height" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
+				<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
+			</div>
+		{/snippet}
 		{#snippet tooltip(d)}
 			<div class="font-semibold">{d.category}</div>
-			<div>Revenue: {fmtFull(d.value)}</div>
-			<div>Share: {Math.round((d.value / total) * 100)}%</div>
+			<div>Booked hours: {d.value}h</div>
 		{/snippet}
 	</BarChart>
 </div>
@@ -76,18 +99,6 @@
 		gap: var(--space-4);
 	}
 
-	.section-number {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		letter-spacing: 0.1em;
-		color: var(--color-accent);
-		padding: 2px var(--space-2);
-		border: 1px solid var(--color-accent-muted);
-		border-radius: var(--radius-xs);
-		background: var(--color-accent-muted);
-		white-space: nowrap;
-	}
-
 	.section-title {
 		font-family: var(--font-display);
 		font-size: var(--text-xl);
@@ -96,11 +107,14 @@
 		margin: 0;
 	}
 
-	.section-subtitle {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-		margin: var(--space-3) 0 var(--space-4) 0;
-		max-width: 64ch;
-		line-height: var(--leading-relaxed);
+
+	.color-input {
+		padding: 2px;
+		height: 36px;
+		cursor: pointer;
+	}
+
+	.range-input {
+		accent-color: var(--color-accent);
 	}
 </style>

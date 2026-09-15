@@ -1,9 +1,9 @@
 ---
 type: Entity
 title: Chart fundament
-description: What is it?
+description: Shared, tested pure-TS core under every /labs chart component — buildBars aggregation and sameDatum positional selection matching; components stay thin renderers.
 tags: [charts, svelteplot, testing]
-timestamp: "2026-09-14T08:29:20.418Z"
+timestamp: "2026-09-14T12:07:47.002Z"
 ---
 
 # Chart fundament
@@ -18,7 +18,7 @@ It is the concrete implementation of the [labs-charts-reusable-fundament](../../
 
 ## Details
 
-- **Location**: `src/lib/charts/fundament.ts`, tests in `src/lib/charts/fundament.test.ts` (9 tests, TDD red→green)
+- **Location**: `src/lib/charts/fundament.ts`, tests in `tests/fundament.test.ts` (9 tests, TDD red→green — moved out of `src/` so vite's dep-optimizer can never trip on the vitest import, see [[keep-test-files-and-vitest-imports-out-of-src]])
 - **Interface**: `sameDatum<T>(keys) => (a, b) => boolean` — positional datum matcher for selection binding; `buildBars<T>(rows, category, value, opts?) => BarDatum[]` — sum/sort aggregation with optional `topN` cap + `Other` bucket
 - **Configuration**: none — pure functions
 
@@ -31,3 +31,4 @@ It is the concrete implementation of the [labs-charts-reusable-fundament](../../
 ## Lifecycle
 
 - First added: 2026-09-14, built TDD-first alongside the bar chart lab (PR creatuluw/data.monster#1)
+- 2026-09-14: `fundament.test.ts` moved to `tests/` to fix the /labs bar-chart vite hang (PR creatuluw/data.monster#3)

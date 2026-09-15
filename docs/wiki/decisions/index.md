@@ -2,3 +2,19 @@
 
 - [Proxy remote LLM calls through Rust, not webview fetch](./proxy-remote-llm-calls-through-rust-not-webview-fetch.md) - Context
 - [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](./consolidate-chart-engines-to-picasso-js-layerchart-drop-echa.md) - Context
+- [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](./labs-catalog-placeholder-first.md) - Context
+- [Two-surface report pages: code mode edits a declarative spec, not Svelte source (Q3, pending)](./two-surface-report-page-format.md) - Context
+- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](./measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) - Context
+- [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](./master-item-library-table-binding-q6.md) - Context
+- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](./q7-locked-relationship-graph-drives-chart-item-availability-.md) - Context
+- [Q8 locked: one canonical query engine with per-type hooks](./q8-locked-one-canonical-query-engine-with-per-type-hooks.md) - Context
+- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](./q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) - Context
+- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](./q10-locked-chart-selections-cross-filter-other-charts-via-re.md) - Context
+- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](./q11-locked-tooltips-are-declarative-fields-one-template-stri.md) - Context
+- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](./q12-locked-page-level-consistent-colors-via-shared-scale-opt.md) - Context
+- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](./q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md) - Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](./q15-locked-reference-annotations-are-a-declarative-list-refe.md) - Context
+- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](./q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md) - Context
+- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](./q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) - Context
+- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](./q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) - Context
+- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](./central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) - Context

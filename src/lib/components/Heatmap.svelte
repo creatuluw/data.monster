@@ -16,6 +16,7 @@
 		labelFor,
 		label,
 		selected = $bindable(null),
+		heightVh = 0.3,
 		xTicks,
 		formatX,
 		yTicks,
@@ -52,14 +53,20 @@
 		/** card header (override per chart) */
 		title?: string;
 		subtitle?: string;
+		/** plot height as a fraction of viewport height (default 30vh) */
+		heightVh?: number;
 	} = $props();
 
 	let clientWidth = $state(500);
+	let innerHeight = $state(800);
 	let chartWrap: HTMLDivElement | undefined = $state();
 
 	// flip axes on narrow containers for readability.
 	const ax = $derived(clientWidth < 600 ? "y" : "x");
 	const ay = $derived(clientWidth < 600 ? "x" : "y");
+
+	// default: 20% of viewport height, override per chart via heightVh
+	const plotHeight = $derived(innerHeight * heightVh);
 
 	// one cast: svelteplot marks want RawValue records, a generic T can't prove that
 	const markData = $derived(data as unknown as Record<string | symbol, RawValue>[]);
@@ -97,7 +104,7 @@
 	}
 </script>
 
-<svelte:window onclick={handleWindowClick} />
+<svelte:window onclick={handleWindowClick} bind:innerHeight />
 
 <!-- mb-16: HTMLTooltip layout boxes extend below their cells even though
      the visual is translated up — on the bottom row they overflowed the card
@@ -139,7 +146,7 @@
 					domain: threshold,
 					legend: false,
 				}}
-				aspectRatio={clientWidth < 600 ? 2 : 1}
+				height={plotHeight}
 				{...{
 					[ax]: {
 						ticks: xTicks,

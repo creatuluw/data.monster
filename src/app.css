@@ -126,7 +126,7 @@
 	--duration-slow: 450ms;
 	--duration-enter: 600ms;
 
-	--max-width: 72rem;
+	--max-width: 90rem; /* 1440px — app-wide content container cap */
 	--gutter: clamp(1rem, 3vw, 2rem);
 }
 

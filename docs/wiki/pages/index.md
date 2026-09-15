@@ -19,3 +19,4 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Central charts spec & tasks](./artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
 - [Chart page spec (spec-types + validator)](./entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the TypeScript module holding the page document spec — `PageDoc` and all block/measure/dimension/filter/annotation/tooltip/axis types (`src
 - [Pages & master-items storage (Rust)](./entities/pages-master-items-storage-rust.md) — The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report `PageD
+- [PageGrid component](./entities/pagegrid-component.md) — The canvas renderer for the central-charts page editor: lays out a

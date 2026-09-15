@@ -9,3 +9,4 @@ _Concrete named things will be listed here._
 - [Chart page spec (spec-types + validator)](./chart-page-spec-spec-types-validator.md) - Central-charts FR-1: the TypeScript module holding the page document spec — `PageDoc` and all block/measure/dimension/filter/annotation/tooltip/axis types (`src
 - [Pages & master-items storage (Rust)](./pages-master-items-storage-rust.md) - The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report `PageD
 - [ChartConfigDrawer component](./chartconfigdrawer-component.md) - A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in `/labs`: a chart accepts an optional `config` snippet and togg
+- [PageGrid component](./pagegrid-component.md) - The canvas renderer for the central-charts page editor: lays out a

@@ -351,6 +351,14 @@
 		padding: 0;
 	}
 
+	/* app-wide content cap: every page's root container maxes out and centers
+	   at 1440px (token --max-width) */
+	.app-main > :global(*) {
+		max-width: var(--max-width);
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	.app-error {
 		padding: var(--space-3) var(--space-4);
 		margin-bottom: var(--space-4);

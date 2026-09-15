@@ -19,7 +19,7 @@ This amends [[q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the]] ("d
 
 **Three tabs: Design / Code / Page; no right sidebar.**
 
-- **Design** — full-width canvas: only [[PageGrid]] blocks (charts, tables, text) and the add-block buttons. The inspector `aside` is deleted.
+- **Design** — full-width canvas: only [PageGrid](../pages/entities/pagegrid-component.md) blocks (charts, tables, text) and the add-block buttons. The inspector `aside` is deleted.
 - **Code** — unchanged (spec JSON editing).
 - **Page** (new, FileCog icon) — the home for *non-visual* page settings: page title (editable), slug (read-only), and row list with remove buttons.
 

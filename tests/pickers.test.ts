@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dimensionFromPick, measureFromPick, dimensionPickValue, measurePickValue } from '../src/lib/charts/pickers';
+import { dimensionFromPick, measureFromPick, dimensionPickValue, measurePickValue, roleLabels } from '../src/lib/charts/pickers';
 
 describe('pickers — dimension pick codec', () => {
 	it('decodes a master ref', () => {
@@ -41,5 +41,35 @@ describe('pickers — measure pick codec', () => {
 	it('encodes refs back; inline exprs encode as custom', () => {
 		expect(measurePickValue({ ref: 'mi_x' })).toBe('ref:mi_x');
 		expect(measurePickValue({ expr: 'count(*)' })).toBe('custom');
+	});
+});
+
+describe('roleLabels', () => {
+	const chart = {
+		type: 'bar',
+		source: { table: 'orders' },
+		dimensions: [{ ref: 'mi_orders_region' }, { col: 'deal' }, { col: 'city', table: 'geo', label: 'City' }],
+		measures: [{ ref: 'mi_orders_rev' }, { expr: 'sum(amount)', label: 'Revenue' }]
+	} as any;
+	const items = [
+		{ id: 'mi_orders_region', kind: 'dimension', table: 'orders', label: 'Region', expr: 'region' },
+		{ id: 'mi_orders_rev', kind: 'measure', table: 'orders', label: 'Revenue', expr: 'sum(amount)' }
+	] as any;
+
+	it('labels each dimension member: ref -> ⭐ label, col -> column, linked w/ label', () => {
+		const out = roleLabels(chart, 'dimension', items);
+		expect(out).toEqual([
+			{ label: '⭐ Region', meta: 'orders' },
+			{ label: 'deal', meta: 'orders' },
+			{ label: 'City', meta: 'geo ⤳' }
+		]);
+	});
+
+	it('labels measure members: ref -> ⭐ label, expr -> label or expr', () => {
+		const out = roleLabels(chart, 'measure', items);
+		expect(out).toEqual([
+			{ label: '⭐ Revenue', meta: 'orders' },
+			{ label: 'Revenue', meta: 'orders' }
+		]);
 	});
 });

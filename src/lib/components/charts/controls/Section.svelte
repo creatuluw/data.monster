@@ -2,8 +2,9 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * Drawer control kit — section card: hairline panel with optional uppercase
-	 * micro-header and a right-aligned action snippet (e.g. "+ add").
+	 * Drawer section — flat (no box): dashed hairline separators between
+	 * sections, uppercase micro-header, optional right-aligned action.
+	 * Motif shared with the skeleton cards and the role-picker modal.
 	 */
 	let {
 		title,
@@ -31,10 +32,13 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
-		padding: var(--space-3) var(--space-4) var(--space-4);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		background: var(--color-surface);
+		padding-top: var(--space-4);
+		border-top: 1px dashed var(--color-border-strong);
+	}
+
+	.section:first-child {
+		border-top: none;
+		padding-top: 0;
 	}
 
 	.section-head {

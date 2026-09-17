@@ -30,3 +30,4 @@
 - [The /library vs /pages config-drawer difference is scope, not components](./library-vs-pages-config-drawer-scope.md) - Symptom
 - [Library code entries are keyed by full repo paths](./library-code-entries-are-keyed-by-full-repo-paths.md) - What
 - [speed-highlight/core has no Svelte grammar](./speed-highlight-core-has-no-svelte-grammar.md) - Gotchas discovered wiring `@speed-highlight/core` into the library Code tab
+- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](./query-editor-blowup-was-app-column-min-height-auto-mock-taur.md) - Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.

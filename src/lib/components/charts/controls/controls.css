@@ -1,0 +1,86 @@
+/** Drawer control kit — shared input chrome: one source of truth for every text-like control. */
+.ctl-input,
+.ctl-select {
+	width: 100%;
+	min-width: 0;
+	height: 30px;
+	padding: 0 var(--space-2);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: var(--text-sm);
+	font-variant-numeric: tabular-nums;
+	transition:
+		border-color var(--duration-fast, 120ms) ease,
+		box-shadow var(--duration-fast, 120ms) ease;
+}
+
+.ctl-mono {
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	letter-spacing: 0;
+}
+
+.ctl-input::placeholder,
+.ctl-textarea::placeholder {
+	color: var(--color-text-tertiary);
+	opacity: 0.8;
+}
+
+.ctl-input:hover:not(:disabled),
+.ctl-select:hover:not(:disabled),
+.ctl-textarea:hover:not(:disabled) {
+	border-color: var(--color-text-tertiary);
+}
+
+.ctl-input:focus-visible,
+.ctl-select:focus-visible,
+.ctl-textarea:focus-visible {
+	outline: none;
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 2px var(--color-accent-muted);
+}
+
+.ctl-input:disabled,
+.ctl-select:disabled,
+.ctl-textarea:disabled {
+	background: var(--color-surface-sunken);
+	color: var(--color-text-tertiary);
+	cursor: not-allowed;
+}
+
+/* selects: native menu, custom chevron */
+.ctl-select {
+	appearance: none;
+	padding-right: var(--space-5);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2358605a' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right var(--space-2) center;
+	cursor: pointer;
+}
+
+.ctl-textarea {
+	width: 100%;
+	padding: var(--space-1) var(--space-2);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-sm);
+	background: var(--color-surface);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: var(--text-sm);
+	resize: vertical;
+}
+
+.ctl-textarea:focus-visible {
+	outline: none;
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 2px var(--color-accent-muted);
+}
+
+.ctl-select.ctl-small {
+	height: 24px;
+	font-size: var(--text-xs);
+	padding: 0 var(--space-4) 0 var(--space-1);
+}

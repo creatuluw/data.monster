@@ -131,44 +131,4 @@
 		flex-direction: column;
 		gap: var(--space-4);
 	}
-
-	/* shared field styles for the config inputs rendered into the body */
-	.drawer :global(.field) {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-	}
-
-	.drawer :global(.field-label) {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--color-text-tertiary);
-	}
-
-	.drawer :global(.field-hint) {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		color: var(--color-text-tertiary);
-	}
-
-	.drawer :global(.input) {
-		padding: var(--space-2) var(--space-3);
-		border: 1px solid var(--color-border-strong);
-		font-family: var(--font-mono);
-		font-size: var(--text-sm);
-		color: var(--color-text);
-		background: var(--color-surface);
-		border-radius: var(--radius-xs);
-		transition:
-			border-color var(--duration-fast) ease,
-			box-shadow var(--duration-fast) ease;
-	}
-
-	.drawer :global(.input:focus) {
-		outline: none;
-		border-color: var(--color-accent);
-		box-shadow: 0 0 0 2px var(--color-accent-muted);
-	}
 </style>

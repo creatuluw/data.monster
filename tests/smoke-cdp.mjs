@@ -59,10 +59,10 @@ async function main() {
 	})()`);
 	await expr("document.querySelector('input[placeholder=\"New page name…\"]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))");
 	// press Enter in the input instead (button may be first add button)
-	await navigate('http://localhost:6123/page/smoke-test');
+	await navigate('http://localhost:6123/pages/smoke-test');
 	await sleep(3000);
 	h1 = await expr("document.querySelector('input[style*=font-display]')?.value");
-	check('/page/smoke-test editor loads (created via save on nav)', /smoke/i.test(String(h1)), `title=${h1}`);
+	check('/pages/smoke-test editor loads (created via save on nav)', /smoke/i.test(String(h1)), `title=${h1}`);
 
 	// 2. add a bar chart block
 	const added = await expr(`(() => {

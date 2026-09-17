@@ -129,6 +129,7 @@
 	{@render children()}
 {:else}
 <div class="app-shell">
+	<div class="app-column">
 	<header class="app-header">
 		<div class="app-brand-group">
 			<a href="/" class="app-brand">
@@ -228,6 +229,7 @@
 			</main>
 		</div>
 	{/if}
+	</div>
 </div>
 {/if}
 
@@ -236,6 +238,18 @@
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
+	}
+
+	/* the single app column: header, breadcrumb, content — capped at 1920,
+	   centered, exactly viewport-high (app-shell owns the 100vh) */
+	.app-column {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		max-width: var(--max-width);
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.app-header {
@@ -256,7 +270,7 @@
 		gap: var(--space-2);
 		font-family: var(--font-display);
 		font-size: var(--text-md);
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: -0.02em;
 		color: var(--color-text);
 		text-decoration: none;
@@ -351,18 +365,18 @@
 		padding: 0;
 	}
 
-	/* app-wide content cap: every page's root container maxes out and centers
-	   at 1440px (token --max-width) */
+	/* pages fill the capped column */
 	.app-main > :global(*) {
 		width: 100%;
-		max-width: var(--max-width);
-		margin-left: auto;
-		margin-right: auto;
 	}
 
-	/* full-bleed pages (analyst, data, page editor) span the whole window */
-	.app-main > :global(.full-bleed) {
-		max-width: none;
+	/* beyond the cap the column gets side borders, running the full viewport
+	   height */
+	@media (min-width: 1920px) {
+		.app-column {
+			border-left: 1px solid #d4d9d6;
+			border-right: 1px solid #d4d9d6;
+		}
 	}
 
 	.app-error {

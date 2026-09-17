@@ -146,6 +146,7 @@
 
 	.type-sample-display {
 		font-family: var(--font-display);
+		font-weight: 700;
 		line-height: var(--leading-tight);
 		letter-spacing: -0.02em;
 		color: var(--color-text);
@@ -219,7 +220,7 @@
 
 	.display-sample {
 		font-family: var(--font-display);
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: -0.02em;
 	}
 

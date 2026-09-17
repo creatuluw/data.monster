@@ -11,7 +11,7 @@ timestamp: "2026-09-15T09:08:33.566Z"
 ## What it documents
 
 - [chart-fundament](../entities/chart-fundament.md) — the design formalizes and extends it into an 8-layer architecture
-- The future report-page system (`/pages` list → `/page/<slug>` dual-mode editor)
+- The report-page system (`/pages` list → `/pages/<slug>` dual-mode editor)
 - Master-item library + relationship-graph smart association
 
 ## Summary

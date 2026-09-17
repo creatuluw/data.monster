@@ -10,7 +10,7 @@ timestamp: "2026-09-15T10:55:52.612Z"
 
 The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report `PageDoc`s, workspace-level master items (measures/dimensions), and the table relationship graph.
 
-Backs the `/pages` → `/page/<slug>` dual-mode editor and the `/data` Relationships + Measures/Dimensions tabs. Master items implement [master-item-library-table-binding-q6](../../decisions/master-item-library-table-binding-q6.md); the relationship graph implements [q7-locked-relationship-graph-drives-chart-item-availability-](../../decisions/q7-locked-relationship-graph-drives-chart-item-availability-.md) (BFS auto-JOIN lives frontend-side in the query compiler).
+Backs the `/pages/<slug>` dual-mode editor and the `/data` Relationships + Measures/Dimensions tabs. Master items implement [master-item-library-table-binding-q6](../../decisions/master-item-library-table-binding-q6.md); the relationship graph implements [q7-relationship-graph-drives-item-availability](../../decisions/q7-relationship-graph-drives-item-availability.md) (BFS auto-JOIN lives frontend-side in the query compiler).
 
 ## Details
 

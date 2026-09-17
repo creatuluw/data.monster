@@ -5,7 +5,8 @@
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](./pin-tailwind-source-scanning.md) - Pin Tailwind @source scanning to src/ and app.html in app.css
 - [Each /labs chart owns its config panel](./each-labs-chart-owns-its-config-panel.md) - Guideline
 - [Interview the user one question at a time with lettered multiple-choice options](./interview-one-question-at-a-time.md) - Guideline
-- [Spec-driven features: TDD + Karpathy skills referenced in every todo](./spec-driven-features-tdd-karpathy-skills-referenced-in-every.md) - Guideline
-- [Card spacing comes from the grid gap, never per-card margins](./card-spacing-comes-from-the-grid-gap-never-per-card-margins.md) - In any grid of chart/component cards (page editor canvas, labs), inter-card
-- [App content is capped at 1440px by the shared layout — never set per-page max-width](./app-content-is-capped-at-1440px-by-the-shared-layout-never-s.md) - Guideline
-- [Pointer cursor comes from one global rule in app.css](./pointer-cursor-comes-from-one-global-rule-in-app-css.md) - Guideline
+- [Spec-driven features: TDD + Karpathy skills referenced in every todo](./spec-driven-features-tdd-karpathy-in-todos.md) - Guideline
+- [Card spacing comes from the grid gap, never per-card margins](./card-spacing-from-grid-gap-not-margins.md) - In any grid of chart/component cards (page editor canvas, labs), inter-card
+- [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](./app-content-capped-at-shared-max-width.md) - Guideline
+- [Pointer cursor comes from one global rule in app.css](./pointer-cursor-from-global-rule-app-css.md) - Guideline
+- [Render markdown via marked + .prose-chat, never a new pipeline](./render-markdown-via-marked-prose-chat-never-a-new-pipeline.md) - When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in the `.prose-chat` cl

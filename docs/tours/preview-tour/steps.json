@@ -1,0 +1,77 @@
+{
+	"titel": "Preview - app tour",
+	"badge": "Preview",
+	"eindtekst": "Preview checks columns and detected types before ingest: override a type, click Next, and Query turns your choices into the SQL that lands the table.",
+	"stappen": [
+		{
+			"f": "connect",
+			"cap": "Connect",
+			"tekst": "Preview always starts from a candidate source. Here we use the Remote tab: it ingests straight from a URL, no manual download.",
+			"tour": ["tab-remote"]
+		},
+		{
+			"f": "connect",
+			"cap": "Remote",
+			"tekst": "Open the Remote tab to reach the URL flow.",
+			"anchor": "tab-remote",
+			"act": "click",
+			"klaar": "Remote tab open."
+		},
+		{
+			"f": "remote",
+			"cap": "Paste the URL",
+			"tekst": "Type the direct link to a CSV, Parquet or JSON file. Load copies it into the workspace and hands it to Preview.",
+			"anchor": "url-input",
+			"act": "type",
+			"text": "http://localhost:8123/regions.csv"
+		},
+		{
+			"f": "remote-filled",
+			"cap": "Load",
+			"tekst": "Load downloads the file and routes to Preview for a column and type check before anything is written.",
+			"anchor": "load-btn",
+			"act": "click",
+			"klaar": "Downloaded and handed to Preview."
+		},
+		{
+			"f": "preview-landed",
+			"cap": "Preview",
+			"tekst": "The meta bar sums up the candidate: name regions, CSV, field and row counts, and file size. Preview itself is read-only, nothing lands in DuckDB yet.",
+			"tour": ["meta-name", "meta-fields", "meta-rows"]
+		},
+		{
+			"f": "preview-pane",
+			"cap": "Types",
+			"tekst": "Every column shows its detected type with a dropdown to override it, an editable name, and an on/off switch to drop a column. Here quantity was switched from BIGINT to DOUBLE.",
+			"tour": ["type-override", "col-toggle"]
+		},
+		{
+			"f": "preview-pane",
+			"cap": "Next",
+			"tekst": "Next commits your choices: it generates the SQL that reads the file with your casts, renames and column filters.",
+			"anchor": "next-btn",
+			"act": "click",
+			"klaar": "Generated SQL and moved to Query."
+		},
+		{
+			"f": "query-landed",
+			"cap": "Query",
+			"tekst": "You land in Query, not Data: the editor holds the generated SELECT with CAST(quantity AS DOUBLE), already run so the result grid confirms the data reads cleanly.",
+			"tour": ["editor-sql", "query-results"]
+		},
+		{
+			"f": "query-landed",
+			"cap": "Ingest",
+			"tekst": "Ingest opens the final step: name the table, add tags, and confirm to materialize this SELECT into the workspace DuckDB.",
+			"anchor": "ingest-btn",
+			"act": "click",
+			"klaar": "Ingest dialog open."
+		},
+		{
+			"f": "ingest-modal",
+			"cap": "Table name",
+			"tekst": "The table name is prefilled from the source file. Confirm here and the table shows up under Data, ready to query.",
+			"tour": ["ingest-table-name"]
+		}
+	]
+}

@@ -47,7 +47,7 @@
 	<title>Data — Data Monster</title>
 </svelte:head>
 
-<div class="data-page full-bleed">
+<div class="data-page">
 	<TableOverview
 		tables={app.tables}
 		onselect={handleSelect}

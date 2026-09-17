@@ -2,7 +2,7 @@
 type: Rule
 title: Each /labs chart owns its config panel
 description: Guideline
-tags: [labs, charts, config]
+tags: [labs, library, charts, config]
 timestamp: "2026-09-15T07:33:25.479Z"
 ---
 
@@ -18,7 +18,7 @@ In `/labs`, chart configuration UI lives **inside the chart component**, never o
 
 ## When it applies
 
-Every chart-type component built on the [[chart-fundament]] (bar chart done; heatmap gets it with one prop pass when its page needs a panel; applies to the 30 charts still to come).
+Every chart-type component built on the [[chart-fundament]], on **every surface that shows a chart** — not just `/labs`. Confirmed surfaces: `/labs` pages, `/library` detail-page previews (2026-09-17: the demo passes a `config` snippet to the real renderer, fields rendered schema-driven with the same markup as `BlockInspector`), and the `/pages` focused config mode. User directive 2026-09-17: "this is an integral part of every chart" — the Bolt toggle + drawer ships with the chart, never bolted on per-page.
 
 ## Rationale
 

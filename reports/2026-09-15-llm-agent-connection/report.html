@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connecting any LLM / coding agent / harness to data.monster — fractal research report</title>
+<!--
+  ============================================================================
+  FRACTAL RESEARCH · HTML REPORT TEMPLATE (self-contained, portable)
+  Design lineage: html-docs research templates (thariqs.github.io/html-effectiveness)
+
+  HOW TO FILL THIS IN (the orchestrator agent, after synthesis):
+  1. Copy this file to <report_dir>/report.html. The markdown artifacts
+     (agents/, research.log, metrics.json) stay — this page is the deliverable.
+  2. Replace every {{PLACEHOLDER}}. Search for "{{" to find them all.
+  3. Answer section: keep one <h2>+paragraphs per major branch (one branch =
+     one h2, named after the sub-question it answers). Rank strongest first.
+  4. Optional strategy sections are marked "OPTIONAL — delete if not applicable":
+     Blind spots (perspective_expander), Sources (grounded_research),
+     The question, examined (socratic). Delete the ones the run didn't use.
+  5. Build TREE below in <script> from research.log: decompose events give
+     parent→children, answer events give status. One node per question:
+       { id, q, status, children: [...] }
+     status ∈ explored | validated | synthesized | dead_end. dead_end nodes:
+     keep them — visible dead ends are findings.
+  6. Verify: open report.html in a browser (or show_in_browser). Zero external
+     dependencies — must work offline, from file://.
+  ============================================================================
+-->
+<style>
+  :root {
+    --ivory:   #FAF9F5;
+    --slate:   #141413;
+    --clay:    #D97757;
+    --oat:     #E3DACC;
+    --olive:   #788C5D;
+    --sky:     #6A8CAF;
+    --rust:    #B04A3F;
+    --gray-150:#F0EEE6;
+    --gray-300:#D1CFC5;
+    --gray-500:#87867F;
+    --gray-700:#3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ivory:   #1C1C1A;
+      --slate:   #EDEBE4;
+      --clay:    #D97757;
+      --oat:     #3A362F;
+      --gray-150:#26261F;
+      --gray-300:#3D3D3A;
+      --gray-500:#A5A39B;
+      --gray-700:#CFCDC5;
+    }
+    body { background: var(--ivory); }
+    .demo, aside, .card { background: #232320; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ivory);
+    color: var(--gray-700);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 120px;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 48px;
+  }
+  @media (max-width: 960px) { .page { grid-template-columns: 1fr; } aside { order: 2; position: static; } }
+
+  /* ── header ───────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 33px;
+    color: var(--slate);
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+    line-height: 1.25;
+  }
+  .lead { max-width: 680px; margin-bottom: 16px; font-size: 16.5px; }
+  .lead strong { color: var(--slate); }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--slate);
+    margin: 40px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 17px; color: var(--slate); margin: 24px 0 8px; }
+  p { margin-bottom: 12px; max-width: 680px; }
+  ul, ol { margin: 0 0 12px 22px; max-width: 680px; }
+  li { margin-bottom: 5px; }
+  code { font-family: var(--mono); font-size: 13px; }
+  a { color: var(--clay); }
+  section { scroll-margin-top: 24px; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+  }
+  .meta span {
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--gray-150);
+  }
+  .meta b { color: var(--slate); font-weight: 600; }
+
+  /* ── confidence + citation chips ──────── */
+  .conf { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+  .conf.high   { background: rgba(120,140,93,.18);  color: var(--olive); }
+  .conf.medium { background: rgba(217,119,87,.15);  color: var(--clay); }
+  .conf.low    { background: rgba(176,74,63,.15);   color: var(--rust); }
+  .src {
+    font-family: var(--mono); font-size: 12px;
+    border-bottom: none;
+  }
+
+  .card {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 14px;
+    background: #fff;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  .card.dead-ends { border-style: dashed; }
+
+  /* ── research tree ────────────────────── */
+  .tree { font-size: 13.5px; }
+  .tree details { margin: 3px 0 3px 0; }
+  .tree details > summary {
+    cursor: pointer; list-style: none;
+    padding: 4px 8px; border-radius: 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .tree details > summary::-webkit-details-marker { display: none; }
+  .tree details > summary:hover { background: var(--gray-150); }
+  .tree details > summary::before { content: "▸"; color: var(--gray-500); font-size: 10px; }
+  .tree details[open] > summary::before { content: "▾"; }
+  .tree .leaf { padding: 4px 8px 4px 22px; }
+  .tree .q { color: var(--slate); }
+  .tree .nid { font-family: var(--mono); font-size: 10.5px; color: var(--gray-500); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; position: relative; top: 0px; align-self: center; }
+  .dot.explored    { background: var(--olive); }
+  .dot.validated   { background: var(--sky); }
+  .dot.synthesized { background: var(--slate); }
+  .dot.dead_end    { background: var(--rust); }
+  .tree .branch { margin-left: 18px; border-left: 1px solid var(--gray-300); padding-left: 10px; }
+
+  /* ── sidebar ──────────────────────────── */
+  aside {
+    position: sticky; top: 32px; align-self: start;
+    border: 1.5px solid var(--gray-300); border-radius: 12px;
+    background: #fff; padding: 18px 18px 12px;
+  }
+  aside .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  aside nav a {
+    display: block; text-decoration: none; color: var(--gray-700);
+    font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gray-150);
+  }
+  aside nav a:hover { color: var(--clay); }
+  aside dl { margin-top: 16px; }
+  aside dt { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-500); margin-top: 10px; }
+  aside dd { font-size: 13.5px; color: var(--slate); }
+  aside button {
+    margin-top: 16px; width: 100%;
+    appearance: none; border: 1.5px solid var(--gray-300);
+    background: var(--gray-150); border-radius: 6px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  aside button:hover { background: var(--oat); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-family: var(--mono); color: var(--gray-500); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    aside, aside button { display: none; }
+    .page { grid-template-columns: 1fr; gap: 0; }
+    .tree details { display: block; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <main>
+    <div class="eyebrow">Fractal research · grounded_research</div>
+    <h1>How can we connect any LLM / coding agent / harness to data.monster and let it operate the app · ingest data, author content, run analysis?</h1>
+    <p class="lead">
+      <strong>Ship an MCP server inside data.monster&rsquo;s Rust backend, served as Streamable HTTP on 127.0.0.1 from the already-running app, built on the official Tier-1 Rust SDK (rmcp).</strong> MCP is the settled standard &mdash; every major harness (Claude Code, Cursor, VS Code, Codex, opencode, JetBrains, Gemini CLI) supports it as a client, and the &ldquo;agent connects to a running desktop app over loopback HTTP&rdquo; pattern has production precedent (Figma Dev Mode MCP Server). data.monster is unusually well positioned: the Rust backend already owns every operation an agent needs as per-domain command modules &mdash; the MCP tool layer is a thin wrapper over code that exists. The real design work is the tool catalog and the layered safety model: read-only by default, opt-in write, elicitation confirmations for destructive ops, audit log, transactions, and checkpoints.
+    </p>
+    <div class="meta">
+      <span>2026-09-15</span>
+      <span>strategy <b>grounded_research</b></span>
+      <span>6 nodes</span>
+      <span>depth <b>2</b></span>
+      <span>6 agents</span>
+    </div>
+
+    <section id="answer">
+      <h2>1 · The standard is MCP · served as Streamable HTTP on loopback, not stdio</h2>
+      <p>
+        MCP has consolidated as <em>the</em> agent&rarr;app protocol (spec chain 2024-11-05 &rarr; 2025-03-26 &rarr; 2025-06-18 &rarr; 2025-11-25 &rarr; <b>2026-07-28 current</b>, all changelog-verified; ~500M SDK downloads/month; official registry frozen at v0.1; TS/Python/C#/Go/<b>Rust</b> SDKs are Tier 1). For a desktop app that is already running, the transport is forced: stdio requires the <em>agent</em> to spawn the server and cannot attach to a running app; a separate process is blocked by DuckDB&rsquo;s single read-write file lock; only in-process Streamable HTTP on 127.0.0.1 lets the Rust process that owns the DuckDB connection <em>be</em> the server. That is exactly Figma&rsquo;s embedded Dev Mode MCP server pattern (<code>127.0.0.1:3845</code>). rmcp&rsquo;s Streamable-HTTP server is a Tower service that nests into any axum router.
+      </p>
+      <ul>
+        <li>Spec 2026-07-28 made the protocol stateless, replaced server-initiated requests with MRTR, moved tasks to an extension; rmcp targets both 2025-11-25 and 2026-07-28 <span class="conf high">high</span></li>
+        <li>Every harness the team uses (Claude Code, Cursor, VS Code, Codex, opencode) consumes stdio + HTTP MCP servers today <span class="conf high">high</span></li>
+        <li>stdio remains viable later as a thin shim proxying to the running app (Obsidian Local-REST-API pattern) <span class="conf high">high</span></li>
+        <li>Community <code>tauri-plugin-mcp-bridge</code> (~50k dl/mo) exists but is community-maintained with frequent breaking releases · rolling our own axum mount is small <span class="conf medium">medium</span></li>
+      </ul>
+
+      <h2>2 · The architecture, concretely</h2>
+      <ul>
+        <li>Start axum + rmcp Streamable-HTTP service at <code>/mcp</code>, bound to <b>127.0.0.1</b> only, from the Tauri <code>setup</code> hook</li>
+        <li><b>Auth</b>: loopback binding (OAuth 2.1 &sect;1.5 carve-out) + startup-generated bearer token; port+token written to a well-known file (<code>~/.data-monster/mcp.json</code>) that harness configs reference · no port drift</li>
+        <li><b>Tools are thin wrappers over existing Rust command modules</b> · <code>queries</code>, <code>files</code>, <code>tables</code>, <code>saved_queries</code>, PageDoc storage, <code>postgres</code> · the same functions the Tauri invoke commands call; no second implementation</li>
+        <li><b>UI refresh</b>: mutating tools emit Tauri events so the human sees agent actions live; <code>get_app_status</code>/<code>notify</code> cover long jobs</li>
+        <li>Everything stays in the one signed main exe · no sidecar binary to code-sign <span class="conf medium">medium</span></li>
+        <li>Result: one server, one-liner config for any harness: <code>{"mcpServers":{"data-monster":{"url":"http://127.0.0.1:&lt;port&gt;/mcp","headers":{"Authorization":"Bearer &hellip;"}}}}</code></li>
+      </ul>
+
+      <h2>3 · Tool catalog · split read/write, expose business content</h2>
+      <p>Surveyed: Postgres/SQLite reference servers, MotherDuck (DuckDB), Supabase, Databricks, dbt, Hex, Deepnote, Evidence. Recommended surface:</p>
+      <ul>
+        <li><b>Discovery</b> (read-only, always on): <code>list_tables</code>, <code>describe_table</code>, <code>list_saved_queries</code>, <code>list_pages</code>/<code>get_page</code> (PageDoc JSON), <code>search_workspace</code></li>
+        <li><b>Query</b>: <code>read_query</code> (SELECT/SHOW/DESCRIBE enforced in Rust) vs <code>write_query</code> (CTAS/DDL) · <b>split, not one SQL tool</b>: split lets harness permission rules gate writes at the protocol layer; preview results carry <code>rows_returned</code>/<code>total_rows</code>/<code>truncated</code> (Hex pattern); export-to-CSV for big results (Deepnote pattern); MotherDuck caps (1024 rows / 50k chars) as default</li>
+        <li><b>Ingestion</b> (write-gated): <code>ingest</code> (path/URL CSV/Parquet/JSON), <code>import_postgres</code>, <code>list_ingestions</code></li>
+        <li><b>Content</b> (write-gated): <code>save_query</code>, <code>create_page</code>/<code>update_page</code> (PageDoc spec is already agent-authorable JSON), <code>set_table_tags</code> · precedent is Hex/Deepnote (notebook-app servers), not the pure DB servers</li>
+        <li><b>App-control</b>: <code>refresh_ui</code>, <code>notify</code>, <code>get_app_status</code></li>
+      </ul>
+
+      <h2>4 · Safety model · layered, because no single layer holds</h2>
+      <ul>
+        <li><b>Read-only default; write opt-in</b> (MotherDuck <code>--read-write</code> / postgres-mcp restricted-mode pattern), toggled in Settings + per-session scope</li>
+        <li><b>Annotate every tool</b> (<code>readOnlyHint</code>, <code>destructiveHint</code>, <code>idempotentHint</code>) · defaults are pessimistic; spec marks hints <em>untrusted</em>: necessary, not sufficient <span class="conf high">high</span></li>
+        <li><b>Elicitation</b> (stable spec, form mode; Claude Code + Cursor support it) = native in-band confirmation for destructive SQL and write-scope grants. <b>Do not build on sampling · deprecated 2026-07-28</b></li>
+        <li><b>Transactions &amp; checkpoints</b>: agent write batches in <code>BEGIN &hellip; ROLLBACK</code>-able transactions (DuckDB is fully ACID); <code>EXPORT DATABASE</code> checkpoint before write sessions</li>
+        <li><b>Audit</b>: append-only log (agent, tool, args hash, row counts) in a <em>separate</em> DuckDB file</li>
+        <li><b>Secrets stay in the app</b>: Rust backend holds keys/tokens, never the agent; server-side scoping alone can leak (a Postgres-MCP-Pro restricted-mode bypass was reported Sept 2026) · defense in depth</li>
+        <li>Design for the harness grammar (ask/allow/deny per tool + input patterns · Claude Code modes, opencode permission rules): split tools make those rules expressible</li>
+      </ul>
+
+      <h2>5 · What is NOT the path</h2>
+      <ul>
+        <li><b>OpenAI Apps SDK / ChatGPT plugins</b>: MCP-based but cloud-first · public HTTPS endpoint + review; nothing local-native remains <span class="conf high">high</span></li>
+        <li><b>Google A2A</b>: agent-to-agent delegation, explicitly &ldquo;not a replacement for MCP&rdquo; · orthogonal (only if data.monster later <em>is</em> a delegable agent) <span class="conf high">high</span></li>
+        <li><b>Claude Desktop Extensions (.mcpb)</b>: distribution packaging for MCP servers, not a protocol · relevant later for one-click install <span class="conf high">high</span></li>
+        <li><b>Copilot extensions</b>: GitHub/repo-centric; a local app reaches Copilot only as an MCP server anyway <span class="conf high">high</span></li>
+        <li><b>UI automation</b>: CDP/Playwright on WebView2 (already proven in this repo) is a great e2e-<em>test</em> channel but a bad agent API · no typed semantics, no transactions. Computer use is last-resort (CUA 38.1% vs human 72.4% OSWorld; slow, token-heavy) <span class="conf high">high</span></li>
+      </ul>
+    </section>
+
+    <section id="tensions">
+      <h2>Tensions</h2>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Protocol era split: the 2026-07-28 stateless redesign is large; clients and third-party docs are mixed between 2025-11-25 and 2026-07-28 behavior (Cursor docs still list SSE). Assessment: rely on rmcp&rsquo;s era handling and test against real clients, not docs.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>rmcp version confusion: crates.io README example shows <code>0.16.0</code> while the 2026-08-21 Tier-1 promotion cites stable <code>3.0.1</code>. Assessment: pin what resolves today; read the 3.x migration notes first.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>One SQL tool (Supabase/MotherDuck/Databricks) vs split read/write (SQLite reference): vendors rely on server-side read-only users; split buys protocol-level gating in harness permission rules. Assessment: split · cheap and composes with harness UX.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Safety layers each leak: spec calls annotations untrusted; a restricted-mode bypass in Postgres MCP Pro was reported (Sept 2026). Assessment: never one layer · read-only default + split tools + elicitation + transactions + audit together.</p>
+      </div>
+    </section>
+
+    <section id="open-questions">
+      <h2>Open questions</h2>
+      <ul>
+        <li>Live per-client matrix: which connected clients negotiate 2026-07-28 vs 2025-11-25, and which actually surface elicitation forms (test Claude Code, Cursor, opencode, pi directly)</li>
+        <li>DuckDB time-travel-style undo (DuckLake / snapshots) as a cheaper agent-undo than EXPORT checkpoints</li>
+        <li>Whether to later ship a stdio shim exe + <code>.mcpb</code> bundle for one-click harness install (Windows signing cost)</li>
+        <li>pi extension angle: a thin extension/skill wrapping the same MCP surface · redundant if pi&rsquo;s MCP client reaches localhost HTTP (observed in-session, not web-verified)</li>
+        <li>ARD (Agentic Resource Discovery) as an alternative to a hand-maintained tool catalog</li>
+      </ul>
+    </section>
+
+    <section id="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a class="src" href="https://modelcontextprotocol.io/specification/2026-07-28/changelog">modelcontextprotocol.io · 2026-07-28 changelog</a> · full revision chain and the stateless redesign</li>
+        <li><a class="src" href="https://github.com/modelcontextprotocol/rust-sdk">github.com/modelcontextprotocol/rust-sdk</a> · rmcp transports (Tower/axum Streamable HTTP), Tier-1, spec revisions targeted</li>
+        <li><a class="src" href="https://duckdb.org/faq">duckdb.org/faq</a> · single read-write process per DuckDB file (kills the separate-process option)</li>
+        <li><a class="src" href="https://www.builder.io/blog/claude-code-figma-mcp-server">builder.io · Figma Dev Mode MCP server</a> · desktop app serving MCP at 127.0.0.1:3845</li>
+        <li><a class="src" href="https://github.com/motherduckdb/mcp-server-motherduck">motherduckdb/mcp-server-motherduck</a> · DuckDB MCP tool catalog, read-only default, result caps</li>
+        <li><a class="src" href="https://learn.hex.tech/docs/api-integrations/mcp-server">Hex MCP docs</a> · business-content tools, truncation metadata pattern</li>
+        <li><a class="src" href="https://deepnote.com/docs/deepnote-mcp">Deepnote MCP docs</a> · annotated read-only vs state-changing tools, snapshot URLs</li>
+        <li><a class="src" href="https://modelcontextprotocol.io/specification/2026-07-28/client/sampling">spec 2026-07-28 client/sampling</a> · sampling deprecated (SEP-2577)</li>
+        <li><a class="src" href="https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation">spec 2025-11-25 elicitation</a> · stable in-band confirmation, form/url modes</li>
+        <li><a class="src" href="https://code.claude.com/docs/en/permission-modes">Claude Code permission modes</a> · harness ask/allow/deny grammar to design for</li>
+        <li><a class="src" href="https://duckdb.org/2024/09/25/changing-data-with-confidence-and-acid">duckdb.org · ACID</a> · transactions as agent-write undo</li>
+        <li><a class="src" href="https://a2a-protocol.org/">a2a-protocol.org</a> · A2A vs MCP positioning</li>
+        <li><a class="src" href="https://openai.com/index/computer-using-agent/">OpenAI CUA</a> · 38.1% OSWorld vs 72.4% human</li>
+      </ul>
+      <p style="font-size:13px;color:var(--gray-500);">
+        All findings above were verified against fetched pages during the run (search trails per branch in <code>agents/d1-00*.md</code>). Two claims remain reported-only: the Sept 2026 Postgres-MCP-Pro restricted-mode bypass, and ChatGPT&rsquo;s display of annotation-less tools as &ldquo;write&rdquo;.
+      </p>
+    </section>
+
+    <section id="method">
+      <h2>How this was researched</h2>
+      <p>Grounded fractal research: 1 root + 5 parallel leaf branches (protocol state, Tauri/Rust hosting, alternatives, tool-surface design, safety model), every leaf web-verified against primary sources (~45 URLs fetched; 2026-09-15). Synthesized bottom-up; markdown artifacts in <code>agents/</code> are the audit trail.</p>
+      <div class="card">
+        <div class="label">Question tree</div>
+        <div class="tree" id="tree"></div>
+        <div class="legend">
+          <span><i class="dot explored"></i>explored</span>
+          <span><i class="dot validated"></i>validated</span>
+          <span><i class="dot synthesized"></i>synthesized</span>
+          <span><i class="dot dead_end"></i>dead end</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside>
+    <div class="label">Contents</div>
+    <nav>
+      <a href="#answer">Answer</a>
+      <a href="#tensions">Tensions</a>
+      <a href="#open-questions">Open questions</a>
+      <a href="#sources">Sources</a>
+      <a href="#method">How this was researched</a>
+    </nav>
+    <dl>
+      <dt>Strategy</dt><dd>grounded_research</dd>
+      <dt>Nodes</dt><dd>6</dd>
+      <dt>Max depth</dt><dd>2</dd>
+      <dt>Agent files</dt><dd>6</dd>
+      <dt>Artifacts</dt><dd><code>agents/</code>, <code>research.log</code>, <code>metrics.json</code></dd>
+    </dl>
+    <button onclick="window.print()">Print / export PDF</button>
+  </aside>
+
+</div>
+
+<script>
+const TREE = {
+  id: "q-001", q: "Connect any LLM / agent / harness to data.monster and let it operate the app", status: "synthesized",
+  children: [
+    { id: "q-002", q: "MCP protocol state (late 2026): revisions, transports, primitives, auth, registries, client support", status: "validated", children: [] },
+    { id: "q-003", q: "Hosting an MCP server inside a Tauri v2 Rust backend: architectures, rmcp, prior art", status: "validated", children: [] },
+    { id: "q-004", q: "Beyond MCP: OpenAI plugins, A2A, .mcpb, Copilot, UI automation · fit verdicts", status: "validated", children: [] },
+    { id: "q-005", q: "Tool/resource surface for a data app: survey of DB/BI MCP servers + recommended catalog", status: "validated", children: [] },
+    { id: "q-006", q: "Safety &amp; permission models for agents that write data and content", status: "validated", children: [] },
+  ],
+};
+
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+function renderNode(n, depth) {
+  const hasKids = n.children && n.children.length;
+  const head =
+    `<span class="dot ${n.status}"></span>` +
+    `<span class="nid">${n.id}</span>` +
+    `<span class="q">${n.q}</span>`;
+  if (!hasKids) return el(`<div class="leaf">${head}</div>`);
+  const det = el(`<details${depth < 1 ? " open" : ""}><summary>${head}</summary></details>`);
+  const branch = el(`<div class="branch"></div>`);
+  n.children.forEach(c => branch.appendChild(renderNode(c, depth + 1)));
+  det.appendChild(branch);
+  return det;
+}
+
+document.getElementById("tree").appendChild(renderNode(TREE, 0));
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+{
+	"titel": "Analyst - app tour",
+	"badge": "Analyst",
+	"eindtekst": "Pick tables, ask questions in plain language, and the Analyst answers with SQL that runs against your DuckDB workspace, powered by the remote or local model you configured in Settings.",
+	"stappen": [
+		{
+			"f": "pick-tables",
+			"cap": "Analyst",
+			"tekst": "The Analyst starts by scoping: every table in the workspace appears as a card with its field and row counts. Pick which ones the AI may look at.",
+			"tour": ["card-superstore", "filter-input"]
+		},
+		{
+			"f": "pick-tables",
+			"cap": "Select",
+			"tekst": "Select all, deselect all, or click cards one by one. The Filter tables box narrows the list when the workspace grows.",
+			"anchor": "card-superstore",
+			"act": "click",
+			"klaar": "superstore table selected."
+		},
+		{
+			"f": "table-selected",
+			"cap": "In context",
+			"tekst": "The selected card is highlighted and the footer button comes alive: Analyze 1 table. This selection becomes the chat context.",
+			"tour": ["card-superstore", "analyze-btn"]
+		},
+		{
+			"f": "table-selected",
+			"cap": "Start chat",
+			"tekst": "Analyze opens the chat with the selected tables in context.",
+			"anchor": "analyze-btn",
+			"act": "click",
+			"klaar": "Chat opened."
+		},
+		{
+			"f": "chat-welcome",
+			"cap": "Chat",
+			"tekst": "A clean start: the welcome screen names the tables in context and offers starter questions. Answers stream as text plus SQL, and every query lands in the results panel. (This demo runs without a live LLM key, so the chat stays in its honest empty state.)",
+			"tour": ["welcome-title", "table-chip", "suggestion-btn", "chat-input"]
+		},
+		{
+			"f": "chat-welcome",
+			"cap": "Ask",
+			"tekst": "Type a question in plain language. Enter sends, Shift+Enter adds a new line.",
+			"anchor": "chat-input",
+			"act": "type",
+			"text": "Give me an overview of the superstore data"
+		},
+		{
+			"f": "question-typed",
+			"cap": "Ready",
+			"tekst": "The send button lights up. With a working API key this question would stream an answer with SQL that runs against superstore. Not sending it here: the demo key is fake, and an honest empty chat beats a staged reply.",
+			"tour": ["chat-input", "send-btn"]
+		},
+		{
+			"f": "provider-remote",
+			"cap": "Provider",
+			"tekst": "What answers your questions is set in Settings: Remote API is the default, pointing at a chat completions endpoint with a model identifier.",
+			"tour": ["mode-remote", "mode-local", "api-model"]
+		},
+		{
+			"f": "provider-remote",
+			"cap": "Go local",
+			"tekst": "Prefer no cloud at all? Local AI switches the Analyst to llama.cpp models that run on your own device.",
+			"anchor": "mode-local",
+			"act": "click",
+			"klaar": "Local AI mode open."
+		},
+		{
+			"f": "provider-local",
+			"cap": "Local models",
+			"tekst": "The local picker lists downloadable llama.cpp models in Fast and Balanced tiers, sized for your RAM, with disk usage per model. Download one and the Analyst chats fully offline.",
+			"tour": ["mm-tier-fast", "mm-card", "ram-info"]
+		}
+	]
+}

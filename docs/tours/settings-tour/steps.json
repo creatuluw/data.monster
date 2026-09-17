@@ -1,0 +1,53 @@
+{
+	"titel": "Settings - app tour",
+	"badge": "Settings",
+	"eindtekst": "Settings wires the AI Analyst (remote API or local models) and the Internal DB browser opens the d8a_monster_* metadata tables behind the app.",
+	"stappen": [
+		{
+			"f": "llm-form",
+			"cap": "Settings",
+			"tekst": "Settings is where you wire up the AI Analyst. Two ways to power it: a Remote API in the cloud, or Local AI models on your own machine.",
+			"tour": ["mode-remote", "mode-local"]
+		},
+		{
+			"f": "llm-form",
+			"cap": "LLM config",
+			"tekst": "The LLM Configuration form holds the chat completions endpoint, your API key and the model identifier. Everything is stored locally on disk, never sent anywhere else. (The key shown here is a demo placeholder, not a real secret.)",
+			"tour": ["api-url", "api-key", "api-model"]
+		},
+		{
+			"f": "llm-form",
+			"cap": "Save",
+			"tekst": "Save settings persists the form to the app data folder and pushes the new endpoint straight into the running Analyst chat.",
+			"tour": ["save-btn"]
+		},
+		{
+			"f": "llm-form",
+			"cap": "Internal DB",
+			"tekst": "The Internal DB button in the header opens a browser for the metadata tables the app maintains about your workspace.",
+			"anchor": "internal-db-link",
+			"act": "click",
+			"klaar": "Internal DB browser open."
+		},
+		{
+			"f": "internal-db",
+			"cap": "Metadata tables",
+			"tekst": "The sidebar lists the d8a_monster_* internal tables: saved_queries, field_functions, table_labels and table_metadata, each with its live row count. Your own data tables sit above them.",
+			"tour": ["sidebar-your-title", "sidebar-internal-title", "tbl-saved-queries", "tbl-field-functions", "tbl-labels"]
+		},
+		{
+			"f": "internal-db",
+			"cap": "Open one",
+			"tekst": "Clicking field_functions loads the actual rows: every field function in the library, one row per entry.",
+			"anchor": "tbl-field-functions",
+			"act": "click",
+			"klaar": "field_functions table loaded."
+		},
+		{
+			"f": "internal-table-data",
+			"cap": "Browse rows",
+			"tekst": "The grid shows the table contents with a row count in the toolbar. Handy for checking what the app remembers: saved queries, table labels and column metadata all live here.",
+			"tour": ["toolbar-table", "toolbar-rows", "data-grid"]
+		}
+	]
+}

@@ -26,8 +26,8 @@ Every later FR builds on it: the query compiler (FR-2) compiles these specs to S
 - **Span rule**: integer 1–12, matching the Q13 explicit-grid decision
 - [chart-authoring-two-surfaces-serializable-spec](../../learnings/chart-authoring-two-surfaces-serializable-spec.md) — the user-stated requirement this module implements
 - [central-charts-spec-tasks](../artifacts/central-charts-spec-tasks.md) — the spec/task plan (FR-1 = this module)
-- [measures-dimensions-are-duckdb-expressions-not-column-agg-su](../../decisions/measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) — why MeasureSpec is `expr`, not column+agg sugar
-- [q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro](../../decisions/q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) — the AnnotationMark whitelist
+- [measures-dimensions-are-duckdb-expressions](../../decisions/measures-dimensions-are-duckdb-expressions.md) — why MeasureSpec is `expr`, not column+agg sugar
+- [q15-annotation-vocabulary-svelteplot-basic-marks](../../decisions/q15-annotation-vocabulary-svelteplot-basic-marks.md) — the AnnotationMark whitelist
 - [chart-fundament](./chart-fundament.md) — L0 /labs sibling; `buildBars` becomes the `topN` query hook
 
 ## Lifecycle

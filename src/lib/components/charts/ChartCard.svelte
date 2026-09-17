@@ -77,6 +77,7 @@
 <style>
 	.chart-card-title {
 		font-family: var(--font-display);
+		font-weight: 700;
 	}
 
 	/* selection readout inline after the title, mono data detail */

@@ -1,0 +1,67 @@
+{
+	"titel": "Pages - app tour",
+	"badge": "Pages",
+	"eindtekst": "Pages v1: an automatic two-chart dashboard over the workspace's first table, with a chart detail view and the raw table below; the page builder itself is roadmap.",
+	"stappen": [
+		{
+			"f": "data",
+			"cap": "First table",
+			"tekst": "Pages v1 has no page list or builder yet. The dashboard is generated automatically from the first table in the workspace; the tour seeds a small demo table that sorts first.",
+			"tour": ["demo-table"]
+		},
+		{
+			"f": "dashboard",
+			"cap": "Auto dashboard",
+			"tekst": "Pages opens as a ready-made view: two clickable bar charts over the table's text and numeric columns, a filter bar, and the raw table underneath.",
+			"tour": ["chart-region", "chart-category", "table-title"]
+		},
+		{
+			"f": "dashboard",
+			"cap": "Click a bar",
+			"tekst": "Clicking the top region bar selects it and fires a re-query across both charts and the table.",
+			"anchor": "row-region",
+			"act": "click",
+			"klaar": "Bar clicked, re-query fired."
+		},
+		{
+			"f": "after-click",
+			"cap": "Honest v1",
+			"tekst": "The selection flashes as a filter chip, but v1 then resets it: the refresh rebuilds the chart state and drops the filter. Selections that stick are on the roadmap.",
+			"tour": ["filter-bar"]
+		},
+		{
+			"f": "after-click",
+			"cap": "Chart detail",
+			"tekst": "Each chart card opens its own full-height detail view through the panel button in the card header.",
+			"tour": ["chart-action"]
+		},
+		{
+			"f": "after-click",
+			"cap": "Open it",
+			"tekst": "The region chart opens on its own route, /pages/chart/region.",
+			"anchor": "chart-action",
+			"act": "click",
+			"klaar": "Chart detail open."
+		},
+		{
+			"f": "detail",
+			"cap": "Detail view",
+			"tekst": "Same bar chart, full width, plus a right-hand drawer. The drawer is where chart configuration will live; v1 says so itself: configuration coming soon.",
+			"tour": ["drawer-title", "drawer-empty", "breadcrumb-pages"]
+		},
+		{
+			"f": "detail",
+			"cap": "Back",
+			"tekst": "The Pages breadcrumb (or the arrow next to it) returns to the dashboard.",
+			"anchor": "breadcrumb-pages",
+			"act": "click",
+			"klaar": "Back on the dashboard."
+		},
+		{
+			"f": "back",
+			"cap": "Wrap-up",
+			"tekst": "That is Pages today: automatic charts over the first table, live re-querying, a detail view and the table underneath. The page builder with bar, heatmap and table blocks is still roadmap.",
+			"tour": ["chart-region", "table-title"]
+		}
+	]
+}

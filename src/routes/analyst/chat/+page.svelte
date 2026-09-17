@@ -682,7 +682,7 @@
 	.chat-header-title {
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 
@@ -994,7 +994,7 @@
 		border-radius: var(--radius-sm);
 		padding: var(--space-2) var(--space-3);
 		font-family: var(--font-display);
-		font-weight: 600;
+		font-weight: 700;
 		font-size: var(--text-sm);
 		cursor: pointer;
 		transition: background var(--duration-fast) ease;
@@ -1017,7 +1017,7 @@
 
 	.prose-chat :global(h1) {
 		font-family: var(--font-display);
-		font-weight: 800;
+		font-weight: 700;
 		color: var(--color-text);
 		font-size: 1.75rem;
 		margin-top: 2rem;
@@ -1218,7 +1218,7 @@
 		gap: var(--space-2);
 		font-family: var(--font-display);
 		font-size: var(--text-xs);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text-secondary);
 	}
 
@@ -1635,7 +1635,7 @@
 	.query-label {
 		font-family: var(--font-display);
 		font-size: var(--text-xs);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text-secondary);
 	}
 
@@ -1789,7 +1789,7 @@
 	.placeholder-title {
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text-tertiary);
 	}
 

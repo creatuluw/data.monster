@@ -126,7 +126,7 @@
 	--duration-slow: 450ms;
 	--duration-enter: 600ms;
 
-	--max-width: 90rem; /* 1440px — app-wide content container cap */
+	--max-width: 120rem; /* 1920px — app-wide content container cap */
 	--gutter: clamp(1rem, 3vw, 2rem);
 }
 
@@ -143,6 +143,7 @@ html {
 
 h1, h2, h3, h4, h5, h6 {
 	font-family: var(--font-display);
+		font-weight: 700;
 }
 
 ::selection {
@@ -262,7 +263,7 @@ textarea,
 .field-label {
 	font-family: var(--font-display);
 	font-size: var(--text-sm);
-	font-weight: 600;
+	font-weight: 700;
 	color: var(--color-text);
 }
 
@@ -307,7 +308,7 @@ textarea,
 	gap: var(--space-1);
 	padding: 2px var(--space-2);
 	border: 1px solid;
-	font-family: var(--font-body);
+	font-family: var(--font-mono);
 	font-size: 9px;
 	font-weight: 600;
 	line-height: 1.5;
@@ -497,7 +498,7 @@ textarea,
 	color: var(--color-text);
 	margin-top: 0.75em;
 	margin-bottom: 0.375em;
-	font-weight: 600;
+	font-weight: 700;
 }
 
 .prose-chat h1 { font-size: 1.125rem; }

@@ -49,7 +49,7 @@
 		creating = true;
 		try {
 			await savePage({ slug, title: name, rows: [] });
-			goto(`/page/${slug}`);
+			goto(`/pages/${slug}`);
 		} catch (err) {
 			error = extractErrorMessage(err, 'Failed to create page');
 			creating = false;
@@ -78,7 +78,7 @@
 
 <svelte:window onkeydown={(e) => { if (e.key === 'Escape' && modalOpen) modalOpen = false; }} />
 
-<div class="full-bleed" style="padding: var(--space-6);">
+<div style="padding: var(--space-6);">
 	<div class="flex items-end justify-between mb-6">
 		<div>
 			<h1 class="text-2xl font-semibold text-zinc-900 tracking-tight" style="font-family: var(--font-display)">Report pages</h1>
@@ -104,30 +104,23 @@
 			<p class="text-sm text-zinc-400 mt-1">Create your first report page.</p>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+		<div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))">
 			{#each pages as p (p.slug)}
-				<!-- compact card: 3 rows — title / slug+date / empty footer -->
-				<div class="group relative bg-white border border-zinc-200 rounded-xl p-4 hover:border-zinc-400 hover:shadow-sm transition-colors cursor-pointer flex flex-col" onclick={() => goto(`/page/${p.slug}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/page/${p.slug}`)} role="button" tabindex="0">
-					<FileText size={16} class="absolute top-3.5 right-3.5 text-zinc-400" />
-					<p class="font-medium text-zinc-900 leading-snug truncate pr-6">{p.title}</p>
-					<div class="flex items-center justify-between gap-2 mt-1">
-						<span class="text-xs text-zinc-400 font-mono truncate">/{p.slug}</span>
-						<span class="text-xs text-zinc-400 shrink-0">{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</span>
+				<!-- same card as /library: icon square + title + meta, hover delete -->
+				<div class="group relative flex items-start gap-3 p-4 box-border bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-md)] transition-colors cursor-pointer" onclick={() => goto(`/pages/${p.slug}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/pages/${p.slug}`)} role="button" tabindex="0">
+					<div class="flex items-center justify-center w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--color-accent-muted)] text-[var(--color-accent)] shrink-0"><FileText size={18} /></div>
+					<div class="flex-1 min-w-0 flex flex-col gap-2">
+						<span class="text-sm font-semibold text-[var(--color-text)] leading-snug truncate pr-6" style="font-family: var(--font-display)">{p.title}</span>
+						<span class="text-xs text-[var(--color-text-tertiary)] leading-snug font-mono truncate">/{p.slug}{p.updatedAt ? ' · ' + new Date(p.updatedAt).toLocaleDateString() : ''}</span>
 					</div>
-					<!-- footer row: no content, delete reveals on hover -->
-					<div class="mt-auto pt-3 min-h-7 flex items-center justify-end">
-						{#if confirmDelete === p.slug}
-							<span class="flex items-center gap-2 text-xs">
-								<span class="text-red-500">Delete?</span>
-								<button class="text-red-500 font-medium hover:underline" onclick={(e) => { e.stopPropagation(); handleDelete(p.slug); }}>Yes</button>
-								<button class="text-zinc-400 hover:underline" onclick={(e) => { e.stopPropagation(); confirmDelete = null; }}>No</button>
-							</span>
-						{:else}
-							<button class="text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page">
-								<Trash2 size={13} />
-							</button>
-						{/if}
-					</div>
+					<button class="absolute top-3.5 right-3.5 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page"><Trash2 size={13} /></button>
+					{#if confirmDelete === p.slug}
+						<span class="absolute bottom-3 right-3 flex items-center gap-2 text-xs">
+							<span class="text-red-500">Delete?</span>
+							<button class="text-red-500 font-medium hover:underline" onclick={(e) => { e.stopPropagation(); handleDelete(p.slug); }}>Yes</button>
+							<button class="text-zinc-400 hover:underline" onclick={(e) => { e.stopPropagation(); confirmDelete = null; }}>No</button>
+						</span>
+					{/if}
 				</div>
 			{/each}
 		</div>
@@ -147,7 +140,7 @@
 				<span class="text-xs text-zinc-500">Title</span>
 				<input type="text" autofocus class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="e.g. Monthly utilization" bind:value={newTitle} onkeydown={handleModalKeydown} />
 				{#if newTitle.trim()}
-					<span class="text-xs text-zinc-400 font-mono">/page/{newSlug || '…'}</span>
+					<span class="text-xs text-zinc-400 font-mono">/pages/{newSlug || '…'}</span>
 				{/if}
 			</label>
 			<div class="flex justify-end gap-2 pt-2">

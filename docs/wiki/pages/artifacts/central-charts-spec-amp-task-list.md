@@ -12,7 +12,7 @@ The planning document for the central reusable-chart build: report pages compose
 
 ## What it documents
 
-- The **v1 scope**: bar chart, heatmap, and table as the first page objects, plus a text block — see [central-charts-v1-scope-bar-heatmap-table-blocks-master-item](../../decisions/central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md).
+- The **v1 scope**: bar chart, heatmap, and table as the first page objects, plus a text block — see [central-charts-v1-scope-bar-heatmap-table](../../decisions/central-charts-v1-scope-bar-heatmap-table.md).
 - 13 FRs across 5 phases:
 
 | Phase | FRs | What lands |
@@ -21,9 +21,9 @@ The planning document for the central reusable-chart build: report pages compose
 | 2 Renderers | 5–8 | ChartCard shell, bar + heatmap registry entries, table block |
 | 3 Page runtime | 9 | 12-col grid + cross-filter selection bus |
 | 4 Persistence & routes | 10–11 | `d8a_monster_pages` (Rust), `/pages` list + create |
-| 5 Editor & cleanup | 12–13 | `/page/[slug]` Design ⇄ Code editor, labs migration |
+| 5 Editor & cleanup | 12–13 | `/pages/[slug]` Design ⇄ Code editor, labs migration |
 
-- `tasks.json` mirrors the FRs; todos live in `.pi/todos` per [spec-driven-features-tdd-karpathy-skills-referenced-in-every](../../rules/spec-driven-features-tdd-karpathy-skills-referenced-in-every.md).
+- `tasks.json` mirrors the FRs; todos live in `.pi/todos` per [spec-driven-features-tdd-karpathy-in-todos](../../rules/spec-driven-features-tdd-karpathy-in-todos.md).
 
 ## Details
 

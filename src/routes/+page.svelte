@@ -40,6 +40,7 @@
 		</div>
 		<div class="labs-link">
 			<a href="/labs" class="labs-anchor">/labs →</a>
+			<a href="/library" class="labs-anchor">/library →</a>
 		</div>
 	</div>
 </div>
@@ -122,6 +123,9 @@
 
 	.labs-link {
 		margin-top: var(--space-4);
+		display: flex;
+		gap: var(--space-4);
+		justify-content: center;
 	}
 
 	.labs-anchor {

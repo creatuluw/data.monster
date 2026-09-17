@@ -10,7 +10,7 @@ const expr = async (e) => (await send('Runtime.evaluate', { expression: e, retur
 const results = [];
 const check = (name, ok, extra = '') => { results.push(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? ' — ' + extra : ''}`); if (!ok) process.exitCode = 1; };
 
-await send('Page.navigate', { url: 'http://localhost:6123/page/smoke-test' });
+await send('Page.navigate', { url: 'http://localhost:6123/pages/smoke-test' });
 await sleep(5000);
 
 // 1. normal mode: all blocks visible, cog present

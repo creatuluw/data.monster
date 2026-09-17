@@ -7,3 +7,4 @@ _Documents, diagrams, and deliverables will be listed here._
 - [Central chart component design](./central-chart-component-design.md) - What it documents
 - [Central-charts spec &amp; task list](./central-charts-spec-amp-task-list.md) - The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
 - [Central charts spec & tasks](./central-charts-spec-tasks.md) - The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [LLM agent connection research report](./llm-agent-connection-research-report.md) - Fractal-research report on how to connect any LLM / coding agent / harness to data.monster and let it operate the app — add data & content, run analysis. Produc

@@ -1,58 +1,26 @@
 /**
- * Registers the chart types with their metadata + renderers (FR-6/7 wiring).
+ * Registers library component packages with the central chart registry.
  * Import this module from any route that renders registry charts.
- * Pure metadata duplicates live in tests/registry.test.ts; this module adds
- * the Svelte components on top.
+ * The definitions themselves live in self-contained packages under
+ * src/lib/library/components/<type>/ — adding a chart to the library makes it
+ * available in /pages (picker + config panel) and /library by construction.
  */
-import { registerChartType, type ChartTypeDefinition } from './registry';
-import BarChartRenderer from '$lib/components/charts/renderers/BarChartRenderer.svelte';
-import HeatmapRenderer from '$lib/components/charts/renderers/HeatmapRenderer.svelte';
-
-let registered = false;
+import { registerLibraryComponent } from '$lib/library/registry';
+import barChart from '$lib/library/components/bar-chart';
+import heatmap from '$lib/library/components/heatmap';
+import table from '$lib/library/components/table';
+import text from '$lib/library/components/text';
 
 export function setupChartRegistry(): void {
-	if (registered) return;
-	registered = true;
-
-	const bar: ChartTypeDefinition = {
-		type: 'bar',
-		label: 'Bar chart',
-		roles: [
-			{ kind: 'dimension', min: 1, max: 1 },
-			{ kind: 'measure', min: 1 }
-		],
-		optionsSchema: [
-			{ name: 'orientation', kind: 'enum', label: 'Orientation', default: 'horizontal', options: ['horizontal', 'vertical'] },
-			{ name: 'topN', kind: 'number', label: 'Top N', min: 1 },
-			{ name: 'otherLabel', kind: 'string', label: 'Other label', default: 'Other' }
-		],
-		hooks: { topN: true, grain: true },
-		annotations: ['ruleX', 'ruleY'],
-		defaults: { orientation: 'horizontal' }
-	};
-
-	const heatmap: ChartTypeDefinition = {
-		type: 'heatmap',
-		label: 'Heatmap',
-		roles: [
-			{ kind: 'dimension', min: 2, max: 2 },
-			{ kind: 'measure', min: 1, max: 1 }
-		],
-		optionsSchema: [
-			{ name: 'scheme', kind: 'enum', label: 'Color scheme', default: 'orrd', options: ['orrd', 'blues', 'greens'] },
-			{ name: 'threshold', kind: 'number', label: 'Threshold stops', default: 5, min: 2, max: 9 }
-		],
-		hooks: { pivot: true, grain: true },
-		annotations: [],
-		defaults: {}
-	};
-
-	registerChartType(bar);
-	registerChartType(heatmap);
+	registerLibraryComponent(barChart);
+	registerLibraryComponent(heatmap);
+	registerLibraryComponent(table);
+	registerLibraryComponent(text);
 }
 
-/** Renderer components keyed by chart type (kept out of the pure registry). */
-export const chartRenderers: Record<string, typeof BarChartRenderer> = {
-	bar: BarChartRenderer,
-	heatmap: HeatmapRenderer
+/** Renderer components keyed by chart type (kept out of the pure registry).
+ *  Table/text are built-in block kinds rendered by PageGrid directly. */
+export const chartRenderers = {
+	[barChart.def.type]: barChart.renderer,
+	[heatmap.def.type]: heatmap.renderer
 };

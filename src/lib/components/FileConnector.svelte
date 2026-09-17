@@ -117,7 +117,7 @@
 	.dropzone-label {
 		font-family: var(--font-display);
 		font-size: var(--text-base);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 

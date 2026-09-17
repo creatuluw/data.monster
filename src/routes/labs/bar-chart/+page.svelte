@@ -107,7 +107,7 @@
 	.section-title {
 		font-family: var(--font-display);
 		font-size: 1.5rem;
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 

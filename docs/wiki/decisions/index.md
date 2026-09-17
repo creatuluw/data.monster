@@ -4,21 +4,46 @@
 - [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](./consolidate-chart-engines-to-picasso-js-layerchart-drop-echa.md) - Context
 - [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](./labs-catalog-placeholder-first.md) - Context
 - [Two-surface report pages: code mode edits a declarative spec, not Svelte source (Q3, pending)](./two-surface-report-page-format.md) - Context
-- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](./measures-dimensions-are-duckdb-expressions-not-column-agg-su.md) - Context
+- [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](./measures-dimensions-are-duckdb-expressions.md) - Context
 - [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](./master-item-library-table-binding-q6.md) - Context
-- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](./q7-locked-relationship-graph-drives-chart-item-availability-.md) - Context
-- [Q8 locked: one canonical query engine with per-type hooks](./q8-locked-one-canonical-query-engine-with-per-type-hooks.md) - Context
-- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](./q9-locked-chart-option-panels-are-schema-driven-with-a-custo.md) - Context
-- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](./q10-locked-chart-selections-cross-filter-other-charts-via-re.md) - Context
-- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](./q11-locked-tooltips-are-declarative-fields-one-template-stri.md) - Context
-- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](./q12-locked-page-level-consistent-colors-via-shared-scale-opt.md) - Context
-- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](./q13-locked-explicit-grid-spec-declares-rows-blocks-take-colu.md) - Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
-- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](./q15-locked-reference-annotations-are-a-declarative-list-refe.md) - Context
-- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](./q15-reframed-annotations-should-speak-svelteplot-s-own-mark-.md) - Context
-- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](./q15-locked-annotation-vocabulary-svelteplot-basic-marks-arro.md) - Context
-- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](./q16-locked-pages-lists-amp-creates-page-lt-slug-gt-hosts-the.md) - Context
-- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](./central-charts-v1-scope-bar-heatmap-table-blocks-master-item.md) - Context
-- [Master-items amendment: semantic layer moves early into central-charts v1](./master-items-amendment-semantic-layer-moves-early-into-centr.md) - Context
-- [Page editor block config: focused two-panel mode via cog icon (no selection ring)](./page-editor-block-config-focused-two-panel-mode-via-cog-icon.md) - Context
-- [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](./page-editor-is-tri-mode-design-code-page-settings-right-side.md) - Context
-- [Page editor route nests under /pages/<slug> (was /page/<slug>); /data goes full-width](./page-editor-route-nests-under-pages-slug-was-page-slug-data-.md) - Context
+- [Q7 locked: relationship graph drives chart item availability and auto-JOIN](./q7-relationship-graph-drives-item-availability.md) - Context
+- [Q8 locked: one canonical query engine with per-type hooks](./q8-one-canonical-query-engine-per-type-hooks.md) - Context
+- [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](./q9-chart-option-panels-schema-driven.md) - Context
+- [Q10 locked: chart selections cross-filter other charts via re-query (Qlik-style, transient)](./q10-chart-selections-cross-filter-via-requery.md) - Context
+- [Q11 locked: tooltips are declarative fields + one template string, shared renderer per chart type](./q11-tooltips-declarative-fields-one-template.md) - Context
+- [Q12 locked: page-level consistent colors via shared scale, optional manual overrides in spec](./q12-page-level-consistent-colors-shared-scale.md) - Context
+- [Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)](./q13-explicit-grid-rows-blocks-take-col-spans.md) - Q13 locked: explicit grid — spec declares rows, blocks take column spans (12-col)
+- [Q15 locked: reference annotations are a declarative list; reference_line only in v1](./q15-reference-annotations-declarative-list.md) - Context
+- [Q15 reframed: annotations should speak svelteplot's own mark vocabulary (whitelisted per chart type)](./q15-reframed-annotations-speak-svelteplot-marks.md) - Context
+- [Q15 locked: annotation vocabulary = svelteplot basic marks (Arrow, Dot, Line, Text, Rect), per-type whitelisted](./q15-annotation-vocabulary-svelteplot-basic-marks.md) - Context
+- [Q16 locked: /pages lists &amp; creates, /page/&lt;slug&gt; hosts the dual-mode editor](./q16-pages-lists-creates-slug-hosts-editor.md) - Context
+- [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](./central-charts-v1-scope-bar-heatmap-table.md) - Context
+- [Master-items amendment: semantic layer moves early into central-charts v1](./master-items-amendment-semantic-layer-moves-early.md) - Context
+- [Page editor block config: focused two-panel mode via cog icon (no selection ring)](./page-editor-block-config-focused-two-panel.md) - Context
+- [Page editor is tri-mode (Design / Code / Page settings); right sidebar removed — canvas shows only visualizations & data](./page-editor-tri-mode-design-code-settings.md) - Context
+- [Page editor route nests under /pages/<slug> (was /page/<slug>); /data goes full-width](./page-editor-route-nests-under-pages-slug.md) - Context
+- [Agent connection: MCP server embedded in the Rust backend](./agent-connection-mcp-embedded-in-rust-backend.md) - Context
+- [Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside](./agent-surfaces-rust-backend-mcp-and-rest.md) - Context
+- [All pages capped at 1920px and centered; full-bleed exemption removed](./all-pages-capped-1920px-full-bleed-removed.md) - Context
+- [Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped](./typography-squada-one-headings-libre-baskerville.md) - Context
+- [Typography: Calluna headings, Inter body, Geist Mono data — Squada One/Libre Baskerville dropped](./typography-calluna-headings-inter-body.md) - Context
+- [Typography: Figtree headings — Calluna dropped](./typography-figtree-headings-calluna-dropped.md) - Context
+- [Typography: Figtree bold display, Inter body, Geist Mono data](./typography-figtree-bold-display-inter-body.md) - Context
+- [Typography: Poppins headings — Figtree dropped](./typography-poppins-headings-figtree-dropped.md) - Context
+- [Typography: Bricolage Grotesque display — Poppins dropped](./typography-bricolage-grotesque-display.md) - Context
+- [Typography: Space Grotesk display, Bricolage dropped](./typography-space-grotesk-display-bricolage-dropped.md) - Context
+- [Typography: Syne display — Space Grotesk dropped](./typography-syne-display-space-grotesk-dropped.md) - Typography: Syne display — Space Grotesk dropped
+- [Typography: Geist display — Syne dropped](./typography-geist-display-syne-dropped.md) - Context
+- [Typography: Host Grotesk headings, Geist body — Inter dropped](./typography-host-grotesk-headings-geist-body.md) - Typography: Host Grotesk headings, Geist body — Inter dropped
+- [Typography settles: Inter everywhere (display + body), Geist Mono for data detail](./typography-settles-inter-everywhere-geist-mono.md) - Context
+- [/library becomes the central component library (proposed — spec interview in progress)](./library-central-component-library.md) - Context
+- [Library Q2: registry v1 is display-only — editor wiring deferred](./library-q2-registry-display-only.md) - Context
+- [Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside](./library-q3-master-detail-layout.md) - Context
+- [Library components are self-contained extension-style packages — own definition, logic, and data](./library-extension-style-components.md) - Context
+- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](./library-q4-dedicated-tabbed-views.md) - Context
+- [Library demos render the real components fed dummy query-shaped data — no demo-only clones](./library-demos-reuse-real-components.md) - Context
+- [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](./library-registry-ts-module.md) - Context
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](./library-registry-drives-editor-library-in-one-shot-supersede.md) - Context
+- [library-component-builder skill is the canonical path for new library components](./library-component-builder-skill-is-the-canonical-path-for-ne.md) - Context
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](./library-packages-carry-blockkind-table-text-are-built-in-blo.md) - Context
+- [Use speed-highlight/core for code highlighting instead of Prism](./speed-highlight-over-prism.md) - Context

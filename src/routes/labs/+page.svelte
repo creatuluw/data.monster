@@ -41,7 +41,6 @@
 
 <div class="labs-page">
 	<div class="section-header">
-		<span class="section-number">LABS</span>
 		<h1 class="section-title">Chart types</h1>
 	</div>
 
@@ -438,7 +437,7 @@
 	.lab-title {
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 700;
 	}
 
 	.lab-desc {

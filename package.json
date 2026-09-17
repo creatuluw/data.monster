@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/adapter-node": "^5.5.4",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.57.0",
@@ -28,6 +29,7 @@
     "vitest": "^5.0.0"
   },
   "dependencies": {
+    "@speed-highlight/core": "^2.1.0",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "lucide-svelte": "^1.0.1",

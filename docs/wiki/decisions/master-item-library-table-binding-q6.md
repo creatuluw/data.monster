@@ -11,7 +11,7 @@ timestamp: "2026-09-15T08:32:28.659Z"
 
 ## Context
 
-Continuation of the 2026-09-15 chart-spec/report-page design interview. Q5 ([[measures-dimensions-are-duckdb-expressions-not-column-agg-su]]) settled measures/dimensions as arbitrary DuckDB expression strings and left **Q6 open**: where the master-item library (reusable dimensions/measures) lives.
+Continuation of the 2026-09-15 chart-spec/report-page design interview. Q5 ([[measures-dimensions-are-duckdb-expressions]]) settled measures/dimensions as arbitrary DuckDB expression strings and left **Q6 open**: where the master-item library (reusable dimensions/measures) lives.
 
 The user answered **A** to Q6 and added a requirement: *each measure/dimension is associated with the table/data model it was created for, and this needs smart logic.*
 

@@ -1,5 +1,8 @@
 <script lang="ts">
-	import BarChart from '$lib/components/charts/BarChart.svelte';
+	import BarChartRenderer from '$lib/components/charts/renderers/BarChartRenderer.svelte';
+	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
+
+	setupChartRegistry();
 
 	type Row = { category: string; value: number };
 
@@ -20,22 +23,20 @@
 
 	const CAPACITY = 36; // hours per week
 
-	// one dimension (month) + one measure (booked hours in the month)
+	// engine-shaped rows: one dimension (month) + one measure (booked hours)
 	const rows: Row[] = monthLabels
 		.map((category, m) => ({
 			category,
 			value: Math.round((0.2 + rnd(m, 60) * 1.1) * CAPACITY * 4),
 		}))
-		// desc on the measure — component renders domain[0] topmost, so the
-		// longest bar lands at the top
 		.sort((a, b) => b.value - a.value);
 
-	let selected: Row | null = $state(null);
+	// registry selection model: {dimension, value}, not the row object
+	let selected = $state<{ dimension: string; value: string } | null>(null);
 
-	// live-configurable BarChart props — mirrored into the config drawer
 	let chartTitle = $state('Booked hours per month');
 	let chartSubtitle = $state('synthetic utilization × 4-week capacity');
-	let barColor = $state('#888888');
+	let orientation = $state<'horizontal' | 'vertical'>('horizontal');
 	let heightVh = $state(0.3);
 </script>
 
@@ -48,16 +49,24 @@
 		<h1 class="section-title">Bar chart</h1>
 	</div>
 
-	<BarChart
-		data={rows}
-		category={(d: Row) => d.category}
-		value={(d: Row) => d.value}
-		color={barColor}
-		{heightVh}
+	<p class="section-subtitle">
+		Registry entry <code>bar</code> on the chart fundament — thin renderer, engine-shaped rows, cross-filter selection model. Synthetic data.
+	</p>
+
+	<BarChartRenderer
+		{rows}
+		dimensionAliases={['category']}
+		measureAliases={['value']}
+		options={{ orientation }}
+		annotations={[]}
 		title={chartTitle}
 		subtitle={chartSubtitle}
-		labelFor={(d: Row) => `${d.category} · ${d.value}h`}
-		bind:selected
+		tooltip={{ template: '{category}: {value}h' }}
+		{selected}
+		onSelect={(s) => (selected = s)}
+		colorScale={{ colorOf: () => '#888888' }}
+		fmts={{ value: (v) => `${v}h` }}
+		{heightVh}
 	>
 		{#snippet config()}
 			<div class="field">
@@ -69,9 +78,11 @@
 				<input class="input" id="cfg-subtitle" type="text" bind:value={chartSubtitle} />
 			</div>
 			<div class="field">
-				<label class="field-label" for="cfg-color">color — hex</label>
-				<input class="input color-input" id="cfg-color" type="color" bind:value={barColor} />
-				<span class="field-hint">deselected bar fill; selected stays DS green</span>
+				<label class="field-label" for="cfg-orientation">orientation — enum</label>
+				<select class="input" id="cfg-orientation" bind:value={orientation}>
+					<option value="horizontal">horizontal</option>
+					<option value="vertical">vertical</option>
+				</select>
 			</div>
 			<div class="field">
 				<label class="field-label" for="cfg-height">heightVh — viewport fraction</label>
@@ -79,42 +90,35 @@
 				<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
 			</div>
 		{/snippet}
-		{#snippet tooltip(d)}
-			<div class="font-semibold">{d.category}</div>
-			<div>Booked hours: {d.value}h</div>
-		{/snippet}
-	</BarChart>
+	</BarChartRenderer>
 </div>
 
 <style>
 	.bar-page {
-		flex: 1;
-		overflow-y: auto;
-		padding: var(--space-6);
+		max-width: 48rem;
+		margin: 0 auto;
+		padding: 2rem 1.5rem 4rem;
 	}
 
 	.section-header {
-		display: flex;
-		align-items: baseline;
-		gap: var(--space-4);
+		margin-bottom: 1rem;
 	}
 
 	.section-title {
 		font-family: var(--font-display);
-		font-size: var(--text-xl);
+		font-size: 1.5rem;
 		font-weight: 700;
-		letter-spacing: -0.02em;
-		margin: 0;
+		color: var(--color-text);
 	}
 
-
-	.color-input {
-		padding: 2px;
-		height: 36px;
-		cursor: pointer;
+	.section-subtitle {
+		color: #71717a;
+		font-size: 0.875rem;
+		margin-bottom: 1.5rem;
 	}
 
-	.range-input {
-		accent-color: var(--color-accent);
+	.code {
+		font-family: var(--font-mono);
+		font-size: 0.8em;
 	}
 </style>

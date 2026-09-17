@@ -1,0 +1,55 @@
+{
+	"titel": "Labs - app tour",
+	"badge": "Labs",
+	"eindtekst": "From a 32-type catalog to a live svelteplot playground: click a card, click a bar, tune the props in the drawer.",
+	"stappen": [
+		{
+			"f": "catalog",
+			"cap": "Labs",
+			"tekst": "The Labs catalog: 32 chart types, one card each. Two are built playgrounds so far, the heatmap and the bar chart; the rest are honest placeholders until each gets built.",
+			"tour": ["card-bar", "card-heatmap", "card-placeholder"]
+		},
+		{
+			"f": "catalog",
+			"cap": "Bar chart",
+			"tekst": "Open the first built playground. Each card links to that chart type's own page.",
+			"anchor": "card-bar",
+			"act": "click",
+			"klaar": "Bar chart playground open."
+		},
+		{
+			"f": "bar-chart",
+			"cap": "Live chart",
+			"tekst": "A svelteplot BarX over 12 months of synthetic booked hours. This is the shared chart fundament: hover for a tooltip, click a bar to select it, bolt icon for live props.",
+			"tour": ["chart-title", "first-bar", "config-btn"]
+		},
+		{
+			"f": "bar-chart",
+			"cap": "Click to select",
+			"tekst": "Click a bar: it turns the design-system green and a mono readout appears next to the title.",
+			"anchor": "first-bar",
+			"act": "click",
+			"klaar": "Bar selected."
+		},
+		{
+			"f": "bar-selected",
+			"cap": "Selected",
+			"tekst": "The readout shows the month and hours of the selected bar in Geist Mono, because it is data detail.",
+			"tour": ["sel-pill"]
+		},
+		{
+			"f": "bar-selected",
+			"cap": "Configure",
+			"tekst": "The bolt button opens the config drawer. The panel is schema-driven and bound straight to the component's props.",
+			"anchor": "config-btn",
+			"act": "click",
+			"klaar": "Config drawer open."
+		},
+		{
+			"f": "config",
+			"cap": "Live props",
+			"tekst": "Title, subtitle, bar color and chart height are plain bound props: change one and the chart updates instantly. Every chart type gets the same drawer.",
+			"tour": ["drawer-title", "cfg-title", "cfg-color", "cfg-height"]
+		}
+	]
+}

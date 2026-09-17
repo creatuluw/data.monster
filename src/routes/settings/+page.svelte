@@ -63,7 +63,7 @@
 <div class="settings-page">
 	<div class="settings-header">
 		<Settings size={20} />
-		<h1 class="settings-title">Settings</h1>
+		<h1 class="settings-title page-title">Settings</h1>
 		<div style="flex:1"></div>
 		<a href="/settings/internal-db" class="btn btn-secondary btn-sm" title="Internal Database">
 			<Database size={14} />
@@ -200,14 +200,6 @@
 		color: var(--color-text);
 	}
 
-	.settings-title {
-		font-family: var(--font-display);
-		font-size: var(--text-lg);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--color-text);
-		margin: 0;
-	}
 
 	.settings-loading {
 		padding: var(--space-8);
@@ -229,7 +221,7 @@
 	.section-title {
 		font-family: var(--font-display);
 		font-size: var(--text-base);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 		margin: 0;
 	}
@@ -349,5 +341,9 @@
 	.mode-btn-desc {
 		font-size: var(--text-xs);
 		opacity: 0.6;
+	}
+
+	.settings-title {
+		margin: 0;
 	}
 </style>

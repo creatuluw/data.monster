@@ -192,6 +192,62 @@
       "priority": 5,
       "status": "pending",
       "mapsTo": "FR-13"
+    },
+    {
+      "id": "semantic-001",
+      "phase": "Semantic layer",
+      "title": "FR-14 Master-item model + storage",
+      "description": "d8a_monster_items (id PK, kind measure|dimension, table, label, expr, fmt?, description?, timestamps) + items.rs commands (list/get/save upsert/delete) following saved_queries pattern; ref-vs-inline resolution + missing-ref state.",
+      "acceptanceCriteria": [
+        "TDD: tests/items.test.ts RED first — ref vs inline resolution, missing ref, {expr,alias} extraction for the compiler",
+        "Karpathy: mirror saved_queries module shape; no item versioning/history",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-14"
+    },
+    {
+      "id": "semantic-002",
+      "phase": "Semantic layer",
+      "title": "FR-15 Relationship model + auto-JOIN compiler",
+      "description": "d8a_monster_relationships (from_table/from_column/to_table/to_column) + commands; pure compiler walk: involved tables from chart source + items → BFS shortest path → JOIN clauses in order; availableItems(sourceTable, items, relationships) gate (Q7-B).",
+      "acceptanceCriteria": [
+        "TDD: tests/relationships.test.ts RED first — direct join, two-hop, unreachable rejected, cycle-safe, clause ordering",
+        "Karpathy: BFS over a plain adjacency map, no graph library",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-15"
+    },
+    {
+      "id": "semantic-003",
+      "phase": "Semantic layer",
+      "title": "FR-16 /data relationship editor",
+      "description": "Under /data → Relationships: list, create/edit/delete relationships with table + column pickers from app table metadata; validation (no duplicate edges, self-join explicit).",
+      "acceptanceCriteria": [
+        "Create a real relationship; persists; chart with cross-table item auto-JOINs (CDP smoke)",
+        "Karpathy: reuse existing /data tab + form components",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 4,
+      "status": "pending",
+      "mapsTo": "FR-16"
+    },
+    {
+      "id": "semantic-004",
+      "phase": "Semantic layer",
+      "title": "FR-17 /data Measures | Dimensions tabs",
+      "description": "Two new /data tabs: master-item list/create/edit/delete — kind-appropriate form (label, bound table, expression editor with schema autocomplete, fmt, description). Deletion leaves missing-item states in pages.",
+      "acceptanceCriteria": [
+        "Create measure + dimension from /data; use both in a page chart via inspector picker; delete → missing-item state",
+        "Karpathy: one ItemEditor component reused by both tabs",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 4,
+      "status": "pending",
+      "mapsTo": "FR-17"
     }
   ]
 }

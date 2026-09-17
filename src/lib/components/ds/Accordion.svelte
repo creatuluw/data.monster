@@ -123,7 +123,7 @@
 		cursor: pointer;
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 		text-align: left;
 		transition:

@@ -1,502 +1,159 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { app } from '$lib/stores/app.svelte';
-	import { runPagedQuery, getTableMeta, type PagedQueryResult, type ColumnInfo, extractErrorMessage } from '$lib/db-operations';
-	import BarChart from '$lib/components/BarChart.svelte';
-	import { FileText } from 'lucide-svelte';
 	import { goto } from '$app/navigation';
+	import { listPages, savePage, deletePage, type PageMeta } from '$lib/central-api';
+	import { extractErrorMessage } from '$lib/db-operations';
+	import { FileText, Plus, Trash2, LayoutTemplate, X } from 'lucide-svelte';
 
-	const TABLE_PAGE_SIZE = 50;
-
-	const CATEGORICAL_TYPES = new Set([
-		'VARCHAR', 'TEXT', 'STRING', 'CHAR', 'BPCHAR', 'NAME', 'UUID', 'ENUM', 'BOOLEAN', 'BOOL'
-	]);
-	const NUMERIC_TYPES = new Set([
-		'INTEGER', 'BIGINT', 'SMALLINT', 'TINYINT', 'INT', 'INT2', 'INT4', 'INT8',
-		'DOUBLE', 'FLOAT', 'FLOAT4', 'FLOAT8', 'REAL', 'DECIMAL', 'NUMERIC',
-		'HUGEINT', 'UINTEGER', 'UBIGINT', 'USMALLINT', 'UTINYINT'
-	]);
-
-	interface ChartConfig {
-		categoryCol: string;
-		valueCol: string;
-		title: string;
-		selected: Set<string>;
-	}
-
-	let chartData1 = $state<Record<string, unknown>[]>([]);
-	let chartData2 = $state<Record<string, unknown>[]>([]);
+	let pages = $state<PageMeta[]>([]);
 	let loading = $state(true);
 	let error = $state('');
-	let noChartData = $state(false);
 
-	let chart1 = $state<ChartConfig | null>(null);
-	let chart2 = $state<ChartConfig | null>(null);
+	// new-page modal
+	let modalOpen = $state(false);
+	let newTitle = $state('');
+	let creating = $state(false);
+	let confirmDelete = $state<string | null>(null);
 
-	let tableData = $state<PagedQueryResult | null>(null);
-	let tablePage = $state(1);
-	let tableTotalPages = $state(1);
+	function slugify(name: string): string {
+		return name
+			.toLowerCase()
+			.trim()
+			.replaceAll(/[^a-z0-9]+/g, '-')
+			.replaceAll(/^-+|-+$/g, '');
+	}
 
-	let tableName = $derived(app.tables[0] ?? '');
+	const newSlug = $derived(slugify(newTitle));
 
-	async function loadChartData() {
-		if (app.tables.length === 0) {
-			loading = false;
-			return;
-		}
-
-		const table = app.tables[0];
-
+	async function refresh() {
+		loading = true;
 		try {
-			const meta = await getTableMeta(table);
-			const catCols = meta.columns.filter((c) => CATEGORICAL_TYPES.has(c.type.toUpperCase()) || !NUMERIC_TYPES.has(c.type.toUpperCase()));
-			const numCols = meta.columns.filter((c) => NUMERIC_TYPES.has(c.type.toUpperCase()));
-
-			if (catCols.length === 0 || numCols.length === 0) {
-				noChartData = true;
-				loading = false;
-				await loadTablePage(1);
-				return;
-			}
-
-			const valCol = numCols[0].name;
-			const cat1 = catCols[0].name;
-			const cat2 = catCols.length > 1 ? catCols[1].name : cat1;
-
-			chart1 = { categoryCol: cat1, valueCol: valCol, title: `${valCol} by ${cat1}`, selected: new Set() };
-			chart2 = catCols.length > 1
-				? { categoryCol: cat2, valueCol: valCol, title: `${valCol} by ${cat2}`, selected: new Set() }
-				: null;
-
-			const queries = [
-				runPagedQuery(
-					`SELECT "${cat1}", ROUND(SUM("${valCol}")::numeric, 0)::double as total_${valCol} FROM "${table}" ${buildWhere([{ col: cat1, selected: chart1.selected }, { col: cat2, selected: chart2?.selected }], cat1)} GROUP BY "${cat1}" ORDER BY total_${valCol} DESC`,
-					1,
-					10000
-				)
-			];
-			if (chart2) {
-				queries.push(
-					runPagedQuery(
-						`SELECT "${cat2}", ROUND(SUM("${valCol}")::numeric, 0)::double as total_${valCol} FROM "${table}" ${buildWhere([{ col: cat1, selected: chart1.selected }, { col: cat2, selected: chart2.selected }], cat2)} GROUP BY "${cat2}" ORDER BY total_${valCol} DESC`,
-						1,
-						10000
-					)
-				);
-			}
-
-			const results = await Promise.all(queries);
-			chartData1 = results[0].rows;
-			if (results[1]) chartData2 = results[1].rows;
-		} catch (e) {
-			error = extractErrorMessage(e, 'Failed to load chart data');
+			pages = await listPages();
+			error = '';
+		} catch (err) {
+			error = extractErrorMessage(err, 'Failed to load pages');
+		} finally {
+			loading = false;
 		}
-
-		loading = false;
-		await loadTablePage(1);
 	}
 
-	interface FilterDef {
-		col: string;
-		selected: Set<string> | undefined;
+	function openModal() {
+		newTitle = '';
+		modalOpen = true;
 	}
 
-	function buildWhere(filters: FilterDef[], exclude?: string): string {
-		const conditions: string[] = [];
-		for (const f of filters) {
-			if (f.selected && f.selected.size > 0 && f.col !== exclude) {
-				const vals = [...f.selected].map((s) => `'${s.replace(/'/g, "''")}'`).join(',');
-				conditions.push(`"${f.col}" IN (${vals})`);
-			}
+	async function handleCreate() {
+		const name = newTitle.trim();
+		if (!name) return;
+		const slug = slugify(name);
+		creating = true;
+		try {
+			await savePage({ slug, title: name, rows: [] });
+			goto(`/pages/${slug}`);
+		} catch (err) {
+			error = extractErrorMessage(err, 'Failed to create page');
+			creating = false;
 		}
-		return conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : '';
 	}
 
-	async function refreshFromFilter() {
-		if (!tableName) return;
-		await loadChartData();
+	async function handleDelete(slug: string) {
+		try {
+			await deletePage(slug);
+			confirmDelete = null;
+			await refresh();
+		} catch (err) {
+			error = extractErrorMessage(err, 'Failed to delete page');
+		}
 	}
 
-	async function loadTablePage(page: number) {
-		if (!tableName) return;
-		const filters: FilterDef[] = [];
-		if (chart1) filters.push({ col: chart1.categoryCol, selected: chart1.selected });
-		if (chart2) filters.push({ col: chart2.categoryCol, selected: chart2.selected });
-		const where = buildWhere(filters);
-		const countResult = await runPagedQuery(`SELECT COUNT(*) as cnt FROM "${tableName}" ${where}`, 1, 1);
-		const totalRows = Number(countResult.rows[0]?.cnt ?? 0);
-		const offset = (page - 1) * TABLE_PAGE_SIZE;
-		const result = await runPagedQuery(`SELECT * FROM "${tableName}" ${where} LIMIT ${TABLE_PAGE_SIZE} OFFSET ${offset}`, 1, TABLE_PAGE_SIZE);
-		tableData = { ...result, totalRows };
-		tablePage = page;
-		tableTotalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
+	function handleModalKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') modalOpen = false;
+		if (e.key === 'Enter') handleCreate();
 	}
 
-	let chart1Loading = $state(false);
-	let chart2Loading = $state(false);
-
-	async function onChart1Select(_label: string) {
-		chart1Loading = true;
-		await refreshFromFilter();
-		chart1Loading = false;
-	}
-
-	async function onChart2Select(_label: string) {
-		chart2Loading = true;
-		await refreshFromFilter();
-		chart2Loading = false;
-	}
-
-	function formatCell(value: unknown): string {
-		if (value === null || value === undefined) return '\u2014';
-		if (typeof value === 'object') return JSON.stringify(value);
-		return String(value);
-	}
-
-	onMount(loadChartData);
+	onMount(refresh);
 </script>
 
-<svelte:head>
-	<title>Pages — Data Monster</title>
-</svelte:head>
+<svelte:head><title>Pages — data.monster</title></svelte:head>
 
-<div class="pages">
-	{#if app.tables.length === 0}
-		<div class="pages-empty">
-			<FileText size={32} />
-			<h2 class="pages-title">Pages</h2>
-			<p class="pages-desc">Connect data to see charts and insights.</p>
+<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && modalOpen) modalOpen = false; }} />
+
+<div style="padding: var(--space-6);">
+	<div class="flex items-end justify-between mb-6">
+		<div>
+			<h1 class="page-title">Report pages</h1>
+			<p class="text-sm text-zinc-500 mt-1">Build insight pages from your data — charts, tables and text on one grid.</p>
 		</div>
-	{:else if loading}
-		<div class="pages-loading">
-			<span class="pages-loading-text">Loading…</span>
-		</div>
-	{:else if error}
-		<div class="pages-error">
-			<span>{error}</span>
-		</div>
-	{:else if noChartData}
-		<div class="pages-content">
-			<div class="pages-nochart">
-				<p>No chartable columns found. The table needs at least one text column and one numeric column.</p>
-			</div>
-			{#if tableData}
-				<div class="pages-table-section">
-					<div class="pages-table-header">
-						<h3 class="pages-table-title">{tableName}</h3>
-						<span class="pages-table-count">{tableData.totalRows.toLocaleString()} rows</span>
-					</div>
-					<div class="pages-table-wrap">
-						<table class="data-table">
-							<thead>
-								<tr>
-									{#each tableData.columns as col}
-										<th>{col}</th>
-									{/each}
-								</tr>
-							</thead>
-							<tbody>
-								{#each tableData.rows as row}
-									<tr>
-										{#each tableData.columns as col}
-											<td>{formatCell(row[col])}</td>
-										{/each}
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-					{#if tableTotalPages > 1}
-						<div class="pagination">
-							<button onclick={() => loadTablePage(tablePage - 1)} disabled={tablePage <= 1} class="btn btn-ghost btn-sm">&larr; prev</button>
-							<span class="page-info">Page {tablePage} of {tableTotalPages}</span>
-							<button onclick={() => loadTablePage(tablePage + 1)} disabled={tablePage >= tableTotalPages} class="btn btn-ghost btn-sm">next &rarr;</button>
-						</div>
-					{/if}
-				</div>
-			{/if}
+		<button
+			class="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2"
+			style="background: oklch(0.44 0.1 158)"
+			onclick={openModal}
+		>
+			<Plus size={14} /> New page
+		</button>
+	</div>
+
+	{#if error}<p class="text-sm text-red-500 mb-4">{error}</p>{/if}
+
+	{#if loading}
+		<p class="text-sm text-zinc-400 py-16 text-center">Loading…</p>
+	{:else if pages.length === 0}
+		<div class="text-center py-20 border border-dashed border-zinc-300 rounded-xl">
+			<LayoutTemplate size={36} class="mx-auto text-zinc-300 mb-3" />
+			<h2 class="text-lg font-medium text-zinc-700">No pages yet</h2>
+			<p class="text-sm text-zinc-400 mt-1">Create your first report page.</p>
 		</div>
 	{:else}
-		<div class="pages-content">
-			{#if (chart1 && chart1.selected.size > 0) || (chart2 && chart2.selected.size > 0)}
-				<div class="filter-bar">
-					<span class="filter-label">Active filters:</span>
-					{#if chart1}
-						{#each [...chart1.selected] as c}
-							<button class="filter-chip" onclick={() => { const s = new Set(chart1!.selected); s.delete(c); chart1!.selected = s; refreshFromFilter(); }}>{c} &times;</button>
-						{/each}
-					{/if}
-					{#if chart2}
-						{#each [...chart2.selected] as p}
-							<button class="filter-chip" onclick={() => { const s = new Set(chart2!.selected); s.delete(p); chart2!.selected = s; refreshFromFilter(); }}>{p} &times;</button>
-						{/each}
-					{/if}
-					<button class="filter-clear" onclick={() => { if (chart1) chart1.selected = new Set(); if (chart2) chart2.selected = new Set(); refreshFromFilter(); }}>Clear all</button>
-				</div>
-			{:else}
-				<div class="filter-bar filter-bar-empty">
-					<span class="filter-label">No filters — click a bar to filter</span>
-				</div>
-			{/if}
-
-			<div class="pages-charts" class:pages-charts-single={!chart2}>
-				{#if chart1}
-					<BarChart data={chartData1} labelKey={chart1.categoryCol} valueKey={`total_${chart1.valueCol}`} title={chart1.title} tagLabel="{chartData1.length} {chart1.categoryCol}" bind:selected={chart1.selected} onselect={onChart1Select} onaction={() => goto(`/pages/chart/${encodeURIComponent(chart1!.categoryCol)}`)} />
-				{/if}
-				{#if chart2}
-					<BarChart data={chartData2} labelKey={chart2.categoryCol} valueKey={`total_${chart2.valueCol}`} title={chart2.title} tagLabel="{chartData2.length} {chart2.categoryCol}" bind:selected={chart2.selected} onselect={onChart2Select} onaction={() => goto(`/pages/chart/${encodeURIComponent(chart2!.categoryCol)}`)} />
-				{/if}
-			</div>
-
-			{#if tableData}
-				<div class="pages-table-section">
-					<div class="pages-table-header">
-						<h3 class="pages-table-title">{tableName}</h3>
-						<span class="pages-table-count">{tableData.totalRows.toLocaleString()} rows</span>
+		<div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))">
+			{#each pages as p (p.slug)}
+				<!-- same card as /library: icon square + title + meta, hover delete -->
+				<div class="group relative flex items-start gap-3 p-4 box-border bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-md)] transition-colors cursor-pointer" onclick={() => goto(`/pages/${p.slug}`)} onkeydown={(e) => e.key === 'Enter' && goto(`/pages/${p.slug}`)} role="button" tabindex="0">
+					<div class="flex items-center justify-center w-8 h-8 rounded-[var(--radius-sm)] bg-[var(--color-accent-muted)] text-[var(--color-accent)] shrink-0"><FileText size={18} /></div>
+					<div class="flex-1 min-w-0 flex flex-col gap-2">
+						<span class="text-sm font-semibold text-[var(--color-text)] leading-snug truncate pr-6" style="font-family: var(--font-display)">{p.title}</span>
+						<span class="text-xs text-[var(--color-text-tertiary)] leading-snug font-mono truncate">/{p.slug}{p.updatedAt ? ' · ' + new Date(p.updatedAt).toLocaleDateString() : ''}</span>
 					</div>
-					<div class="pages-table-wrap">
-						<table class="data-table">
-							<thead>
-								<tr>
-									{#each tableData.columns as col}
-										<th>{col}</th>
-									{/each}
-								</tr>
-							</thead>
-							<tbody>
-								{#each tableData.rows as row}
-									<tr>
-										{#each tableData.columns as col}
-											<td>{formatCell(row[col])}</td>
-										{/each}
-									</tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-
-					{#if tableTotalPages > 1}
-						<div class="pagination">
-							<button
-								onclick={() => loadTablePage(tablePage - 1)}
-								disabled={tablePage <= 1}
-								class="btn btn-ghost btn-sm"
-							>
-								&larr; prev
-							</button>
-							<span class="page-info">Page {tablePage} of {tableTotalPages}</span>
-							<button
-								onclick={() => loadTablePage(tablePage + 1)}
-								disabled={tablePage >= tableTotalPages}
-								class="btn btn-ghost btn-sm"
-							>
-								next &rarr;
-							</button>
-						</div>
+					<button class="absolute top-3.5 right-3.5 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page"><Trash2 size={13} /></button>
+					{#if confirmDelete === p.slug}
+						<span class="absolute bottom-3 right-3 flex items-center gap-2 text-xs">
+							<span class="text-red-500">Delete?</span>
+							<button class="text-red-500 font-medium hover:underline" onclick={(e) => { e.stopPropagation(); handleDelete(p.slug); }}>Yes</button>
+							<button class="text-zinc-400 hover:underline" onclick={(e) => { e.stopPropagation(); confirmDelete = null; }}>No</button>
+						</span>
 					{/if}
 				</div>
-			{/if}
+			{/each}
 		</div>
 	{/if}
 </div>
 
-<style>
-	.pages {
-		flex: 1;
-		display: flex;
-	}
-
-	.pages-empty {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-3);
-		color: var(--color-text-tertiary);
-	}
-
-	.pages-title {
-		font-family: var(--font-display);
-		font-size: var(--text-lg);
-		font-weight: 600;
-		color: var(--color-text);
-	}
-
-	.pages-desc {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-	}
-
-	.pages-loading {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.pages-loading-text {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-	}
-
-	.pages-error {
-		flex: 1;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: var(--space-6);
-		font-size: var(--text-sm);
-		color: var(--color-danger);
-		border: 1px dashed var(--color-danger);
-		background: oklch(0.96 0.018 25);
-		border-radius: var(--radius-sm);
-	}
-
-	.pages-content {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-6);
-		padding: var(--space-6);
-		overflow: auto;
-	}
-
-	.pages-nochart {
-		padding: var(--space-4) var(--space-6);
-		background: var(--color-surface-sunken);
-		border: 1px dashed var(--color-border);
-		border-radius: var(--radius-sm);
-		text-align: center;
-	}
-
-	.pages-nochart p {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-		margin: 0;
-	}
-
-	.pages-charts-single {
-		grid-template-columns: 1fr;
-	}
-
-	.filter-bar {
-		display: flex;
-		align-items: center;
-		gap: var(--space-2);
-		flex-wrap: wrap;
-		padding: var(--space-2) var(--space-3);
-		background: var(--color-surface-sunken);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-sm);
-	}
-
-	.filter-label {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		color: var(--color-text-tertiary);
-		text-transform: uppercase;
-	}
-
-	.filter-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 2px;
-		padding: 2px var(--space-2);
-		border: 1px solid #3b82f6;
-		background: oklch(0.94 0.025 160);
-		color: #3b82f6;
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		border-radius: var(--radius-xs);
-		cursor: pointer;
-		white-space: nowrap;
-		max-width: 20ch;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.filter-chip:hover {
-		background: oklch(0.93 0.03 160);
-	}
-
-	.filter-clear {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		color: var(--color-text-tertiary);
-		background: none;
-		border: 1px dashed var(--color-border);
-		padding: 2px var(--space-2);
-		border-radius: var(--radius-xs);
-		cursor: pointer;
-		margin-left: auto;
-	}
-
-	.filter-clear:hover {
-		color: var(--color-text);
-		border-color: var(--color-text-tertiary);
-	}
-
-	.filter-bar-empty {
-		opacity: 0.5;
-	}
-
-	.pages-charts {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--space-6);
-	}
-
-	.pages-table-section {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-
-	.pages-table-header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-3);
-	}
-
-	.pages-table-title {
-		font-family: var(--font-display);
-		font-size: var(--text-base);
-		font-weight: 700;
-		color: var(--color-text);
-	}
-
-	.pages-table-count {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		color: var(--color-text-tertiary);
-		padding: 2px var(--space-2);
-		background: var(--color-surface-raised);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-xs);
-	}
-
-	.pages-table-wrap {
-		overflow-x: auto;
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
-	}
-
-	.pagination {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-3);
-	}
-
-	.page-info {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		color: var(--color-text-tertiary);
-		letter-spacing: 0.04em;
-	}
-</style>
+{#if modalOpen}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6" onclick={() => (modalOpen = false)} onkeydown={handleModalKeydown}>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" onclick={(e) => e.stopPropagation()} onkeydown={handleModalKeydown}>
+			<div class="flex items-center justify-between">
+				<h2 class="text-lg font-semibold text-zinc-900" style="font-family: var(--font-display)">New page</h2>
+				<button class="text-zinc-400 hover:text-zinc-900" onclick={() => (modalOpen = false)} title="Close"><X size={16} /></button>
+			</div>
+			<label class="block space-y-1">
+				<span class="text-xs text-zinc-500">Title</span>
+				<input type="text" autofocus class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="e.g. Monthly utilization" bind:value={newTitle} onkeydown={handleModalKeydown} />
+				{#if newTitle.trim()}
+					<span class="text-xs text-zinc-400 font-mono">/pages/{newSlug || '…'}</span>
+				{/if}
+			</label>
+			<div class="flex justify-end gap-2 pt-2">
+				<button class="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-900" onclick={() => (modalOpen = false)}>Cancel</button>
+				<button
+					class="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 inline-flex items-center gap-2"
+					style="background: oklch(0.44 0.1 158)"
+					onclick={handleCreate}
+					disabled={!newTitle.trim() || creating}
+				>
+					<Plus size={14} /> {creating ? 'Creating…' : 'Create page'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

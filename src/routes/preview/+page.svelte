@@ -137,7 +137,7 @@
 <div class="preview-page">
 	<div class="preview-shell">
 		<div class="preview-header">
-			<h2 class="preview-title">Preview</h2>
+			<h2 class="preview-title page-title">Preview</h2>
 		</div>
 
 		{#if paneData}
@@ -217,14 +217,6 @@
 		flex-shrink: 0;
 	}
 
-	.preview-title {
-		font-family: var(--font-display);
-		font-size: var(--text-lg);
-		font-weight: 700;
-		letter-spacing: -0.01em;
-		color: var(--color-text);
-		margin: 0;
-	}
 
 	.preview-meta-bar {
 		display: flex;
@@ -304,4 +296,8 @@
 		animation: spin 1s linear infinite;
 	}
 
+
+	.preview-title {
+		margin: 0;
+	}
 </style>

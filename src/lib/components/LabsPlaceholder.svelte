@@ -1,9 +1,9 @@
 <script lang="ts">
-	let { title }: { title: string } = $props();
+	let { title, section = 'Labs' }: { title: string; section?: string } = $props();
 </script>
 
 <svelte:head>
-	<title>{title} — Labs — Data Monster</title>
+	<title>{[title, section, 'Data Monster'].filter(Boolean).join(' — ')}</title>
 </svelte:head>
 
 <div class="page">

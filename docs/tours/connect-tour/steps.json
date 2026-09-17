@@ -1,0 +1,63 @@
+{
+	"titel": "Connect - rondleiding",
+	"badge": "Connect",
+	"eindtekst": "File, URL or PostgreSQL: every table in the workspace entered through Connect, and Preview checks it before it commits.",
+	"stappen": [
+		{
+			"f": "start",
+			"cap": "Connect",
+			"tekst": "Connect is the front door of data.monster. Three ways in: a file from disk, a URL, or a PostgreSQL database.",
+			"tour": ["tab-file", "tab-remote", "tab-database"]
+		},
+		{
+			"f": "start",
+			"cap": "From disk",
+			"tekst": "Open file brings up your system file picker. CSV, Parquet, JSON and JSONL are supported, and the source file is copied into the workspace so it stays self-contained.",
+			"tour": ["open-file"]
+		},
+		{
+			"f": "start",
+			"cap": "Database",
+			"tekst": "The Database tab hooks up PostgreSQL: paste a connection string, browse its tables and ingest the ones you need as DuckDB snapshots.",
+			"anchor": "tab-database",
+			"act": "click",
+			"klaar": "Database tab open."
+		},
+		{
+			"f": "database",
+			"cap": "PostgreSQL",
+			"tekst": "Paste the postgres:// URL and Connect lists the schemas and tables. Nothing is copied until you select and ingest.",
+			"tour": ["pg-input", "connect-btn"]
+		},
+		{
+			"f": "database",
+			"cap": "Remote",
+			"tekst": "Back to the Remote tab: this ingests straight from a URL, so no manual downloading.",
+			"anchor": "tab-remote",
+			"act": "click",
+			"klaar": "Remote tab open."
+		},
+		{
+			"f": "remote",
+			"cap": "Paste the URL",
+			"tekst": "Type or paste the direct link to a CSV, Parquet or JSON file. Here: a small regions CSV served locally.",
+			"anchor": "url-input",
+			"act": "type",
+			"text": "http://localhost:8123/regions.csv"
+		},
+		{
+			"f": "remote-filled",
+			"cap": "Load",
+			"tekst": "Load downloads the file into the workspace and hands it straight to Preview for a column and type check.",
+			"anchor": "load-btn",
+			"act": "click",
+			"klaar": "Downloaded and handed to Preview."
+		},
+		{
+			"f": "preview-landed",
+			"cap": "Preview",
+			"tekst": "You land in Preview: name, type, field and row count of the candidate file. Confirming the ingest is the next tour.",
+			"tour": ["meta-name", "meta-fields"]
+		}
+	]
+}

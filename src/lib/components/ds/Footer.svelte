@@ -28,7 +28,7 @@
 	.footer-brand {
 		font-family: var(--font-display);
 		font-size: var(--text-md);
-		font-weight: 600;
+		font-weight: 700;
 		letter-spacing: -0.02em;
 		color: var(--color-text-tertiary);
 	}

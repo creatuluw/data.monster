@@ -274,6 +274,47 @@ pub(crate) fn initialize_schema(conn: &Connection) -> Result<(), String> {
     .map_err(|e| format!("Failed to create d8a_monster_saved_queries: {}", e))?;
 
     conn.execute(
+        "CREATE TABLE IF NOT EXISTS d8a_monster_pages (
+            slug VARCHAR PRIMARY KEY,
+            title VARCHAR NOT NULL,
+            spec TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create d8a_monster_pages: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS d8a_monster_items (
+            id VARCHAR PRIMARY KEY,
+            kind VARCHAR NOT NULL,
+            table_name VARCHAR NOT NULL,
+            expr TEXT NOT NULL,
+            label VARCHAR NOT NULL,
+            fmt VARCHAR,
+            description VARCHAR,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create d8a_monster_items: {}", e))?;
+
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS d8a_monster_relationships (
+            id VARCHAR PRIMARY KEY,
+            from_table VARCHAR NOT NULL,
+            from_column VARCHAR NOT NULL,
+            to_table VARCHAR NOT NULL,
+            to_column VARCHAR NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )
+    .map_err(|e| format!("Failed to create d8a_monster_relationships: {}", e))?;
+
+    conn.execute(
         "CREATE TABLE IF NOT EXISTS d8a_monster_field_functions (
             id VARCHAR PRIMARY KEY,
             label VARCHAR NOT NULL,
@@ -325,7 +366,7 @@ mod tests {
             [],
             |row| row.get(0),
         ).unwrap();
-        assert_eq!(count, 4);
+        assert_eq!(count, 7);
     }
 
     #[test]
@@ -338,7 +379,7 @@ mod tests {
             [],
             |row| row.get(0),
         ).unwrap();
-        assert_eq!(count, 4);
+        assert_eq!(count, 7);
     }
 
     #[test]

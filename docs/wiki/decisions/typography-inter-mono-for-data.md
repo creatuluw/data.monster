@@ -3,7 +3,7 @@ type: Decision
 title: "Typography: Inter for all UI, Geist Mono reserved for data detail"
 description: Context
 tags: [design, typography, tokens, inter, fonts]
-status: accepted
+status: superseded
 timestamp: "2026-09-14T07:46:53.998Z"
 ---
 

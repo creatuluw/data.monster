@@ -508,7 +508,7 @@
 	.modal-title {
 		font-family: var(--font-display);
 		font-size: var(--text-md);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 

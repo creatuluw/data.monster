@@ -1271,7 +1271,7 @@
 	.sidebar-title {
 		font-family: var(--font-display);
 		font-size: var(--text-xs);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 		letter-spacing: 0.02em;
 	}
@@ -1808,7 +1808,7 @@
 	.modal-title {
 		font-family: var(--font-display);
 		font-size: var(--text-md);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 
@@ -1881,7 +1881,7 @@
 	.modal-empty-title {
 		font-family: var(--font-display);
 		font-size: var(--text-md);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 	}
 
@@ -1947,7 +1947,7 @@
 	.saved-card-name {
 		font-family: var(--font-display);
 		font-size: var(--text-sm);
-		font-weight: 600;
+		font-weight: 700;
 		color: var(--color-text);
 		overflow: hidden;
 		text-overflow: ellipsis;

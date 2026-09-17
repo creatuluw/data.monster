@@ -3,6 +3,9 @@
 	import { Trash2, Tag, FolderOpen, Blend, FileBraces, Database } from 'lucide-svelte';
 	import { getAllTableMeta, getTableLabels, getAllTags as getAllTagsOp, getAllGroups as getAllGroupsOp, getTableTypes, type TableMeta, type TableLabels } from '$lib/db-operations';
 	import Tabs from '$lib/components/Tabs.svelte';
+	import RelationshipEditor from '$lib/components/charts/RelationshipEditor.svelte';
+	import ItemEditor from '$lib/components/charts/ItemEditor.svelte';
+	import { Sigma, Ruler } from 'lucide-svelte';
 
 	let {
 		tables = [],
@@ -23,6 +26,11 @@
 	let allTags = $state<string[]>([]);
 	let allGroups = $state<string[]>([]);
 	let tableTypes = $state<Record<string, string>>({});
+
+	// table -> column names, for the semantic-layer editors
+	let columnSchemas = $derived(
+		Object.fromEntries(tableMetas.map((m) => [m.name, m.columns.map((c) => c.name)]))
+	);
 
 	let filterTag = $state<string | null>(null);
 	let filterGroup = $state<string | null>(null);
@@ -138,6 +146,8 @@
 	<Tabs bind:activeKey={activeTab} items={[
 		{ key: 'tables', label: tabTables },
 		{ key: 'relationships', label: tabRelationships },
+		{ key: 'measures', label: tabMeasures },
+		{ key: 'dimensions', label: tabDimensions },
 		{ key: 'definitions', label: tabDefinitions },
 	]} variant="default" />
 
@@ -147,6 +157,14 @@
 
 	{#snippet tabRelationships()}
 		<Blend size={13} /> Relationships
+	{/snippet}
+
+	{#snippet tabMeasures()}
+		<Sigma size={13} /> Measures
+	{/snippet}
+
+	{#snippet tabDimensions()}
+		<Ruler size={13} /> Dimensions
 	{/snippet}
 
 	{#snippet tabDefinitions()}
@@ -271,11 +289,13 @@
 		{/if}
 	{:else if activeTab === 'relationships'}
 		<hr class="overview-divider" />
-		<div class="tab-empty">
-			<Blend size={32} class="tab-empty-icon" />
-			<h3 class="tab-empty-title">Relationships</h3>
-			<p class="tab-empty-desc">Foreign key relationships between tables will appear here. Connect tables with shared columns to define how they relate.</p>
-		</div>
+		<RelationshipEditor schemas={columnSchemas} />
+	{:else if activeTab === 'measures'}
+		<hr class="overview-divider" />
+		<ItemEditor kind="measure" schemas={columnSchemas} />
+	{:else if activeTab === 'dimensions'}
+		<hr class="overview-divider" />
+		<ItemEditor kind="dimension" schemas={columnSchemas} />
 	{:else if activeTab === 'definitions'}
 		<hr class="overview-divider" />
 		<div class="tab-empty">

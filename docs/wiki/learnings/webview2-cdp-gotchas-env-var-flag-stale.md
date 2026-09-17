@@ -15,4 +15,4 @@ Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit whil
 3. **IPv4/IPv6 mismatch**: the webview may resolve `localhost` to a different stack than vite binds. Start vite with `--host` (dual-stack) so the app can reach the dev URL. (Also detach it properly — plain backgrounding flaked; `nohup`-style detach worked.)
 4. **Node ≥21 has native WebSocket** — quick CDP probes (HTTP /json list + `Runtime.evaluate`) need zero deps.
 
-Bonus technique: when no vision tool is available, verify UI restyling objectively via **computed styles** over CDP (`getComputedStyle` on headings/buttons/body) instead of screenshots — confirmed Spectral/Public Sans, ledger-green brand mark, and tabular-nums this way.
+Bonus technique: when no vision tool is available, verify UI restyling objectively via **computed styles** over CDP (`getComputedStyle` on headings/buttons/body) instead of screenshots — confirmed Spectral/Public Sans, ledger-green brand mark, and tabular-nums this way (fonts since superseded: [[typography-settles-inter-everywhere-geist-mono]]; brand mark later replaced by the monster logo asset).

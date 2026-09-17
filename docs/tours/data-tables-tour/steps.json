@@ -1,0 +1,71 @@
+{
+	"titel": "Data tables - app tour",
+	"badge": "Data tables",
+	"eindtekst": "From the tagged table list to a single table's real rows: /data keeps a growing workspace navigable, /table/[name] browses one table in full.",
+	"stappen": [
+		{
+			"f": "start",
+			"cap": "The list",
+			"tekst": "Data lists every table in the workspace as a card: name, field and record counts, plus its tags. Two live here: superstore and regions.",
+			"tour": ["card-superstore", "card-regions"]
+		},
+		{
+			"f": "start",
+			"cap": "Table settings",
+			"tekst": "Click a card and its settings drawer slides in: rename, group, tag, column types, source.",
+			"anchor": "card-superstore",
+			"act": "click",
+			"klaar": "Settings drawer open."
+		},
+		{
+			"f": "drawer",
+			"cap": "Tags and groups",
+			"tekst": "Group and Tags are workspace metadata, not table data: a group folders the card, tags label it. Retagging never rewrites the table.",
+			"tour": ["group-input", "tags-input"]
+		},
+		{
+			"f": "drawer",
+			"cap": "Add a tag",
+			"tekst": "Type a tag in the Tags field and press Enter; it lands as a chip.",
+			"anchor": "tags-input",
+			"act": "type",
+			"text": "retail"
+		},
+		{
+			"f": "tag-typed",
+			"cap": "Save",
+			"tekst": "Save changes writes name, group and tags to the internal metadata tables in one go.",
+			"anchor": "save-btn",
+			"act": "click",
+			"klaar": "Saved; back on the refreshed list."
+		},
+		{
+			"f": "saved-list",
+			"cap": "Tagged",
+			"tekst": "Back on Data each card carries its tags, and the filter bar appears: one chip per tag in the workspace. regions is tagged demo data.",
+			"tour": ["tag-retail-card", "tag-demo-card", "filter-retail", "filter-demo-data"]
+		},
+		{
+			"f": "saved-list",
+			"cap": "Filter",
+			"tekst": "Click a tag chip to narrow the list to tables carrying it; click again to clear.",
+			"anchor": "filter-retail",
+			"act": "click",
+			"klaar": "List filtered to the retail tag."
+		},
+		{
+			"f": "filter-active",
+			"cap": "Open",
+			"tekst": "Open on a card goes to that table's detail page.",
+			"anchor": "open-superstore",
+			"act": "click",
+			"klaar": "Table detail open with real rows."
+		},
+		{
+			"f": "table-detail",
+			"cap": "Browse",
+			"tekst": "The detail page pages through the actual rows, 20 at a time. Query this table drops the same SELECT straight into the SQL editor.",
+			"tour": ["viewer-title", "rows-badge", "first-row", "next-btn", "query-btn"]
+		}
+	]
+}

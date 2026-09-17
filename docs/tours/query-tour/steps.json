@@ -1,0 +1,93 @@
+{
+	"titel": "Query - rondleiding",
+	"badge": "Query",
+	"eindtekst": "Write SQL, run it, page through big results, save it for later, and materialize any result as a table.",
+	"stappen": [
+		{
+			"f": "start",
+			"cap": "Query",
+			"tekst": "Query is the SQL workbench over the workspace DuckDB. The sidebar lists every table with its row count, so superstore with its 51,290 rows is one click of context away.",
+			"tour": ["editor-textarea", "superstore-sidebar"]
+		},
+		{
+			"f": "start",
+			"cap": "Aggregation",
+			"tekst": "Type the question you want answered. This aggregation sums sales per region and sorts the winners first.",
+			"anchor": "editor-textarea",
+			"act": "type",
+			"text": "SELECT region, SUM(sales) AS sales FROM superstore GROUP BY region ORDER BY sales DESC;"
+		},
+		{
+			"f": "editor-typed",
+			"cap": "Run",
+			"tekst": "Run executes against the real table. Ctrl+Enter does the same from the keyboard. Only SELECT, CTAS, SHOW and DESCRIBE are allowed, so the workspace stays safe.",
+			"anchor": "run-btn",
+			"act": "click",
+			"klaar": "Aggregation ran: 13 regions, sales sorted."
+		},
+		{
+			"f": "result-grid",
+			"cap": "Results",
+			"tekst": "The grid shows real rows, not a spinner: one row per region, sales already sorted descending. The badge counts the total rows the query produced.",
+			"tour": ["rows-badge"]
+		},
+		{
+			"f": "result-grid",
+			"cap": "Save",
+			"tekst": "A query worth keeping is worth naming. Save stores it in the workspace so you can recall it any session.",
+			"anchor": "save-btn",
+			"act": "click",
+			"klaar": "Save dialog open."
+		},
+		{
+			"f": "save-modal",
+			"cap": "Name it",
+			"tekst": "Give the query a name. Description and tags are optional and make it findable later.",
+			"anchor": "save-name",
+			"act": "type",
+			"text": "Sales by region"
+		},
+		{
+			"f": "save-modal",
+			"cap": "Confirm",
+			"tekst": "The SQL preview shows exactly what gets stored. Save query writes it to the workspace.",
+			"anchor": "save-confirm",
+			"act": "click",
+			"klaar": "Query saved."
+		},
+		{
+			"f": "saved-panel",
+			"cap": "Saved",
+			"tekst": "The Saved panel lists stored queries with SQL preview and tags. One click loads any of them back into the editor.",
+			"tour": ["saved-card"]
+		},
+		{
+			"f": "saved-panel",
+			"cap": "Close",
+			"tekst": "Back to the editor for the last stop of this tour.",
+			"anchor": "saved-close",
+			"act": "click",
+			"klaar": "Back to the editor."
+		},
+		{
+			"f": "result-back",
+			"cap": "Ingest",
+			"tekst": "Back at the editor with the region rollup. Any result can become a table: Ingest wraps the current query in a CREATE TABLE AS.",
+			"anchor": "ingest-btn",
+			"act": "click",
+			"klaar": "Ingest dialog open."
+		},
+		{
+			"f": "ingest-modal",
+			"cap": "Materialize",
+			"tekst": "Name the table, optionally tag and group it, and Ingest lands it in Data. That is the full loop: question, result, table.",
+			"tour": ["ingest-name", "ingest-cancel"]
+		},
+		{
+			"f": "pagination",
+			"cap": "Pagination",
+			"tekst": "In a new tab, a full scan of superstore returns 51,290 rows across 6 pages. Big results page instead of choking the grid, with prev and next to walk them.",
+			"tour": ["pagination-info"]
+		}
+	]
+}

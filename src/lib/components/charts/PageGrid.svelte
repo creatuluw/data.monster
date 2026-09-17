@@ -161,17 +161,17 @@
 		{:else if state?.unconfigured}
 			<!-- setup skeleton: no data until every role minimum is met -->
 			<ChartCard title={block.chart.title ?? def?.label ?? block.chart.type} subtitle={block.chart.subtitle ?? ''} status="setup">
+				{#if schemas && items && relationships}
+					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} />
+				{:else}
 				<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
 					<div class="flex flex-col gap-1.5 w-full max-w-56" aria-hidden="true">
 						<div class="h-2.5 rounded bg-zinc-200 animate-pulse w-1/3"></div>
 						<div class="h-8 rounded bg-zinc-200/70 animate-pulse"></div>
 						<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
 					</div>
-				{#if schemas && items && relationships}
-					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} />
-				{:else}
-				<p class="text-xs text-zinc-500">Pick a table, then add dimensions and measures.</p>
-				<div class="flex gap-2">
+					<p class="text-xs text-zinc-500">Pick a table, then add dimensions and measures.</p>
+					<div class="flex gap-2">
 						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
 							<Plus size={12} /> Add dimension
 						</button>
@@ -179,8 +179,8 @@
 							<Plus size={12} /> Add measure
 						</button>
 					</div>
+					</div>
 				{/if}
-			</div>
 			</ChartCard>
 		{:else}
 			<ChartCard

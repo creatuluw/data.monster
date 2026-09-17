@@ -54,7 +54,6 @@
 		position: fixed;
 		inset: 0;
 		background: oklch(0 0 0 / 0.3);
-		backdrop-filter: blur(2px);
 		z-index: 200;
 		opacity: 0;
 		transition: opacity var(--duration-base) ease;
@@ -91,10 +90,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: var(--space-3) var(--space-5);
+		padding: var(--space-3) var(--space-4);
 		border-bottom: 1px solid var(--color-border);
 		flex-shrink: 0;
-		gap: var(--space-3);
 	}
 
 	.drawer-title {
@@ -109,35 +107,26 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 28px;
-		height: 28px;
-		padding: 0;
-		border: 1px solid var(--color-border);
-		background: var(--color-surface);
+		padding: var(--space-1);
+		border: none;
+		background: none;
 		color: var(--color-text-tertiary);
 		cursor: pointer;
-		border-radius: var(--radius-sm);
+		border-radius: var(--radius-xs);
 		transition:
 			color var(--duration-fast) ease,
-			border-color var(--duration-fast) ease,
 			background var(--duration-fast) ease;
 	}
 
 	.drawer-close:hover {
 		color: var(--color-text);
-		border-color: var(--color-border-strong);
 		background: var(--color-surface-sunken);
-	}
-
-	.drawer-close:focus-visible {
-		outline: none;
-		box-shadow: 0 0 0 2px var(--color-accent-muted);
 	}
 
 	.drawer-body {
 		flex: 1;
 		overflow-y: auto;
-		padding: var(--space-4) var(--space-5);
+		padding: var(--space-4);
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-4);

@@ -5,6 +5,10 @@
 	import { chartRenderers, setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 	import { getChartType } from '$lib/charts/registry';
 	import TableRenderer from './renderers/TableRenderer.svelte';
+	import SkeletonSetup from './SkeletonSetup.svelte';
+	import type { MasterItem } from '$lib/charts/items';
+	import type { Relationship } from '$lib/charts/relationships';
+	import type { TableSchemas } from '$lib/charts/query/compile';
 	import ChartCard from './ChartCard.svelte';
 	import { Bolt, Settings2, Plus, GripHorizontal, GripVertical } from 'lucide-svelte';
 
@@ -17,6 +21,10 @@
 		onConfigure,
 		onConfigureRow,
 		onConfigureColumn,
+		schemas,
+		items,
+		relationships,
+		onCreateMasterItem,
 		onAdd,
 		onAddRow
 	}: {
@@ -27,6 +35,12 @@
 		onConfigure?: (id: string) => void;
 		onConfigureRow?: (ri: number) => void;
 		onConfigureColumn?: (ri: number, ci: number) => void;
+		/** data context for the in-chart skeleton setup (optional — falls back to drawer-opening buttons) */
+		schemas?: TableSchemas;
+		items?: MasterItem[];
+		relationships?: Relationship[];
+		/** host-side master-item creation for the in-chart ✚ flows; resolves to the new item id */
+		onCreateMasterItem?: (kind: 'dimension' | 'measure', table: string, label: string, expr: string) => Promise<string>;
 		/** + Component clicked — host opens the component picker; ci = first empty column (or 0 to spawn a new one) */
 		onAdd?: (ri: number, ci: number) => void;
 		/** + Row clicked — host appends a row (and autosaves) */
@@ -153,6 +167,9 @@
 						<div class="h-8 rounded bg-zinc-200/70 animate-pulse"></div>
 						<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
 					</div>
+				{#if schemas && items && relationships}
+					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} />
+				{:else}
 				<p class="text-xs text-zinc-500">Pick a table, then add dimensions and measures.</p>
 				<div class="flex gap-2">
 						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
@@ -162,7 +179,8 @@
 							<Plus size={12} /> Add measure
 						</button>
 					</div>
-				</div>
+				{/if}
+			</div>
 			</ChartCard>
 		{:else}
 			<ChartCard

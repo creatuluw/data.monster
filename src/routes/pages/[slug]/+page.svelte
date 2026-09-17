@@ -3,7 +3,7 @@
 	import { page as pageState } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { getAllTableMeta, extractErrorMessage, type QueryResult } from '$lib/db-operations';
-	import { getPage, savePage, listMasterItems, listRelationships } from '$lib/central-api';
+	import { getPage, savePage, listMasterItems, listRelationships, saveMasterItem } from '$lib/central-api';
 	import { validatePageDoc } from '$lib/charts/validate';
 import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import { createPageRuntime } from '$lib/charts/page-runtime.svelte';
@@ -94,6 +94,14 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		if (!('data' in result) || !('columns' in result)) return [];
 		// columnar → row objects
 		return result.data.map((row) => Object.fromEntries(result.columns.map((c, i) => [c, row[i]])));
+	}
+
+	/** in-chart ✚ create: save + refresh the library, resolve to the new item id */
+	async function createMasterItem(kind: 'dimension' | 'measure', table: string, label: string, expr: string): Promise<string> {
+		const id = `mi_${table}_${label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+		await saveMasterItem({ id, kind, table, label, expr });
+		await refreshItems();
+		return id;
 	}
 
 	async function refreshItems() {
@@ -344,9 +352,13 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				<PageGrid
 					{doc}
 					{runtime}
+					{schemas}
+					{items}
+					{relationships}
 					onConfigure={(id) => configureBlock(id)}
 					onConfigureRow={(ri) => { rowTab = 'settings'; rowConfig = ri; }}
 					onConfigureColumn={(ri, ci) => { colTab = 'settings'; colConfig = { ri, ci }; }}
+					onCreateMasterItem={createMasterItem}
 
 					onAdd={(ri, ci) => { pickerQuery = ''; pickerFor = { ri, ci }; }}
 				onAddRow={addRow}

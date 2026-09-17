@@ -244,6 +244,7 @@
 	   centered, exactly viewport-high (app-shell owns the 100vh) */
 	.app-column {
 		flex: 1;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		width: 100%;

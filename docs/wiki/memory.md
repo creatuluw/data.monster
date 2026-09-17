@@ -8,7 +8,7 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T10:45:15.063Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T11:35:05.616Z.
 
 ## Recent Decisions
 
@@ -52,6 +52,7 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T10
 
 ## Recent Learnings — development patterns
 
+- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto-mock-taur.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fi… (2026-09-17)
 - [speed-highlight/core has no Svelte grammar](learnings/speed-highlight-core-has-no-svelte-grammar.md) — Gotchas discovered wiring `@speed-highlight/core` into the library Code tab (2026-09-17)
 - [Library code entries are keyed by full repo paths](learnings/library-code-entries-are-keyed-by-full-repo-paths.md) — What (2026-09-17)
 - [The /library vs /pages config-drawer difference is scope, not components](learnings/library-vs-pages-config-drawer-scope.md) — Symptom (2026-09-17)
@@ -71,7 +72,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T10
 - [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-stale-hmr-webview.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel). (2026-09-15)
 - [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] `PageDoc`, a block carries a **block-level `title`** *and* (for chart blocks)… (2026-09-15)
 - [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP `Input.dispatchMouseEvent` DOES click svelteplot marks (BarX `oncli… (2026-09-15)
-- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, eve… (2026-09-15)
 
 ## Architecture
 

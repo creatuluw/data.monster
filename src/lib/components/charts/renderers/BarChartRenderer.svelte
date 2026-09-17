@@ -22,6 +22,7 @@
 		onSelect,
 		fmts,
 		heightVh = 0.3,
+		heightPx = 0,
 		config
 	}: ChartRendererProps & { config?: Snippet } = $props();
 
@@ -40,7 +41,7 @@
 
 	let chartWrap: HTMLDivElement | undefined = $state();
 	let innerHeight = $state(800);
-	const plotHeight = $derived(innerHeight * heightVh);
+	const plotHeight = $derived(heightPx > 0 ? heightPx : innerHeight * heightVh);
 
 	const markData = $derived(rows as unknown as Record<string | symbol, RawValue>[]);
 	const isSel = $derived(sameDatum<Record<string, unknown>>([category]));

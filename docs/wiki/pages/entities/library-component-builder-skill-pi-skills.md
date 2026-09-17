@@ -23,8 +23,8 @@ A pi project skill (agentskills.io-spec-conformant) that owns the full path from
 
 ## Relationships
 
-- Implements [library-component-builder-skill-is-the-canonical-path-for-ne](../../decisions/library-component-builder-skill-is-the-canonical-path-for-ne.md) — the decision naming it the canonical build path
-- Feeds [library-registry-system-src-lib-library-library-routes](./library-registry-system-src-lib-library-library-routes.md) — components it builds register via `registerLibraryComponent`
+- Implements [library-component-builder-canonical-path](../../decisions/library-component-builder-canonical-path.md) — the decision naming it the canonical build path
+- Feeds [library-registry-system](./library-registry-system.md) — components it builds register via `registerLibraryComponent`
 - `references/CONTRACT.md` is a portable copy of `src/lib/library/types.ts` — code wins on disagreement; update the reference when the contract changes
 - `/library/dev` route is the human-readable mirror (linked from the `/library` grid as a "For developers" card)
 

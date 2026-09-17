@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X, Trash2, RefreshCw } from 'lucide-svelte';
+	import { drawerResize } from './drawer-resize';
 	import {
 		getTableMeta,
 		type TableMeta,
@@ -204,7 +205,7 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="drawer-overlay" class:drawer-overlay-visible={drawerOpen} onclick={handleClose} onkeydown={() => {}}>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="drawer" class:drawer-open={drawerOpen} onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
+		<div class="drawer" class:drawer-open={drawerOpen} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
 			<div class="drawer-header">
 				<h2 class="drawer-title">Table settings</h2>
 				<button class="drawer-close" onclick={handleClose} title="Close">
@@ -415,7 +416,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 40vw;
+		width: 33vw;
 		max-width: 100vw;
 		background: var(--color-surface);
 		border-left: 1px solid var(--color-border);

@@ -12,6 +12,6 @@ _Concrete named things will be listed here._
 - [PageGrid component](./pagegrid-component.md) - The canvas renderer for the central-charts page editor: lays out a
 - [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
 - [Library page (/library)](./library-page-library.md) - A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
-- [Library registry system (src/lib/library + /library routes)](./library-registry-system-src-lib-library-library-routes.md) - The shipped implementation of the library registry: a one-function registration point (`registerLibraryComponent`) that feeds both the `/library` views and the
+- [Library registry system (src/lib/library + /library routes)](./library-registry-system.md) - The shipped implementation of the library registry: a one-function registration point (`registerLibraryComponent`) that feeds both the `/library` views and the
 - [library-component-builder skill (.pi/skills)](./library-component-builder-skill-pi-skills.md) - A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview →
 - [LLM prompt button (/library detail)](./llm-prompt-button-library-detail.md) - A `Bot`-icon button in the top-right of the `/library/[id]` page head (tooltip on hover explains what it is). Click copies a ready-to-paste bootstrap prompt tha

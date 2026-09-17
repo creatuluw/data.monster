@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { validatePageDoc } from '../src/lib/charts/validate';
 import type { PageDoc } from '../src/lib/charts/spec-types';
+import { rowColumns, normalizePageDoc } from '../src/lib/charts/spec-types';
 
 const validDoc: PageDoc = {
 	slug: 'monthly-utilization',
@@ -228,5 +229,71 @@ describe('validatePageDoc — filters', () => {
 				]
 			});
 		expect(errors.some((e) => e.path === 'rows[0].blocks[0].chart.filters[0].col')).toBe(true);
+	});
+});
+
+describe('validatePageDoc — columns', () => {
+	const withColumns = (columns: unknown[]) => validatePageDoc({ slug: 'x', title: 'X', rows: [{ columns }] });
+
+	it('accepts a row with explicit columns', () => {
+		expect(withColumns([{ span: 6, blocks: [{ type: 'text', text: 'a' }] }, { span: 6, blocks: [] }])).toEqual([]);
+	});
+
+	it('rejects a column span above 12', () => {
+		expect(withColumns([{ span: 13, blocks: [] }])[0].path).toBe('rows[0].columns[0].span');
+	});
+
+	it('rejects a column without a blocks array', () => {
+		expect(withColumns([{ span: 6 }])[0].path).toBe('rows[0].columns[0].blocks');
+	});
+
+	it('validates blocks inside columns', () => {
+		expect(withColumns([{ span: 6, blocks: [{ type: 'text' }] }])[0].path).toBe('rows[0].columns[0].blocks[0].text');
+	});
+
+	it('rejects a row with neither columns nor blocks', () => {
+		expect(validatePageDoc({ slug: 'x', title: 'X', rows: [{}] })[0].path).toBe('rows[0]');
+	});
+});
+
+describe('rowColumns — legacy mapping', () => {
+	it('maps each legacy block to its own column, keeping spans', () => {
+		const cols = rowColumns({ blocks: [{ type: 'text', span: 4, text: 'a' }, { type: 'text', span: 8, text: 'b' }] });
+		expect(cols).toEqual([
+			{ span: 4, blocks: [{ type: 'text', span: 4, text: 'a' }] },
+			{ span: 8, blocks: [{ type: 'text', span: 8, text: 'b' }] }
+		]);
+	});
+
+	it('defaults a legacy spanless block to a full-width column', () => {
+		expect(rowColumns({ blocks: [{ type: 'text', text: 'a' }] })[0].span).toBe(12);
+	});
+
+	it('explicit columns pass through untouched', () => {
+		const columns = [{ span: 3, blocks: [] }];
+		expect(rowColumns({ columns })).toBe(columns);
+	});
+
+	it('normalizePageDoc converts every row to columns', () => {
+		const doc = normalizePageDoc({
+			slug: 'x',
+			title: 'X',
+			rows: [{ blocks: [{ type: 'text', span: 6, text: 'a' }] }, { columns: [{ span: 12, blocks: [] }] }]
+		});
+		expect(doc.rows!.every((r) => Array.isArray(r.columns) && r.blocks === undefined)).toBe(true);
+		expect(doc.rows![0].columns![0].span).toBe(6);
+	});
+});
+
+describe('validatePageDoc — row/column height', () => {
+	const withColumns = (columns: unknown[]) => validatePageDoc({ slug: 'x', title: 'X', rows: [{ columns }] });
+	it('accepts a column height of 40+', () => {
+		expect(withColumns([{ span: 6, height: 300, blocks: [] }])).toEqual([]);
+	});
+	it('rejects a column height below 40', () => {
+		expect(withColumns([{ span: 6, height: 20, blocks: [] }])[0].path).toBe('rows[0].columns[0].height');
+	});
+	it('rejects a non-numeric row height', () => {
+		expect(validatePageDoc({ slug: 'x', title: 'X', rows: [{ columns: [], height: 'tall' }] })[0].path).toBe('rows[0].height');
 	});
 });

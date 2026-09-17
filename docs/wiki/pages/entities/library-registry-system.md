@@ -26,7 +26,7 @@ The shipped implementation of the library registry: a one-function registration 
 
 ## Relationships
 
-- Implements [library-registry-drives-editor-library-in-one-shot-supersede](../../decisions/library-registry-drives-editor-library-in-one-shot-supersede.md) (see [the decision](../../decisions/library-registry-drives-editor-library-in-one-shot-supersede.md)) — supersedes display-only v1
+- Implements [library-registry-drives-editor-and-library](../../decisions/library-registry-drives-editor-and-library.md) (see [the decision](../../decisions/library-registry-drives-editor-and-library.md)) — supersedes display-only v1
 - Built on [chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md) — `ChartTypeDefinition` is the same type driving `PageGrid` renderers and `BlockInspector` panels
 - The page editor's add-block picker iterates the registry with role-aware defaults (e.g. heatmap pre-gets 2 dimensions); config panels are registry-driven via `getChartType`
 - Related decisions: [library-extension-style-components](../../decisions/library-extension-style-components.md), [library-demos-reuse-real-components](../../decisions/library-demos-reuse-real-components.md), [library-q4-dedicated-tabbed-views](../../decisions/library-q4-dedicated-tabbed-views.md)

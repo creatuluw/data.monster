@@ -4,6 +4,7 @@
  * One $state object + derived functions — no event framework.
  */
 import type { Block, PageDoc } from './spec-types';
+import { rowColumns } from './spec-types';
 import type { TableSchemas } from './query/compile';
 import { compileChartQuery, compileTableQuery } from './query/compile';
 import { resolveItems, type MasterItem } from './items';
@@ -84,7 +85,12 @@ function isSource(block: Block, blockId: string): boolean {
 }
 
 export function createPageRuntime(doc: PageDoc, deps: RuntimeDeps) {
-	const flat = doc.rows?.flatMap((row, ri) => row.blocks.map((block, bi) => ({ ...block, __id: `r${ri}-b${bi}` } as Block & { __id: string }))) ?? [];
+	const flat =
+		doc.rows?.flatMap((row, ri) =>
+			rowColumns(row).flatMap((col, ci) =>
+				col.blocks.map((block, bi) => ({ ...block, __id: `r${ri}-c${ci}-b${bi}` } as Block & { __id: string }))
+			)
+		) ?? [];
 
 	let selection = $state<PageSelection>(null);
 	let states = $state<Record<string, BlockState>>({});

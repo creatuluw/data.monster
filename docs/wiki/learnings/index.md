@@ -26,7 +26,7 @@
 - [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](./auto-margins-app-main-disable-flex-stretch.md) - Symptom
 - [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](./squada-one-is-single-weight-400.md) - Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
 - [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](./calluna-not-on-google-fonts-css2-drops-silently.md) - Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]).
-- [Chart segment selection is parent-held {dimension, value} transient state](./chart-segment-selection-is-parent-held-dimension-value-trans.md) - Chart components (as used in `/pages` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
-- [The /library vs /pages config-drawer difference is scope, not components](./the-library-vs-pages-config-drawer-difference-is-scope-not-c.md) - Symptom
+- [Chart segment selection is parent-held {dimension, value} transient state](./chart-segment-selection-parent-held-state.md) - Chart components (as used in `/pages` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
+- [The /library vs /pages config-drawer difference is scope, not components](./library-vs-pages-config-drawer-scope.md) - Symptom
 - [Library code entries are keyed by full repo paths](./library-code-entries-are-keyed-by-full-repo-paths.md) - What
 - [speed-highlight/core has no Svelte grammar](./speed-highlight-core-has-no-svelte-grammar.md) - Gotchas discovered wiring `@speed-highlight/core` into the library Code tab

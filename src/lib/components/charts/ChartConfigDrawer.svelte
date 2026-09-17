@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { X } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
+	import { drawerResize } from '../drawer-resize';
 
 	let {
 		open = $bindable(false),
 		title = 'Chart configuration',
-		width = '30vw',
+		width = '33vw',
 		overlay = true,
 		onClosed,
 		children,
 	}: {
 		open?: boolean;
 		title?: string;
-		/** drawer width, any CSS length (labs default 30vw; page config view 50vw) */
+		/** drawer width, any CSS length */
 		width?: string;
 		/** dim + click-away overlay; off in the focused config view (left chart stays live) */
 		overlay?: boolean;
@@ -36,7 +37,7 @@
 	<div class="drawer-overlay" class:drawer-overlay-visible={open} onclick={close} onkeydown={() => {}}></div>
 {/if}
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<section class="drawer" class:drawer-open={open} style={`width: ${width};`} onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
+<section class="drawer" class:drawer-open={open} style={`width: ${width};`} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
 	<div class="drawer-header">
 		<h2 class="drawer-title">{title}</h2>
 		<button class="drawer-close" onclick={close} title="Close">
@@ -69,7 +70,7 @@
 		top: 0;
 		right: 0;
 		bottom: 0;
-		width: 30vw;
+		width: 33vw;
 		max-width: 100vw;
 		background: var(--color-surface);
 		border-left: 1px solid var(--color-border);

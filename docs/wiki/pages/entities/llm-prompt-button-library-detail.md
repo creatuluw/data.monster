@@ -24,7 +24,7 @@ It turns the library detail page into the handshake surface between the human br
 ## Relationships
 
 - References [library-component-builder-skill-pi-skills](./library-component-builder-skill-pi-skills.md) — the prompt bootstraps that skill's workflow
-- Lives on the detail pages of [library-registry-system-src-lib-library-library-routes](./library-registry-system-src-lib-library-library-routes.md)
+- Lives on the detail pages of [library-registry-system](./library-registry-system.md)
 
 ## Lifecycle
 

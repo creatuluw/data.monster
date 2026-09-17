@@ -28,4 +28,6 @@ export type ChartRendererProps = {
 	colorScale: ColorScale;
 	fmts: Record<string, FieldFormatter>;
 	heightVh: number;
+	/** explicit plot height in px — set when the block fills a fixed-height column; overrides the vh fraction */
+	heightPx?: number;
 };

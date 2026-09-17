@@ -43,7 +43,7 @@
 - [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](./library-q4-dedicated-tabbed-views.md) - Context
 - [Library demos render the real components fed dummy query-shaped data — no demo-only clones](./library-demos-reuse-real-components.md) - Context
 - [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](./library-registry-ts-module.md) - Context
-- [Library registry drives editor + /library in one shot (supersedes display-only v1)](./library-registry-drives-editor-library-in-one-shot-supersede.md) - Context
-- [library-component-builder skill is the canonical path for new library components](./library-component-builder-skill-is-the-canonical-path-for-ne.md) - Context
-- [Library packages carry blockKind — table/text are built-in blocks, not chart types](./library-packages-carry-blockkind-table-text-are-built-in-blo.md) - Context
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](./library-registry-drives-editor-and-library.md) - Context
+- [library-component-builder skill is the canonical path for new library components](./library-component-builder-canonical-path.md) - Context
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](./library-packages-carry-blockkind.md) - Context
 - [Use speed-highlight/core for code highlighting instead of Prism](./speed-highlight-over-prism.md) - Context

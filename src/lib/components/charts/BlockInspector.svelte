@@ -10,6 +10,7 @@
 	let {
 		doc,
 		ri,
+		ci,
 		bi,
 		schemas,
 		items,
@@ -18,6 +19,7 @@
 	}: {
 		doc: PageDoc;
 		ri: number;
+		ci: number;
 		bi: number;
 		schemas: TableSchemas;
 		items: MasterItem[];
@@ -26,7 +28,7 @@
 		onremove?: () => void;
 	} = $props();
 
-	const block = $derived(doc.rows![ri].blocks[bi]);
+	const block = $derived(doc.rows![ri].columns![ci].blocks[bi]);
 	const chart = $derived(block.type === 'chart' ? block.chart : null);
 	const def = $derived(chart ? getChartType(chart.type) : null);
 	const tableCols = $derived(
@@ -42,8 +44,7 @@
 	const itemIds = $derived(new Set(items.map((i) => i.id)));
 
 	function removeBlock() {
-		doc.rows![ri].blocks.splice(bi, 1);
-		if (doc.rows![ri].blocks.length === 0) doc.rows!.splice(ri, 1);
+		doc.rows![ri].columns![ci].blocks.splice(bi, 1);
 		onremove?.();
 	}
 	function addDimension() {
@@ -72,10 +73,6 @@
 
 	<!-- shared fields -->
 	<div class="grid grid-cols-2 gap-2">
-		<label class="space-y-1">
-			<span class="text-xs text-zinc-500">Span (1–12)</span>
-			<input type="number" min="1" max="12" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.span ?? 12} onchange={(e) => (block.span = Number((e.target as HTMLInputElement).value))} />
-		</label>
 		<label class="space-y-1">
 			<span class="text-xs text-zinc-500">Title</span>
 			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.type === 'chart' ? (chart!.title ?? '') : block.type === 'table' ? (block.title ?? '') : ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value || undefined; if (block.type === 'chart') chart!.title = v; else if (block.type === 'table') block.title = v; }} />
@@ -225,8 +222,8 @@
 
 		<div class="grid grid-cols-2 gap-2">
 			<label class="space-y-1">
-				<span class="text-xs text-zinc-500">Height (vh fraction)</span>
-				<input type="number" min="0.1" max="1" step="0.05" class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.heightVh ?? 0.3} onchange={(e) => (chart.heightVh = Number((e.target as HTMLInputElement).value))} />
+				<span class="text-xs text-zinc-500">Height (vh fraction, blank = fit column)</span>
+				<input type="number" min="0.1" max="1" step="0.05" class="w-full border border-zinc-300 rounded px-2 py-1" placeholder="fit column" value={chart.heightVh ?? ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value; chart.heightVh = v ? Number(v) : undefined; }} />
 			</label>
 			<label class="space-y-1">
 				<span class="text-xs text-zinc-500">Limit</span>

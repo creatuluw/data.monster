@@ -29,11 +29,30 @@ export function validatePageDoc(doc: unknown): ValidationError[] {
 		errors.push({ path: 'rows', message: 'rows must be an array' });
 
 	((doc.rows as unknown[] | undefined) ?? []).forEach((row, ri) => {
-		if (!isObj(row) || !Array.isArray(row.blocks)) {
-			errors.push({ path: `rows[${ri}].blocks`, message: 'row must have a blocks array' });
+		if (!isObj(row)) {
+			errors.push({ path: `rows[${ri}]`, message: 'row must be an object' });
 			return;
 		}
-		row.blocks.forEach((block, bi) => validateBlock(block, `rows[${ri}].blocks[${bi}]`, errors));
+		if (row.height !== undefined && (typeof row.height !== 'number' || row.height < 40))
+			errors.push({ path: `rows[${ri}].height`, message: 'height must be a number of at least 40' });
+		if (Array.isArray(row.columns)) {
+			row.columns.forEach((col, ci) => {
+				const cp = `rows[${ri}].columns[${ci}]`;
+				if (!isObj(col) || !Array.isArray(col.blocks)) {
+					errors.push({ path: `${cp}.blocks`, message: 'column must have a blocks array' });
+					return;
+				}
+				if (col.span !== undefined && (typeof col.span !== 'number' || !Number.isInteger(col.span) || col.span < 1 || col.span > 12))
+					errors.push({ path: `${cp}.span`, message: 'span must be an integer between 1 and 12' });
+				if (col.height !== undefined && (typeof col.height !== 'number' || col.height < 40))
+					errors.push({ path: `${cp}.height`, message: 'height must be a number of at least 40' });
+				col.blocks.forEach((block, bi) => validateBlock(block, `${cp}.blocks[${bi}]`, errors));
+			});
+		} else if (Array.isArray(row.blocks)) {
+			row.blocks.forEach((block, bi) => validateBlock(block, `rows[${ri}].blocks[${bi}]`, errors));
+		} else {
+			errors.push({ path: `rows[${ri}]`, message: 'row must have a columns or blocks array' });
+		}
 	});
 
 	return errors;

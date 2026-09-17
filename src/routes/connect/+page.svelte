@@ -157,7 +157,7 @@
 <div class="connect-page">
 	<div class="hero">
 		<span class="brand-mark-lg"></span>
-		<h1 class="hero-title">Connect data</h1>
+		<h1 class="hero-title page-title">Connect data</h1>
 		<p class="hero-desc">Load a file, paste a URL, or connect a database.</p>
 
 		<div class="connect-options">
@@ -351,14 +351,6 @@
 		border-radius: var(--radius-xs);
 	}
 
-	.hero-title {
-		margin-top: var(--space-2);
-		font-family: var(--font-display);
-		font-size: var(--text-2xl);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--color-text);
-	}
 
 	.hero-desc {
 		font-size: var(--text-sm);
@@ -553,5 +545,9 @@
 		display: flex;
 		gap: var(--space-2);
 		align-items: center;
+	}
+
+	.hero-title {
+		margin-top: var(--space-2);
 	}
 </style>

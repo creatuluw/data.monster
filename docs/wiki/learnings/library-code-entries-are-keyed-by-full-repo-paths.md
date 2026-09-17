@@ -22,7 +22,7 @@ New component extensions must key their code entries by full repo path or their 
 
 ## Relationships
 
-- Shape defined by [[library-registry-system-src-lib-library-library-routes]] (one folder per component: `def.ts`, `demo.ts`, `docs.md`, `index.ts`)
+- Shape defined by [[library-registry-system]] (one folder per component: `def.ts`, `demo.ts`, `docs.md`, `index.ts`)
 
 ## Source
 

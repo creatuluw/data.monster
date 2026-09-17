@@ -87,8 +87,22 @@ export type TextBlock = { type: 'text'; span?: number; text: string };
 
 export type Block = ChartBlock | TableBlock | TextBlock;
 
-export type PageRow = { blocks: Block[] };
+export type PageColumn = { span?: number; height?: number; blocks: Block[] };
+
+/** New shape: explicit columns that own the horizontal split. Legacy `blocks` kept valid. */
+export type PageRow = { blocks?: Block[]; columns?: PageColumn[]; height?: number };
 
 export type PageDoc = { slug: string; title: string; rows?: PageRow[] };
+
+/** Row → columns. Legacy rows (flat blocks) map each block to its own column so old side-by-side spans keep rendering. */
+export function rowColumns(row: PageRow): PageColumn[] {
+	if (row.columns) return row.columns;
+	return (row.blocks ?? []).map((b) => ({ span: b.span ?? 12, blocks: [b] }));
+}
+
+/** Convert every row to the explicit-columns shape (used at load/apply so editing is uniform). */
+export function normalizePageDoc(doc: PageDoc): PageDoc {
+	return { ...doc, rows: (doc.rows ?? []).map((row) => ({ columns: rowColumns(row) })) };
+}
 
 export type ValidationError = { path: string; message: string };

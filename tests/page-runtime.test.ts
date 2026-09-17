@@ -31,7 +31,7 @@ const doc: PageDoc = {
 	]
 };
 
-const blocks = doc.rows![0].blocks.map((b, i) => ({ ...b, __id: `r0-b${i}` }) as Block & { __id: string });
+const blocks = (doc.rows![0].blocks ?? []).map((b, i) => ({ ...b, __id: `r0-b${i}` }) as Block & { __id: string });
 
 describe('blocksAffectedBySelection', () => {
 	it('affects blocks carrying the column, excluding the source', () => {

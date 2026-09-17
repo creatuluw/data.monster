@@ -22,6 +22,7 @@
 		onSelect,
 		fmts,
 		heightVh = 0.3,
+		heightPx = 0,
 		config
 	}: ChartRendererProps & { config?: Snippet } = $props();
 
@@ -75,7 +76,7 @@
 	// flip axes on narrow containers for readability (ported from Heatmap.svelte)
 	const ax = $derived(clientWidth < 600 ? 'y' : 'x');
 	const ay = $derived(clientWidth < 600 ? 'x' : 'y');
-	const plotHeight = $derived(innerHeight * heightVh);
+	const plotHeight = $derived(heightPx > 0 ? heightPx : innerHeight * heightVh);
 
 	function isSelCell(c: CellRow): boolean {
 		return selected !== null && selected.dimension === xAlias && selected.value === c.x;

@@ -25,4 +25,4 @@ The library demo drawer now labels this honestly: a read-only **"Demo data"** se
 
 ## Rule of thumb
 
-When `/pages` and `/library` previews look divergent, first check drawer scope, then assume different components (they aren't). See [[library-registry-system-src-lib-library-library-routes]] and decision `library-packages-carry-blockkind` (blockKind field).
+When `/pages` and `/library` previews look divergent, first check drawer scope, then assume different components (they aren't). See [[library-registry-system]] and decision `library-packages-carry-blockkind` (blockKind field).

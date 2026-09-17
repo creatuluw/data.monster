@@ -81,7 +81,7 @@
 <div style="padding: var(--space-6);">
 	<div class="flex items-end justify-between mb-6">
 		<div>
-			<h1 class="text-2xl font-semibold text-zinc-900 tracking-tight" style="font-family: var(--font-display)">Report pages</h1>
+			<h1 class="page-title">Report pages</h1>
 			<p class="text-sm text-zinc-500 mt-1">Build insight pages from your data — charts, tables and text on one grid.</p>
 		</div>
 		<button

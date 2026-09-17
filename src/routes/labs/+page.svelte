@@ -41,7 +41,7 @@
 
 <div class="labs-page">
 	<div class="section-header">
-		<h1 class="section-title">Chart types</h1>
+		<h1 class="section-title page-title">Chart types</h1>
 	</div>
 
 	<p class="section-subtitle">
@@ -372,13 +372,6 @@
 		white-space: nowrap;
 	}
 
-	.section-title {
-		font-family: var(--font-display);
-		font-size: var(--text-xl);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		margin: 0;
-	}
 
 	.section-subtitle {
 		font-size: var(--text-sm);
@@ -448,5 +441,9 @@
 		-webkit-line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+
+	.section-title {
+		margin: 0;
 	}
 </style>

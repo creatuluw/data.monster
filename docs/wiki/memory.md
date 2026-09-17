@@ -13,9 +13,9 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T08
 ## Recent Decisions
 
 - [Use speed-highlight/core for code highlighting instead of Prism](decisions/use-speed-highlight-core-for-code-highlighting-instead-of-pr.md) — Context (2026-09-17)
-- [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind-table-text-are-built-in-blo.md) — Context (2026-09-17)
-- [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-skill-is-the-canonical-path-for-ne.md) — Context (2026-09-17)
-- [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-library-in-one-shot-supersede.md) — Context (2026-09-17)
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
+- [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
 - [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context (2026-09-17)
 - [Library demos render the real components fed dummy query-shaped data — no demo-only clones](decisions/library-demos-reuse-real-components.md) — Context (2026-09-17)
 - [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](decisions/library-q4-dedicated-tabbed-views.md) — Context (2026-09-17)
@@ -30,7 +30,7 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T08
 
 ## Active Rules
 
-- [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat-never-a-new-pipeline.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in … (2026-09-17)
+- [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in … (2026-09-17)
 - [Two-font rule: Inter for all UI (display + body), Geist Mono for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Inter everywhere for UI text; Geist Mono reserved for data detail (tables, chart ticks, tags, IDs). (2026-09-16)
 - [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](rules/app-content-capped-at-shared-max-width.md) — One wrapper, .app-column, owns header + breadcrumb + content, is capped at 1920px, centered, and always exactly viewport-high with full-heig… (2026-09-16)
 - ["Demo" means an app-tour-demo UI tour, not eval suites](rules/demo-means-app-tour-demo-not-eval-suites.md) — Guideline (2026-09-16)
@@ -53,8 +53,8 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T08
 
 - [speed-highlight/core has no Svelte grammar](learnings/speed-highlight-core-has-no-svelte-grammar.md) — Gotchas discovered wiring `@speed-highlight/core` into the library Code tab (2026-09-17)
 - [Library code entries are keyed by full repo paths](learnings/library-code-entries-are-keyed-by-full-repo-paths.md) — What (2026-09-17)
-- [The /library vs /pages config-drawer difference is scope, not components](learnings/the-library-vs-pages-config-drawer-difference-is-scope-not-c.md) — Symptom (2026-09-17)
-- [Chart segment selection is parent-held {dimension, value} transient state](learnings/chart-segment-selection-is-parent-held-dimension-value-trans.md) — Chart components (as used in `/pages` and the library detail page demo) manage their own click/deselect handlers once selection state exists… (2026-09-17)
+- [The /library vs /pages config-drawer difference is scope, not components](learnings/library-vs-pages-config-drawer-scope.md) — Symptom (2026-09-17)
+- [Chart segment selection is parent-held {dimension, value} transient state](learnings/chart-segment-selection-parent-held-state.md) — Chart components (as used in `/pages` and the library detail page demo) manage their own click/deselect handlers once selection state exists… (2026-09-17)
 - [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](learnings/calluna-not-on-google-fonts-css2-drops-silently.md) — Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]). (2026-09-16)
 - [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](learnings/squada-one-is-single-weight-400.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)
 - [Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours](learnings/tour-html-captures-embed-google-fonts-import.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)

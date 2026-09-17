@@ -1,11 +1,12 @@
 <script lang="ts">
-	import type { Block, PageDoc } from '$lib/charts/spec-types';
+	import type { Block, PageDoc, PageRow } from '$lib/charts/spec-types';
+	import { rowColumns } from '$lib/charts/spec-types';
 	import type { createPageRuntime } from '$lib/charts/page-runtime.svelte';
 	import { chartRenderers, setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 	import { getChartType } from '$lib/charts/registry';
 	import TableRenderer from './renderers/TableRenderer.svelte';
 	import ChartCard from './ChartCard.svelte';
-	import { Bolt } from 'lucide-svelte';
+	import { Bolt, Settings2, Plus, GripHorizontal, GripVertical } from 'lucide-svelte';
 
 	setupChartRegistry();
 
@@ -13,27 +14,101 @@
 		doc,
 		runtime,
 		configureId = null,
-		onConfigure
+		onConfigure,
+		onConfigureRow,
+		onConfigureColumn,
+		onAdd,
+		onAddRow
 	}: {
 		doc: PageDoc;
 		runtime: ReturnType<typeof createPageRuntime>;
 		/** focused config mode: render only this block, full width (editor supplies the 50vw drawer) */
 		configureId?: string | null;
 		onConfigure?: (id: string) => void;
+		onConfigureRow?: (ri: number) => void;
+		onConfigureColumn?: (ri: number, ci: number) => void;
+		/** + Component clicked — host opens the component picker; ci = first empty column (or 0 to spawn a new one) */
+		onAdd?: (ri: number, ci: number) => void;
+		/** + Row clicked — host appends a row (and autosaves) */
+		onAddRow?: () => void;
 	} = $props();
 
-	function stateFor(ri: number, bi: number) {
-		return runtime.states[`r${ri}-b${bi}`];
+	function stateFor(id: string) {
+		return runtime.states[id];
 	}
 
-	function blockId(ri: number, bi: number) {
-		return `r${ri}-b${bi}`;
+	/** drag the row's bottom grip to set its height (px) */
+	function startRowDrag(e: PointerEvent, row: PageRow) {
+		const grip = e.currentTarget as HTMLElement;
+		const shell = grip.closest('.row-shell') as HTMLElement | null;
+		if (!shell) return;
+		const startY = e.clientY;
+		const startH = row.height ?? shell.offsetHeight;
+		grip.setPointerCapture(e.pointerId);
+		document.body.style.cursor = 'row-resize';
+		document.body.style.userSelect = 'none';
+		const move = (ev: PointerEvent) => {
+			// drag down = taller (same direction the border moves)
+			row.height = Math.max(80, Math.round(startH + (ev.clientY - startY)));
+		};
+		const up = () => {
+			grip.removeEventListener('pointermove', move);
+			grip.removeEventListener('pointerup', up);
+			grip.removeEventListener('pointercancel', up);
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+		};
+		grip.addEventListener('pointermove', move);
+		grip.addEventListener('pointerup', up);
+		grip.addEventListener('pointercancel', up);
+	}
+
+	const clampSpan = (n: number) => Math.min(12, Math.max(1, n));
+
+	/** drag the column's grip sideways to resize — takes/gives width from the next sibling */
+	function startColDrag(e: PointerEvent, ri: number, ci: number) {
+		const grip = e.currentTarget as HTMLElement;
+		const grid = grip.closest('.grid') as HTMLElement | null;
+		if (!grid) return;
+		const cols = doc.rows![ri].columns;
+		if (!cols) return;
+		const rect = grid.getBoundingClientRect();
+		const unit = rect.width / 12;
+		grip.setPointerCapture(e.pointerId);
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+		const move = (ev: PointerEvent) => {
+			// right edge of the column follows the pointer: span = pointer position in 12ths
+			let target = clampSpan(Math.round((ev.clientX - rect.left) / unit));
+			const cur = cols[ci].span ?? 12;
+			if (target === cur) return;
+			const sib = cols[ci + 1];
+			if (sib) {
+				const sibSpan = sib.span ?? 12;
+				const room = cur + sibSpan - 1; // keep the sibling ≥ 1 unit
+				if (target > room) target = room;
+				sib.span = cur + sibSpan - target;
+			} else {
+				const others = cols.reduce((n, c, i) => (i === ci ? n : n + (c.span ?? 12)), 0);
+				target = Math.min(target, Math.max(1, 12 - others));
+			}
+			cols[ci].span = target;
+		};
+		const up = () => {
+			grip.removeEventListener('pointermove', move);
+			grip.removeEventListener('pointerup', up);
+			grip.removeEventListener('pointercancel', up);
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+		};
+		grip.addEventListener('pointermove', move);
+		grip.addEventListener('pointerup', up);
+		grip.addEventListener('pointercancel', up);
 	}
 </script>
 
-{#snippet renderBlock(block: Block, id: string)}
-	{@const [ri, bi] = id.replace('r', '').split('-b').map(Number)}
-	{@const state = stateFor(ri, bi)}
+{#snippet renderBlock(block: Block, id: string, fillPx = 0)}
+	{@const state = stateFor(id)}
 	{#if block.type === 'text'}
 		<div class="bg-white rounded-lg border border-zinc-200 p-6 text-sm text-zinc-700 whitespace-pre-wrap">
 			{block.text}
@@ -67,6 +142,7 @@
 				colorScale={runtime.colorScale}
 				fmts={runtime.fmtsFor(state)}
 				heightVh={block.chart.heightVh ?? 0.3}
+				heightPx={block.chart.heightVh === undefined ? fillPx : 0}
 			/>
 		{:else}
 			<ChartCard
@@ -83,37 +159,213 @@
 {#if configureId !== null}
 	<!-- focused config mode: only the configured block, full width of the left half -->
 	{#each doc.rows ?? [] as row, ri}
-		{#each row.blocks as block, bi (ri + '-' + bi)}
-			{#if blockId(ri, bi) === configureId}
-				{@render renderBlock(block, blockId(ri, bi))}
-			{/if}
+		{#each rowColumns(row) as col, ci}
+			{#each col.blocks as block, bi}
+				{#if `r${ri}-c${ci}-b${bi}` === configureId}
+					{@render renderBlock(block, configureId)}
+				{/if}
+			{/each}
 		{/each}
 	{/each}
 {:else}
-	<div class="space-y-4 pb-16">
+	<div class="space-y-5 pb-16 pt-2">
 		{#each doc.rows ?? [] as row, ri}
-			<div class="grid grid-cols-12 gap-4 items-start">
-				{#each row.blocks as block, bi (ri + '-' + bi)}
-					{@const id = blockId(ri, bi)}
-					{@const span = block.span ?? 12}
-					<div class="relative" style={`grid-column: span ${span} / span ${span};`}>
-						<button
-							class="config-open-btn"
-							onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}
-							title="Configure"
-							aria-label="Configure block"
-						>
-							<Bolt size={14} />
-						</button>
-						{@render renderBlock(block, id)}
-					</div>
-				{/each}
-			</div>
+			<!-- row silhouette: thin gray border, always visible -->
+			<section class="row-shell">
+				<!-- top-left border cluster: [Row settings] [+ Component] — same badge style -->
+				<div class="row-edge-cluster">
+					<button class="edge-btn" onclick={() => onConfigureRow?.(ri)} title="Row settings">
+						<Settings2 size={11} /> Row {ri + 1}
+					</button>
+					<button class="edge-btn" onclick={() => onAdd?.(ri, Math.max(0, rowColumns(row).findIndex((c) => c.blocks.length === 0)))} title="Add a component to this row">
+						<Plus size={11} /> Component
+					</button>
+				</div>
+				<!-- row height grip, bottom-center on the border -->
+				<div
+					class="grip grip-row"
+					role="separator"
+					aria-label="Drag to adjust row height"
+					tabindex="-1"
+					onpointerdown={(e) => startRowDrag(e, row)}
+				>
+					<GripHorizontal size={13} />
+				</div>
+				<div class="grid grid-cols-12 gap-3">
+					{#each rowColumns(row) as col, ci}
+						{@const colH = col.height ?? row.height}
+						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` height: ${colH}px;` : ''}`}>
+							<button class="edge-btn edge-btn-col" onclick={() => onConfigureColumn?.(ri, ci)} title="Column settings">
+								<Settings2 size={11} />
+							</button>
+							<!-- column width grip, bottom-right of the column -->
+							<div
+								class="grip grip-col"
+								role="separator"
+								aria-label="Drag to resize column"
+								tabindex="-1"
+								onpointerdown={(e) => startColDrag(e, ri, ci)}
+							>
+								<GripVertical size={13} />
+							</div>
+							<div class="col-inner" class:col-empty={col.blocks.length === 0} style={colH !== undefined ? 'height: 100%; overflow: auto;' : ''}>
+								<div class="space-y-3">
+									{#each col.blocks as block, bi}
+										{@const id = `r${ri}-c${ci}-b${bi}`}
+										<div class="relative">
+											<button
+												class="config-open-btn"
+												onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}
+												title="Configure"
+												aria-label="Configure block"
+											>
+												<Bolt size={14} />
+											</button>
+											<!-- fill the fixed column height unless the block sets its own heightVh (~110px card chrome) -->
+											{@render renderBlock(block, id, colH !== undefined ? Math.max(120, colH - 110) : 0)}
+										</div>
+									{/each}
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			</section>
+			<!-- + Row, top-left just below this row -->
+			<button class="add-row-btn" onclick={() => onAddRow?.()}>
+				<Plus size={12} /> Row
+			</button>
 		{/each}
 	</div>
 {/if}
 
 <style>
+	/* row silhouette — thin gray border so an empty row is still visible */
+	.row-shell {
+		position: relative;
+		border: 1px solid #e4e4e7;
+		border-radius: var(--radius-md, 8px);
+		padding: 16px 12px 12px;
+		background: transparent;
+	}
+
+	/* empty column: dotted grid inside the silhouette + room to see it */
+	.col-inner {
+		display: flex;
+		flex-direction: column;
+		min-height: 36px;
+	}
+	.col-inner > :first-child {
+		flex: 1;
+	}
+	.col-empty {
+		min-height: 140px;
+		border-radius: var(--radius-sm, 6px);
+		background-image: radial-gradient(circle, #d4d4d8 1.2px, transparent 1.2px);
+		background-size: 16px 16px;
+	}
+
+	/* config badges floating on the row border (row left, column right) */
+	.edge-btn {
+		position: absolute;
+		z-index: 20;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		height: 20px;
+		padding: 0 8px 0 6px;
+		border: 1px solid #e4e4e7;
+		border-radius: 999px;
+		background: white;
+		color: #a1a1aa;
+		font-size: 10px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+	}
+	.edge-btn:hover {
+		color: var(--color-text, #18181b);
+		border-color: #d4d4d8;
+	}
+	/* top-left border cluster: [Row settings] [+ Component] */
+	.row-edge-cluster {
+		position: absolute;
+		top: -11px;
+		left: 10px;
+		display: flex;
+		gap: 4px;
+		z-index: 20;
+	}
+	/* edge-btn is absolute by default (corner badges) — inside the cluster they flow */
+	.row-edge-cluster .edge-btn {
+		position: static;
+	}
+	/* + Row button under each row, top-left */
+	.add-row-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 10px;
+		margin-left: 2px;
+		border: 1px dashed #d4d4d8;
+		border-radius: var(--radius-xs, 6px);
+		background: transparent;
+		color: #a1a1aa;
+		font-size: 12px;
+		cursor: pointer;
+		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+	}
+	.add-row-btn:hover {
+		color: #52525b;
+		border-color: #a1a1aa;
+	}
+
+	.edge-btn-col {
+		top: -11px;
+		right: 4px;
+		padding: 0 5px;
+	}
+
+	/* drag grips: row height (bottom-center), column width (bottom-right) */
+	.grip {
+		position: absolute;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 20px;
+		border: 1px solid #e4e4e7;
+		border-radius: 999px;
+		background: white;
+		color: #a1a1aa;
+		z-index: 20;
+		touch-action: none;
+		user-select: none;
+		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
+	}
+	.grip:hover {
+		color: var(--color-text, #18181b);
+		border-color: #d4d4d8;
+	}
+	.grip-row {
+		bottom: -11px;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 28px;
+		cursor: row-resize;
+	}
+	.grip-col {
+		bottom: 4px;
+		right: 4px;
+		width: 20px;
+		cursor: col-resize;
+		opacity: 0;
+	}
+	.col-shell:hover .grip-col {
+		opacity: 1;
+	}
+
+
+
 	.config-open-btn {
 		position: absolute;
 		top: var(--space-3, 12px);

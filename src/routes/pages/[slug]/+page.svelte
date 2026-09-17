@@ -199,6 +199,14 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		const target = columns[ci].blocks.length > 0 ? addColumn(ri) : ci;
 		const blocks = doc.rows![ri].columns![target].blocks;
 		blocks.push(block as never);
+		// a spawned component needs vertical room — grow an explicit row/column height to the spawn minimum
+		const SPAWN_MIN_PX = 320;
+		const col = doc.rows![ri].columns![target];
+		const eff = col.height ?? doc.rows![ri].height;
+		if (eff !== undefined && eff < SPAWN_MIN_PX) {
+			if (col.height !== undefined) col.height = SPAWN_MIN_PX;
+			else doc.rows![ri].height = SPAWN_MIN_PX;
+		}
 		// no auto-open: the block stays a skeleton on canvas until the user configures it
 	}
 

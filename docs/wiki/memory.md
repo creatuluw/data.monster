@@ -8,11 +8,11 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T08:51:58.039Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T10:45:15.063Z.
 
 ## Recent Decisions
 
-- [Use speed-highlight/core for code highlighting instead of Prism](decisions/use-speed-highlight-core-for-code-highlighting-instead-of-pr.md) — Context (2026-09-17)
+- [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context (2026-09-17)
 - [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
 - [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
 - [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
@@ -30,6 +30,7 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T08
 
 ## Active Rules
 
+- [Drawers reuse the shared drawerResize action](rules/drawers-reuse-the-shared-drawerresize-action.md) — Guideline (2026-09-17)
 - [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in … (2026-09-17)
 - [Two-font rule: Inter for all UI (display + body), Geist Mono for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Inter everywhere for UI text; Geist Mono reserved for data detail (tables, chart ticks, tags, IDs). (2026-09-16)
 - [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](rules/app-content-capped-at-shared-max-width.md) — One wrapper, .app-column, owns header + breadcrumb + content, is capped at 1920px, centered, and always exactly viewport-high with full-heig… (2026-09-16)

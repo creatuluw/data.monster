@@ -16,11 +16,11 @@ export type Grain =
 
 export type FilterOp = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'in' | 'like';
 
-/** A dimension: table column (optional grain) or a master-dimension reference. */
-export type DimensionSpec = { col: string; grain?: Grain; label?: string } | { ref: string };
+/** A dimension: table column (optional grain, optional linked-table binding) or a master-dimension reference. */
+export type DimensionSpec = { col: string; table?: string; grain?: Grain; label?: string } | { ref: string };
 
-/** A measure: DuckDB expression (aggregation included) or a master-measure reference. */
-export type MeasureSpec = { expr: string; label?: string; fmt?: string } | { ref: string };
+/** A measure: DuckDB expression (aggregation included, optional linked-table binding) or a master-measure reference. */
+export type MeasureSpec = { expr: string; table?: string; label?: string; fmt?: string } | { ref: string };
 
 export type FilterSpec = { col: string; op: FilterOp; value: unknown };
 
@@ -102,7 +102,7 @@ export function rowColumns(row: PageRow): PageColumn[] {
 
 /** Convert every row to the explicit-columns shape (used at load/apply so editing is uniform). */
 export function normalizePageDoc(doc: PageDoc): PageDoc {
-	return { ...doc, rows: (doc.rows ?? []).map((row) => ({ columns: rowColumns(row) })) };
+	return { ...doc, rows: (doc.rows ?? []).map((row) => ({ height: row.height, columns: rowColumns(row) })) };
 }
 
 export type ValidationError = { path: string; message: string };

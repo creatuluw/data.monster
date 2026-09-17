@@ -297,3 +297,23 @@ describe('validatePageDoc — row/column height', () => {
 		expect(validatePageDoc({ slug: 'x', title: 'X', rows: [{ columns: [], height: 'tall' }] })[0].path).toBe('rows[0].height');
 	});
 });
+
+describe('normalizePageDoc — row height survives the round-trip', () => {
+	it('preserves row.height (drag-resized rows persist across visits)', () => {
+		const doc = normalizePageDoc({
+			slug: 'devtest',
+			title: 'Devtest',
+			rows: [{ columns: [{ span: 12, blocks: [] }], height: 420 }]
+		});
+		expect(doc.rows?.[0]?.height).toBe(420);
+	});
+
+	it('preserves column height overrides too', () => {
+		const doc = normalizePageDoc({
+			slug: 'devtest',
+			title: 'Devtest',
+			rows: [{ columns: [{ span: 6, height: 300, blocks: [] }, { span: 6, blocks: [] }] }]
+		});
+		expect(doc.rows?.[0]?.columns?.[0]?.height).toBe(300);
+	});
+});

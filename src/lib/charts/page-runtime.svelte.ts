@@ -11,7 +11,7 @@ import { resolveItems, type MasterItem } from './items';
 import type { Relationship } from './relationships';
 import { buildJoins } from './relationships';
 import { createColorScale, type ColorScale } from './color-scale';
-import { mergeOptions } from './registry';
+import { mergeOptions, needsSetup } from './registry';
 import { namedFmt, type FieldFormatter } from './tooltip';
 import type { ResolvedAnnotation } from './renderer-types';
 
@@ -39,6 +39,7 @@ export type BlockState = {
 	measureAliases: string[];
 	options: Record<string, unknown>;
 	annotations: ResolvedAnnotation[];
+	unconfigured: boolean;
 };
 
 /** Default page palette: DS green led categorical set (Q12-B). */
@@ -108,7 +109,8 @@ export function createPageRuntime(doc: PageDoc, deps: RuntimeDeps) {
 			dimensionAliases: [],
 			measureAliases: [],
 			options: {},
-			annotations: []
+			annotations: [],
+			unconfigured: false
 		};
 	}
 
@@ -135,6 +137,12 @@ export function createPageRuntime(doc: PageDoc, deps: RuntimeDeps) {
 
 			// chart
 			const chart = block.chart;
+			// unconfigured charts render a setup skeleton — never query (role mins unmet)
+			if (needsSetup(chart)) {
+				state.unconfigured = true;
+				state.loading = false;
+				return;
+			}
 			const resolved = resolveItems(chart, deps.items);
 			if (resolved.missing.length) {
 				state.missing = resolved.missing;

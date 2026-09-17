@@ -16,8 +16,8 @@ export type MasterItem = {
 	description?: string;
 };
 
-export type ResolvedDimension = { col: string; label?: string; grain?: DimensionSpec extends never ? never : string };
-export type ResolvedMeasure = { expr: string; label?: string; fmt?: string };
+export type ResolvedDimension = { col: string; table?: string; label?: string; grain?: DimensionSpec extends never ? never : string };
+export type ResolvedMeasure = { expr: string; table?: string; label?: string; fmt?: string };
 
 export type ResolvedItems = {
 	dimensions: ResolvedDimension[];
@@ -37,7 +37,8 @@ export function resolveItems(chart: ChartBlockSpec, library: MasterItem[]): Reso
 
 	for (const d of chart.dimensions) {
 		if (!('ref' in d)) {
-			dimensions.push({ col: d.col, label: d.label, grain: d.grain as string | undefined });
+			dimensions.push({ col: d.col, table: d.table, label: d.label, grain: d.grain as string | undefined });
+			if (d.table && d.table !== chart.source.table) involved.add(d.table);
 			continue;
 		}
 		const item = byId.get(d.ref);
@@ -51,7 +52,8 @@ export function resolveItems(chart: ChartBlockSpec, library: MasterItem[]): Reso
 
 	for (const m of chart.measures) {
 		if (!('ref' in m)) {
-			measures.push({ expr: m.expr, label: m.label, fmt: m.fmt });
+			measures.push({ expr: m.expr, table: m.table, label: m.label, fmt: m.fmt });
+			if (m.table && m.table !== chart.source.table) involved.add(m.table);
 			continue;
 		}
 		const item = byId.get(m.ref);

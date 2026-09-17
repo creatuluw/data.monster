@@ -16,7 +16,7 @@
 		title?: string;
 		subtitle?: string;
 		selectionLabel?: string | null;
-		status?: 'ok' | 'loading' | 'empty' | 'error' | 'missing';
+		status?: 'ok' | 'loading' | 'empty' | 'error' | 'missing' | 'setup';
 		error?: string;
 		missing?: string;
 		config?: Snippet;

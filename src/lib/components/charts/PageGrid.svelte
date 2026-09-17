@@ -144,6 +144,26 @@
 				heightVh={block.chart.heightVh ?? 0.3}
 				heightPx={block.chart.heightVh === undefined ? fillPx : 0}
 			/>
+		{:else if state?.unconfigured}
+			<!-- setup skeleton: no data until every role minimum is met -->
+			<ChartCard title={block.chart.title ?? def?.label ?? block.chart.type} subtitle={block.chart.subtitle ?? ''} status="setup">
+				<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
+					<div class="flex flex-col gap-1.5 w-full max-w-56" aria-hidden="true">
+						<div class="h-2.5 rounded bg-zinc-200 animate-pulse w-1/3"></div>
+						<div class="h-8 rounded bg-zinc-200/70 animate-pulse"></div>
+						<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
+					</div>
+				<p class="text-xs text-zinc-500">Pick a table, then add dimensions and measures.</p>
+				<div class="flex gap-2">
+						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
+							<Plus size={12} /> Add dimension
+						</button>
+						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
+							<Plus size={12} /> Add measure
+						</button>
+					</div>
+				</div>
+			</ChartCard>
 		{:else}
 			<ChartCard
 				title={block.chart.title ?? block.chart.type}
@@ -169,6 +189,12 @@
 	{/each}
 {:else}
 	<div class="space-y-5 pb-16 pt-2">
+		{#if !(doc.rows ?? []).length}
+			<!-- empty page: the same + Row button as under existing rows -->
+			<button class="add-row-btn" onclick={() => onAddRow?.()}>
+				<Plus size={12} /> Row
+			</button>
+		{/if}
 		{#each doc.rows ?? [] as row, ri}
 			<!-- row silhouette: thin gray border, always visible -->
 			<section class="row-shell">
@@ -195,7 +221,15 @@
 					{#each rowColumns(row) as col, ci}
 						{@const colH = col.height ?? row.height}
 						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` height: ${colH}px;` : ''}`}>
-							<button class="edge-btn edge-btn-col" onclick={() => onConfigureColumn?.(ri, ci)} title="Column settings">
+							<button
+							class="edge-btn edge-btn-col"
+							onclick={() => {
+								// single-column row: the column IS the row — one shared drawer (both labels open it)
+								if (rowColumns(row).length === 1) onConfigureRow?.(ri);
+								else onConfigureColumn?.(ri, ci);
+							}}
+							title={rowColumns(row).length === 1 ? 'Row settings' : 'Column settings'}
+						>
 								<Settings2 size={11} />
 							</button>
 							<!-- column width grip, bottom-right of the column -->

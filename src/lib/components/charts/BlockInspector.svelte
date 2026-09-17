@@ -1,10 +1,13 @@
 <script lang="ts">
 	import type { PageDoc } from '$lib/charts/spec-types';
 	import { getChartType } from '$lib/charts/registry';
-	import { availableItems } from '$lib/charts/relationships';
+	import { availableItems, linkedTables } from '$lib/charts/relationships';
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import type { TableSchemas } from '$lib/charts/query/compile';
+	import { saveMasterItem } from '$lib/central-api';
+	import { extractErrorMessage } from '$lib/db-operations';
+	import type { DimensionSpec, MeasureSpec } from '$lib/charts/spec-types';
 	import { Trash2, Plus } from 'lucide-svelte';
 
 	let {
@@ -15,7 +18,8 @@
 		schemas,
 		items,
 		relationships,
-		onremove
+		onremove,
+		onItemsChanged
 	}: {
 		doc: PageDoc;
 		ri: number;
@@ -26,6 +30,8 @@
 		relationships: Relationship[];
 		/** fired when the block is removed (lets the host close its drawer) */
 		onremove?: () => void;
+		/** fired after a master item was created on the spot — host reloads the library */
+		onItemsChanged?: () => void;
 	} = $props();
 
 	const block = $derived(doc.rows![ri].columns![ci].blocks[bi]);
@@ -37,11 +43,91 @@
 	const usableItems = $derived(
 		chart ? availableItems(chart.source.table, items, relationships) : []
 	);
+	const linked = $derived(
+		chart ? linkedTables(chart.source.table, relationships).filter((t) => schemas[t]?.length) : []
+	);
 
 	const OPS = ['=', '!=', '>', '<', '>=', '<=', 'in', 'like'];
 	const GRAINS = ['(none)', 'hour', 'day', 'week', 'month', 'quarter', 'year', 'day_of_week', 'month_of_year'];
 	const FMTS = ['(none)', 'hours', 'usd', 'pct', 'int'];
-	const itemIds = $derived(new Set(items.map((i) => i.id)));
+
+	// create-on-the-spot master items (saved to the workspace library, chart refs them)
+	let dimForm = $state({ open: false, label: '', expr: '' });
+	let measForm = $state({ open: false, label: '', expr: '', fmt: '(none)' });
+	let formError = $state('');
+
+	function resetForms() {
+		dimForm = { open: false, label: '', expr: '' };
+		measForm = { open: false, label: '', expr: '', fmt: '(none)' };
+		formError = '';
+	}
+
+	function itemId(label: string): string {
+		return `mi_${chart!.source.table}_${label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+	}
+
+	async function createDimension() {
+		if (!chart) return;
+		if (!dimForm.label.trim() || !dimForm.expr.trim()) return;
+		try {
+			const id = itemId(dimForm.label);
+			await saveMasterItem({ id, kind: 'dimension', table: chart.source.table, label: dimForm.label.trim(), expr: dimForm.expr.trim() });
+			chart.dimensions.push({ ref: id });
+			resetForms();
+			onItemsChanged?.();
+		} catch (err) {
+			formError = extractErrorMessage(err, 'Failed to save dimension');
+		}
+	}
+
+	async function createMeasure() {
+		if (!chart) return;
+		if (!measForm.label.trim() || !measForm.expr.trim()) return;
+		try {
+			const id = itemId(measForm.label);
+			await saveMasterItem({ id, kind: 'measure', table: chart.source.table, label: measForm.label.trim(), expr: measForm.expr.trim(), fmt: measForm.fmt === '(none)' ? undefined : measForm.fmt });
+			chart.measures.push({ ref: id });
+			resetForms();
+			onItemsChanged?.();
+		} catch (err) {
+			formError = extractErrorMessage(err, 'Failed to save measure');
+		}
+	}
+
+	// table-first: switching tables keeps only dims/refs still available for the new table
+	function onTableChange(table: string) {
+		if (!chart) return;
+		chart.source.table = table;
+		const okRefs = new Set(availableItems(table, items, relationships).map((i) => i.id));
+		chart.dimensions = chart.dimensions.filter((d) => !('ref' in d) || okRefs.has(d.ref));
+		chart.measures = chart.measures.filter((m) => !('ref' in m) || okRefs.has(m.ref));
+		resetForms();
+	}
+
+	// picker value encodings: `ref:<id>` | `col:<table>:<col>` | `field:<table>:<col>`
+	function dimValue(d: DimensionSpec): string {
+		if ('ref' in d) return `ref:${d.ref}`;
+		return `col:${d.table ?? chart!.source.table}:${d.col}`;
+	}
+	function dimFromValue(v: string): DimensionSpec {
+		if (v.startsWith('ref:')) return { ref: v.slice(4) };
+		const [, table, col] = v.split(':');
+		return table === chart!.source.table ? { col } : { col, table };
+	}
+	function measValue(m: MeasureSpec): string {
+		return 'ref' in m ? `ref:${m.ref}` : 'custom';
+	}
+	function measFromValue(v: string, m: MeasureSpec): MeasureSpec {
+		if (v.startsWith('ref:')) return { ref: v.slice(4) };
+		const [, table, col] = v.split(':');
+		const linkedPick = table !== chart!.source.table;
+		return {
+			expr: linkedPick ? `sum("${table}"."${col}")` : `sum(${col})`,
+			table: linkedPick ? table : undefined,
+			label: `sum ${col}`,
+			fmt: 'fmt' in m ? m.fmt : undefined
+		};
+	}
 
 	function removeBlock() {
 		doc.rows![ri].columns![ci].blocks.splice(bi, 1);
@@ -62,14 +148,9 @@
 </script>
 
 <div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-4 text-sm">
-	<div class="flex items-center justify-between">
-		<h3 class="font-semibold text-zinc-900">
-			{block.type === 'chart' ? `${def?.label ?? chart!.type} chart` : block.type} block
-		</h3>
-		<button class="text-zinc-400 hover:text-red-500" onclick={removeBlock} title="Remove block">
-			<Trash2 size={14} />
-		</button>
-	</div>
+	<h3 class="font-semibold text-zinc-900">
+		{block.type === 'chart' ? `${def?.label ?? chart!.type} chart` : block.type} block
+	</h3>
 
 	<!-- shared fields -->
 	<div class="grid grid-cols-2 gap-2">
@@ -107,12 +188,12 @@
 	{:else if chart}
 		<label class="block space-y-1">
 			<span class="text-xs text-zinc-500">Source table</span>
-			<select class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.source.table} onchange={(e) => (chart.source.table = (e.target as HTMLSelectElement).value)}>
+			<select class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.source.table} onchange={(e) => onTableChange((e.target as HTMLSelectElement).value)}>
 				{#each Object.keys(schemas) as t (t)}<option value={t}>{t}</option>{/each}
 			</select>
 		</label>
 
-		<!-- roles -->
+		<!-- roles: table-first — pick from ⭐ library, this table's fields, or linked tables' fields -->
 		<div class="space-y-2">
 			<div class="flex items-center justify-between">
 				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Dimensions</span>
@@ -120,22 +201,40 @@
 			</div>
 			{#each chart.dimensions as d, i (i)}
 				<div class="flex gap-1 items-center">
-					{#if 'ref' in d}
-						<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={d.ref} onchange={(e) => (chart.dimensions[i] = { ref: (e.target as HTMLSelectElement).value })}>
-							{#each usableItems.filter((it) => it.kind === 'dimension') as it (it.id)}<option value={it.id}>⭐ {it.label}</option>{/each}
-						</select>
-					{:else}
-						<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={d.col} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.dimensions[i] = itemIds.has(v) ? { ref: v } : { col: v }; }}>
-							{#each tableCols as c (c)}<option value={c}>{c}</option>{/each}
-							{#each usableItems.filter((it) => it.kind === 'dimension') as it (it.id)}<option value={it.id}>⭐ {it.label}</option>{/each}
-						</select>
-						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={d.grain ?? '(none)'} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.dimensions[i] = { col: d.col, grain: v === '(none)' ? undefined : (v as never) }; }}>
+					<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={dimValue(d)} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') dimForm.open = true; else chart.dimensions[i] = dimFromValue(v); }}>
+						{#each usableItems.filter((it) => it.kind === 'dimension') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
+						<optgroup label={chart.source.table}>
+							{#each tableCols as c (c)}<option value={`col:${chart.source.table}:${c}`}>{c}</option>{/each}
+						</optgroup>
+						{#each linked as t (t)}
+							<optgroup label={`${t} ⤳ linked`}>
+								{#each schemas[t] ?? [] as c (c)}<option value={`col:${t}:${c}`}>{c}</option>{/each}
+							</optgroup>
+						{/each}
+						<option value="__new">✚ Create master dimension…</option>
+					</select>
+					{#if !('ref' in d)}
+						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={d.grain ?? '(none)'} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.dimensions[i] = { col: d.col, table: d.table, grain: v === '(none)' ? undefined : (v as never) }; }}>
 							{#each GRAINS as g (g)}<option value={g}>{g}</option>{/each}
 						</select>
 					{/if}
 					<button class="text-zinc-300 hover:text-red-500" onclick={() => chart.dimensions.splice(i, 1)}>×</button>
 				</div>
 			{/each}
+			{#if dimForm.open}
+				<div class="space-y-1 border border-dashed border-zinc-300 rounded p-2 bg-zinc-50">
+					<span class="text-xs text-zinc-500">New master dimension on {chart.source.table}</span>
+					<div class="flex gap-1">
+						<input type="text" placeholder="label (e.g. Region)" class="flex-1 border border-zinc-300 rounded px-2 py-1" bind:value={dimForm.label} />
+						<input type="text" placeholder="field or expr (e.g. region)" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" bind:value={dimForm.expr} />
+					</div>
+					{#if formError}<p class="text-xs text-red-500">{formError}</p>{/if}
+					<div class="flex gap-1 justify-end text-xs">
+						<button class="px-2 py-1 rounded text-zinc-500 hover:text-zinc-900" onclick={() => (dimForm.open = false)}>Cancel</button>
+						<button class="px-2 py-1 rounded bg-zinc-900 text-white" onclick={createDimension}>Save to library</button>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<div class="space-y-2">
@@ -146,20 +245,24 @@
 			{#each chart.measures as m, i (i)}
 				<div class="space-y-1 border border-zinc-100 rounded p-2">
 					<div class="flex gap-1">
-						{#if 'ref' in m}
-							<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={m.ref} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.measures[i] = v ? { ref: v } : { expr: 'count(*)', label: 'Count' }; }}>
-								{#each usableItems.filter((it) => it.kind === 'measure') as it (it.id)}<option value={it.id}>⭐ {it.label}</option>{/each}
-								<option value="">(expression)</option>
-							</select>
-						{:else}
-							<input type="text" placeholder="expression" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" value={m.expr} oninput={(e) => (chart.measures[i] = { ...m, expr: (e.target as HTMLInputElement).value })} />
-							<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value="" title="Use master measure" onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) chart.measures[i] = { ref: v }; }}>
-								<option value="" disabled hidden>⭐</option>
-								{#each usableItems.filter((it) => it.kind === 'measure') as it (it.id)}<option value={it.id}>{it.label}</option>{/each}
-							</select>
-						{/if}
+						<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={measValue(m)} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') measForm.open = true; else if (v !== 'custom') chart.measures[i] = measFromValue(v, m); }}>
+							{#each usableItems.filter((it) => it.kind === 'measure') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
+							<option value="custom">✎ expression</option>
+							<optgroup label={chart.source.table}>
+								{#each tableCols as c (c)}<option value={`field:${chart.source.table}:${c}`}>sum({c})</option>{/each}
+							</optgroup>
+							{#each linked as t (t)}
+								<optgroup label={`${t} ⤳ linked`}>
+									{#each schemas[t] ?? [] as c (c)}<option value={`field:${t}:${c}`}>sum({c})</option>{/each}
+								</optgroup>
+							{/each}
+							<option value="__new">✚ Create master measure…</option>
+						</select>
 						<button class="text-zinc-300 hover:text-red-500" onclick={() => chart.measures.splice(i, 1)}>×</button>
 					</div>
+					{#if !('ref' in m)}
+						<input type="text" placeholder="expression" class="w-full border border-zinc-300 rounded px-2 py-1 font-mono text-xs" value={m.expr} oninput={(e) => (chart.measures[i] = { ...m, expr: (e.target as HTMLInputElement).value })} />
+					{/if}
 					<div class="grid grid-cols-2 gap-1">
 						<input type="text" placeholder="label" class="border border-zinc-300 rounded px-2 py-1" value={'label' in m ? (m.label ?? '') : ''} oninput={(e) => (chart.measures[i] = { ...m, label: (e.target as HTMLInputElement).value || undefined })} />
 						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={'fmt' in m ? m.fmt ?? '(none)' : '(none)'} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.measures[i] = { ...m, fmt: v === '(none)' ? undefined : v } as never; }}>
@@ -168,6 +271,25 @@
 					</div>
 				</div>
 			{/each}
+			{#if measForm.open}
+				<div class="space-y-1 border border-dashed border-zinc-300 rounded p-2 bg-zinc-50">
+					<span class="text-xs text-zinc-500">New master measure on {chart.source.table}</span>
+					<div class="flex gap-1">
+						<input type="text" placeholder="label (e.g. Revenue)" class="flex-1 border border-zinc-300 rounded px-2 py-1" bind:value={measForm.label} />
+						<input type="text" placeholder="expression (e.g. sum(amount))" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" bind:value={measForm.expr} />
+					</div>
+					<div class="grid grid-cols-2 gap-1">
+						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" bind:value={measForm.fmt}>
+							{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
+						</select>
+					</div>
+					{#if formError}<p class="text-xs text-red-500">{formError}</p>{/if}
+					<div class="flex gap-1 justify-end text-xs">
+						<button class="px-2 py-1 rounded text-zinc-500 hover:text-zinc-900" onclick={() => (measForm.open = false)}>Cancel</button>
+						<button class="px-2 py-1 rounded bg-zinc-900 text-white" onclick={createMeasure}>Save to library</button>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<!-- schema-driven options (FR-9/Q9) -->

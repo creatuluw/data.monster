@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { availableItems, buildJoins } from '../src/lib/charts/relationships';
+import { availableItems, buildJoins, linkedTables } from '../src/lib/charts/relationships';
 import type { Relationship } from '../src/lib/charts/relationships';
 import type { MasterItem } from '../src/lib/charts/items';
 
@@ -64,5 +64,20 @@ describe('buildJoins — auto-JOIN generation', () => {
 
 	it('throws for an unreachable table', () => {
 		expect(() => buildJoins('bookings', ['island'], rels)).toThrow(/no relationship path/i);
+	});
+});
+
+describe('linkedTables', () => {
+	it('lists tables reachable via relationships, excluding the source', () => {
+		const rels = [
+			{ id: 'r1', fromTable: 'bookings', fromColumn: 'client_id', toTable: 'clients', toColumn: 'id' },
+			{ id: 'r2', fromTable: 'clients', fromColumn: 'region_id', toTable: 'regions', toColumn: 'id' }
+		];
+		expect(linkedTables('bookings', rels).sort()).toEqual(['clients', 'regions']);
+		expect(linkedTables('regions', rels).sort()).toEqual(['bookings', 'clients']);
+	});
+
+	it('returns empty when no relationships touch the table', () => {
+		expect(linkedTables('solo', [])).toEqual([]);
 	});
 });

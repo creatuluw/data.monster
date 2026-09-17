@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { registerChartType, getChartType, resolveChartBlock, mergeOptions, resetChartTypes } from '../src/lib/charts/registry';
+import { registerChartType, getChartType, resolveChartBlock, mergeOptions, needsSetup, resetChartTypes } from '../src/lib/charts/registry';
 import type { ChartTypeDefinition } from '../src/lib/charts/registry';
 import type { ChartBlockSpec } from '../src/lib/charts/spec-types';
 
@@ -116,5 +116,20 @@ describe('registry — options defaults', () => {
 			orientation: 'vertical',
 			topN: 5
 		});
+	});
+});
+
+describe('needsSetup — empty charts stay skeleton until roles are filled', () => {
+	it('true when dimensions or measures are below the role minimum', () => {
+		expect(needsSetup({ ...chart('bar'), dimensions: [] })).toBe(true);
+		expect(needsSetup({ ...chart('bar'), measures: [] })).toBe(true);
+	});
+
+	it('false once every role meets its minimum', () => {
+		expect(needsSetup(chart('bar'))).toBe(false);
+	});
+
+	it('true for unknown chart types with empty roles', () => {
+		expect(needsSetup({ ...chart('bar'), type: 'nope', dimensions: [] })).toBe(true);
 	});
 });

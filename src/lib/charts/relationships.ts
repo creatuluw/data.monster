@@ -27,6 +27,24 @@ function adjacency(rels: Relationship[]): Map<string, { rel: Relationship; other
 	return map;
 }
 
+/** Tables reachable from sourceTable via relationships (excludes the source itself). */
+export function linkedTables(sourceTable: string, rels: Relationship[]): string[] {
+	const adj = adjacency(rels);
+	const seen = new Set<string>([sourceTable]);
+	const queue = [sourceTable];
+	while (queue.length) {
+		const table = queue.shift()!;
+		for (const { other } of adj.get(table) ?? []) {
+			if (!seen.has(other)) {
+				seen.add(other);
+				queue.push(other);
+			}
+		}
+	}
+	seen.delete(sourceTable);
+	return [...seen];
+}
+
 /** Items usable from a chart on sourceTable: same table or any table connected via relationships. */
 export function availableItems(sourceTable: string, items: MasterItem[], rels: Relationship[]): MasterItem[] {
 	const adj = adjacency(rels);

@@ -63,6 +63,16 @@ export function resolveChartBlock(chart: ChartBlockSpec): {
 	return { definition: errors.length ? undefined : definition, errors };
 }
 
+/** True while the chart's roles are unfilled (below min) — render a setup skeleton, never query. */
+export function needsSetup(chart: ChartBlockSpec): boolean {
+	const def = getChartType(chart.type);
+	if (!def) return chart.dimensions.length === 0 || chart.measures.length === 0;
+	return def.roles.some((r) => {
+		const n = r.kind === 'dimension' ? chart.dimensions.length : chart.measures.length;
+		return n < r.min;
+	});
+}
+
 /** Merge optionsSchema defaults (then definition.defaults) with the chart's own options. */
 export function mergeOptions(chart: ChartBlockSpec): Record<string, unknown> {
 	const def = getChartType(chart.type);

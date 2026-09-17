@@ -53,9 +53,11 @@ function checkColumn(schema: TableSchemas, table: string, col: string, path: str
 
 function dimSelect(d: DimensionSpec, i: number, schema: TableSchemas, table: string): string {
 	if ('ref' in d) throw new Error('unresolved master-item ref in dimensions — resolve first (FR-14)');
-	checkColumn(schema, table, d.col, `dimensions[${i}]`);
+	// linked-table field: validate + qualify against its own table
+	const dimTable = 'table' in d && d.table ? d.table : table;
+	checkColumn(schema, dimTable, d.col, `dimensions[${i}]`);
 	const alias = ident(d.label ?? d.col);
-	const col = ident(d.col);
+	const col = dimTable !== table ? `${ident(dimTable)}.${ident(d.col)}` : ident(d.col);
 	if (d.grain === undefined) return d.label ? `${col} AS ${alias}` : col;
 	const temporal = TEMPORAL_GRAINS[d.grain as keyof typeof TEMPORAL_GRAINS];
 	if (temporal) return `date_trunc('${temporal}', ${col}) AS ${alias}`;

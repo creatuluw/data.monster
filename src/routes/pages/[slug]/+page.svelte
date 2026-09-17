@@ -9,6 +9,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import { createPageRuntime } from '$lib/charts/page-runtime.svelte';
 	import PageGrid from '$lib/components/charts/PageGrid.svelte';
 	import BlockInspector from '$lib/components/charts/BlockInspector.svelte';
+	import DrawerTabs from '$lib/components/charts/DrawerTabs.svelte';
 	import ChartConfigDrawer from '$lib/components/charts/ChartConfigDrawer.svelte';
 	import type { PageDoc } from '$lib/charts/spec-types';
 	import type { TableSchemas } from '$lib/charts/query/compile';
@@ -54,6 +55,8 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	let configId = $state<string | null>(null);
 	let rowConfig = $state<number | null>(null);
 	let rowTab = $state<'settings' | 'danger'>('settings');
+	let colTab = $state<'settings' | 'danger'>('settings');
+	let blockTab = $state<'settings' | 'danger'>('settings');
 	let colConfig = $state<{ ri: number; ci: number } | null>(null);
 	/** + Component picker: which column a picked component lands in */
 	let pickerFor = $state<{ ri: number; ci: number } | null>(null);
@@ -91,6 +94,15 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		if (!('data' in result) || !('columns' in result)) return [];
 		// columnar → row objects
 		return result.data.map((row) => Object.fromEntries(result.columns.map((c, i) => [c, row[i]])));
+	}
+
+	async function refreshItems() {
+		const [its, rels] = await Promise.all([
+			listMasterItems().catch(() => items),
+			listRelationships().catch(() => relationships)
+		]);
+		items = its;
+		relationships = rels;
 	}
 
 	onMount(async () => {
@@ -153,7 +165,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	}
 
 	function addRow() {
-		doc.rows = [...(doc.rows ?? []), { columns: [{ span: 12, blocks: [] }] }];
+		doc.rows = [...(doc.rows ?? []), { columns: [{ span: 12, blocks: [] }], height: 180 }];
 		handleSave(); // spawn = persisted instantly
 	}
 
@@ -171,17 +183,14 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				: key === 'text'
 					? { type: 'text', text: 'Text…' }
 					: (() => {
-						// role-aware defaults: fill each role up to its min from the first table/columns
-						const def = getChartType(key);
-						const nDim = def?.roles.find((r) => r.kind === 'dimension')?.min ?? 1;
-						const nMeas = def?.roles.find((r) => r.kind === 'measure')?.min ?? 1;
+						// empty skeleton: table preselected, roles empty — user configures via the inspector
 						return {
 							type: 'chart',
 							chart: {
 								type: key,
 								source: { table },
-								dimensions: Array.from({ length: nDim }, (_, i) => ({ col: cols[i] ?? '' })),
-								measures: Array.from({ length: nMeas }, () => ({ expr: 'count(*)', label: 'Count' }))
+								dimensions: [],
+								measures: []
 							}
 						};
 					})();
@@ -209,6 +218,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 
 	function configureBlock(id: string) {
 		configId = id;
+		blockTab = 'settings';
 	}
 
 	const configBlock = $derived.by(() => {
@@ -279,7 +289,18 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			overlay={false}
 			onClosed={() => (configId = null)}
 		>
-			<BlockInspector {doc} ri={configBlock.ri} ci={configBlock.ci} bi={configBlock.bi} {schemas} {items} {relationships} onremove={() => (configId = null)} />
+			<DrawerTabs active={blockTab} onchange={(t) => (blockTab = t)} />
+			{#if blockTab === 'settings'}
+				<BlockInspector {doc} ri={configBlock.ri} ci={configBlock.ci} bi={configBlock.bi} {schemas} {items} {relationships} onItemsChanged={refreshItems} />
+			{:else}
+				<div class="border border-red-200 bg-red-50 rounded-lg p-4 space-y-3">
+					<div>
+						<p class="text-sm font-medium text-red-700">Delete this component</p>
+						<p class="text-xs text-red-500/80 mt-0.5">Removes the block from the column. This cannot be undone (until you hit Save).</p>
+					</div>
+					<button class="px-3 py-1.5 rounded-lg text-sm font-medium text-white inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700" onclick={() => { doc.rows![configBlock.ri].columns![configBlock.ci].blocks.splice(configBlock.bi, 1); configId = null; }}><Trash2 size={13} /> Delete component</button>
+				</div>
+			{/if}
 		</ChartConfigDrawer>
 	{:else if mode === 'page'}
 		<!-- page settings: only non-visual configuration lives here -->
@@ -310,19 +331,13 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	{:else}
 		<!-- canvas: rows are the only page-level primitive — components are added inside columns -->
 		<div class="space-y-4">
-			{#if !doc.rows?.length}
-				<!-- new page: + Row top-left so the empty canvas shows its affordance -->
-				<div class="flex items-center gap-2">
-					<button class="px-3 py-1.5 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 inline-flex items-center gap-1.5" onclick={addRow}><Plus size={14} /> Row</button>
-				</div>
-			{/if}
 			{#if runtime}
 				<PageGrid
 					{doc}
 					{runtime}
 					onConfigure={(id) => configureBlock(id)}
 					onConfigureRow={(ri) => { rowTab = 'settings'; rowConfig = ri; }}
-					onConfigureColumn={(ri, ci) => (colConfig = { ri, ci })}
+					onConfigureColumn={(ri, ci) => { colTab = 'settings'; colConfig = { ri, ci }; }}
 					onAdd={(ri, ci) => { pickerQuery = ''; pickerFor = { ri, ci }; }}
 				onAddRow={addRow}
 				/>
@@ -334,10 +349,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		{#if rowConfig !== null && doc.rows?.[rowConfig]}
 			{@const row = doc.rows[rowConfig]}
 			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="33vw" onClosed={() => (rowConfig = null)}>
-				<div class="flex gap-1 bg-zinc-100 rounded-lg p-1">
-					<button class="flex-1 px-3 py-1.5 rounded-md text-sm {rowTab === 'settings' ? 'bg-white shadow-sm font-medium text-zinc-900' : 'text-zinc-500'}" onclick={() => (rowTab = 'settings')}>Settings</button>
-					<button class="flex-1 px-3 py-1.5 rounded-md text-sm {rowTab === 'danger' ? 'bg-white shadow-sm font-medium text-red-600' : 'text-zinc-500 hover:text-red-500'}" onclick={() => (rowTab = 'danger')}>Danger zone</button>
-				</div>
+				<DrawerTabs active={rowTab} onchange={(t) => (rowTab = t)} />
 
 				{#if rowTab === 'settings'}
 					<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3 text-sm">

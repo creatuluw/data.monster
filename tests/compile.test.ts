@@ -167,3 +167,25 @@ describe('toGrid — heatmap pivot', () => {
 		expect(grid.yValues).toEqual([]);
 	});
 });
+
+describe('compileChartQuery — linked-table dimensions', () => {
+	const linkedSchema = {
+		bookings: ['month', 'hours'],
+		clients: ['region', 'spend']
+	};
+
+	it('qualifies a linked-table dimension column and groups by the qualified name', () => {
+		const { sql } = compileChartQuery(
+			bar({ dimensions: [{ col: 'region', table: 'clients' }] }),
+			{ schema: linkedSchema }
+		);
+		expect(sql).toContain('"clients"."region"');
+		expect(sql).toContain('GROUP BY "clients"."region"');
+	});
+
+	it('rejects a linked-table column missing on its own table', () => {
+		expect(() =>
+			compileChartQuery(bar({ dimensions: [{ col: 'nope', table: 'clients' }] }), { schema: linkedSchema })
+		).toThrow(/unknown column "nope" on table "clients"/);
+	});
+});

@@ -40,3 +40,31 @@ describe('resolveItems — ref vs inline', () => {
 		expect(measures).toEqual([]);
 	});
 });
+
+describe('resolveItems — linked-table fields (transient auto-JOIN)', () => {
+	it('marks a raw dimension with table !== source as involved', () => {
+		const { dimensions, involvedTables } = resolveItems(
+			chart({ dimensions: [{ col: 'region', table: 'clients' }] }),
+			library
+		);
+		expect(dimensions).toEqual([{ col: 'region', table: 'clients', label: undefined, grain: undefined }]);
+		expect(involvedTables).toEqual(['clients']);
+	});
+
+	it('does not mark same-table raw dimensions as involved', () => {
+		const { involvedTables } = resolveItems(
+			chart({ dimensions: [{ col: 'region', table: 'bookings' }] }),
+			library
+		);
+		expect(involvedTables).toEqual([]);
+	});
+
+	it('marks a raw measure with table !== source as involved', () => {
+		const { measures, involvedTables } = resolveItems(
+			chart({ measures: [{ expr: 'sum(spend)', table: 'clients', label: 'Client spend' }] }),
+			library
+		);
+		expect(measures).toEqual([{ expr: 'sum(spend)', table: 'clients', label: 'Client spend', fmt: undefined }]);
+		expect(involvedTables).toEqual(['clients']);
+	});
+});

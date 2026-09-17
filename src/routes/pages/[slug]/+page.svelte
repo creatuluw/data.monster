@@ -302,7 +302,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		<ChartConfigDrawer
 			open={true}
 			title={configBlock.block.type === 'chart' ? (configBlock.block.chart.title ?? 'Chart configuration') : `${configBlock.block.type} configuration`}
-			width="33vw"
+			width="45vw"
 			overlay={false}
 			onClosed={() => (configId = null)}
 		>
@@ -370,7 +370,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		<!-- row settings drawer: tabbed — settings | danger zone (row delete lives only there) -->
 		{#if rowConfig !== null && doc.rows?.[rowConfig]}
 			{@const row = doc.rows[rowConfig]}
-			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="33vw" onClosed={() => (rowConfig = null)}>
+			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="45vw" onClosed={() => (rowConfig = null)}>
 				<DrawerTabs active={rowTab} onchange={(t) => (rowTab = t)} />
 
 				{#if rowTab === 'settings'}
@@ -434,7 +434,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		<!-- column settings drawer: width + remove -->
 		{#if colConfig && doc.rows?.[colConfig.ri]?.columns?.[colConfig.ci]}
 			{@const col = doc.rows[colConfig.ri].columns![colConfig.ci]}
-			<ChartConfigDrawer open={true} title={`Column ${colConfig.ci + 1} settings`} width="33vw" onClosed={() => (colConfig = null)}>
+			<ChartConfigDrawer open={true} title={`Column ${colConfig.ci + 1} settings`} width="45vw" onClosed={() => (colConfig = null)}>
 				<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3 text-sm">
 					<label class="block space-y-1">
 						<span class="text-xs text-zinc-500">Width (1–12 of the row)</span>

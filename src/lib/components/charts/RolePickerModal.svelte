@@ -5,7 +5,7 @@
 	 * creates a master item on the spot. Applying pushes into the chart spec.
 	 */
 	import { availableItems, linkedTables } from '$lib/charts/relationships';
-	import { dimensionFromPick, measureFromPick } from '$lib/charts/pickers';
+	import { dimensionFromPick, measureFromPick, roleLabels } from '$lib/charts/pickers';
 	import type { ChartBlockSpec } from '$lib/charts/spec-types';
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
@@ -117,6 +117,18 @@
 		<div class="flex items-center justify-between">
 			<h2 class="text-lg font-semibold text-zinc-900" style="font-family: var(--font-display)">Add {noun}</h2>
 			<button class="text-zinc-400 hover:text-zinc-900" onclick={onClose} title="Close"><X size={16} /></button>
+		</div>
+		<div class="flex flex-wrap gap-1.5">
+			{#if roleLabels(chart, 'dimension', items).length === 0 && roleLabels(chart, 'measure', items).length === 0}
+				<span class="text-xs text-zinc-400">Nothing added yet</span>
+			{:else}
+				{#each roleLabels(chart, 'dimension', items) as d (d.label + d.meta)}
+				<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-900/90 text-white" title="dimension">{d.label}</span>
+				{/each}
+			{#each roleLabels(chart, 'measure', items) as m (m.label + m.meta)}
+				<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-white border border-zinc-300 text-zinc-700" title="measure">{m.label}</span>
+				{/each}
+			{/if}
 		</div>
 
 		{#if !creating}

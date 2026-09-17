@@ -6,6 +6,7 @@
 	 * needsSetup.
 	 */
 	import { getChartType } from '$lib/charts/registry';
+	import { roleLabels } from '$lib/charts/pickers';
 	import RolePickerModal from './RolePickerModal.svelte';
 	import type { ChartBlockSpec } from '$lib/charts/spec-types';
 	import type { MasterItem } from '$lib/charts/items';
@@ -37,6 +38,9 @@
 	);
 
 	let openKind = $state<'dimension' | 'measure' | null>(null);
+
+	const dimLabels = $derived(roleLabels(chart, 'dimension', items));
+	const measLabels = $derived(roleLabels(chart, 'measure', items));
 </script>
 
 <div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
@@ -46,6 +50,22 @@
 		<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
 	</div>
 	<p class="text-xs text-zinc-500">Pick data to build the chart.</p>
+	{#if dimLabels.length || measLabels.length}
+		<div class="flex flex-wrap gap-1.5 justify-center max-w-full">
+			{#each dimLabels as d, i (i)}
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-900/90 text-white" title="dimension">
+					{d.label}
+					<button class="hover:text-red-300" title="Remove" onclick={(e) => { e.stopPropagation(); chart.dimensions.splice(i, 1); }}>×</button>
+				</span>
+			{/each}
+			{#each measLabels as m, i (i)}
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white border border-zinc-300 text-zinc-700" title="measure">
+					{m.label}
+					<button class="hover:text-red-500" title="Remove" onclick={(e) => { e.stopPropagation(); chart.measures.splice(i, 1); }}>×</button>
+				</span>
+			{/each}
+		</div>
+	{/if}
 	<div class="flex flex-wrap gap-2 justify-center">
 		{#if needDim}
 			<button

@@ -5,6 +5,7 @@
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import type { TableSchemas } from '$lib/charts/query/compile';
+	import { onMount } from 'svelte';
 	import { saveMasterItem } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { DimensionSpec, MeasureSpec } from '$lib/charts/spec-types';
@@ -139,6 +140,13 @@
 	function addMeasure() {
 		if (chart) chart.measures.push({ expr: 'count(*)', label: 'Count' });
 	}
+	// opening an empty chart (fresh from the skeleton) pre-seeds one picker row per empty role,
+	// so the drawer always shows the pickers — same defaults as the + add buttons; once per mount
+	onMount(() => {
+		if (!chart) return;
+		if (chart.dimensions.length === 0) addDimension();
+		if (chart.measures.length === 0) addMeasure();
+	});
 	function addAnnotation() {
 		if (chart && def) {
 			const mark = def.annotations[0];

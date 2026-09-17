@@ -199,7 +199,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		const target = columns[ci].blocks.length > 0 ? addColumn(ri) : ci;
 		const blocks = doc.rows![ri].columns![target].blocks;
 		blocks.push(block as never);
-		configId = `r${ri}-c${target}-b${blocks.length - 1}`;
+		// no auto-open: the block stays a skeleton on canvas until the user configures it
 	}
 
 	/** split the row wider: re-divide 12 columns equally across n+1 columns; returns the new column's index */
@@ -220,6 +220,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		configId = id;
 		blockTab = 'settings';
 	}
+
 
 	const configBlock = $derived.by(() => {
 		if (configId === null) return null;
@@ -338,6 +339,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					onConfigure={(id) => configureBlock(id)}
 					onConfigureRow={(ri) => { rowTab = 'settings'; rowConfig = ri; }}
 					onConfigureColumn={(ri, ci) => { colTab = 'settings'; colConfig = { ri, ci }; }}
+
 					onAdd={(ri, ci) => { pickerQuery = ''; pickerFor = { ri, ci }; }}
 				onAddRow={addRow}
 				/>

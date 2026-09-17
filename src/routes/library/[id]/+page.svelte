@@ -84,7 +84,7 @@ Files:
 ${files}
 Registered in: src/lib/charts/registry-setup.svelte.ts
 
-Task: <describe what to build, change or maintain here>
+Task: OPEN — not decided yet. Do NOT start building. FIRST interview me to decide what to build, change or maintain on this component: ask one question per turn, each with lettered multiple-choice options (A/B/C/…, always ending with "Other — tell me") — e.g. "What should this session do? A) add/change a feature B) change demo/docs C) maintenance + e2e REPORT.md pass". Follow up on the chosen direction until you can restate the agreed task in one sentence and I confirm. Only then start the skill's build workflow.
 
 The skill enforces: interview when anything is unclear, build test-first (red-green, tests in tests/ only), keep the renderer a thin shell over pure logic, verify with npx vitest run + svelte-check + npm run build and the /library/${entry.def.type} preview, and finish with an all-PASS e2e REPORT.md in the package.`;
 	});

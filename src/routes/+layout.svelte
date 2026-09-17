@@ -7,6 +7,7 @@
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
+	import { tabs, ensureActive, openInNewTab, activate, closeTab, pathLabel } from '$lib/tabs.svelte';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
@@ -123,7 +124,25 @@
 			label: decodeURIComponent(routeLabels[seg] || seg),
 		}));
 	});
+
+	// tabs: keep the active tab glued to the current route
+	$effect(() => {
+		const crumbs = breadcrumbs;
+		const label = crumbs.length ? crumbs[crumbs.length - 1].label : pathLabel($page.url.pathname);
+		ensureActive($page.url.pathname, label);
+	});
+
+	// right-click context menu for internal links
+	let ctx = $state<{ x: number; y: number; href: string } | null>(null);
+	function handleContext(e: MouseEvent) {
+		const a = (e.target as HTMLElement).closest('a[href^="/"]');
+		if (!a) return;
+		e.preventDefault();
+		ctx = { x: e.clientX, y: e.clientY, href: a.getAttribute('href') ?? '' };
+	}
 </script>
+
+<svelte:window oncontextmenu={handleContext} />
 
 {#if isUiPage}
 	{@render children()}
@@ -228,9 +247,37 @@
 				{@render children()}
 			</main>
 		</div>
+			<div class="status-bar tab-bar">
+				{#each tabs.list as t (t.id)}
+					<button
+						class="tab-chip"
+						class:active={t.id === tabs.activeId}
+						title={t.path}
+						onclick={() => activate(t.id)}
+					>
+						<span class="tab-label">{t.label}</span>
+						<span
+							class="tab-close"
+							title="Close tab"
+							onclick={(e) => { e.stopPropagation(); closeTab(t.id); }}
+						>&times;</span>
+					</button>
+				{/each}
+			</div>
 	{/if}
 	</div>
 </div>
+{#if ctx}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="ctx-overlay" onclick={() => (ctx = null)} onkeydown={() => (ctx = null)} role="presentation">
+		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+		<div class="ctx-menu" style="left: {ctx.x}px; top: {ctx.y}px" role="menu">
+			<button class="ctx-item" role="menuitem" onclick={() => { const h = ctx?.href ?? '/'; ctx = null; openInNewTab(h); }}>
+				Open in new tab
+			</button>
+		</div>
+	</div>
+{/if}
 {/if}
 
 <style>
@@ -342,6 +389,96 @@
 		align-items: center;
 		padding: var(--space-1) var(--space-6);
 		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-sunken);
+		flex-shrink: 0;
+	}
+
+	.tab-bar {
+		gap: var(--space-1);
+		overflow-x: auto;
+	}
+
+	.tab-bar :global(.tab-chip) {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 2px var(--space-2);
+		border-radius: 6px;
+		border: 1px solid transparent;
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-size: var(--text-xs);
+		white-space: nowrap;
+		cursor: pointer;
+	}
+
+	.tab-bar :global(.tab-chip:hover) {
+		background: var(--color-surface-hover, #eceeeb);
+	}
+
+	.tab-bar :global(.tab-chip.active) {
+		background: var(--color-surface);
+		border-color: var(--color-border);
+		color: var(--color-text-primary);
+		font-weight: 500;
+	}
+
+	.tab-bar :global(.tab-close) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 14px;
+		height: 14px;
+		border-radius: 4px;
+		color: var(--color-text-tertiary);
+		font-size: 12px;
+		line-height: 1;
+	}
+
+	.tab-bar :global(.tab-close:hover) {
+		background: #00000014;
+		color: var(--color-text-primary);
+	}
+
+	.ctx-overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+	}
+
+	.ctx-menu {
+		position: fixed;
+		z-index: 101;
+		min-width: 180px;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+		padding: 4px;
+	}
+
+	.ctx-item {
+		display: block;
+		width: 100%;
+		text-align: left;
+		padding: 6px var(--space-2);
+		border-radius: 6px;
+		font-size: var(--text-sm);
+		color: var(--color-text-primary);
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.ctx-item:hover {
+		background: var(--color-surface-hover, #eceeeb);
+	}
+
+	.status-bar {
+		min-height: 32px;
+		display: flex;
+		align-items: center;
+		padding: var(--space-1) var(--space-6);
+		border-top: 1px solid var(--color-border);
 		background: var(--color-surface-sunken);
 		flex-shrink: 0;
 	}

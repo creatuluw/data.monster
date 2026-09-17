@@ -116,14 +116,17 @@
 		}
 	}
 
-	onMount(async () => {
-		const unlisten = await listen<DownloadProgress>('local-llm:download-progress', (event) => {
-			downloadProgress = event.payload;
-		});
+	onMount(() => {
+		let unlisten: (() => void) | undefined;
+		(async () => {
+			unlisten = await listen<DownloadProgress>('local-llm:download-progress', (event) => {
+				downloadProgress = event.payload;
+			});
 
-		await refresh();
+			await refresh();
+		})();
 
-		return () => { unlisten(); };
+		return () => { unlisten?.(); };
 	});
 
 	let fastModels = $derived(catalog.filter((m) => m.tier === 'fast'));

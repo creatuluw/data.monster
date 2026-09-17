@@ -386,7 +386,7 @@
 				</div>
 				<div class="drawer-modal-footer">
 					<button class="btn btn-ghost btn-sm" onclick={closeTypeModal}>Cancel</button>
-					<button class="btn btn-primary btn-sm" onclick={() => handleTypeChange(editColumn.name, editColumnType)}>
+					<button class="btn btn-primary btn-sm" onclick={() => editColumn && handleTypeChange(editColumn.name, editColumnType)}>
 						Apply
 					</button>
 				</div>

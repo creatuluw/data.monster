@@ -228,6 +228,7 @@
 				{@render children()}
 			</main>
 		</div>
+			<div class="status-bar" aria-hidden="true"></div>
 	{/if}
 	</div>
 </div>
@@ -342,6 +343,16 @@
 		align-items: center;
 		padding: var(--space-1) var(--space-6);
 		border-bottom: 1px solid var(--color-border);
+		background: var(--color-surface-sunken);
+		flex-shrink: 0;
+	}
+
+	.status-bar {
+		min-height: 32px;
+		display: flex;
+		align-items: center;
+		padding: var(--space-1) var(--space-6);
+		border-top: 1px solid var(--color-border);
 		background: var(--color-surface-sunken);
 		flex-shrink: 0;
 	}

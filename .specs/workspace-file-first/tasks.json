@@ -29,7 +29,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 2,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-2"
     },
     {

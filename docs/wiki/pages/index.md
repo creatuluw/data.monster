@@ -38,3 +38,4 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Workspaces page (/workspaces)](./entities/workspaces-page-workspaces.md) — What is it?
 - [Design component reference (docs/design/components/)](./artifacts/design-component-reference-docs-design-components.md) — What is it?
 - [Workspace-file-first spec & tasks](./artifacts/workspace-file-first-spec-tasks.md) — The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (`dm_store` module, pages/maste
+- [dm_store command module](./entities/dm-store-command-module.md) — `src-tauri/src/commands/dm_store.rs` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write

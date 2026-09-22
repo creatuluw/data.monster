@@ -297,7 +297,6 @@ mod tests {
 
         // ...then make the rename fail: a DIRECTORY sits where the temp would rename to.
         // (Cross-platform failure injection: rename file-over-directory fails everywhere.)
-        let dir_as_target = pages_dir(&ws);
         let _ = fs::remove_file(&target);
         fs::create_dir(&target).unwrap(); // destination is now a directory
 

@@ -3,5 +3,10 @@
     "task_id": "files-001",
     "title": "FR-1 dm/ conventions + atomic write (dm_store module)",
     "summary": "Created src-tauri/src/commands/dm_store.rs (registered in commands/mod.rs): kind-to-path mapping (pages/<slug>.json, master-items/{measure,dimension}/<id>.json, relationships.json, saved-queries/<slug>.sql, connections.json, drafts/), valid_name guard (rejects traversal/leading dots/leading-trailing whitespace, allows interior spaces), atomic_write (temp+rename, temp cleanup on failure), check_json_object parse-level shape check, and path-to-name inverses. 11 tests green; first run caught 2 real bugs (.sql stem fall-through, whitespace contradiction). Known ceiling: crash-between-write-and-rename not unit-testable without fault injection; documented in module doc."
+  },
+  {
+    "task_id": "files-002",
+    "title": "FR-2 Pages file store (commands remap)",
+    "summary": "pages.rs rewritten file-backed: dm/pages/<slug>.json via dm_store, commands take AppHandle + ws_dir() (no DuckDbState), *_in(ws,...) cores for testability. save writes spec verbatim (invalid JSON included - file mirrors editor, watcher classifies); get_page extracts title best-effort + mtime as updatedAt; list_pages skips invalid files into errors[] array, sorts mtime desc, missing dir = empty; delete idempotent; slug guard rejects traversal. Invoke names/params unchanged (central-api.ts untouched, title param accepted-but-vestigial). 8 tests green, full suite 83/83."
   }
 ]

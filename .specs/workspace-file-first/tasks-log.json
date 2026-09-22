@@ -18,5 +18,10 @@
     "task_id": "files-004",
     "title": "FR-4 Saved queries file store",
     "summary": "saved_queries.rs rewritten file-backed: dm/saved-queries/<slug>.sql, slug=generate_slug(name) (same-name overwrite kept). Optional single-line '-- dm: {json}' header (name/description/tags) - app always writes it, headerless agent files default name=stem; malformed header = reported error (list errors[] + update refuses), never silently treated as SQL. tags = JSON array in file, comma-separated string at invoke boundary (frontend splits on ','). update = partial merge keeping unspecified fields, slug/filename unchanged on rename. No timestamps in files. 7 tests; full suite 95/95."
+  },
+  {
+    "task_id": "files-005",
+    "title": "FR-5 Connections store + /connect saved-connections UI",
+    "summary": "New commands/connections.rs: dm/connections.json = {connections:[{name, urlEnv}]} - NON-secret metadata only; the connection-string URL (contains password) lives in the workspace .env as DM_CONN_<SLUG>_URL (gitignored). ws_env_set appends/replaces the var preserving all other lines via atomic_write; ws_env_value resolves workspace .env then process env; resolve_connection returns the URL or an error naming the var + .env path. Clobber guard (corrupt doc refuses save). /connect database tab gains saved-connections select (Connect/Delete) + save-current-with-name row; $effect loads on tab activation. Invoke names new: list/save/delete/resolve_connection. 7 Rust tests + svelte-check 0 errors; full suite 102/102."
   }
 ]

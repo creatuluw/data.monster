@@ -6,9 +6,9 @@ mod state;
 mod utils;
 
 use commands::{
-    database::*, field_functions::*, files::*, folders::*, internal_db::*, items::*, labels::*,
-    local_llm::*, pages::*, postgres::*, queries::*, relationships::*, saved_queries::*,
-    settings::*, tables::*, workspace::*,
+    connections::*, database::*, field_functions::*, files::*, folders::*, internal_db::*,
+    items::*, labels::*, local_llm::*, pages::*, postgres::*, queries::*, relationships::*,
+    saved_queries::*, settings::*, tables::*, workspace::*,
 };
 use commands::local_llm::LlmState;
 use state::DuckDbState;
@@ -73,6 +73,10 @@ fn main() {
             list_relationships,
             save_relationship,
             delete_relationship,
+            list_connections,
+            save_connection,
+            delete_connection,
+            resolve_connection,
             list_internal_tables,
             query_internal_table,
             update_internal_row,

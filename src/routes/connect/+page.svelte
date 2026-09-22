@@ -8,6 +8,7 @@
 		extractErrorMessage
 	} from '$lib/db-operations';
 	import { app } from '$lib/stores/app.svelte';
+	import { invoke } from '@tauri-apps/api/core';
 	import { goto } from '$app/navigation';
 	import { Upload, Link, Database, ChevronRight, Check, LoaderCircle } from 'lucide-svelte';
 
@@ -26,6 +27,57 @@
 	let pgSelectedTables = $state<Set<string>>(new Set());
 	let pgIngesting = $state(false);
 	let pgIngestedTables = $state<string[]>([]);
+
+	// Saved connections (dm/connections.json + workspace .env — FR-5)
+	let savedConnections = $state<{ name: string }[]>([]);
+	let selectedSaved = $state('');
+	let connNameInput = $state('');
+
+	async function loadSavedConnections() {
+		try {
+			const result = await invoke<{ connections: { name: string }[] }>('list_connections');
+			savedConnections = result.connections;
+		} catch {
+			savedConnections = []; // no workspace open etc. — the tab just shows nothing
+		}
+	}
+
+	async function saveCurrentConnection() {
+		if (!pgUrl.trim() || !connNameInput.trim()) return;
+		try {
+			await invoke('save_connection', { name: connNameInput.trim(), url: pgUrl.trim() });
+			connNameInput = '';
+			app.globalError = '';
+			await loadSavedConnections();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to save connection');
+		}
+	}
+
+	async function connectSaved(name: string) {
+		if (!name) return;
+		try {
+			const r = await invoke<{ url: string }>('resolve_connection', { name });
+			pgUrl = r.url;
+			await handlePgConnect();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to connect using saved connection');
+		}
+	}
+
+	async function deleteSavedConnection(name: string) {
+		try {
+			await invoke('delete_connection', { name });
+			if (selectedSaved === name) selectedSaved = '';
+			await loadSavedConnections();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to delete connection');
+		}
+	}
+
+	$effect(() => {
+		if (activeTab === 'database') void loadSavedConnections();
+	});
 
 	async function handleFilePick() {
 		loading = true;
@@ -238,6 +290,41 @@
 							{/if}
 						</div>
 						<span class="connect-hint">Connect to a PostgreSQL database</span>
+
+					{#if savedConnections.length > 0}
+						<div class="url-row">
+							<select class="input" bind:value={selectedSaved} disabled={pgConnecting || pgConnected}>
+								<option value="" disabled>Saved connections</option>
+								{#each savedConnections as c (c.name)}
+									<option value={c.name}>{c.name}</option>
+								{/each}
+							</select>
+							<button
+								class="btn btn-secondary"
+								onclick={() => connectSaved(selectedSaved)}
+								disabled={!selectedSaved || pgConnecting || pgConnected}
+							>
+								<Database size={14} />
+								Connect
+							</button>
+							<button class="btn btn-ghost" onclick={() => deleteSavedConnection(selectedSaved)} disabled={!selectedSaved}>
+								Delete
+							</button>
+						</div>
+					{/if}
+					{#if pgUrl.trim() && !pgConnected}
+						<div class="url-row">
+							<input
+								type="text"
+								bind:value={connNameInput}
+								placeholder="Save this connection as…"
+								class="input"
+							/>
+							<button class="btn btn-secondary" onclick={saveCurrentConnection} disabled={!connNameInput.trim()}>
+								Save
+							</button>
+						</div>
+					{/if}
 
 						{#if pgConnected}
 							<div class="pg-browser">

@@ -1,3 +1,4 @@
+pub mod connections;
 pub mod database;
 pub mod dm_store;
 pub mod field_functions;

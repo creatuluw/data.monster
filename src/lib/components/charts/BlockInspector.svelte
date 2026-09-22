@@ -9,7 +9,15 @@
 	import { saveMasterItem } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { DimensionSpec, MeasureSpec } from '$lib/charts/spec-types';
-	import { Trash2, Plus } from 'lucide-svelte';
+	import { Plus } from 'lucide-svelte';
+	import Field from './controls/Field.svelte';
+	import TextInput from './controls/TextInput.svelte';
+	import NumberInput from './controls/NumberInput.svelte';
+	import Select from './controls/Select.svelte';
+	import Toggle from './controls/Toggle.svelte';
+	import Section from './controls/Section.svelte';
+	import RemoveBtn from './controls/RemoveBtn.svelte';
+	import Btn from './controls/Btn.svelte';
 
 	let {
 		doc,
@@ -155,210 +163,319 @@
 	}
 </script>
 
-<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-4 text-sm">
-	<h3 class="font-semibold text-zinc-900">
+<div class="inspector">
+	<h3 class="inspector-title">
 		{block.type === 'chart' ? `${def?.label ?? chart!.type} chart` : block.type} block
 	</h3>
 
-	<!-- shared fields -->
-	<div class="grid grid-cols-2 gap-2">
-		<label class="space-y-1">
-			<span class="text-xs text-zinc-500">Title</span>
-			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.type === 'chart' ? (chart!.title ?? '') : block.type === 'table' ? (block.title ?? '') : ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value || undefined; if (block.type === 'chart') chart!.title = v; else if (block.type === 'table') block.title = v; }} />
-		</label>
-	</div>
+	<Section>
+		<div class="grid-2">
+			<Field label="Title">
+				<TextInput
+					value={block.type === 'chart' ? (chart!.title ?? '') : block.type === 'table' ? (block.title ?? '') : ''}
+					oncommit={(v) => { const val = v || undefined; if (block.type === 'chart') chart!.title = val; else if (block.type === 'table') block.title = val; }}
+				/>
+			</Field>
+			{#if chart}
+				<Field label="Subtitle">
+					<TextInput value={chart.subtitle ?? ''} oncommit={(v) => (chart.subtitle = v || undefined)} />
+				</Field>
+			{/if}
+		</div>
+
+		{#if block.type === 'text'}
+			<Field label="Text">
+				<textarea rows="4" class="ctl-textarea" value={block.text} oninput={(e) => (block.text = (e.target as HTMLTextAreaElement).value)}></textarea>
+			</Field>
+		{:else if block.type === 'table'}
+			<Field label="Table">
+				<Select value={block.table} onchange={(v) => (block.table = v)}>
+					{#each Object.keys(schemas) as t (t)}<option value={t}>{t}</option>{/each}
+				</Select>
+			</Field>
+			<Field label="Limit" hint="Max rows fetched">
+				<NumberInput min={1} value={block.limit ?? 50} oncommit={(v) => (block.limit = v)} />
+			</Field>
+		{:else if chart}
+			<Field label="Source table">
+				<Select value={chart.source.table} onchange={onTableChange}>
+					{#each Object.keys(schemas) as t (t)}<option value={t}>{t}</option>{/each}
+				</Select>
+			</Field>
+		{/if}
+	</Section>
 
 	{#if chart}
-		<label class="block space-y-1">
-			<span class="text-xs text-zinc-500">Subtitle</span>
-			<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.subtitle ?? ''} onchange={(e) => (chart.subtitle = (e.target as HTMLInputElement).value || undefined)} />
-		</label>
-	{/if}
-
-	{#if block.type === 'text'}
-		<label class="block space-y-1">
-			<span class="text-xs text-zinc-500">Text</span>
-			<textarea rows="4" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.text} oninput={(e) => (block.text = (e.target as HTMLTextAreaElement).value)}></textarea>
-		</label>
-	{:else if block.type === 'table'}
-		<label class="block space-y-1">
-			<span class="text-xs text-zinc-500">Table</span>
-			<select class="w-full border border-zinc-300 rounded px-2 py-1" value={block.table} onchange={(e) => (block.table = (e.target as HTMLSelectElement).value)}>
-				{#each Object.keys(schemas) as t (t)}<option value={t}>{t}</option>{/each}
-			</select>
-		</label>
-		<div class="grid grid-cols-2 gap-2">
-			<label class="space-y-1">
-				<span class="text-xs text-zinc-500">Limit</span>
-				<input type="number" min="1" class="w-full border border-zinc-300 rounded px-2 py-1" value={block.limit ?? 50} onchange={(e) => (block.limit = Number((e.target as HTMLInputElement).value))} />
-			</label>
-		</div>
-	{:else if chart}
-		<label class="block space-y-1">
-			<span class="text-xs text-zinc-500">Source table</span>
-			<select class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.source.table} onchange={(e) => onTableChange((e.target as HTMLSelectElement).value)}>
-				{#each Object.keys(schemas) as t (t)}<option value={t}>{t}</option>{/each}
-			</select>
-		</label>
-
 		<!-- roles: table-first — pick from ⭐ library, this table's fields, or linked tables' fields -->
-		<div class="space-y-2">
-			<div class="flex items-center justify-between">
-				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Dimensions</span>
-				<button class="text-zinc-400 hover:text-zinc-900 inline-flex items-center gap-1 text-xs" onclick={addDimension}><Plus size={12} /> add</button>
-			</div>
-			{#each chart.dimensions as d, i (i)}
-				<div class="flex gap-1 items-center">
-					<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={dimValue(d)} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') dimForm.open = true; else chart.dimensions[i] = dimFromValue(v); }}>
-						{#each usableItems.filter((it) => it.kind === 'dimension') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
-						<optgroup label={chart.source.table}>
-							{#each tableCols as c (c)}<option value={`col:${chart.source.table}:${c}`}>{c}</option>{/each}
-						</optgroup>
-						{#each linked as t (t)}
-							<optgroup label={`${t} ⤳ linked`}>
-								{#each schemas[t] ?? [] as c (c)}<option value={`col:${t}:${c}`}>{c}</option>{/each}
-							</optgroup>
-						{/each}
-						<option value="__new">✚ Create master dimension…</option>
-					</select>
-					{#if !('ref' in d)}
-						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={d.grain ?? '(none)'} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.dimensions[i] = { col: d.col, table: d.table, grain: v === '(none)' ? undefined : (v as never) }; }}>
-							{#each GRAINS as g (g)}<option value={g}>{g}</option>{/each}
-						</select>
-					{/if}
-					<button class="text-zinc-300 hover:text-red-500" onclick={() => chart.dimensions.splice(i, 1)}>×</button>
-				</div>
-			{/each}
-			{#if dimForm.open}
-				<div class="space-y-1 border border-dashed border-zinc-300 rounded p-2 bg-zinc-50">
-					<span class="text-xs text-zinc-500">New master dimension on {chart.source.table}</span>
-					<div class="flex gap-1">
-						<input type="text" placeholder="label (e.g. Region)" class="flex-1 border border-zinc-300 rounded px-2 py-1" bind:value={dimForm.label} />
-						<input type="text" placeholder="field or expr (e.g. region)" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" bind:value={dimForm.expr} />
-					</div>
-					{#if formError}<p class="text-xs text-red-500">{formError}</p>{/if}
-					<div class="flex gap-1 justify-end text-xs">
-						<button class="px-2 py-1 rounded text-zinc-500 hover:text-zinc-900" onclick={() => (dimForm.open = false)}>Cancel</button>
-						<button class="px-2 py-1 rounded bg-zinc-900 text-white" onclick={createDimension}>Save to library</button>
-					</div>
-				</div>
-			{/if}
-		</div>
-
-		<div class="space-y-2">
-			<div class="flex items-center justify-between">
-				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Measures</span>
-				<button class="text-zinc-400 hover:text-zinc-900 inline-flex items-center gap-1 text-xs" onclick={addMeasure}><Plus size={12} /> add</button>
-			</div>
-			{#each chart.measures as m, i (i)}
-				<div class="space-y-1 border border-zinc-100 rounded p-2">
-					<div class="flex gap-1">
-						<select class="flex-1 border border-zinc-300 rounded px-2 py-1" value={measValue(m)} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v === '__new') measForm.open = true; else if (v !== 'custom') chart.measures[i] = measFromValue(v, m); }}>
-							{#each usableItems.filter((it) => it.kind === 'measure') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
-							<option value="custom">✎ expression</option>
-							<optgroup label={chart.source.table}>
-								{#each tableCols as c (c)}<option value={`field:${chart.source.table}:${c}`}>sum({c})</option>{/each}
-							</optgroup>
-							{#each linked as t (t)}
-								<optgroup label={`${t} ⤳ linked`}>
-									{#each schemas[t] ?? [] as c (c)}<option value={`field:${t}:${c}`}>sum({c})</option>{/each}
+		<Section title="Dimensions">
+			{#snippet action()}
+				<Btn variant="ghost" size="sm" onclick={addDimension}><Plus size={12} /> add</Btn>
+			{/snippet}
+			<div class="rows">
+				{#each chart.dimensions as d, i (i)}
+					<div class="row">
+						<div class="grow">
+							<Select value={dimValue(d)} onchange={(v) => { if (v === '__new') dimForm.open = true; else chart.dimensions[i] = dimFromValue(v); }}>
+								{#each usableItems.filter((it) => it.kind === 'dimension') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
+								<optgroup label={chart.source.table}>
+									{#each tableCols as c (c)}<option value={`col:${chart.source.table}:${c}`}>{c}</option>{/each}
 								</optgroup>
-							{/each}
-							<option value="__new">✚ Create master measure…</option>
-						</select>
-						<button class="text-zinc-300 hover:text-red-500" onclick={() => chart.measures.splice(i, 1)}>×</button>
+								{#each linked as t (t)}
+									<optgroup label={`${t} ⤳ linked`}>
+										{#each schemas[t] ?? [] as c (c)}<option value={`col:${t}:${c}`}>{c}</option>{/each}
+									</optgroup>
+								{/each}
+								<option value="__new">✚ Create master dimension…</option>
+							</Select>
+						</div>
+						{#if !('ref' in d)}
+							<div class="fixed-w">
+								<Select small value={d.grain ?? '(none)'} onchange={(v) => { chart.dimensions[i] = { col: d.col, table: d.table, grain: v === '(none)' ? undefined : (v as never) }; }}>
+									{#each GRAINS as g (g)}<option value={g}>{g}</option>{/each}
+								</Select>
+							</div>
+						{/if}
+						<RemoveBtn onclick={() => chart.dimensions.splice(i, 1)} title="Remove dimension" />
 					</div>
-					{#if !('ref' in m)}
-						<input type="text" placeholder="expression" class="w-full border border-zinc-300 rounded px-2 py-1 font-mono text-xs" value={m.expr} oninput={(e) => (chart.measures[i] = { ...m, expr: (e.target as HTMLInputElement).value })} />
-					{/if}
-					<div class="grid grid-cols-2 gap-1">
-						<input type="text" placeholder="label" class="border border-zinc-300 rounded px-2 py-1" value={'label' in m ? (m.label ?? '') : ''} oninput={(e) => (chart.measures[i] = { ...m, label: (e.target as HTMLInputElement).value || undefined })} />
-						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={'fmt' in m ? m.fmt ?? '(none)' : '(none)'} onchange={(e) => { const v = (e.target as HTMLSelectElement).value; chart.measures[i] = { ...m, fmt: v === '(none)' ? undefined : v } as never; }}>
-							{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
-						</select>
+				{/each}
+			</div>
+			{#if dimForm.open}
+				<div class="create-form">
+					<p class="create-title">New master dimension on <span class="mono">{chart.source.table}</span></p>
+					<div class="grid-2">
+						<TextInput placeholder="Label (e.g. Region)" bind:value={dimForm.label} />
+						<TextInput mono placeholder="Field or expression" bind:value={dimForm.expr} />
 					</div>
-				</div>
-			{/each}
-			{#if measForm.open}
-				<div class="space-y-1 border border-dashed border-zinc-300 rounded p-2 bg-zinc-50">
-					<span class="text-xs text-zinc-500">New master measure on {chart.source.table}</span>
-					<div class="flex gap-1">
-						<input type="text" placeholder="label (e.g. Revenue)" class="flex-1 border border-zinc-300 rounded px-2 py-1" bind:value={measForm.label} />
-						<input type="text" placeholder="expression (e.g. sum(amount))" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" bind:value={measForm.expr} />
-					</div>
-					<div class="grid grid-cols-2 gap-1">
-						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" bind:value={measForm.fmt}>
-							{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
-						</select>
-					</div>
-					{#if formError}<p class="text-xs text-red-500">{formError}</p>{/if}
-					<div class="flex gap-1 justify-end text-xs">
-						<button class="px-2 py-1 rounded text-zinc-500 hover:text-zinc-900" onclick={() => (measForm.open = false)}>Cancel</button>
-						<button class="px-2 py-1 rounded bg-zinc-900 text-white" onclick={createMeasure}>Save to library</button>
+					{#if formError}<p class="form-error">{formError}</p>{/if}
+					<div class="form-actions">
+						<Btn variant="ghost" size="sm" onclick={() => (dimForm.open = false)}>Cancel</Btn>
+						<Btn variant="primary" size="sm" onclick={createDimension}>Save to library</Btn>
 					</div>
 				</div>
 			{/if}
-		</div>
+		</Section>
+
+		<Section title="Measures">
+			{#snippet action()}
+				<Btn variant="ghost" size="sm" onclick={addMeasure}><Plus size={12} /> add</Btn>
+			{/snippet}
+			<div class="rows">
+				{#each chart.measures as m, i (i)}
+					<div class="card-row">
+						<div class="row">
+							<div class="grow">
+								<Select value={measValue(m)} onchange={(v) => { if (v === '__new') measForm.open = true; else if (v !== 'custom') chart.measures[i] = measFromValue(v, m); }}>
+									{#each usableItems.filter((it) => it.kind === 'measure') as it (it.id)}<option value={`ref:${it.id}`}>⭐ {it.label}</option>{/each}
+									<option value="custom">✎ expression</option>
+									<optgroup label={chart.source.table}>
+										{#each tableCols as c (c)}<option value={`field:${chart.source.table}:${c}`}>sum({c})</option>{/each}
+									</optgroup>
+									{#each linked as t (t)}
+										<optgroup label={`${t} ⤳ linked`}>
+											{#each schemas[t] ?? [] as c (c)}<option value={`field:${t}:${c}`}>sum({c})</option>{/each}
+										</optgroup>
+									{/each}
+									<option value="__new">✚ Create master measure…</option>
+								</Select>
+							</div>
+							<RemoveBtn onclick={() => chart.measures.splice(i, 1)} title="Remove measure" />
+						</div>
+						{#if !('ref' in m)}
+							<TextInput mono placeholder="expression" value={m.expr} oncommit={(v) => (chart.measures[i] = { ...m, expr: v })} />
+						{/if}
+						<div class="grid-2">
+							<TextInput placeholder="Label" value={'label' in m ? (m.label ?? '') : ''} oncommit={(v) => (chart.measures[i] = { ...m, label: v || undefined })} />
+							<Select small value={'fmt' in m ? m.fmt ?? '(none)' : '(none)'} onchange={(v) => { chart.measures[i] = { ...m, fmt: v === '(none)' ? undefined : v } as never; }}>
+								{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
+							</Select>
+						</div>
+					</div>
+				{/each}
+			</div>
+			{#if measForm.open}
+				<div class="create-form">
+					<p class="create-title">New master measure on <span class="mono">{chart.source.table}</span></p>
+					<div class="grid-2">
+						<TextInput placeholder="Label (e.g. Revenue)" bind:value={measForm.label} />
+						<TextInput mono placeholder="Expression (e.g. sum(amount))" bind:value={measForm.expr} />
+					</div>
+					<div class="fixed-w">
+						<Select small bind:value={measForm.fmt}>
+							{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
+						</Select>
+					</div>
+					{#if formError}<p class="form-error">{formError}</p>{/if}
+					<div class="form-actions">
+						<Btn variant="ghost" size="sm" onclick={() => (measForm.open = false)}>Cancel</Btn>
+						<Btn variant="primary" size="sm" onclick={createMeasure}>Save to library</Btn>
+					</div>
+				</div>
+			{/if}
+		</Section>
 
 		<!-- schema-driven options (FR-9/Q9) -->
 		{#if def}
-			<div class="space-y-2">
-				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Options</span>
+			<Section title="Options">
 				{#each def.optionsSchema as field (field.name)}
-					<label class="grid grid-cols-2 gap-2 items-center">
-						<span class="text-xs text-zinc-500">{field.label}</span>
+					<Field inline label={field.label}>
 						{#if field.kind === 'enum'}
-							<select class="border border-zinc-300 rounded px-2 py-1" value={String(chart.options?.[field.name] ?? field.default ?? '')} onchange={(e) => { chart.options = { ...chart.options, [field.name]: (e.target as HTMLSelectElement).value }; }}>
-								{#each field.options ?? [] as o (o)}<option value={o}>{o}</option>{/each}
-							</select>
+							<div class="fixed-w-wide">
+								<Select small value={String(chart.options?.[field.name] ?? field.default ?? '')} onchange={(v) => { chart.options = { ...chart.options, [field.name]: v }; }}>
+									{#each field.options ?? [] as o (o)}<option value={o}>{o}</option>{/each}
+								</Select>
+							</div>
 						{:else if field.kind === 'boolean'}
-							<input type="checkbox" checked={Boolean(chart.options?.[field.name] ?? field.default)} onchange={(e) => { chart.options = { ...chart.options, [field.name]: (e.target as HTMLInputElement).checked }; }} />
+							<Toggle checked={Boolean(chart.options?.[field.name] ?? field.default)} onchange={(v) => { chart.options = { ...chart.options, [field.name]: v }; }} />
 						{:else}
-							<input type={field.kind === 'number' ? 'number' : 'text'} class="border border-zinc-300 rounded px-2 py-1" value={String(chart.options?.[field.name] ?? field.default ?? '')} onchange={(e) => { const raw = (e.target as HTMLInputElement).value; chart.options = { ...chart.options, [field.name]: field.kind === 'number' ? (raw === '' ? undefined : Number(raw)) : raw }; }} />
+							<div class="fixed-w-wide">
+								<NumberInput value={field.kind === 'number' ? (chart.options?.[field.name] as number | undefined) ?? undefined : undefined} oncommit={(v) => { chart.options = { ...chart.options, [field.name]: v as never }; }} />
+							</div>
 						{/if}
-					</label>
+					</Field>
 				{/each}
-			</div>
+			</Section>
 		{/if}
 
 		<!-- annotations (per-type whitelist) -->
 		{#if def && def.annotations.length}
-			<div class="space-y-2">
-				<div class="flex items-center justify-between">
-					<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Annotations</span>
-					<button class="text-zinc-400 hover:text-zinc-900 inline-flex items-center gap-1 text-xs" onclick={addAnnotation}><Plus size={12} /> add</button>
+			<Section title="Annotations">
+				{#snippet action()}
+					<Btn variant="ghost" size="sm" onclick={addAnnotation}><Plus size={12} /> add</Btn>
+				{/snippet}
+				<div class="rows">
+					{#each chart.annotations ?? [] as a, i (i)}
+						<div class="row">
+							<div class="fixed-w">
+								<Select small value={a.mark} onchange={(v) => { chart.annotations![i] = { ...a, mark: v } as never; }}>
+									{#each def.annotations as mk (mk)}<option value={mk}>{mk}</option>{/each}
+								</Select>
+							</div>
+							{#if typeof a.at === 'number'}
+								<div class="grow">
+									<NumberInput value={a.at} oncommit={(v) => { chart.annotations![i] = { ...a, at: v ?? 0 } as never; }} />
+								</div>
+							{:else}
+								<div class="grow">
+									<TextInput mono placeholder="expression" value={a.at.expr} oncommit={(v) => { chart.annotations![i] = { ...a, at: { expr: v } } as never; }} />
+								</div>
+							{/if}
+							<RemoveBtn onclick={() => chart.annotations!.splice(i, 1)} title="Remove annotation" />
+						</div>
+					{/each}
 				</div>
-				{#each chart.annotations ?? [] as a, i (i)}
-					<div class="flex gap-1 items-center">
-						<select class="border border-zinc-300 rounded px-1 py-1 text-xs" value={a.mark} onchange={(e) => { chart.annotations![i] = { ...a, mark: (e.target as HTMLSelectElement).value } as never; }}>
-							{#each def.annotations as mk (mk)}<option value={mk}>{mk}</option>{/each}
-						</select>
-						{#if typeof a.at === 'number'}
-							<input type="number" class="flex-1 border border-zinc-300 rounded px-2 py-1" value={a.at} onchange={(e) => { chart.annotations![i] = { ...a, at: Number((e.target as HTMLInputElement).value) } as never; }} />
-						{:else}
-							<input type="text" placeholder="expression" class="flex-1 border border-zinc-300 rounded px-2 py-1 font-mono text-xs" value={a.at.expr} oninput={(e) => { chart.annotations![i] = { ...a, at: { expr: (e.target as HTMLInputElement).value } } as never; }} />
-						{/if}
-						<button class="text-zinc-300 hover:text-red-500" onclick={() => chart.annotations!.splice(i, 1)}>×</button>
-					</div>
-				{/each}
-			</div>
+			</Section>
 		{/if}
 
-		<!-- tooltip -->
-		<label class="block space-y-1">
-			<span class="text-xs text-zinc-500">Tooltip template</span>
-			<input type="text" placeholder="{'{dimension}: {measure}'}" class="w-full border border-zinc-300 rounded px-2 py-1 font-mono text-xs" value={chart.tooltip?.template ?? ''} oninput={(e) => { const v = (e.target as HTMLInputElement).value; chart.tooltip = v ? { ...chart.tooltip, template: v } : undefined; }} />
-		</label>
-
-		<div class="grid grid-cols-2 gap-2">
-			<label class="space-y-1">
-				<span class="text-xs text-zinc-500">Height (vh fraction, blank = fit column)</span>
-				<input type="number" min="0.1" max="1" step="0.05" class="w-full border border-zinc-300 rounded px-2 py-1" placeholder="fit column" value={chart.heightVh ?? ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value; chart.heightVh = v ? Number(v) : undefined; }} />
-			</label>
-			<label class="space-y-1">
-				<span class="text-xs text-zinc-500">Limit</span>
-				<input type="number" min="1" class="w-full border border-zinc-300 rounded px-2 py-1" value={chart.limit ?? ''} onchange={(e) => (chart.limit = (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value))} />
-			</label>
-		</div>
+		<Section title="Presentation">
+			<Field label="Tooltip template" hint="&#123;dimension&#125; / &#123;measure&#125; placeholders">
+				<TextInput mono placeholder="&#123;dimension&#125;: &#123;measure&#125;" value={chart.tooltip?.template ?? ''} oncommit={(v) => { chart.tooltip = v ? { ...chart.tooltip, template: v } : undefined; }} />
+			</Field>
+			<div class="grid-2">
+				<Field label="Height" hint="vh fraction · blank = fit">
+					<NumberInput min={0.1} max={1} step={0.05} placeholder="fit column" value={chart.heightVh ?? undefined} oncommit={(v) => (chart.heightVh = v)} />
+				</Field>
+				<Field label="Limit" hint="Max rows fetched">
+					<NumberInput min={1} placeholder="default" value={chart.limit ?? undefined} oncommit={(v) => (chart.limit = v)} />
+				</Field>
+			</div>
+		</Section>
 	{/if}
 </div>
+
+<style>
+	.inspector {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+		font-size: var(--text-sm);
+	}
+
+	.inspector-title {
+		font-family: var(--font-display);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		color: var(--color-text);
+		letter-spacing: -0.01em;
+		padding: 0 2px;
+	}
+
+	.grid-2 {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	.rows {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+
+	.grow {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.fixed-w {
+		width: 108px;
+		flex-shrink: 0;
+	}
+
+	.fixed-w-wide {
+		width: 150px;
+		flex-shrink: 0;
+	}
+
+	.card-row {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: var(--space-2);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		background: var(--color-surface);
+	}
+
+	.create-form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: var(--space-3);
+		border: 1px dashed var(--color-border-strong);
+		border-radius: var(--radius-sm);
+		background: var(--color-surface-sunken);
+	}
+
+	.create-title {
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+	}
+
+	.mono {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+	}
+
+	.form-error {
+		font-size: var(--text-xs);
+		color: var(--color-danger);
+	}
+
+	.form-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--space-1);
+	}
+
+	:global(.ctl-textarea) {
+		font-family: var(--font-body);
+	}
+</style>

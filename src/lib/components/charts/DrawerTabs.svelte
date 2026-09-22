@@ -9,21 +9,75 @@
 	} = $props();
 </script>
 
-<div class="flex gap-1 bg-zinc-100 rounded-lg p-1">
+<div class="tabs" role="tablist">
 	<button
-		class="flex-1 px-3 py-1.5 rounded-md text-sm {active === 'settings'
-			? 'bg-white shadow-sm font-medium text-zinc-900'
-			: 'text-zinc-500'}"
+		type="button"
+		role="tab"
+		aria-selected={active === 'settings'}
+		class="tab"
+		class:on={active === 'settings'}
 		onclick={() => onchange('settings')}
 	>
 		Settings
 	</button>
 	<button
-		class="flex-1 px-3 py-1.5 rounded-md text-sm {active === 'danger'
-			? 'bg-white shadow-sm font-medium text-red-600'
-			: 'text-zinc-500 hover:text-red-500'}"
+		type="button"
+		role="tab"
+		aria-selected={active === 'danger'}
+		class="tab tab-danger"
+		class:on={active === 'danger'}
 		onclick={() => onchange('danger')}
 	>
 		Danger zone
 	</button>
 </div>
+
+<style>
+	.tabs {
+		display: flex;
+		gap: 2px;
+		padding: 3px;
+		background: var(--color-surface-sunken);
+		border-radius: var(--radius-md);
+	}
+
+	.tab {
+		flex: 1;
+		height: 26px;
+		border: none;
+		border-radius: var(--radius-sm);
+		background: transparent;
+		color: var(--color-text-secondary);
+		font-family: var(--font-body);
+		font-size: var(--text-xs);
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background 120ms ease,
+			color 120ms ease,
+			box-shadow 120ms ease;
+	}
+
+	.tab:hover:not(.on) {
+		color: var(--color-text);
+	}
+
+	.tab-danger:hover:not(.on) {
+		color: var(--color-danger);
+	}
+
+	.tab.on {
+		background: var(--color-surface);
+		color: var(--color-text);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.tab-danger.on {
+		color: var(--color-danger);
+	}
+
+	.tab:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 2px var(--color-accent-muted);
+	}
+</style>

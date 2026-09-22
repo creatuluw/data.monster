@@ -9,6 +9,13 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import { createPageRuntime } from '$lib/charts/page-runtime.svelte';
 	import PageGrid from '$lib/components/charts/PageGrid.svelte';
 	import BlockInspector from '$lib/components/charts/BlockInspector.svelte';
+	import Field from '$lib/components/charts/controls/Field.svelte';
+	import TextInput from '$lib/components/charts/controls/TextInput.svelte';
+	import NumberInput from '$lib/components/charts/controls/NumberInput.svelte';
+	import Section from '$lib/components/charts/controls/Section.svelte';
+	import DangerZone from '$lib/components/charts/controls/DangerZone.svelte';
+	import RemoveBtn from '$lib/components/charts/controls/RemoveBtn.svelte';
+
 	import DrawerTabs from '$lib/components/charts/DrawerTabs.svelte';
 	import ChartConfigDrawer from '$lib/components/charts/ChartConfigDrawer.svelte';
 	import type { PageDoc } from '$lib/charts/spec-types';
@@ -310,30 +317,26 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			{#if blockTab === 'settings'}
 				<BlockInspector {doc} ri={configBlock.ri} ci={configBlock.ci} bi={configBlock.bi} {schemas} {items} {relationships} onItemsChanged={refreshItems} />
 			{:else}
-				<div class="border border-red-200 bg-red-50 rounded-lg p-4 space-y-3">
-					<div>
-						<p class="text-sm font-medium text-red-700">Delete this component</p>
-						<p class="text-xs text-red-500/80 mt-0.5">Removes the block from the column. This cannot be undone (until you hit Save).</p>
-					</div>
-					<button class="px-3 py-1.5 rounded-lg text-sm font-medium text-white inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700" onclick={() => { doc.rows![configBlock.ri].columns![configBlock.ci].blocks.splice(configBlock.bi, 1); configId = null; }}><Trash2 size={13} /> Delete component</button>
-				</div>
+				<DangerZone
+					heading="Delete this component"
+					description="Removes the block from the column. This cannot be undone (until you hit Save)."
+					confirmLabel="Delete component"
+					onconfirm={() => { doc.rows![configBlock.ri].columns![configBlock.ci].blocks.splice(configBlock.bi, 1); configId = null; }}
+				/>
 			{/if}
 		</ChartConfigDrawer>
 	{:else if mode === 'page'}
 		<!-- page settings: only non-visual configuration lives here -->
 		<div class="max-w-xl space-y-4">
-			<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3">
-				<label class="block space-y-1">
-					<span class="text-xs text-zinc-500">Page title</span>
-					<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" bind:value={doc.title} />
-				</label>
-				<label class="block space-y-1">
-					<span class="text-xs text-zinc-500">Slug (read-only)</span>
-					<input type="text" class="w-full border border-zinc-200 rounded px-2 py-1.5 text-sm text-zinc-400 font-mono bg-zinc-50" value={doc.slug} disabled />
-				</label>
-			</div>
-			<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-2">
-				<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Rows</span>
+			<Section>
+				<Field label="Page title">
+					<TextInput bind:value={doc.title} />
+				</Field>
+				<Field label="Slug" hint="read-only">
+					<TextInput value={doc.slug} disabled mono />
+				</Field>
+			</Section>
+			<Section title="Rows">
 				{#if doc.rows?.length}
 					{#each doc.rows as _, ri (ri)}
 						<div class="flex items-center justify-between text-sm">
@@ -343,7 +346,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				{:else}
 					<p class="text-sm text-zinc-400">No rows yet — add one in Design mode.</p>
 				{/if}
-			</div>
+			</Section>
 		</div>
 	{:else}
 		<!-- canvas: rows are the only page-level primitive — components are added inside columns -->
@@ -374,32 +377,27 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				<DrawerTabs active={rowTab} onchange={(t) => (rowTab = t)} />
 
 				{#if rowTab === 'settings'}
-					<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3 text-sm">
-						<div class="flex items-center justify-between">
-							<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Columns</span>
-						</div>
+					<Section title="Columns">
 						{#each row.columns ?? [] as col, ci (ci)}
 							<div class="flex items-center gap-2">
-								<span class="text-xs text-zinc-500 w-14">Column {ci + 1}</span>
-								<input type="number" min="1" max="12" class="w-20 border border-zinc-300 rounded px-2 py-1" value={col.span ?? 12} onchange={(e) => (col.span = Number((e.target as HTMLInputElement).value))} />
-								<span class="text-xs text-zinc-400">/ 12 width</span>
-								<button class="ml-auto text-zinc-300 hover:text-red-500 disabled:opacity-30 disabled:hover:text-zinc-300" disabled={(row.columns?.length ?? 0) <= 1} onclick={() => removeColumn(rowConfig!, ci)} title="Remove column"><Trash2 size={13} /></button>
+								<span class="text-xs w-14" style="color: var(--color-text-secondary)">Column {ci + 1}</span>
+								<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />
+								<span class="text-xs" style="color: var(--color-text-tertiary)">/ 12 width</span>
+								<RemoveBtn title="Remove column" disabled={(row.columns?.length ?? 0) <= 1} onclick={() => removeColumn(rowConfig!, ci)} />
 							</div>
 						{/each}
-						<button class="text-xs text-zinc-500 hover:text-zinc-900 inline-flex items-center gap-1" onclick={() => addColumn(rowConfig!)}><Plus size={12} /> Split into another column</button>
-					</div>
-					<label class="block space-y-1">
-						<span class="text-xs text-zinc-500">Row height (px, optional — components fill it unless they set their own)</span>
-						<input type="number" min="40" class="w-full border border-zinc-300 rounded px-2 py-1" placeholder="auto" value={row.height ?? ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value; row.height = v ? Number(v) : undefined; }} />
-					</label>
+						<button class="text-xs inline-flex items-center gap-1" style="color: var(--color-text-secondary)" onclick={() => addColumn(rowConfig!)}><Plus size={12} /> Split into another column</button>
+					</Section>
+					<Field label="Row height" hint="px, optional — components fill it unless they set their own">
+						<NumberInput min={40} placeholder="auto" value={row.height ?? undefined} oncommit={(v) => (row.height = v)} />
+					</Field>
 				{:else}
-					<div class="border border-red-200 bg-red-50 rounded-lg p-4 space-y-3">
-						<div>
-							<p class="text-sm font-medium text-red-700">Delete this row</p>
-							<p class="text-xs text-red-500/80 mt-0.5">Removes the row and every component inside its columns. This cannot be undone (until you hit Save).</p>
-						</div>
-						<button class="px-3 py-1.5 rounded-lg text-sm font-medium text-white inline-flex items-center gap-1.5 bg-red-600 hover:bg-red-700" onclick={() => { removeRow(rowConfig!); rowConfig = null; }}><Trash2 size={13} /> Delete row</button>
-					</div>
+					<DangerZone
+						heading="Delete this row"
+						description="Removes the row and every component inside its columns. This cannot be undone (until you hit Save)."
+						confirmLabel="Delete row"
+						onconfirm={() => { removeRow(rowConfig!); rowConfig = null; }}
+					/>
 				{/if}
 			</ChartConfigDrawer>
 		{/if}
@@ -435,17 +433,15 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		{#if colConfig && doc.rows?.[colConfig.ri]?.columns?.[colConfig.ci]}
 			{@const col = doc.rows[colConfig.ri].columns![colConfig.ci]}
 			<ChartConfigDrawer open={true} title={`Column ${colConfig.ci + 1} settings`} width="45vw" onClosed={() => (colConfig = null)}>
-				<div class="bg-white rounded-lg border border-zinc-200 p-4 space-y-3 text-sm">
-					<label class="block space-y-1">
-						<span class="text-xs text-zinc-500">Width (1–12 of the row)</span>
-						<input type="number" min="1" max="12" class="w-full border border-zinc-300 rounded px-2 py-1" value={col.span ?? 12} onchange={(e) => (col.span = Number((e.target as HTMLInputElement).value))} />
-					</label>
-					<label class="block space-y-1">
-						<span class="text-xs text-zinc-500">Height (px, optional — overrides the row height)</span>
-						<input type="number" min="40" class="w-full border border-zinc-300 rounded px-2 py-1" placeholder="row height / auto" value={col.height ?? ''} onchange={(e) => { const v = (e.target as HTMLInputElement).value; col.height = v ? Number(v) : undefined; }} />
-					</label>
-					<button class="text-zinc-400 hover:text-red-500 text-xs inline-flex items-center gap-1 disabled:opacity-30 disabled:hover:text-zinc-400" disabled={(doc.rows![colConfig.ri].columns?.length ?? 0) <= 1} onclick={() => { removeColumn(colConfig!.ri, colConfig!.ci); colConfig = null; }}><Trash2 size={12} /> Remove column</button>
-				</div>
+				<Section>
+					<Field label="Width" hint="1–12 of the row">
+						<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />
+					</Field>
+					<Field label="Height" hint="px, optional — overrides the row height">
+						<NumberInput min={40} placeholder="row height / auto" value={col.height ?? undefined} oncommit={(v) => (col.height = v)} />
+					</Field>
+					<button class="text-xs inline-flex items-center gap-1 disabled:opacity-30" style="color: var(--color-text-secondary)" disabled={(doc.rows![colConfig.ri].columns?.length ?? 0) <= 1} onclick={() => { removeColumn(colConfig!.ri, colConfig!.ci); colConfig = null; }}><Trash2 size={12} /> Remove column</button>
+				</Section>
 			</ChartConfigDrawer>
 		{/if}
 	{/if}

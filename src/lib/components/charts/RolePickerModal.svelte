@@ -11,6 +11,8 @@
 	import type { Relationship } from '$lib/charts/relationships';
 	import type { TableSchemas } from '$lib/charts/query/compile';
 	import { Plus, Search, X } from 'lucide-svelte';
+	import TextInput from './controls/TextInput.svelte';
+	import Btn from './controls/Btn.svelte';
 
 	let {
 		kind,
@@ -133,10 +135,10 @@
 
 		{#if !creating}
 			<label class="block space-y-1">
-				<span class="text-xs text-zinc-500">Search {noun}s — master items, fields of {table}, linked tables</span>
-				<div class="flex items-center gap-2 border border-zinc-300 rounded-lg px-3 py-2 focus-within:ring-1 focus-within:ring-zinc-400">
-					<Search size={14} class="text-zinc-400" />
-					<input type="text" autofocus class="flex-1 outline-none text-sm" placeholder="Type to filter…" bind:value={query} />
+				<span class="text-xs" style="color: var(--color-text-secondary)">Search {noun}s — master items, fields of {table}, linked tables</span>
+				<div class="flex items-center gap-2" style="border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 0 var(--space-2); height: 30px; background: var(--color-surface)">
+					<Search size={14} style="color: var(--color-text-tertiary)" />
+					<input type="text" autofocus class="flex-1 outline-none text-sm" style="background: none; border: none; color: var(--color-text)" placeholder="Type to filter…" bind:value={query} />
 				</div>
 			</label>
 			<div class="max-h-64 overflow-auto rounded-lg border border-zinc-200 divide-y divide-zinc-100">
@@ -158,33 +160,24 @@
 					<p class="px-3 py-4 text-sm text-zinc-400 text-center">No matches.</p>
 				{/if}
 			</div>
-			<button
-				class="w-full px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center justify-center gap-2"
-				style="background: oklch(0.44 0.1 158)"
-				onclick={() => { creating = true; formError = ''; }}
-			>
+			<Btn variant="primary" onclick={() => { creating = true; formError = ''; }}>
 				<Plus size={14} /> New master {noun}
-			</button>
+			</Btn>
 		{:else}
 			<label class="block space-y-1">
-				<span class="text-xs text-zinc-500">Label</span>
-				<input type="text" autofocus class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder={kind === 'dimension' ? 'e.g. Region' : 'e.g. Revenue'} bind:value={newLabel} onkeydown={(e) => { if (e.key === 'Enter') create(); }} />
+				<span class="text-xs" style="color: var(--color-text-secondary)">Label</span>
+				<div class="w-full"><TextInput placeholder={kind === 'dimension' ? 'e.g. Region' : 'e.g. Revenue'} bind:value={newLabel} /></div>
 			</label>
 			<label class="block space-y-1">
-				<span class="text-xs text-zinc-500">Expression (DuckDB)</span>
-				<input type="text" class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} bind:value={newExpr} onkeydown={(e) => { if (e.key === 'Enter') create(); }} />
+				<span class="text-xs" style="color: var(--color-text-secondary)">Expression (DuckDB)</span>
+				<div class="w-full"><TextInput mono placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} bind:value={newExpr} /></div>
 			</label>
-			{#if formError}<p class="text-sm text-red-500">{formError}</p>{/if}
+			{#if formError}<p class="text-sm" style="color: var(--color-danger)">{formError}</p>{/if}
 			<div class="flex justify-end gap-2 pt-2">
-				<button class="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-900" onclick={() => (creating = false)}>Back</button>
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 inline-flex items-center gap-2"
-					style="background: oklch(0.44 0.1 158)"
-					onclick={create}
-					disabled={!newLabel.trim() || !newExpr.trim() || saving}
-				>
-					<Plus size={14} /> {saving ? 'Saving…' : `Save to library`}
-				</button>
+				<Btn variant="ghost" onclick={() => (creating = false)}>Back</Btn>
+				<Btn variant="primary" disabled={!newLabel.trim() || !newExpr.trim() || saving} onclick={create}>
+					<Plus size={14} /> {saving ? 'Saving…' : 'Save to library'}
+				</Btn>
 			</div>
 		{/if}
 	</div>

@@ -1,7 +1,7 @@
 ---
 type: Decision
 title: "Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events"
-description: Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners shipped as files-008 (2026-09-22): dm-events bus + six views live-reload; clobber banner is files-009.
+description: Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners shipped as files-008 (2026-09-22): dm-events bus + six views live-reload; clobber banner shipped as files-009 (write-through core).
 tags: [agents, workspace, live-reload, file-watcher, tauri-events, watcher-shipped, live-reload-shipped]
 status: accepted
 timestamp: "2026-09-22T13:21:28.681Z"

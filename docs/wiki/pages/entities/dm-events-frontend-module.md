@@ -36,7 +36,7 @@ Without it, agent-authored workspace file changes only appear after a manual rel
 
 - First added: 2026-09-22 — `files-008` (commit `d7f0fc7`, branch `feature/workspace-file-first`)
 - Wired views at birth: `/pages` list (`page`), `/pages/[slug]` editor (`page` + `measure` + `dimension` + `relationships`), `/query` saved queries (`saved-query`), `ItemEditor` (per-kind), `RelationshipEditor` (`relationships`), `/connect` connections (`connections`) — each one line: its existing refresh fn inside `$effect(() => onDmChanged(...))`
-- Still pending in the phase: `files-009` write-through editor with the Reload/Keep-mine clobber banner, `files-010` write-through for all drawers
+- `files-009` shipped (2026-09-22, commit `05d6ea1`): write-through editor with the Reload/Keep-mine clobber banner - see [write-through core](write-through-core-src-lib-write-through-ts.md). Still pending in the phase: `files-010` write-through for all drawers
 
 ## Source
 

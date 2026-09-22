@@ -11,6 +11,7 @@
 	import { onDmChanged } from '$lib/dm-events';
 	import { goto } from '$app/navigation';
 	import { listMasterItems, saveMasterItem, deleteMasterItem } from '$lib/central-api';
+	import { createWriteThrough } from '$lib/write-through';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { TableSchemas } from '$lib/charts/query/compile';
 	import type { MasterItem } from '$lib/charts/items';
@@ -46,6 +47,20 @@
 	let error = $state('');
 	let adding = $state(false);
 	let draft = $state<MasterItem>({ id: '', kind, table: '', label: '', expr: '' });
+
+	// editing an EXISTING item: the file IS the save (FR-10) — creation keeps the
+	// explicit save (the stable id is minted there; no half-drafted files).
+	// Ceiling: external-change conflicts in the drawer are last-write-wins.
+	const wt = createWriteThrough({
+		read: () => JSON.stringify(draft),
+		write: async (spec) => {
+			await saveMasterItem(JSON.parse(spec) as MasterItem);
+		}
+	});
+	$effect(() => {
+		if (loading || !draft.id) return;
+		wt.markLocal(JSON.stringify(draft));
+	});
 
 	const tables = $derived(Object.keys(schemas));
 	const noun = $derived(kind === 'measure' ? 'measure' : 'dimension');
@@ -85,6 +100,8 @@
 		try {
 			await saveMasterItem({ ...draft, id });
 			adding = false;
+			newDraft();
+			// refresh arrives via the dm/ watcher; keep it for non-watcher fallbacks
 			await refresh();
 			// created from a chart on /pages — hand the new item back to that chart
 			if (preset?.returnTo && preset?.block) {
@@ -93,6 +110,13 @@
 		} catch (err) {
 			error = extractErrorMessage(err, `Failed to save ${noun}`);
 		}
+	}
+
+	/** Done editing an existing item: flush any pending write-through and close. */
+	async function closeEditor() {
+		await wt.flush();
+		adding = false;
+		newDraft();
 	}
 
 	async function handleDelete(id: string) {
@@ -171,7 +195,11 @@
 			{/if}
 			<div class="flex gap-2 justify-end">
 				<button class="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-900" onclick={() => (adding = false)}>Cancel</button>
-				<button class="px-3 py-1.5 text-sm text-white rounded-md disabled:opacity-50" style="background: oklch(0.44 0.1 158)" onclick={handleSave} disabled={!draft.label.trim() || !draft.expr.trim()}>Save {noun}</button>
+				{#if draft.id}
+					<button class="px-3 py-1.5 text-sm text-white rounded-md" style="background: oklch(0.44 0.1 158)" onclick={closeEditor}>Done</button>
+				{:else}
+					<button class="px-3 py-1.5 text-sm text-white rounded-md disabled:opacity-50" style="background: oklch(0.44 0.1 158)" onclick={handleSave} disabled={!draft.label.trim() || !draft.expr.trim()}>Save {noun}</button>
+				{/if}
 			</div>
 		</div>
 	{:else}

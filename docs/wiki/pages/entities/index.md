@@ -31,3 +31,4 @@ _Concrete named things will be listed here._
 - [Connections command module (connections.rs)](./connections-command-module-connections-rs.md) - What is it?
 - [dm_watch command module](./dm-watch-command-module.md) - `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works
 - [dm-events frontend module](./dm-events-frontend-module.md) - `src/lib/dm-events.ts` — the frontend half of the dm/ live-reload loop (workspace-file-first task `files-008`, commit `d7f0fc7`): one Tauri event bus for `dm:ch
+- [Write-through core (src/lib/write-through.ts)](./write-through-core-src-lib-write-through-ts.md) - A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task `files-009`, commit `05d6ea1`, 2026-09-22). All deboun

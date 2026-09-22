@@ -43,5 +43,10 @@
     "task_id": "files-009",
     "title": "FR-9 Pages editor write-through (save flow deleted)",
     "summary": "New pure core src/lib/write-through.ts (createWriteThrough: markLocal/flush/decideExternal/ackLoad, 7 fake-timer tests - RED first). Editor surgery: save button, saving/saved state, 60s auto-save interval and all handleSave call sites DELETED; write-through via two $effects (Design/Page: deep doc JSON; Code: raw textarea text - invalid JSON written verbatim, watcher classifies dm:error). Conflict handling: dm:changed(own slug) + pendingWrite -> decideExternal -> amber 'Reload / Keep mine' banner (VS Code model; keep-mine = flush, reload = reloadDoc + ackLoad). openInData flushes before goto; /data return-leg attach flow persists via doc effect. central-api savePageSpec writes raw text. vitest 132/132; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-010",
+    "title": "FR-10 Write-through everywhere else (shared helper)",
+    "summary": "ItemEditor (the one true per-document editor surface): editing an EXISTING master item now writes through live via createWriteThrough (every draft field change -> dm/master-items/<id>.json within 400ms); creation keeps the explicit Save (stable id minted there - no half-drafted files); edit button became Done (flush + close). RelationshipEditor and saved-queries/connections UIs verified already mutation-immediate (every add/update/delete command writes files) - zero change needed, documented as scope note. Ceiling: drawer conflicts are last-write-wins (banner reserved for the pages editor). vitest 132/132, cargo 115/115, svelte-check clean."
   }
 ]

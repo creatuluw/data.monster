@@ -8,28 +8,34 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T11:35:05.616Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T11:46:23.064Z.
 
 ## Recent Decisions
 
+- [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context (2026-09-22)
+- [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
+- [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context (2026-09-17)
+- [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context (2026-09-17)
+- [App gets virtual multi-tab navigation: bottom bar is the tab bar](decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md) — Context (2026-09-17)
+- [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New) (2026-09-17)
+- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context (2026-09-17)
+- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context (2026-09-17)
+- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context (2026-09-17)
 - [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context (2026-09-17)
 - [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
 - [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
 - [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
 - [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context (2026-09-17)
 - [Library demos render the real components fed dummy query-shaped data — no demo-only clones](decisions/library-demos-reuse-real-components.md) — Context (2026-09-17)
-- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](decisions/library-q4-dedicated-tabbed-views.md) — Context (2026-09-17)
-- [Library components are self-contained extension-style packages — own definition, logic, and data](decisions/library-extension-style-components.md) — Context (2026-09-17)
-- [Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside](decisions/library-q3-master-detail-layout.md) — Context (2026-09-17)
-- [Library Q2: registry v1 is display-only — editor wiring deferred](decisions/library-q2-registry-display-only.md) — Context (2026-09-17)
-- [/library becomes the central component library (proposed — spec interview in progress)](decisions/library-central-component-library.md) — Context (2026-09-17)
-- [Typography settles: Inter everywhere (display + body), Geist Mono for data detail](decisions/typography-settles-inter-everywhere-geist-mono.md) — Context (2026-09-16)
-- [Typography: Host Grotesk headings, Geist body — Inter dropped](decisions/typography-host-grotesk-headings-geist-body.md) — Typography: Host Grotesk headings, Geist body — Inter dropped (2026-09-16)
-- [Typography: Geist display — Syne dropped](decisions/typography-geist-display-syne-dropped.md) — Context (2026-09-16)
-- [Typography: Syne display — Space Grotesk dropped](decisions/typography-syne-display-space-grotesk-dropped.md) — Typography: Syne display — Space Grotesk dropped (2026-09-16)
 
 ## Active Rules
 
+- [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
+- [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
+- [Pick display labels resolve through roleLabels() — never hand-roll chip labels](rules/pick-display-labels-resolve-through-rolelabels.md) — Guideline (2026-09-17)
+- [Pick values flow through one codec — src/lib/charts/pickers.ts](rules/pick-values-flow-through-one-codec-src-lib-charts.md) — Guideline (2026-09-17)
+- [Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows](rules/adding-a-component-never-auto-opens-the-config.md) — When a component is added to a page-editor row (`addComponent` in the page editor), the **config drawer must NOT auto-open**. The newly adde… (2026-09-17)
+- [Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash](rules/leave-wiki-recap-noise-uncommitted.md) — Guideline (2026-09-17)
 - [Drawers reuse the shared drawerResize action](rules/drawers-reuse-the-shared-drawerresize-action.md) — Guideline (2026-09-17)
 - [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in … (2026-09-17)
 - [Two-font rule: Inter for all UI (display + body), Geist Mono for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Inter everywhere for UI text; Geist Mono reserved for data detail (tables, chart ticks, tags, IDs). (2026-09-16)
@@ -48,30 +54,32 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-17T11
 
 ## Preferences & Conventions
 
+- [Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself](preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md) — Agent may run the CDP restart chain itself (2026-09-17)
+- [CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)](preferences/cdp-verify-the-dev-app-via-webview2-additional.md) — How to get the dev app CDP-drivable (exact procedure) (2026-09-17)
 - [Never start npm run dev / tauri dev — the user owns the dev app](preferences/never-start-npm-run-dev-tauri-dev.md) — The LLM must never launch the dev app itself — no `npm run dev`, `npx tauri dev`, or background dev-server starts. The user starts and owns … (2026-09-15)
 
 ## Recent Learnings — development patterns
 
-- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto-mock-taur.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fi… (2026-09-17)
-- [speed-highlight/core has no Svelte grammar](learnings/speed-highlight-core-has-no-svelte-grammar.md) — Gotchas discovered wiring `@speed-highlight/core` into the library Code tab (2026-09-17)
-- [Library code entries are keyed by full repo paths](learnings/library-code-entries-are-keyed-by-full-repo-paths.md) — What (2026-09-17)
-- [The /library vs /pages config-drawer difference is scope, not components](learnings/library-vs-pages-config-drawer-scope.md) — Symptom (2026-09-17)
-- [Chart segment selection is parent-held {dimension, value} transient state](learnings/chart-segment-selection-parent-held-state.md) — Chart components (as used in `/pages` and the library detail page demo) manage their own click/deselect handlers once selection state exists… (2026-09-17)
-- [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](learnings/calluna-not-on-google-fonts-css2-drops-silently.md) — Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]). (2026-09-16)
-- [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](learnings/squada-one-is-single-weight-400.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)
-- [Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours](learnings/tour-html-captures-embed-google-fonts-import.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)
-- [Central-charts work lives on feature/central-charts — master is held at a restore point](learnings/central-charts-work-lives-on-feature-branch.md) — Discovered 2026-09-16 when the user reported the `/pages` work as "completely lost." (2026-09-16)
-- [Tour DOM snapshots scale with the live DOM — bound secondary frames, keep one big frame when size is the story](learnings/tour-dom-snapshots-scale-with-live-dom.md) — Discovered 2026-09-16 finishing the query-tour (see [[app-tour-set-docs-tours]]). (2026-09-16)
-- [settings-tour and analyst-tour built — honest-beats-staged applied to the chat](learnings/settings-tour-and-analyst-tour-built.md) — Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in docs/tours/ (connect, preview, query, data-tables, pages, labs,… (2026-09-16)
-- [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section). (2026-09-16)
-- [wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths](learnings/wiki-note-page-wikilinks-resolve-relative.md) — Discovered 2026-09-16 while writing the [[feature-skill-catalog-docs-features]] artifact page. (2026-09-16)
-- [Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern](learnings/extending-docs-features-requires-add-evals.md) — Constraints of add-evals-to-skill (hit while building [[feature-skill-catalog-docs-features]]) (2026-09-16)
-- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-app-main-disable-flex-stretch.md) — Symptom (2026-09-15)
-- [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-probes.md) — Symptom: a CDP DOM probe checking for the label `"Rows"` failed on the Page (2026-09-15)
-- [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-walk-ancestor-opacity-chain.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15): (2026-09-15)
-- [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-stale-hmr-webview.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel). (2026-09-15)
-- [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] `PageDoc`, a block carries a **block-level `title`** *and* (for chart blocks)… (2026-09-15)
-- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP `Input.dispatchMouseEvent` DOES click svelteplot marks (BarX `oncli… (2026-09-15)
+- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md). (2026-09-22)
+- [ExprEditor suggestions are computed locally](learnings/expreditor-suggestions-are-computed-locally.md) — While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists … (2026-09-22)
+- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](learnings/minimized-occluded-webview2-window-throttles-the-page-bringt.md) — Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md). (2026-09-22)
+- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-table-mismatch-broke-all-re.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
+- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-windows-flags-use-msys-.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
+- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-tab-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by `textContent.includes('Definitions')`… (2026-09-22)
+- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-right-after-a-source-save-are-often-hmr-rac.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (`TableOverview.svelte`, verified over CDP against the live dev app). (2026-09-22)
+- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (`TableOverview.svelte`, +6 lines). (2026-09-22)
+- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on `src/routes/pages/[slug]/+page.svelte` (2026-09-18, /pages/revenue): auto-save runs every 60s via `handleSave(tru… (2026-09-21)
+- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]]. (2026-09-18)
+- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser … (2026-09-18)
+- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling `docs/design-system-data-monster.html` to 80%. (2026-09-18)
+- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while check… (2026-09-17)
+- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17). (2026-09-17)
+- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md) — Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplo… (2026-09-17)
+- [CDP probe `$$` is querySelector — indexing it silently kills clicks](learnings/cdp-probe-is-queryselector-indexing-it-silently.md) — Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7). (2026-09-17)
+- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal. (2026-09-17)
+- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](learnings/cdp-gate-assertions-need-settle-time-after-doc.md) — Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10): (2026-09-17)
+- [Component spawn grows too-small explicit-height rows to 320px minimum](learnings/component-spawn-grows-too-small-explicit-height.md) — Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8). (2026-09-17)
 
 ## Architecture
 

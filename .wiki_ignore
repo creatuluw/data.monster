@@ -35,3 +35,6 @@ src-tauri/target/
 .tmp-*
 .tmp-wv2-cdp/
 .vite-dev.log
+
+# Generated verification screenshots from dev sessions (not project artifacts)
+reports/*.png

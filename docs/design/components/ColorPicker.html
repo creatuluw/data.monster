@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ColorPicker Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--color-border-strong:oklch(0.72 0.012 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--shadow-md:0 2px 8px oklch(0.22 0.005 250 / 0.09);--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-6);background:var(--color-surface);margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.field{display:flex;flex-direction:column;gap:var(--space-2);max-width:320px}
+.field-label{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:oklch(0.44 0.14 41)}
+.color-picker-wrap{position:relative}
+.color-input-row{display:flex;align-items:center;gap:var(--space-2)}
+.color-input{padding:var(--space-2) var(--space-3);border:1px solid var(--color-border-strong);border-radius:var(--radius-xs);font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text);background:var(--color-surface);flex:1}
+.color-input:focus{outline:none;border-color:var(--color-accent);box-shadow:0 0 0 2px var(--color-accent-muted)}
+.color-swatch{width:32px;height:32px;border:1px solid var(--color-border);border-radius:var(--radius-xs);cursor:pointer;flex-shrink:0}
+.color-palette{display:flex;flex-wrap:wrap;gap:var(--space-1);margin-top:var(--space-3)}
+.color-chip{width:28px;height:28px;border-radius:var(--radius-xs);border:1px solid var(--color-border);cursor:pointer;transition:transform var(--duration-fast) var(--ease-out-expo)}
+.color-chip:hover{transform:scale(1.15);z-index:1}
+.color-chip.selected{border:2px solid var(--color-accent);box-shadow:0 0 0 1px white}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>ColorPicker</h1>
+<p class="desc">Color selection with hex input, swatch preview, and design system palette.</p>
+<div class="demo">
+<div class="field">
+<label class="field-label">Theme Color</label>
+<div class="color-picker-wrap">
+<div class="color-input-row">
+<input type="text" class="color-input" id="cp-input" value="#c4712b" onchange="updateColor(this.value)" placeholder="#000000">
+<div class="color-swatch" id="cp-swatch" style="background:#c4712b" onclick="document.getElementById('cp-input').select()"></div>
+</div>
+<div class="color-palette" id="cp-palette"></div>
+</div>
+</div>
+</div>
+<script>
+var palette=['#c4712b','#d4a574','#8b4d1e','#ede4da','#f8f8fa','#f1f1f5','#eaeaef','#1e1e24','#5e5e6e','#8e8e9c','#2d9f5c','#c9a028','#c93a26'];
+var container=document.getElementById('cp-palette');
+palette.forEach(function(c,i){
+var chip=document.createElement('div');
+chip.className='color-chip'+(c==='#c4712b'?' selected':'');
+chip.style.background=c;
+chip.title=c;
+chip.onclick=function(){updateColor(c)};
+container.appendChild(chip);
+});
+function updateColor(c){
+document.getElementById('cp-input').value=c;
+document.getElementById('cp-swatch').style.background=c;
+document.querySelectorAll('.color-chip').forEach(function(ch){ch.classList.remove('selected');if(ch.style.background===c||ch.style.backgroundColor===c)ch.classList.add('selected')});
+}
+</script>
+</div>
+</body>
+</html>

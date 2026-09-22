@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can D2 render interactive diagrams, and what are the alternatives? — fractal research report</title>
+<!--
+  ============================================================================
+  FRACTAL RESEARCH · HTML REPORT TEMPLATE (self-contained, portable)
+  Design lineage: html-docs research templates (thariqs.github.io/html-effectiveness)
+
+  HOW TO FILL THIS IN (the orchestrator agent, after synthesis):
+  1. Copy this file to <report_dir>/report.html. The markdown artifacts
+     (agents/, research.log, metrics.json) stay — this page is the deliverable.
+  2. Replace every {{PLACEHOLDER}}. Search for "{{" to find them all.
+  3. Answer section: keep one <h2>+paragraphs per major branch (one branch =
+     one h2, named after the sub-question it answers). Rank strongest first.
+  4. Optional strategy sections are marked "OPTIONAL — delete if not applicable":
+     Blind spots (perspective_expander), Sources (grounded_research),
+     The question, examined (socratic). Delete the ones the run didn't use.
+  5. Build TREE below in <script> from research.log: decompose events give
+     parent→children, answer events give status. One node per question:
+       { id, q, status, children: [...] }
+     status ∈ explored | validated | synthesized | dead_end. dead_end nodes:
+     keep them — visible dead ends are findings.
+  6. Verify: open report.html in a browser (or show_in_browser). Zero external
+     dependencies — must work offline, from file://.
+  ============================================================================
+-->
+<style>
+  :root {
+    --ivory:   #FAF9F5;
+    --slate:   #141413;
+    --clay:    #D97757;
+    --oat:     #E3DACC;
+    --olive:   #788C5D;
+    --sky:     #6A8CAF;
+    --rust:    #B04A3F;
+    --gray-150:#F0EEE6;
+    --gray-300:#D1CFC5;
+    --gray-500:#87867F;
+    --gray-700:#3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ivory:   #1C1C1A;
+      --slate:   #EDEBE4;
+      --clay:    #D97757;
+      --oat:     #3A362F;
+      --gray-150:#26261F;
+      --gray-300:#3D3D3A;
+      --gray-500:#A5A39B;
+      --gray-700:#CFCDC5;
+    }
+    body { background: var(--ivory); }
+    .demo, aside, .card { background: #232320; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ivory);
+    color: var(--gray-700);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 120px;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 48px;
+  }
+  @media (max-width: 960px) { .page { grid-template-columns: 1fr; } aside { order: 2; position: static; } }
+
+  /* ── header ───────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 33px;
+    color: var(--slate);
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+    line-height: 1.25;
+  }
+  .lead { max-width: 680px; margin-bottom: 16px; font-size: 16.5px; }
+  .lead strong { color: var(--slate); }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--slate);
+    margin: 40px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 17px; color: var(--slate); margin: 24px 0 8px; }
+  p { margin-bottom: 12px; max-width: 680px; }
+  ul, ol { margin: 0 0 12px 22px; max-width: 680px; }
+  li { margin-bottom: 5px; }
+  code { font-family: var(--mono); font-size: 13px; }
+  a { color: var(--clay); }
+  section { scroll-margin-top: 24px; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+  }
+  .meta span {
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--gray-150);
+  }
+  .meta b { color: var(--slate); font-weight: 600; }
+
+  /* ── confidence + citation chips ──────── */
+  .conf { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+  .conf.high   { background: rgba(120,140,93,.18);  color: var(--olive); }
+  .conf.medium { background: rgba(217,119,87,.15);  color: var(--clay); }
+  .conf.low    { background: rgba(176,74,63,.15);   color: var(--rust); }
+  .src {
+    font-family: var(--mono); font-size: 12px;
+    border-bottom: none;
+  }
+
+  .card {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 14px;
+    background: #fff;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  .card.dead-ends { border-style: dashed; }
+
+  /* ── research tree ────────────────────── */
+  .tree { font-size: 13.5px; }
+  .tree details { margin: 3px 0 3px 0; }
+  .tree details > summary {
+    cursor: pointer; list-style: none;
+    padding: 4px 8px; border-radius: 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .tree details > summary::-webkit-details-marker { display: none; }
+  .tree details > summary:hover { background: var(--gray-150); }
+  .tree details > summary::before { content: "▸"; color: var(--gray-500); font-size: 10px; }
+  .tree details[open] > summary::before { content: "▾"; }
+  .tree .leaf { padding: 4px 8px 4px 22px; }
+  .tree .q { color: var(--slate); }
+  .tree .nid { font-family: var(--mono); font-size: 10.5px; color: var(--gray-500); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; position: relative; top: 0px; align-self: center; }
+  .dot.explored    { background: var(--olive); }
+  .dot.validated   { background: var(--sky); }
+  .dot.synthesized { background: var(--slate); }
+  .dot.dead_end    { background: var(--rust); }
+  .tree .branch { margin-left: 18px; border-left: 1px solid var(--gray-300); padding-left: 10px; }
+
+  /* ── sidebar ──────────────────────────── */
+  aside {
+    position: sticky; top: 32px; align-self: start;
+    border: 1.5px solid var(--gray-300); border-radius: 12px;
+    background: #fff; padding: 18px 18px 12px;
+  }
+  aside .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  aside nav a {
+    display: block; text-decoration: none; color: var(--gray-700);
+    font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gray-150);
+  }
+  aside nav a:hover { color: var(--clay); }
+  aside dl { margin-top: 16px; }
+  aside dt { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-500); margin-top: 10px; }
+  aside dd { font-size: 13.5px; color: var(--slate); }
+  aside button {
+    margin-top: 16px; width: 100%;
+    appearance: none; border: 1.5px solid var(--gray-300);
+    background: var(--gray-150); border-radius: 6px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  aside button:hover { background: var(--oat); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-family: var(--mono); color: var(--gray-500); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    aside, aside button { display: none; }
+    .page { grid-template-columns: 1fr; gap: 0; }
+    .tree details { display: block; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <main>
+    <div class="eyebrow">Fractal research · grounded_research</div>
+    <h1>Can D2 (d2lang.com) render interactive diagrams where elements can be selected or given behavior/links — and if not, what are the alternatives?</h1>
+    <p class="lead">
+      <strong>D2 natively supports exactly two interactivity features — <code>tooltip</code> (hover text) and <code>link</code> (click a shape → navigate to a URL). No selection, no click callbacks, no JS event binding.</strong> However, D2's SVG output is scriptable: shape names are recoverable from base64-encoded CSS classes (empirically verified by running the official <code>@terrastruct/d2</code> WASM package), so custom selection/behavior can be layered on in a host page. If you need true interactivity out of the box, the alternatives are: Mermaid (the only DSL with JS click callbacks), interactive diagram libraries (Cytoscape.js, React/Svelte Flow, AntV X6, Rete.js, GoJS), or embeddable editors (Excalidraw, tldraw).
+    </p>
+    <div class="meta">
+      <span>2026-09-17</span>
+      <span>strategy <b>grounded_research</b></span>
+      <span>6 nodes</span>
+      <span>depth <b>1</b></span>
+      <span>6 agents</span>
+    </div>
+
+    <!-- ══ ANSWER ══════════════════════════════════════════════════════ -->
+    <!-- One <h2> per major branch, strongest first. h2 id = anchor for the
+         sidebar TOC. Each finding can carry a confidence chip:
+         <span class="conf high">high</span> (or medium / low). -->
+    <section id="answer">
+      <h2>D2 natively: tooltip + link, nothing more</h2>
+      <p>
+        D2's own "Interactive" tour section lists exactly two features, unchanged since they
+        shipped in v0.1.4 (Dec 2022). That release promised "much more in store for
+        interactivity" — nothing more has landed in the docs in the years since.
+      </p>
+      <ul>
+        <li><code>tooltip:</code> adds hover text (HTML <code>&lt;title&gt;</code> tags; no markdown; degrades to a numbered appendix on PNG export) <span class="conf high">verified</span> — d2lang.com/tour/interactive</li>
+        <li><code>link:</code> makes a shape clickable → navigates to an external URL (fragments with <code>#</code> must be quoted) <span class="conf high">verified</span> — d2lang.com/tour/interactive</li>
+        <li>No click callbacks, event-handler keywords, or render-event API exist anywhere in the docs or repo <span class="conf high">verified (absence)</span></li>
+        <li>No selection state, no multi-select, no touch support for tooltips (open issue #897 since Feb 2023); links/tooltips can't carry custom labels (issue #1205) <span class="conf high">verified</span></li>
+        <li>Animations are passive loops (GIF board cycling, marching-ants dashes) — not user interaction; play.d2lang.com is "interactive" only as a source editor <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>The DIY escape hatch: D2's SVG is scriptable</h2>
+      <p>
+        A leaf agent installed the official <code>@terrastruct/d2</code> npm package (WASM) and
+        rendered diagrams live to check the output DOM. Shape identity <em>is</em> recoverable —
+        but not the way blog posts claim.
+      </p>
+      <ul>
+        <li>Every shape renders as <code>&lt;g class="{base64url(shapeKey)}"&gt;&lt;g class="shape"&gt;…&lt;/g&gt;&lt;/g&gt;</code>; connections encode <code>(src -&gt; dst)[0]</code>. Decode from JS: <code>atob(cls)</code> <span class="conf high">verified empirically</span> (ran @terrastruct/d2 v0.1.33 / D2 v0.7.0-HEAD)</li>
+        <li>The common claim "shape names appear as SVG id attributes" is <strong>false</strong> — deliberate XSS/id-collision safety <span class="conf high">verified</span> (d2svg.go + security tests)</li>
+        <li>JS API: <code>new D2()</code> → <code>compile(src)</code> → <code>render(diagram)</code> → SVG string; isomorphic browser/Node; Go library also exists <span class="conf high">verified</span></li>
+        <li>So: <code>querySelectorAll('g.shape')</code> → decode parent class → attach your own click/selection handlers. Works, but the class scheme is de-facto stable, <strong>not a documented public contract</strong> — an upgrade could break it <span class="conf medium">inferred</span></li>
+        <li>Deeper hook: the compiled IR (JSON) exposes <code>shapes[].classes</code> — custom classes can be injected between compile and render <span class="conf medium">reported</span></li>
+      </ul>
+
+      <h2>The real answer: interactive diagram libraries</h2>
+      <p>
+        Every library below natively supports element selection + click/behavior binding —
+        what D2 lacks, these have out of the box.
+      </p>
+      <ul>
+        <li><strong>Cytoscape.js</strong> — click-select, box select, modifier multi-select, delegated <code>cy.on('tap','node',…)</code>; MIT; vanilla, framework-agnostic <span class="conf high">verified</span></li>
+        <li><strong>React Flow / Svelte Flow</strong> — <code>elementsSelectable</code> (default on), <code>onNodeClick</code>, <code>onSelectionChange</code>; MIT; one per framework <span class="conf high">verified</span></li>
+        <li><strong>AntV X6</strong> — graph <em>editing</em> engine: <code>node:click</code>/<code>port:click</code>/<code>edge:click</code> events, lasso selection, minimap; MIT <span class="conf high">verified</span></li>
+        <li><strong>AntV G6</strong> — analysis-oriented sibling, same event system; MIT <span class="conf medium">reported</span></li>
+        <li><strong>Rete.js</strong> — node-editor framework: <code>selectableNodes</code>, <code>nodepicked</code>; MIT; Svelte renderer plugin exists <span class="conf high">verified</span></li>
+        <li><strong>JointJS</strong> — open core, but advanced selection/interaction tooling largely lands in commercial JointJS+ <span class="conf medium">reported</span></li>
+        <li><strong>GoJS</strong> — best built-in interaction polish (select, drag, undo); <strong>commercial</strong>, evaluation watermark <span class="conf medium">reported</span></li>
+        <li><strong>D3.js</strong> — raw <code>selection.on("click",…)</code> works, but selection state, node model, and links are all hand-built <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>D2's peer DSLs: only Mermaid goes further</h2>
+      <ul>
+        <li><strong>Mermaid</strong> — the only text DSL with real JS click callbacks: <code>click nodeId callback</code> invokes a function on the hosting page; requires <code>securityLevel: 'loose'</code> (default <code>strict</code> disables it) and <code>bindFunctions()</code> after DOM insertion <span class="conf high">verified</span> — mermaid.js.org</li>
+        <li><strong>Graphviz</strong> — <code>URL</code>/<code>href</code> node attributes + native <code>tooltip</code>; pure SVG anchors, zero scripting — same tier as D2 <span class="conf high">verified</span></li>
+        <li><strong>PlantUML</strong> — <code>[[url{tooltip} label]]</code> across ~8 diagram types; links inert in PNG output <span class="conf high">verified</span></li>
+        <li><strong>Kroki</strong> (server-side rendering) kills scripted interactivity by construction: <code>securityLevel</code> can't be overridden per request; only native SVG anchors survive, and only when the SVG is inlined (not <code>&lt;img&gt;</code>) <span class="conf high">verified</span></li>
+        <li>Net: among DSLs, D2's tooltip+link ≈ Graphviz/PlantUML tier. Mermaid alone adds callbacks. Nothing in the DSL world gives selection state.</li>
+      </ul>
+
+      <h2>Embeddable diagram editors</h2>
+      <ul>
+        <li><strong>tldraw</strong> — React SDK; <code>editor.on('event')</code> gives shape-level pointer targets, <code>store.listen()</code> for all mutations — richest programmatic attach; source-available, <strong>production requires a license key</strong> <span class="conf high">verified</span></li>
+        <li><strong>Excalidraw</strong> — React component, MIT; <code>onChange(elements, appState, files)</code> + <code>onLinkOpen</code>; own JSON format; programmatic element API still beta <span class="conf high">verified</span></li>
+        <li><strong>draw.io embed mode</strong> — iframe + postMessage gives lifecycle events (init/save/exit) but <strong>no per-shape selection/click events</strong>; only <code>openLink</code> forwarding; Apache-2.0 <span class="conf high">verified</span></li>
+        <li><strong>maxGraph</strong> — maintained Apache-2.0 TypeScript successor to mxGraph; library-embed with full programmatic selection model <span class="conf high">verified</span></li>
+        <li><strong>yFiles for HTML</strong> — fully programmatic graph/selection; closed-source commercial SDK <span class="conf medium">reported</span></li>
+      </ul>
+
+      <h2>Decision matrix</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+        <tr style="border-bottom:2px solid var(--gray-300);text-align:left;"><th style="padding:6px 8px;">You want…</th><th style="padding:6px 8px;">Pick</th></tr>
+        <tr style="border-bottom:1px solid var(--gray-150);"><td style="padding:6px 8px;">Hover text + hyperlinks, best-in-class DSL</td><td style="padding:6px 8px;"><strong>D2 as-is</strong> (<code>tooltip</code>/<code>link</code>)</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-150);"><td style="padding:6px 8px;">D2 layout + custom selection/behavior in-app</td><td style="padding:6px 8px;"><strong>@terrastruct/d2 WASM + post-process SVG</strong> (decode base64 classes, bind handlers — DIY, undocumented contract)</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-150);"><td style="padding:6px 8px;">Text DSL with JS click callbacks</td><td style="padding:6px 8px;"><strong>Mermaid</strong> (<code>loose</code>, browser only)</td></tr>
+        <tr style="border-bottom:1px solid var(--gray-150);"><td style="padding:6px 8px;">Interactive diagram component in a web app</td><td style="padding:6px 8px;"><strong>Cytoscape.js</strong> / <strong>React Flow</strong> / <strong>Svelte Flow</strong> / <strong>AntV X6</strong></td></tr>
+        <tr style="border-bottom:1px solid var(--gray-150);"><td style="padding:6px 8px;">Node-editor UX (select, wire, move)</td><td style="padding:6px 8px;"><strong>Rete.js</strong> (MIT) or <strong>GoJS</strong> (commercial)</td></tr>
+        <tr><td style="padding:6px 8px;">Whiteboard-style embeddable editor</td><td style="padding:6px 8px;"><strong>Excalidraw</strong> (MIT) — tldraw if you'll buy the license</td></tr>
+      </table>
+    </section>
+
+    <!-- ══ TENSIONS ═════════════════════════════════════════════════════ -->
+    <section id="tensions">
+      <h2>Tensions</h2>
+      <p>Where branches disagree or where marketing and reality diverge — kept visible, not averaged away.</p>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>D2's homepage markets "Hover over shapes to learn more, or click through to another page" — which sounds rich, but resolves to exactly tooltip + external link (branch 1, high confidence). v0.1.4's Dec-2022 promise of "much more in store for interactivity" still hasn't landed in the docs.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Blog-level claims say D2 SVGs carry shape names as <code>id</code> attributes; the empirical run proved they're <strong>base64 classes</strong>, deliberately (XSS safety). The class scheme is de-facto stable but undocumented — DIY interactivity built on it has no compatibility contract (branch 2, high confidence on facts, medium on long-term stability).</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>"Open source" diverges sharply in the alternatives: tldraw is source-available but production needs a paid key; GoJS renders a watermark unlicensed; JointJS gates advanced selection tooling behind JointJS+; draw.io embed is Apache-2.0 but exposes no selection events. Assessment: for guaranteed-free interactivity, the safe set is Cytoscape.js, React/Svelte Flow, X6, Rete.js, Excalidraw, maxGraph (branches 3+5, high confidence).</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Mermaid's click callbacks are real but fragile: dead under default <code>strict</code> securityLevel, in static exports, in GitHub, and in Kroki (branch 4, high confidence). The most-advertised DSL interactivity feature has the most deployment traps.</p>
+      </div>
+    </section>
+
+    <!-- ══ OPEN QUESTIONS ══════════════════════════════════════════════ -->
+    <section id="open-questions">
+      <h2>Open questions</h2>
+      <ul>
+        <li>Does the kroki-mermaid companion container default to <code>strict</code>? (needs a source read of kroki-mermaid-server)</li>
+        <li>Does JointJS Community (MPL) include the selection/click toolchain without JointJS+? (docs site not fetched)</li>
+        <li>Exact current GoJS / tldraw pricing tiers — pricing pages unreachable this run.</li>
+        <li>D2 issue #2561 ("always-show tooltips", closed Jul 2025) — did an option ship, and in which renderer?</li>
+        <li>Does Mermaid's plain URL-click (not callback) emit an SVG anchor under <code>strict</code>? Would make links survive headless rendering.</li>
+      </ul>
+    </section>
+
+    <!-- ══ OPTIONAL — delete if not applicable ═════════════════════════ -->
+
+    <!-- grounded_research only -->
+    <section id="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a class="src" href="https://d2lang.com/tour/interactive/">https://d2lang.com/tour/interactive/</a> — D2's canonical interactivity docs: exactly tooltip + link</li>
+        <li><a class="src" href="https://d2lang.com/releases/0.1.4/">https://d2lang.com/releases/0.1.4/</a> — release introducing tooltip/link ("much more in store")</li>
+        <li><a class="src" href="https://github.com/d2lang/d2">https://github.com/d2lang/d2</a> — output formats, WASM build, issues #897/#1205</li>
+        <li><a class="src" href="https://www.npmjs.com/package/@terrastruct/d2">https://www.npmjs.com/package/@terrastruct/d2</a> — official JS/WASM API (compile → render → SVG string); empirically run</li>
+        <li><a class="src" href="https://mermaid.js.org/syntax/flowchart.html">https://mermaid.js.org/syntax/flowchart.html</a> — Mermaid Interaction section: click callbacks, links, tooltips</li>
+        <li><a class="src" href="https://mermaid.js.org/config/usage.html">https://mermaid.js.org/config/usage.html</a> — securityLevel strict/loose/sandbox + bindFunctions</li>
+        <li><a class="src" href="https://graphviz.org/docs/attrs/URL/">https://graphviz.org/docs/attrs/URL/</a> — Graphviz URL/href attribute + svg/cmap output behavior</li>
+        <li><a class="src" href="https://plantuml.com/link">https://plantuml.com/link</a> — PlantUML link/tooltip syntax</li>
+        <li><a class="src" href="https://docs.kroki.io/kroki/setup/configuration/">https://docs.kroki.io/kroki/setup/configuration/</a> — Kroki kills per-request securityLevel; headless-Chromium companion</li>
+        <li><a class="src" href="https://reactflow.dev/api-reference/react-flow">https://reactflow.dev/api-reference/react-flow</a> — elementsSelectable, onNodeClick, onSelectionChange (MIT)</li>
+        <li><a class="src" href="https://js.cytoscape.org/">https://js.cytoscape.org/</a> — Cytoscape.js selection, box select, delegated events (MIT)</li>
+        <li><a class="src" href="https://x6.antv.antgroup.com/en/tutorial/basic/events">https://x6.antv.antgroup.com/en/tutorial/basic/events</a> — AntV X6 event system (MIT)</li>
+        <li><a class="src" href="https://retejs.org/docs/guides/selectable/">https://retejs.org/docs/guides/selectable/</a> — Rete.js selectableNodes (MIT)</li>
+        <li><a class="src" href="https://gojs.net/latest/learn/index.html">https://gojs.net/latest/learn/index.html</a> — GoJS built-in select/drag/undo (commercial)</li>
+        <li><a class="src" href="https://tldraw.dev/sdk-features/events">https://tldraw.dev/sdk-features/events</a> — tldraw editor events + store.listen</li>
+        <li><a class="src" href="https://tldraw.dev/community/license">https://tldraw.dev/community/license</a> — tldraw license: production requires a key</li>
+        <li><a class="src" href="https://www.drawio.com/docs/reference/embed-mode/">https://www.drawio.com/docs/reference/embed-mode/</a> — draw.io embed postMessage protocol; no selection events</li>
+        <li><a class="src" href="https://github.com/maxGraph/maxGraph">https://github.com/maxGraph/maxGraph</a> — Apache-2.0 mxGraph successor</li>
+      </ul>
+      <p style="font-size:13px;color:var(--gray-500);">
+        Unverifiable / reported-only claims (GoJS pricing tiers, JointJS+ feature split, yFiles
+        capabilities) carry <span class="conf medium">reported</span> chips above; everything else was verified against primary docs this run.
+      </p>
+    </section>
+
+    <!-- ══ METHOD ══════════════════════════════════════════════════════ -->
+    <section id="method">
+      <h2>How this was researched</h2>
+      <p>Grounded fractal research: the question decomposed into 5 parallel leaf agents (D2 native, D2 extensibility, JS libraries, peer DSLs, embeddable editors), each running multi-query web search + deep fetches against primary docs — one leaf even installed and ran <code>@terrastruct/d2</code> locally to verify the SVG output empirically. Findings carry verified/reported confidence labels; synthesis resolved tensions into the decision matrix above.</p>
+      <div class="card">
+        <div class="label">Question tree</div>
+        <div class="tree" id="tree"></div>
+        <div class="legend">
+          <span><i class="dot explored"></i>explored</span>
+          <span><i class="dot validated"></i>validated</span>
+          <span><i class="dot synthesized"></i>synthesized</span>
+          <span><i class="dot dead_end"></i>dead end</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ── sidebar ─────────────────────────────────────────────────────── -->
+  <aside>
+    <div class="label">Contents</div>
+    <nav>
+      <a href="#answer">Answer</a>
+      <a href="#tensions">Tensions</a>
+      <a href="#open-questions">Open questions</a>
+      <a href="#sources">Sources</a>
+      <a href="#method">How this was researched</a>
+    </nav>
+    <dl>
+      <dt>Strategy</dt><dd>grounded_research</dd>
+      <dt>Nodes</dt><dd>6</dd>
+      <dt>Max depth</dt><dd>1</dd>
+      <dt>Agent files</dt><dd>6</dd>
+      <dt>Artifacts</dt><dd><code>agents/</code>, <code>research.log</code>, <code>metrics.json</code></dd>
+    </dl>
+    <button onclick="window.print()">Print / export PDF</button>
+  </aside>
+
+</div>
+
+<script>
+/* Build TREE from research.log: decompose events give parent→children,
+   answer/synthesize events give status. Keep dead ends. Root first. */
+const TREE = {
+  id: "q-001", q: "Can D2 render interactive diagrams (selection, behavior, links)? If not, alternatives?", status: "synthesized",
+  children: [
+    { id: "q-002", q: "Does D2 natively support interactivity (click, selection, links, tooltips)?", status: "explored", children: [] },
+    { id: "q-003", q: "How extensible is D2's rendered SVG for DIY interactivity?", status: "explored", children: [] },
+    { id: "q-004", q: "Which JS libraries natively provide selectable, behavior-bindable diagrams?", status: "explored", children: [] },
+    { id: "q-005", q: "Which text-to-diagram DSLs support interactivity (callbacks, links, tooltips)?", status: "explored", children: [] },
+    { id: "q-006", q: "Which embeddable diagram editors support interactive elements in a host app?", status: "explored", children: [] },
+  ],
+};
+
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+function renderNode(n, depth) {
+  const hasKids = n.children && n.children.length;
+  const head =
+    `<span class="dot ${n.status}"></span>` +
+    `<span class="nid">${n.id}</span>` +
+    `<span class="q">${n.q}</span>`;
+  if (!hasKids) return el(`<div class="leaf">${head}</div>`);
+  const det = el(`<details${depth < 1 ? " open" : ""}><summary>${head}</summary></details>`);
+  const branch = el(`<div class="branch"></div>`);
+  n.children.forEach(c => branch.appendChild(renderNode(c, depth + 1)));
+  det.appendChild(branch);
+  return det;
+}
+
+document.getElementById("tree").appendChild(renderNode(TREE, 0));
+</script>
+</body>
+</html>

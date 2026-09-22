@@ -8,14 +8,15 @@ timestamp: "2026-09-15T11:55:15.360Z"
 
 # ChartConfigDrawer component
 
-A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in `/labs`: a chart accepts an optional `config` snippet and toggles its own drawer via a `<Bolt />` button at the top-right of the chart card. Also reused by the `/pages/<slug>` focused config mode at 50vw. First used by the BarChart component at `/labs/bar-chart`.
+A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in `/labs`: a chart accepts an optional `config` snippet and toggles its own drawer via a `<Bolt />` button at the top-right of the chart card. Also reused by the `/pages/<slug>` focused config mode at 45vw. First used by the BarChart component at `/labs/bar-chart`.
 
 ## Details
 
 - **Location**: `src/lib/components/charts/ChartConfigDrawer.svelte`
-- **Interface / Schema**: props are `open` (bindable), `title`, `width` (default `30vw`), `overlay` (default `true`, dim backdrop), and a `children` snippet for the fields. Ships shared `.field` / `.field-label` / `.field-hint` / `.input` styles for whatever the chart renders inside. Charts open it with the title `<title> configuration`. No `onclose` prop — close is via the bindable `open`.
+- **Interface / Schema**: props are `open` (bindable), `title`, `width` (default `30vw`), `overlay` (default `true`, dim backdrop), `contained` (default `false`), and a `children` snippet for the fields. Ships shared `.field` / `.field-label` / `.field-hint` / `.input` styles for whatever the chart renders inside. Charts open it with the title `<title> configuration`. No `onclose` prop — close is via the bindable `open`.
 - **Hosting pattern** (2026-09-15): the chart component renders the drawer when the caller passes a `config` snippet — the Bolt toggle only appears if the snippet is passed (opt-in; as of 2026-09-17 both bar and heatmap forward it). Before this, the *page* hosted the drawer via a Configure button + Settings2 icon — superseded.
-- **Two widths in use**: labs bolt-drawer stays 30vw; the page editor's focused config mode opens it at **50vw** with the focused chart alone on the left ([page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md)).
+- **Two widths in use**: labs bolt-drawer stays 30vw; the page editor's focused config mode opens it at **45vw** with the focused chart alone on the left ([page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md)).
+- **Contained mode** (2026-09-21): `contained` positions the drawer (and its overlay) `absolute` inside the positioned ancestor spanning `.app-body` instead of viewport-`fixed` — it stays **below the header/breadcrumb and above the tab bar**, and `.app-body`'s `overflow:hidden` clips the closed off-slide state. Requires the ancestor to be positioned: `+layout.svelte` gave `.app-body` `position: relative` for exactly this. Off for usages nested inside positioned cards (labs). All four page-editor drawers (block/row/column/picker) now run `contained`.
 - **Pattern source**: the drawer shell (overlay + slide-in panel + header/close) reuses the established `ColumnFunctionDrawer.svelte` pattern rather than a new abstraction — pages stay thin, no generic field renderer needed.
 - **Marked `data-drawer`** and card click-to-deselect ignores `button` clicks, so configuring never clears a selection.
 
@@ -43,3 +44,4 @@ Props like `category`, `value`, `tooltip`, `labelFor`, `selected` are data acces
 - 2026-09-15: hosting moved into the chart component — optional `config` snippet prop + `<Bolt />` toggle top-right of the chart card; page-level button and drawer removed; drawer title now `<title> configuration`.
 - 2026-09-15: grew `width` + `overlay` props; reused by the `/pages/<slug>` focused config mode at 50vw (labs behavior unchanged).
 - 2026-09-17: reached `/library` detail-page previews — the demo passes a `config` snippet to the real renderer (bar and heatmap both forward it to `ChartCard`), with schema-driven option fields using the same markup as `BlockInspector` (Orientation / Top N / Other label live-update the chart).
+- 2026-09-21: `contained` prop — page-editor drawers anchor to `.app-body` (below header, above tab bar) instead of the viewport; focused-config width 50vw → 45vw; DrawerTabs chrome removed per [all-drawers-adopt-the-data-tabledrawer-design](../../decisions/all-drawers-adopt-the-data-tabledrawer-design.md).

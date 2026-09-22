@@ -1,0 +1,7 @@
+{"event":"run_start","question":"Why is https://aisure.uk/ so cheap (all-in-one AI, free tier, £9.99/mo unlimited)?","strategy":"grounded_research","depth":1,"max_fanout":3}
+{"event":"decompose","node":"q-001","depth":0,"children":["q-002","q-003","q-004"]}
+{"event":"answer","node":"q-002","agent_file":"agents/d1-001-offer.md","status":"explored"}
+{"event":"answer","node":"q-003","agent_file":"agents/d1-002-economics.md","status":"explored"}
+{"event":"answer","node":"q-004","agent_file":"agents/d1-003-trust.md","status":"explored"}
+{"event":"synthesize","node":"q-001","children":["q-002","q-003","q-004"],"status":"synthesized"}
+{"event":"run_end","status":"completed"}

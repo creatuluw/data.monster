@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why is aisure.uk so cheap? — fractal research report</title>
+<!--
+  ============================================================================
+  FRACTAL RESEARCH · HTML REPORT TEMPLATE (self-contained, portable)
+  Design lineage: html-docs research templates (thariqs.github.io/html-effectiveness)
+
+  HOW TO FILL THIS IN (the orchestrator agent, after synthesis):
+  1. Copy this file to <report_dir>/report.html. The markdown artifacts
+     (agents/, research.log, metrics.json) stay — this page is the deliverable.
+  2. Replace every {{PLACEHOLDER}}. Search for "{{" to find them all.
+  3. Answer section: keep one <h2>+paragraphs per major branch (one branch =
+     one h2, named after the sub-question it answers). Rank strongest first.
+  4. Optional strategy sections are marked "OPTIONAL — delete if not applicable":
+     Blind spots (perspective_expander), Sources (grounded_research),
+     The question, examined (socratic). Delete the ones the run didn't use.
+  5. Build TREE below in <script> from research.log: decompose events give
+     parent→children, answer events give status. One node per question:
+       { id, q, status, children: [...] }
+     status ∈ explored | validated | synthesized | dead_end. dead_end nodes:
+     keep them — visible dead ends are findings.
+  6. Verify: open report.html in a browser (or show_in_browser). Zero external
+     dependencies — must work offline, from file://.
+  ============================================================================
+-->
+<style>
+  :root {
+    --ivory:   #FAF9F5;
+    --slate:   #141413;
+    --clay:    #D97757;
+    --oat:     #E3DACC;
+    --olive:   #788C5D;
+    --sky:     #6A8CAF;
+    --rust:    #B04A3F;
+    --gray-150:#F0EEE6;
+    --gray-300:#D1CFC5;
+    --gray-500:#87867F;
+    --gray-700:#3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ivory:   #1C1C1A;
+      --slate:   #EDEBE4;
+      --clay:    #D97757;
+      --oat:     #3A362F;
+      --gray-150:#26261F;
+      --gray-300:#3D3D3A;
+      --gray-500:#A5A39B;
+      --gray-700:#CFCDC5;
+    }
+    body { background: var(--ivory); }
+    .demo, aside, .card { background: #232320; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ivory);
+    color: var(--gray-700);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 120px;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 48px;
+  }
+  @media (max-width: 960px) { .page { grid-template-columns: 1fr; } aside { order: 2; position: static; } }
+
+  /* ── header ───────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 33px;
+    color: var(--slate);
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+    line-height: 1.25;
+  }
+  .lead { max-width: 680px; margin-bottom: 16px; font-size: 16.5px; }
+  .lead strong { color: var(--slate); }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--slate);
+    margin: 40px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 17px; color: var(--slate); margin: 24px 0 8px; }
+  p { margin-bottom: 12px; max-width: 680px; }
+  ul, ol { margin: 0 0 12px 22px; max-width: 680px; }
+  li { margin-bottom: 5px; }
+  code { font-family: var(--mono); font-size: 13px; }
+  a { color: var(--clay); }
+  section { scroll-margin-top: 24px; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+  }
+  .meta span {
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--gray-150);
+  }
+  .meta b { color: var(--slate); font-weight: 600; }
+
+  /* ── confidence + citation chips ──────── */
+  .conf { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+  .conf.high   { background: rgba(120,140,93,.18);  color: var(--olive); }
+  .conf.medium { background: rgba(217,119,87,.15);  color: var(--clay); }
+  .conf.low    { background: rgba(176,74,63,.15);   color: var(--rust); }
+  .src {
+    font-family: var(--mono); font-size: 12px;
+    border-bottom: none;
+  }
+
+  .card {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 14px;
+    background: #fff;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  .card.dead-ends { border-style: dashed; }
+
+  /* ── research tree ────────────────────── */
+  .tree { font-size: 13.5px; }
+  .tree details { margin: 3px 0 3px 0; }
+  .tree details > summary {
+    cursor: pointer; list-style: none;
+    padding: 4px 8px; border-radius: 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .tree details > summary::-webkit-details-marker { display: none; }
+  .tree details > summary:hover { background: var(--gray-150); }
+  .tree details > summary::before { content: "▸"; color: var(--gray-500); font-size: 10px; }
+  .tree details[open] > summary::before { content: "▾"; }
+  .tree .leaf { padding: 4px 8px 4px 22px; }
+  .tree .q { color: var(--slate); }
+  .tree .nid { font-family: var(--mono); font-size: 10.5px; color: var(--gray-500); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; position: relative; top: 0px; align-self: center; }
+  .dot.explored    { background: var(--olive); }
+  .dot.validated   { background: var(--sky); }
+  .dot.synthesized { background: var(--slate); }
+  .dot.dead_end    { background: var(--rust); }
+  .tree .branch { margin-left: 18px; border-left: 1px solid var(--gray-300); padding-left: 10px; }
+
+  /* ── sidebar ──────────────────────────── */
+  aside {
+    position: sticky; top: 32px; align-self: start;
+    border: 1.5px solid var(--gray-300); border-radius: 12px;
+    background: #fff; padding: 18px 18px 12px;
+  }
+  aside .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  aside nav a {
+    display: block; text-decoration: none; color: var(--gray-700);
+    font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gray-150);
+  }
+  aside nav a:hover { color: var(--clay); }
+  aside dl { margin-top: 16px; }
+  aside dt { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-500); margin-top: 10px; }
+  aside dd { font-size: 13.5px; color: var(--slate); }
+  aside button {
+    margin-top: 16px; width: 100%;
+    appearance: none; border: 1.5px solid var(--gray-300);
+    background: var(--gray-150); border-radius: 6px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  aside button:hover { background: var(--oat); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-family: var(--mono); color: var(--gray-500); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    aside, aside button { display: none; }
+    .page { grid-template-columns: 1fr; gap: 0; }
+    .tree details { display: block; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <main>
+    <div class="eyebrow">Fractal research &middot; grounded research</div>
+    <h1>Why is aisure.uk so cheap?</h1>
+    <p class="lead">
+      AISure (aisure.uk) sells &ldquo;every AI tool, one platform&rdquo; &mdash; GPT&#8209;5, GPT&#8209;5.6, Gemini 3 Pro, Claude &mdash; with a free tier and Pro at &pound;9.99/mo &ldquo;unlimited&rdquo;. It is cheap because <strong>the advertised promise cannot cost what it charges: a heavy user of those models costs $70&ndash;300+/month at list API prices versus &pound;9.99 (&asymp;$13.50) of revenue</strong>, so the gap is closed by invisible server-side throttling, possibly cheaper models behind premium labels, ad/gamification revenue, and a growth-subsidized bet &mdash; all under a months-old domain with hidden WHOIS and 0/100 (Scamadviser) / 35/100 (Gridinsoft) trust scores. Red flags abound; proof of fraud does not (the UK company is real, Stripe is merchant of record).
+    </p>
+    <div class="meta">
+      <span>2026-09-17</span>
+      <span>strategy <b>grounded research</b></span>
+      <span>4 nodes</span>
+      <span>depth <b>1</b></span>
+      <span>4 agents</span>
+    </div>
+
+    <section id="answer">
+      <h2>The offer and its fine print</h2>
+      <p>
+        Verified from the site&rsquo;s own JavaScript bundles (it is a client-rendered Lovable/Supabase SPA, so the served code is the source of truth):
+      </p>
+      <ul>
+        <li>Free tier is <em>not</em> &ldquo;free forever&rdquo; on the site &mdash; that phrase appears only in Facebook/Instagram ads. The site says &ldquo;Free to Start&rdquo;, with hard server-side daily caps per tool (<code>free_daily_limit</code>, reset timers) and ads (Google Ads, Meta, TikTok pixels). <span class="conf high">verified</span></li>
+        <li>Pro (&pound;9.99/mo, &pound;99/yr via Stripe) &ldquo;lifts every daily cap and unlocks every premium model&rdquo; &mdash; and <strong>no fair-use clause exists anywhere</strong>; Terms only say &ldquo;Features, models and limits may change.&rdquo; <span class="conf high">verified</span></li>
+        <li>Frontier models are named explicitly (GPT-5, GPT-5.6, Gemini 3 Pro, Claude), cheaper than any single frontier subscription. <span class="conf high">verified</span></li>
+        <li>Careful legal dressing: UK-GDPR privacy policy, raw-prompt storage opt-in, 14-day no-questions refund, Stripe as seller of record, liability capped at &pound;100. Contracting entity Noahsure Group LTD, 1 Canada Square, Canary Wharf. <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>The economics: how &ldquo;&pound;9.99 unlimited&rdquo; can exist</h2>
+      <p>
+        Every sustainable comparator meters aggressively; AISure promises more for less, so the margin defense must be invisible:
+      </p>
+      <ul>
+        <li>List-API math: a heavy month of those models = $70&ndash;300+; Pro revenue is &asymp;$13.50. Even 50% batch discounts leave a 2&ndash;5&times; gap. <span class="conf high">verified</span></li>
+        <li>Poe ($19.99) is really a compute-point budget (quietly cut ~90% free points, ~51% stealth price-per-point rise); Merlin&rsquo;s $19 &ldquo;unlimited&rdquo; hides a ~$100/month cost cap that pauses your account. &ldquo;Unlimited&rdquo; at half that sticker with <em>no published cap</em> matches no viable comparator. <span class="conf high">verified</span></li>
+        <li>Model substitution under premium labels is a mainstream margin lever and unauditable through proxy endpoints; AISure&rsquo;s &ldquo;priority queue&rdquo; language and proven per-tool limit machinery are exactly the invisible-throttle pattern. <span class="conf medium">inference</span></li>
+        <li>Grey-market supply (pooled/resold accounts, trial harvesting) sells frontier access at 70&ndash;98% off list at scale &mdash; exactly the discount a &pound;9.99 &ldquo;everything&rdquo; plan needs. No evidence AISure uses it; the class fits. <span class="conf low">reported pattern</span></li>
+        <li>The free tier is revenue-positive, not a loss: ads + /advertise slot sales + affiliate program + paid playbooks + hundreds of programmatic-SEO pages + referral gamification. <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>Trust signals</h2>
+      <ul>
+        <li>Scamadviser 0/100 &ldquo;Caution&rdquo;: domain registered 2026-03-27 (1-year term), hidden WHOIS, flagged Phishing+Suspicious by IPQS; hosted in Germany via Cyber Assets Fzco (UAE-named ISP). <span class="conf high">verified</span></li>
+        <li>Gridinsoft 35/100, &ldquo;avoid entering personal or payment data&rdquo;. <span class="conf medium">reported</span></li>
+        <li>Zero organic trust surface: no Trustpilot profile found, no Reddit/Quora threads, no press &mdash; only paid Facebook/Instagram ads. <span class="conf high">verified absence</span></li>
+        <li>The one independent hands-on review (LinkedIn, Jun 2026): Delete Account didn&rsquo;t work, public /api/health leaked internal key names, forex/prediction &ldquo;capital partnership&rdquo; links, Noahsure email bounced. Reviewer explicitly says &ldquo;not automatically fraudulent&rdquo;. <span class="conf high">verified</span></li>
+        <li>Counterweight: Noahsure Group Limited (12364489) is real, Active since Dec 2019, at the exact Terms address; Stripe merchant of record; generous refunds. <span class="conf high">verified</span></li>
+      </ul>
+    </section>
+
+    <section id="tensions">
+      <h2>Tensions</h2>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>&ldquo;Unlimited, no caps, no fair use&rdquo; (offer, verified) vs an economics that requires caps at every comparator (economics, verified). Assessment: unpublished server-side throttling almost certainly exists; the sticker is marketing, the meter is invisible.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>&ldquo;UK built&rdquo; marketing vs German hosting, UAE-named ISP, hidden WHOIS, months-old domain (trust, verified). A clean 2019 London company backs a March-2026 anonymous web presence. Assessment: the legal shell is real; the operational footprint is not what the ads imply.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Trust scores of 0/100 vs no consumer-fraud complaints anywhere. Assessment: plausibly IPQS false-positives reacting to ad-heavy programmatic SEO &mdash; flags are signals, not findings of fraud.</p>
+      </div>
+    </section>
+
+    <section id="open-questions">
+      <h2>Open questions</h2>
+      <ul>
+        <li>Actual numeric Pro/free caps (server-side; needs an account).</li>
+        <li>Do &ldquo;GPT-5.6&rdquo; / &ldquo;Gemini 3 Pro&rdquo; labels map to genuine flagship APIs or cheaper routed models? Externally unverifiable.</li>
+        <li>Who funds Noahsure Group (accounts, PSC register) &mdash; can it absorb a loss-leader?</li>
+        <li>Do the LinkedIn-claimed Delete-Account bug and /api/health exposure still reproduce?</li>
+      </ul>
+    </section>
+
+    <section id="sources">
+      <h2>Sources</h2>
+      <ul>
+        <li><a class="src" href="https://aisure.uk/">aisure.uk</a> + its JS bundles (terms, pricing, privacy, security) &mdash; the offer, caps machinery, entity, &pound;9.99 pricing</li>
+        <li><a class="src" href="https://www.scamadviser.com/check-website/aisure.uk">scamadviser.com/check-website/aisure.uk</a> &mdash; 0/100 verdict, WHOIS/domain age, hosting</li>
+        <li><a class="src" href="https://find-and-update.company-information.service.gov.uk/company/12364489">Companies House 12364489</a> &mdash; Noahsure Group Limited real and Active</li>
+        <li><a class="src" href="https://www.linkedin.com/posts/waddah-a-90798819_aisure-every-ai-tool-one-platform-free-activity-7470101089682604032-NZRL">LinkedIn cautionary review (Waddah Al-Btoush)</a> &mdash; hands-on red flags</li>
+        <li><a class="src" href="https://www.usagepricing.com/blueprint/poe">usagepricing.com/blueprint/poe</a> &mdash; Poe point-metering economics</li>
+        <li><a class="src" href="https://www.eesel.ai/blog/merlin-ai-pricing">eesel.ai/blog/merlin-ai-pricing</a> &mdash; Merlin hidden ~$100/mo cap behind &ldquo;unlimited&rdquo;</li>
+        <li><a class="src" href="https://explainx.ai/blog/ai-token-black-market-claude-resellers-distillation-2026">explainx.ai token-black-market investigation</a> &mdash; 70&ndash;98%-off grey supply</li>
+        <li><a class="src" href="https://reptile.haus/journal/ai-credit-resale-economy-token-brokers-risk-2026/">reptile.haus token-brokers investigation</a> &mdash; resale chain, provider enforcement</li>
+        <li><a class="src" href="https://platform.openai.com/docs/pricing">OpenAI</a>, <a class="src" href="https://docs.claude.com/en/docs/about-claude/pricing">Anthropic</a>, <a class="src" href="https://ai.google.dev/gemini-api/docs/pricing">Google</a> pricing &mdash; list API prices behind the $70&ndash;300 math</li>
+        <li><a class="src" href="https://gridinsoft.com/online-virus-scanner/url/aisure-uk">gridinsoft.com</a> &mdash; 35/100 blacklist warning (snippet; page bot-blocked)</li>
+      </ul>
+      <p style="font-size:13px;color:var(--gray-500);">
+        Unverifiable: whether premium model labels map to genuine flagship APIs; exact free-tier cap numbers (server-side); Gridinsoft vendor list (bot-blocked); Trustpilot absence (403 on direct check). Grey-market claims come from investigative secondary sources and are not verified for AISure specifically.
+      </p>
+    </section>
+
+    <section id="method">
+      <h2>How this was researched</h2>
+      <p>
+        Grounded research, depth 1, three parallel leaf agents (offer &amp; fine print / reseller economics / trust signals), each web-verifying claims with citations; synthesized bottom-up. The site is a client-rendered SPA, so leaves read its actual JS bundles.
+      </p>
+      <div class="card">
+        <div class="label">Question tree</div>
+        <div class="tree" id="tree"></div>
+        <div class="legend">
+          <span><i class="dot explored"></i>explored</span>
+          <span><i class="dot validated"></i>validated</span>
+          <span><i class="dot synthesized"></i>synthesized</span>
+          <span><i class="dot dead_end"></i>dead end</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside>
+    <div class="label">Contents</div>
+    <nav>
+      <a href="#answer">Answer</a>
+      <a href="#tensions">Tensions</a>
+      <a href="#open-questions">Open questions</a>
+      <a href="#sources">Sources</a>
+      <a href="#method">How this was researched</a>
+    </nav>
+    <dl>
+      <dt>Strategy</dt><dd>grounded research</dd>
+      <dt>Nodes</dt><dd>4</dd>
+      <dt>Max depth</dt><dd>1</dd>
+      <dt>Agent files</dt><dd>4</dd>
+      <dt>Artifacts</dt><dd><code>agents/</code>, <code>research.log</code>, <code>metrics.json</code></dd>
+    </dl>
+    <button onclick="window.print()">Print / export PDF</button>
+  </aside>
+
+</div>
+
+<script>
+const TREE = {
+  id: "q-001", q: "Why is aisure.uk so cheap?", status: "synthesized",
+  children: [
+    { id: "q-002", q: "What does aisure.uk actually offer — pricing, caps, fine print?", status: "explored", children: [] },
+    { id: "q-003", q: "How do £10 'unlimited' all-in-one AI resellers make the economics work?", status: "explored", children: [] },
+    { id: "q-004", q: "What independent trust evidence exists for aisure.uk?", status: "explored", children: [] },
+  ],
+};
+
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+function renderNode(n, depth) {
+  const hasKids = n.children && n.children.length;
+  const head =
+    `<span class="dot ${n.status}"></span>` +
+    `<span class="nid">${n.id}</span>` +
+    `<span class="q">${n.q}</span>`;
+  if (!hasKids) return el(`<div class="leaf">${head}</div>`);
+  const det = el(`<details${depth < 1 ? " open" : ""}><summary>${head}</summary></details>`);
+  const branch = el(`<div class="branch"></div>`);
+  n.children.forEach(c => branch.appendChild(renderNode(c, depth + 1)));
+  det.appendChild(branch);
+  return det;
+}
+
+document.getElementById("tree").appendChild(renderNode(TREE, 0));
+</script>
+</body>
+</html>

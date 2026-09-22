@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LRS — Design System + Components</title>
-    <meta name="seed" content="DS2-GLACIER-7742" />
+    <title>data.monster — Design System + Components</title>
+    <meta name="seed" content="DS2-SYNAPSE-8847" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,34 +13,34 @@
     />
     <style>
       /* ─────────────────────────────────────────────
-       GLACIER DESIGN SYSTEM — Token Definitions
-       Industrial specification aesthetic, OKLCH color space
-       Seed: DS2-GLACIER-7742
+       SYNAPSE DESIGN SYSTEM — Token Definitions
+       Precision data aesthetic, OKLCH color space
+       Seed: DS2-SYNAPSE-8847
     ───────────────────────────────────────────── */
 
       :root {
         /* ── Color Tokens (OKLCH) ── */
-        --color-accent: oklch(0.69 0.16 41);
-        --color-accent-light: oklch(0.78 0.09 41);
-        --color-accent-dark: oklch(0.44 0.14 41);
-        --color-accent-muted: oklch(0.93 0.03 41);
+        --color-accent: oklch(0.70 0.22 50);
+        --color-accent-light: oklch(0.79 0.17 62);
+        --color-accent-dark: oklch(0.60 0.20 45);
+        --color-accent-muted: oklch(0.94 0.04 55);
 
-        --color-surface: oklch(0.98 0.003 250);
-        --color-surface-raised: oklch(0.96 0.005 250);
-        --color-surface-sunken: oklch(0.935 0.006 250);
+        --color-surface: oklch(0.985 0.003 55);
+        --color-surface-raised: oklch(0.965 0.005 55);
+        --color-surface-sunken: oklch(0.94 0.006 55);
 
-        --color-text: oklch(0.14 0.01 250);
-        --color-text-secondary: oklch(0.4 0.012 250);
-        --color-text-tertiary: oklch(0.58 0.01 250);
-        --color-text-on-accent: oklch(0.97 0.005 250);
+        --color-text: oklch(0.12 0.01 55);
+        --color-text-secondary: oklch(0.38 0.012 55);
+        --color-text-tertiary: oklch(0.56 0.01 55);
+        --color-text-on-accent: oklch(0.97 0.005 55);
 
-        --color-border: oklch(0.86 0.006 250);
-        --color-border-strong: oklch(0.72 0.012 250);
-        --color-grid: oklch(0.9 0.004 250);
+        --color-border: oklch(0.86 0.006 55);
+        --color-border-strong: oklch(0.72 0.012 55);
+        --color-grid: oklch(0.9 0.004 55);
 
-        --color-success: oklch(0.68 0.14 160);
-        --color-warning: oklch(0.76 0.13 80);
-        --color-danger: oklch(0.58 0.17 22);
+        --color-success: oklch(0.72 0.14 215);
+        --color-warning: oklch(0.79 0.17 62);
+        --color-danger: oklch(0.67 0.24 30);
 
         /* ── Typography Tokens ── */
         --font-display: "Source Serif 4", serif;
@@ -82,9 +82,9 @@
         --radius-full: 9999px;
 
         /* ── Shadow Tokens ── */
-        --shadow-sm: 0 1px 2px oklch(0.22 0.005 250 / 0.07);
-        --shadow-md: 0 2px 8px oklch(0.22 0.005 250 / 0.09);
-        --shadow-lg: 0 6px 24px oklch(0.22 0.005 250 / 0.12);
+        --shadow-sm: 0 1px 2px oklch(0.22 0.005 55 / 0.07);
+        --shadow-md: 0 2px 8px oklch(0.22 0.005 55 / 0.09);
+        --shadow-lg: 0 6px 24px oklch(0.22 0.005 55 / 0.12);
 
         /* ── Motion Tokens ── */
         --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -100,7 +100,7 @@
         --gutter: clamp(1rem, 3vw, 2rem);
 
         /* ── Grid Overlay ── */
-        --grid-color: oklch(0.9 0.004 250 / 0.35);
+        --grid-color: oklch(0.9 0.004 55 / 0.35);
         --grid-spacing: 24px;
       }
 
@@ -266,7 +266,7 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: oklch(0.98 0.003 250 / 0.92);
+        background: oklch(0.985 0.003 55 / 0.92);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--color-border);
@@ -565,7 +565,7 @@
       .color-swatch .copy-confirm {
         position: absolute;
         inset: 0;
-        background: oklch(0.69 0.16 41 / 0.9);
+        background: oklch(0.70 0.22 50 / 0.9);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -973,13 +973,13 @@
 
       .btn-danger {
         background: var(--color-danger);
-        color: oklch(0.97 0.005 22);
+        color: oklch(0.97 0.005 30);
         border-color: var(--color-danger);
       }
 
       .btn-danger:hover {
-        background: oklch(0.48 0.15 22);
-        border-color: oklch(0.48 0.15 22);
+        background: oklch(0.55 0.18 30);
+        border-color: oklch(0.55 0.18 30);
       }
 
       .btn-sm {
@@ -1021,25 +1021,25 @@
       .tag-accent {
         background: var(--color-accent-muted);
         color: var(--color-accent-dark);
-        border-color: oklch(0.82 0.03 41);
+        border-color: oklch(0.82 0.04 55);
       }
 
       .tag-success {
-        background: oklch(0.95 0.03 160);
-        color: oklch(0.4 0.1 160);
-        border-color: oklch(0.88 0.04 160);
+        background: oklch(0.95 0.03 215);
+        color: oklch(0.40 0.12 215);
+        border-color: oklch(0.88 0.04 215);
       }
 
       .tag-warning {
-        background: oklch(0.96 0.03 80);
-        color: oklch(0.42 0.1 80);
-        border-color: oklch(0.9 0.03 80);
+        background: oklch(0.96 0.03 62);
+        color: oklch(0.42 0.10 62);
+        border-color: oklch(0.90 0.03 62);
       }
 
       .tag-danger {
-        background: oklch(0.95 0.03 22);
-        color: oklch(0.38 0.12 22);
-        border-color: oklch(0.9 0.04 22);
+        background: oklch(0.95 0.03 30);
+        color: oklch(0.38 0.12 30);
+        border-color: oklch(0.90 0.04 30);
       }
 
       /* Input Fields */
@@ -1096,7 +1096,7 @@
 
       .input:invalid:not(:placeholder-shown) {
         border-color: var(--color-danger);
-        box-shadow: 0 0 0 2px oklch(0.95 0.03 22);
+        box-shadow: 0 0 0 2px oklch(0.95 0.03 30);
       }
 
       /* Toggle Switch */
@@ -1145,7 +1145,7 @@
         background: var(--color-surface);
         border-radius: 1px;
         transition: transform var(--duration-base) var(--ease-out-expo);
-        box-shadow: 0 1px 2px oklch(0.22 0.005 250 / 0.2);
+        box-shadow: 0 1px 2px oklch(0.22 0.005 55 / 0.2);
       }
 
       .toggle:checked {
@@ -1347,7 +1347,7 @@
       .modal-backdrop {
         position: fixed;
         inset: 0;
-        background: oklch(0.14 0.01 250 / 0.6);
+        background: oklch(0.12 0.01 55 / 0.6);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
         z-index: 1000;
@@ -1674,7 +1674,7 @@
         gap: var(--space-1);
         padding: 2px var(--space-2);
         background: var(--color-accent-muted);
-        border: 1px solid oklch(0.82 0.03 41);
+        border: 1px solid oklch(0.82 0.04 55);
         border-radius: var(--radius-xs);
         font-family: var(--font-mono);
         font-size: 9px;
@@ -1686,7 +1686,7 @@
       }
 
       .searchahead-chip:hover {
-        background: oklch(0.88 0.03 41);
+        background: oklch(0.88 0.04 215);
       }
 
       .searchahead-chip::after {
@@ -2153,8 +2153,8 @@
       <div class="nav-inner">
         <a href="#" class="nav-brand">
           <span class="brand-mark"></span>
-          LRS
-          <span class="nav-seed">DS2-GLACIER-7742</span>
+          data.monster
+          <span class="nav-seed">DS2-SYNAPSE-8847</span>
         </a>
         <ul class="nav-links">
           <li><a href="#colors">Colors</a></li>
@@ -2174,14 +2174,14 @@
         Design System Specification — v2.0
       </div>
       <h1 class="hero-title entrance entrance-d1">
-        Clarity through<br /><span class="accent-word">structure</span>.
+        Strict. Proficient.<br /><span class="accent-word">Trusted.</span>
       </h1>
       <p class="hero-desc entrance entrance-d2">
-        A design system for teaching, learning, and progress tracking — where
-        clarity reduces cognitive load and every element serves the people
-        registering, reviewing, and reporting student growth. No decoration
-        without purpose. No ambiguity without consequence. Built for the
-        teachers who track progress for every student.
+        A design system built for data pipelines, real-time analytics, and
+        high-velocity operations — where precision is non-negotiable and
+        every millisecond counts. No noise. No friction. Just systems that
+        breathe, respond, and deliver. Built for the engineers who move data
+        at scale.
       </p>
       <div class="hero-specs entrance entrance-d3">
         <div class="hero-spec">
@@ -2226,7 +2226,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent</span>
-            <span class="color-swatch-value">oklch(0.69 0.16 41)</span>
+            <span class="color-swatch-value">oklch(0.70 0.22 50)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2242,7 +2242,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Light</span>
-            <span class="color-swatch-value">oklch(0.78 0.09 41)</span>
+            <span class="color-swatch-value">oklch(0.79 0.17 62)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2258,7 +2258,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Dark</span>
-            <span class="color-swatch-value">oklch(0.44 0.14 41)</span>
+            <span class="color-swatch-value">oklch(0.60 0.20 45)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2274,7 +2274,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Muted</span>
-            <span class="color-swatch-value">oklch(0.93 0.03 41)</span>
+            <span class="color-swatch-value">oklch(0.94 0.04 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2292,7 +2292,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Surface</span>
-            <span class="color-swatch-value">oklch(0.98 0.003 250)</span>
+            <span class="color-swatch-value">oklch(0.985 0.003 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2308,7 +2308,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Raised</span>
-            <span class="color-swatch-value">oklch(0.96 0.005 250)</span>
+            <span class="color-swatch-value">oklch(0.965 0.005 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2324,7 +2324,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Sunken</span>
-            <span class="color-swatch-value">oklch(0.935 0.006 250)</span>
+            <span class="color-swatch-value">oklch(0.94 0.006 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2342,7 +2342,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Text Primary</span>
-            <span class="color-swatch-value">oklch(0.14 0.01 250)</span>
+            <span class="color-swatch-value">oklch(0.12 0.01 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2358,7 +2358,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Text Secondary</span>
-            <span class="color-swatch-value">oklch(0.40 0.012 250)</span>
+            <span class="color-swatch-value">oklch(0.38 0.012 55)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2376,7 +2376,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Success</span>
-            <span class="color-swatch-value">oklch(0.68 0.14 160)</span>
+            <span class="color-swatch-value">oklch(0.72 0.14 215)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2392,7 +2392,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Warning</span>
-            <span class="color-swatch-value">oklch(0.76 0.13 80)</span>
+            <span class="color-swatch-value">oklch(0.79 0.17 62)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2408,7 +2408,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Danger</span>
-            <span class="color-swatch-value">oklch(0.58 0.17 22)</span>
+            <span class="color-swatch-value">oklch(0.67 0.24 30)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2430,21 +2430,21 @@
             <span class="type-token-name">--text-4xl</span>
             <span class="type-token-value">clamp(3.2, 7vw, 5.06)</span>
           </div>
-          <span class="type-sample-display specimen-4xl">Glacier</span>
+          <span class="type-sample-display specimen-4xl">Synapse</span>
         </div>
         <div class="type-row">
           <div class="type-meta">
             <span class="type-token-name">--text-3xl</span>
             <span class="type-token-value">clamp(2.8, 5.5vw, 3.815)</span>
           </div>
-          <span class="type-sample-display specimen-3xl">Specification</span>
+          <span class="type-sample-display specimen-3xl">Data Pipeline</span>
         </div>
         <div class="type-row">
           <div class="type-meta">
             <span class="type-token-name">--text-2xl</span>
             <span class="type-token-value">2.441rem / 700</span>
           </div>
-          <span class="type-sample-display specimen-2xl">Subsystem Header</span>
+          <span class="type-sample-display specimen-2xl">Stream Header</span>
         </div>
         <div class="type-row">
           <div class="type-meta">
@@ -2512,7 +2512,7 @@
             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
             abcdefghijklmnopqrstuvwxyz<br />
             0123456789<br />
-            <em>Precision. Warmth. Memory.</em>
+            <em>Precision. Velocity. Trust.</em>
           </p>
         </div>
         <div class="font-pair-card">
@@ -2527,7 +2527,7 @@
             abcdefghijklmnopqrstuvwxyz<br />
             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
             0123456789<br />
-            Clear. Open. Kind.
+            Clear. Open. Fast.
           </p>
         </div>
       </div>
@@ -2633,11 +2633,11 @@
           <span class="component-group-label">Interactive Elements</span>
           <h3 class="component-group-title">Buttons</h3>
           <div class="button-row">
-            <button class="btn btn-primary btn-lg">Register</button>
-            <button class="btn btn-primary">Confirm</button>
-            <button class="btn btn-secondary">Edit</button>
+            <button class="btn btn-primary btn-lg">Deploy</button>
+            <button class="btn btn-primary">Run</button>
+            <button class="btn btn-secondary">Configure</button>
             <button class="btn btn-ghost">Cancel</button>
-            <button class="btn btn-danger btn-sm">Remove</button>
+            <button class="btn btn-danger btn-sm">Purge</button>
           </div>
         </div>
 
@@ -2646,11 +2646,11 @@
           <span class="component-group-label">Status Indicators</span>
           <h3 class="component-group-title">Tags</h3>
           <div class="tag-row">
-            <span class="tag tag-default">Draft</span>
+            <span class="tag tag-default">Pending</span>
             <span class="tag tag-accent">Active</span>
-            <span class="tag tag-success">On Track</span>
-            <span class="tag tag-warning">At Risk</span>
-            <span class="tag tag-danger">Overdue</span>
+            <span class="tag tag-success">Healthy</span>
+            <span class="tag tag-warning">Degraded</span>
+            <span class="tag tag-danger">Critical</span>
           </div>
         </div>
 
@@ -2660,21 +2660,21 @@
           <h3 class="component-group-title">Inputs</h3>
           <div class="input-row">
             <div class="field">
-              <label class="field-label" for="host-input">Student Name</label>
+              <label class="field-label" for="host-input">Endpoint URL</label>
               <input
                 class="input"
                 type="text"
                 id="host-input"
-                placeholder="e.g. Jan de Vries"
+                placeholder="e.g. api.data.monster"
               />
             </div>
             <div class="field">
-              <label class="field-label" for="port-input">Subject Code</label>
+              <label class="field-label" for="port-input">Stream ID</label>
               <input
                 class="input"
                 type="url"
                 id="port-input"
-                placeholder="e.g. WIS-301"
+                placeholder="e.g. strm-8f2a4c"
                 required
               />
               <span class="field-hint">Alphanumeric. No spaces.</span>
@@ -2694,15 +2694,15 @@
                 id="toggle-alerts"
                 checked
               />
-              <label class="toggle-label" for="toggle-alerts">Notifications</label>
+              <label class="toggle-label" for="toggle-alerts">Alerts</label>
             </div>
             <div class="toggle-group">
               <input class="toggle" type="checkbox" id="toggle-logs" />
-              <label class="toggle-label" for="toggle-logs">Detailed View</label>
+              <label class="toggle-label" for="toggle-logs">Debug Logs</label>
             </div>
             <div class="toggle-group">
               <input class="toggle" type="checkbox" id="toggle-auto" checked />
-              <label class="toggle-label" for="toggle-auto">Auto-save</label>
+              <label class="toggle-label" for="toggle-auto">Auto-scale</label>
             </div>
           </div>
         </div>
@@ -2713,12 +2713,12 @@
           <h3 class="component-group-title">Cards</h3>
           <div class="card-grid">
             <article class="card">
-              <span class="card-id">GL-001</span>
-              <h4 class="card-title">Consistent Patterns</h4>
+              <span class="card-id">SY-001</span>
+              <h4 class="card-title">Strict Patterns</h4>
               <p class="card-body">
-                Every visual value traces to a named token. Teachers and
-                students see the same buttons, colors, and layouts everywhere.
-                Consistency reduces cognitive load and builds trust.
+                Every visual value traces to a named token. Engineers and
+                operators see the same buttons, colors, and layouts everywhere.
+                Consistency reduces cognitive load and builds operational trust.
               </p>
               <div class="card-footer">
                 <span class="tag tag-accent">Core</span>
@@ -2726,12 +2726,12 @@
               </div>
             </article>
             <article class="card">
-              <span class="card-id">GL-002</span>
-              <h4 class="card-title">Measured Motion</h4>
+              <span class="card-id">SY-002</span>
+              <h4 class="card-title">Measured Velocity</h4>
               <p class="card-body">
                 Movement communicates state change in the interface. When a
-                registration is saved or a report generated, the transition
-                confirms the action. Nothing bounces. Everything arrives.
+                pipeline deploys or data streams in, the transition confirms
+                the action. Industrial easing. No bounce. Nothing wasted.
               </p>
               <div class="card-footer">
                 <span class="tag tag-default">Motion</span>
@@ -2739,12 +2739,12 @@
               </div>
             </article>
             <article class="card">
-              <span class="card-id">GL-003</span>
+              <span class="card-id">SY-003</span>
               <h4 class="card-title">Perceptual Accuracy</h4>
               <p class="card-body">
                 OKLCH ensures colors look equally distinct to all users.
-                Progress indicators and status tags are visually clear. The cold
-                blue undertone gives the interface a calm, focused character.
+                Status indicators and health tags are visually clear. The green
+                undertone signals growth, progress, and system vitality.
               </p>
               <div class="card-footer">
                 <span class="tag tag-default">Color</span>
@@ -2767,8 +2767,8 @@
               id="acc-trigger-1"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">GL-ACC-01</span>
-                Assessment Criteria
+                <span class="accordion-ref">SY-ACC-01</span>
+                Pipeline Configuration
               </span>
               <span class="accordion-icon">▾</span>
             </button>
@@ -2780,13 +2780,13 @@
               aria-hidden="true"
             >
               <div class="accordion-content">
-                Standards for evaluating student progress. All assessments must
-                map to curriculum objectives before registration.
+                Standard parameters for data stream ingestion. All pipelines
+                must pass validation before deployment.
                 <ul>
-                  <li>Scale: 1–10 per learning objective</li>
-                  <li>Minimum: 3 assessments per term per subject</li>
-                  <li>Weighting: configurable per step type</li>
-                  <li>Rounding: one decimal place</li>
+                  <li>Batch size: 10,000 records max</li>
+                  <li>Timeout: 30s per segment</li>
+                  <li>Retry: 3 attempts with exponential backoff</li>
+                  <li>Compression: gzip enabled by default</li>
                 </ul>
               </div>
             </div>
@@ -2800,8 +2800,8 @@
               id="acc-trigger-2"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">GL-ACC-02</span>
-                Registration Workflow
+                <span class="accordion-ref">SY-ACC-02</span>
+                Deployment Workflow
               </span>
               <span class="accordion-icon">▾</span>
             </button>
@@ -2813,13 +2813,14 @@
               aria-hidden="true"
             >
               <div class="accordion-content">
-                Standard procedure for recording student progress. Start with
-                draft entries, review for accuracy, then finalize.
+                Standard procedure for releasing data pipelines. Start with
+                staging validation, run integration tests, then promote to
+                production.
                 <ul>
-                  <li>Step 1: Select students and subject</li>
-                  <li>Step 2: Enter grades and observations</li>
-                  <li>Step 3: Review for completeness</li>
-                  <li>Step 4: Submit and lock</li>
+                  <li>Step 1: Validate schema compatibility</li>
+                  <li>Step 2: Run pre-flight health checks</li>
+                  <li>Step 3: Execute smoke tests</li>
+                  <li>Step 4: Promote with zero downtime</li>
                 </ul>
               </div>
             </div>
@@ -2833,8 +2834,8 @@
               id="acc-trigger-3"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">GL-ACC-03</span>
-                Progress Classification
+                <span class="accordion-ref">SY-ACC-03</span>
+                Health Classification
               </span>
               <span class="accordion-icon">▾</span>
             </button>
@@ -2846,13 +2847,13 @@
               aria-hidden="true"
             >
               <div class="accordion-content">
-                Classification taxonomy for student progress states. Every
-                student maps to exactly one status per step.
+                Status taxonomy for pipeline and node health. Every component
+                maps to exactly one status at any time.
                 <ul>
-                  <li>Not Started: No registration yet</li>
-                  <li>In Progress: Partial assessment recorded</li>
-                  <li>Completed: Full assessment submitted</li>
-                  <li>Overdue: Past deadline without submission</li>
+                  <li>Healthy: All checks passing</li>
+                  <li>Degraded: Latency above threshold</li>
+                  <li>Critical: Data loss or connection failure</li>
+                  <li>Unknown: No heartbeat within timeout</li>
                 </ul>
               </div>
             </div>
@@ -2871,8 +2872,8 @@
               max-width: 52ch;
             "
           >
-            A focused surface for confirmations, student editing, and detail
-            views. Traps focus. Returns focus on close.
+            A focused surface for confirmations, configuration editing, and
+            detail views. Traps focus. Returns focus on close.
           </p>
           <div class="button-row">
             <button class="btn btn-primary" id="modal-trigger-confirm">
@@ -2882,7 +2883,7 @@
               Open Edit
             </button>
             <button class="btn btn-danger" id="modal-trigger-danger">
-              Open Remove
+              Open Purge
             </button>
           </div>
         </div>
@@ -2908,7 +2909,7 @@
               <input
                 class="searchahead-input"
                 type="text"
-                placeholder="Search students, subjects, groups..."
+                placeholder="Search streams, endpoints, nodes..."
                 autocomplete="off"
                 aria-label="Search and select items"
                 aria-expanded="false"
@@ -3084,8 +3085,8 @@
           "
         >
           Click the grid to trigger a staggered fill. Elements fill
-          sequentially, creating rhythm without chaos — like indicators lighting
-          up on a control panel.
+          sequentially, creating rhythm without chaos — like indicators
+          lighting up on a control panel.
         </p>
         <div
           class="stagger-grid"
@@ -3127,43 +3128,43 @@
 
       <div class="principles-grid entrance entrance-d1">
         <div class="principle">
-          <span class="principle-ref">GL-P01</span>
-          <h3 class="principle-title">Structure enables focus</h3>
+          <span class="principle-ref">SY-P01</span>
+          <h3 class="principle-title">Structure enables velocity</h3>
           <p class="principle-desc">
-            A consistent interface lets teachers focus on teaching and students
-            on learning. When every pattern is predictable — buttons, colors,
-            layouts — cognitive load drops and attention stays on what matters:
-            student progress.
+            A consistent interface lets engineers focus on pipelines, not pixels.
+            When every pattern is predictable — buttons, colors, layouts —
+            cognitive load drops and attention stays on what matters: data
+            moving at speed.
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">GL-P02</span>
-          <h3 class="principle-title">Clarity is care</h3>
+          <span class="principle-ref">SY-P02</span>
+          <h3 class="principle-title">Precision is trust</h3>
           <p class="principle-desc">
-            Teachers work under time pressure with many students. Ambiguous
+            Operators make decisions under pressure with high stakes. Ambiguous
             labels, unclear states, and visual noise aren't minor flaws — they
-            steal time from the people who need it most. Precision in the
-            interface is respect for the educator.
+            introduce risk. Precision in the interface is reliability in the
+            system.
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">GL-P03</span>
-          <h3 class="principle-title">Motion conveys progress</h3>
+          <span class="principle-ref">SY-P03</span>
+          <h3 class="principle-title">Motion conveys state</h3>
           <p class="principle-desc">
             Every transition answers a question: what just changed? When a
-            registration is saved or a report generated, the motion confirms
-            the action. Industrial easing. No bounce. No decoration. Progress
-            feels deliberate.
+            pipeline deploys or data streams in, the motion confirms the action.
+            Industrial easing. No bounce. No decoration. Progress feels
+            deliberate.
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">GL-P04</span>
-          <h3 class="principle-title">Tinted neutrality</h3>
+          <span class="principle-ref">SY-P04</span>
+          <h3 class="principle-title">Vitality in the system</h3>
           <p class="principle-desc">
             Pure gray is a missed opportunity. Neutrals tinted toward the
-            system's hue create cohesion below conscious perception. The cold
-            blue undertone gives the interface a calm, focused character suited
-            for long sessions of data entry and review.
+            system's hue create cohesion below conscious perception. The green
+            undertone signals growth, progress, and the living pulse of data
+            flowing through pipelines.
           </p>
         </div>
       </div>
@@ -3173,9 +3174,9 @@
 
     <!-- ─── Footer ─── -->
     <footer class="footer">
-      <span class="footer-brand">LRS Design System</span>
+      <span class="footer-brand">data.monster Design System</span>
       <div class="footer-meta">
-        <span>SEED: DS2-GLACIER-7742</span>
+        <span>SEED: DS2-SYNAPSE-8847</span>
         <span>v2.0</span>
         <span>OKLCH</span>
       </div>
@@ -3197,9 +3198,9 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-header-left">
-            <span class="modal-header-ref">GL-MOD-01</span>
+            <span class="modal-header-ref">SY-MOD-01</span>
             <h2 class="modal-title" id="modal-confirm-title">
-              Confirm Registration
+              Confirm Deployment
             </h2>
           </div>
           <button class="modal-close" aria-label="Close modal" data-modal-close>
@@ -3208,26 +3209,26 @@
         </div>
         <div class="modal-body">
           <p>
-            You are about to submit assessments for
-            <strong>Group 7B</strong>
-            in <strong>Mathematics</strong>. This will register grades for 24
-            students and update their progress records.
+            You are about to deploy pipeline
+            <strong>ingest-prod-07</strong>
+            to the <strong>production</strong> cluster. This will process
+            approximately <strong>2.4M records/hour</strong> across 12 nodes.
           </p>
           <p>
-            Estimated processing:
+            Estimated startup:
             <span
               style="font-family: var(--font-mono); font-size: var(--text-xs)"
-              >~2 sec</span
-            >. Edit window:
+              >~8 sec</span
+            >. Rollback window:
             <span
               style="font-family: var(--font-mono); font-size: var(--text-xs)"
-              >24 hours</span
+              >5 min</span
             >.
           </p>
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" data-modal-close>Cancel</button>
-          <button class="btn btn-primary" data-modal-close>Submit</button>
+          <button class="btn btn-primary" data-modal-close>Deploy</button>
         </div>
       </div>
     </div>
@@ -3242,9 +3243,9 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-header-left">
-            <span class="modal-header-ref">GL-MOD-02</span>
+            <span class="modal-header-ref">SY-MOD-02</span>
             <h2 class="modal-title" id="modal-config-title">
-              Edit Student
+              Edit Endpoint
             </h2>
           </div>
           <button class="modal-close" aria-label="Close modal" data-modal-close>
@@ -3253,35 +3254,35 @@
         </div>
         <div class="modal-body">
           <div class="field" style="margin-bottom: var(--space-4)">
-            <label class="field-label" for="modal-node-name">Student Name</label>
+            <label class="field-label" for="modal-node-name">Endpoint Name</label>
             <input
               class="input"
               type="text"
               id="modal-node-name"
-              placeholder="Jan de Vries"
+              placeholder="api-prod-east"
               style="width: 100%"
             />
           </div>
           <div class="field" style="margin-bottom: var(--space-4)">
-            <label class="field-label" for="modal-zone">Class</label>
+            <label class="field-label" for="modal-zone">Region</label>
             <input
               class="input"
               type="text"
               id="modal-zone"
-              placeholder="7B"
+              placeholder="us-east-1"
               style="width: 100%"
             />
           </div>
           <div class="field">
-            <label class="field-label" for="modal-weight">Student Number</label>
+            <label class="field-label" for="modal-weight">Throughput Limit</label>
             <input
               class="input"
               type="number"
               id="modal-weight"
-              placeholder="2024001"
+              placeholder="10000"
               style="width: 100%"
             />
-            <span class="field-hint">6-digit ID. Unique per student.</span>
+            <span class="field-hint">Records per second. Max 50,000.</span>
           </div>
         </div>
         <div class="modal-footer">
@@ -3301,18 +3302,18 @@
       <div class="modal">
         <div
           class="modal-header"
-          style="border-bottom-color: oklch(0.9 0.04 22)"
+          style="border-bottom-color: oklch(0.90 0.04 30)"
         >
           <div class="modal-header-left">
             <span class="modal-header-ref" style="color: var(--color-danger)"
-              >GL-MOD-03</span
+              >SY-MOD-03</span
             >
             <h2
               class="modal-title"
               id="modal-danger-title"
               style="color: var(--color-danger)"
             >
-              Remove Student
+              Purge Stream
             </h2>
           </div>
           <button class="modal-close" aria-label="Close modal" data-modal-close>
@@ -3321,9 +3322,9 @@
         </div>
         <div class="modal-body">
           <p>
-            This will remove <strong>Jan de Vries</strong> from
-            <strong>Group 7B</strong>. All in-progress registrations will be
-            saved as draft. Submitted grades will not be affected.
+            This will purge <strong>stream strm-8f2a4c</strong> from
+            <strong>cluster prod-east</strong>. All buffered data will be
+            lost. Connected pipelines will enter a paused state.
           </p>
           <p
             style="
@@ -3338,7 +3339,7 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" data-modal-close>Cancel</button>
-          <button class="btn btn-danger" data-modal-close>Remove</button>
+          <button class="btn btn-danger" data-modal-close>Purge</button>
         </div>
       </div>
     </div>
@@ -3536,20 +3537,20 @@
     ───────────────────────────────────────────── */
 
       const saData = [
-        { id: "stu-01", label: "Emma Bakker", meta: "Group 7B", icon: "◉" },
-        { id: "stu-02", label: "Jan de Vries", meta: "Group 7B", icon: "◉" },
-        { id: "stu-03", label: "Sophie Jansen", meta: "Group 7A", icon: "◉" },
-        { id: "stu-04", label: "Lucas Visser", meta: "Group 8A", icon: "◉" },
-        { id: "sub-wis", label: "Wiskunde", meta: "WIS-301", icon: "◆" },
-        { id: "sub-tal", label: "Taal", meta: "TAL-201", icon: "◆" },
-        { id: "sub-lez", label: "Lezen", meta: "LEZ-102", icon: "◆" },
-        { id: "sub-snk", label: "Snappet", meta: "SNK-401", icon: "◆" },
-        { id: "grp-7a", label: "Group 7A", meta: "28 students", icon: "▨" },
-        { id: "grp-7b", label: "Group 7B", meta: "24 students", icon: "▨" },
-        { id: "grp-8a", label: "Group 8A", meta: "26 students", icon: "▨" },
-        { id: "grp-8b", label: "Group 8B", meta: "22 students", icon: "▨" },
-        { id: "tea-01", label: "Marie Kosters", meta: "Teacher", icon: "◈" },
-        { id: "tea-02", label: "Peter Hendriks", meta: "Teacher", icon: "◈" },
+        { id: "stm-01", label: "ingest-prod-07", meta: "2.4M rec/hr", icon: "◉" },
+        { id: "stm-02", label: "transform-staging", meta: "480K rec/hr", icon: "◉" },
+        { id: "stm-03", label: "analytics-daily", meta: "Batch / 06:00 UTC", icon: "◉" },
+        { id: "stm-04", label: "ml-feature-pipeline", meta: "Feature store", icon: "◉" },
+        { id: "end-api", label: "api.data.monster", meta: "REST / v2", icon: "◆" },
+        { id: "end-ws", label: "ws.data.monster", meta: "WebSocket", icon: "◆" },
+        { id: "end-s3", label: "s3-archive", meta: "Cold storage", icon: "◆" },
+        { id: "end-kafka", label: "kafka-prod", meta: "Streaming", icon: "◆" },
+        { id: "clu-east", label: "prod-east", meta: "12 nodes / 94%", icon: "▨" },
+        { id: "clu-west", label: "prod-west", meta: "8 nodes / 87%", icon: "▨" },
+        { id: "clu-stg", label: "staging", meta: "4 nodes / 62%", icon: "▨" },
+        { id: "clu-dev", label: "dev", meta: "2 nodes / 34%", icon: "▨" },
+        { id: "usr-01", label: "Alice Chen", meta: "SRE / On-call", icon: "◈" },
+        { id: "usr-02", label: "Marcus Webb", meta: "Data Engineer", icon: "◈" },
       ];
 
       const saContainer = document.querySelector("[data-searchahead]");
@@ -3739,25 +3740,25 @@
       const toastPresets = {
         default: {
           title: "Notification",
-          message: "Progress update saved successfully.",
+          message: "Pipeline configuration saved successfully.",
           duration: 4500,
         },
         success: {
-          title: "Registration Complete",
+          title: "Deployment Complete",
           message:
-            "Assessments for Group 7B in Mathematics registered for 24 students.",
+            "Pipeline ingest-prod-07 deployed to cluster prod-east. 12 nodes active.",
           duration: 4500,
         },
         warning: {
-          title: "Incomplete Data",
+          title: "Degraded Performance",
           message:
-            "3 students in Group 7A are missing assessments for Wiskunde this term.",
+            "Latency on prod-west exceeded 200ms threshold. Auto-scaling triggered.",
           duration: 5500,
         },
         danger: {
-          title: "Deadline Approaching",
+          title: "Pipeline Failure",
           message:
-            "Report deadline is tomorrow. 12 students still have pending registrations.",
+            "Stream strm-8f2a4c lost connection. 3 retry attempts failed. Manual intervention required.",
           duration: 6000,
         },
       };

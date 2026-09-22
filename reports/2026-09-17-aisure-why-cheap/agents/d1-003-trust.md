@@ -1,0 +1,35 @@
+# d1-003 — Trust signals for aisure.uk
+
+## Findings
+
+- **Scamadviser: "Caution Recommended", Trust Score 0/100** (page last updated ~1 month ago). Stated reasons: domain **very young** (registered **2026-03-27**, WHOIS last updated same day, renewal 2027-03-27 — i.e. 1-year reg only); **WHOIS ownership hidden**; **"reported for Phishing by IPQS"** and **"reported as Suspicious by IPQS"**. Positive notes: valid SSL (DV cert, Google Trust Services) and "safe according to DNSFilter". Hosting: IP 185.158.133.1, ISP **Cyber Assets Fzco**, country **DE**; registrar **IONOS SE (1&1)**; nameservers IONOS ui-dns.* (Germany). [source: https://www.scamadviser.com/check-website/aisure.uk] — verified (full page fetched)
+- **Gridinsoft: 35/100 trust score, "Blacklist Warning"** — "Multiple security vendors blacklist Aisure.uk, and our checks show a 35/100 trust score. Avoid entering personal or payment data." [source: https://gridinsoft.com/online-virus-scanner/url/aisure-uk] — reported (snippet via two search engines; page bot-blocked to direct fetch, underlying vendor list unverified)
+- **Scam Detector: no page for aisure.uk** — their validator index has `aisure.co.za` (a different, South African domain) but nothing for aisure.uk. [source: https://www.scam-detector.com/validator/aisure-co-za-review/ found via search; no aisure.uk entry in any query] — verified (absence in index)
+- **Trustpilot: no profile found** — `trustpilot.com/review/aisure.uk` returns HTTP 403 to both plain and browser-rendered fetches (Cloudflare), and no search engine (TinyFish, DDG, site:-scoped) surfaces a profile or any rating for aisure.uk. Nearby results (use.ai, esure.ai, aisoftwaredevelopers.co.uk) are unrelated companies. [source: https://www.trustpilot.com/review/aisure.uk → 403] — unverifiable directly; zero indexed evidence of a profile or reviews
+- **Reddit / forums: no discussions found** — searches for aisure.uk on Reddit and Quora returned nothing about this platform (only unrelated "AI sure" phrasing matches). No organic user threads anywhere. [source: searches, see trail] — verified (absence)
+- **LinkedIn: independent hands-on review is negative-cautionary** — Waddah Al-Btoush, "AISure AI Platform Review: Cautionary Signals and Red Flags" (Jun 9, 2026). Claims from actual testing: (1) ecosystem mixes AI with **"capital partnership" messaging and sponsored links to prediction/forex-style products**; (2) **"Delete Account" button did not appear to trigger deletion**; (3) **public API health endpoint exposed internal operational details** including names/presence of Stripe, Resend, Browser Use, and Lovable API keys; (4) dashboard shows heavy marketing/tracking and promotes financial-style products; (5) **reply email associated with Noahsure bounced** ("address not found / mailbox unavailable"). Reviewer explicitly states: "This does not automatically mean the platform is fraudulent." [source: https://www.linkedin.com/posts/waddah-a-90798819_aisure-every-ai-tool-one-platform-free-activity-7470101089682604032-NZRL] — verified (full post fetched)
+- **Domain age**: 2026-03-27 registration per Scamadviser WHOIS data (hidden registrant). Direct Nominet RDAP was unreachable during this run. [source: Scamadviser page above] — reported (single-source; direct RDAP check failed)
+- **UK Companies House: the named company is real and Active** — **NOAHSURE GROUP LIMITED, company number 12364489**, registered office **1 Canada Square, Canary Wharf, London E14 5AA** (matches the Terms-of-Service address exactly), incorporated **16 December 2019**, SIC 62012 (business & domestic software development) + 96090, last accounts made up to 31 Dec 2024, last confirmation statement 8 Aug 2026. Search snippets name director **Noah LAGUDA** (correspondence addr 77 Marshwall, London E14). [source: https://find-and-update.company-information.service.gov.uk/company/12364489 + people page in search results] — verified (official CH overview page fetched; director from CH-indexed snippet)
+- **Social footprint is paid/self-published only**: Facebook page "AISure.uk | London" running the "Free forever. £9.99/mo" ads; Instagram promotional posts (e.g. 21 May 2026). No organic third-party social discussion found. [source: https://www.facebook.com/AISure.uk/ + https://www.instagram.com/p/DYnCjIOk8TE/] — reported
+
+## Tensions
+
+- **"UK built" (marketing) vs infrastructure**: legal entity is London-registered, but Scamadviser shows hosting via **Cyber Assets Fzco (a UAE-style FZCO name) on German IPs**, IONOS registrar/nameservers, and (per d1-001) a Lovable-built SPA on Supabase EU. Nothing technically UK-based.
+- **Company age vs domain age**: Noahsure Group Ltd incorporated Dec 2019 (6.5 years) but the domain was only registered **Mar 2026** with a single 1-year term and hidden WHOIS — the trading history claim "UK's only..." rests on a months-old web presence.
+- **Registered & addressable on paper vs reachable in practice**: CH record is clean, yet the independent tester's email to Noahsure **bounced** — legal existence ≠ operational support.
+- **Aggressive paid growth (FB/IG "Free forever" ads) vs total absence of organic trust surface**: no Trustpilot, no Reddit, no press; the only independent voices (Scamadviser, Gridinsoft, the LinkedIn review) are all cautionary/negative.
+- **Red flags are signals, not proof**: the IPQS phishing/suspicious flags could stem from its ad-heavy programmatic-SEO pages and free-tier ad monetization (false-positive prone); no consumer-fraud complaint, chargeback report, or regulator action was found.
+
+## Open questions
+
+- Which specific vendors feed Gridinsoft's blacklist verdict (page bot-blocked) — is IPQS the sole source of both Scamadviser's and Gridinsoft's negative signals?
+- Does a Trustpilot profile exist but unindexed (403 blocks direct verification)?
+- Contents of Noahsure Group's filed accounts (size, solvency) and PSC register — needed to judge whether a £9.99-all-you-can-eat model is backed by anything.
+- Does the Delete-Account non-function and exposed `/api/health` (LinkedIn claims) still reproduce?
+
+## Search trail
+
+- TinyFish searches: `aisure.uk scamadviser`; `aisure.uk gridinsoft`; `aisure uk trustpilot reviews`; `aisure.uk reddit`; `"Noahsure Group" LTD companies house`; `aisure scam-detector`; `aisure.uk review scam is it legit`; `site:trustpilot.com aisure.uk`; `aisure AI platform reddit OR quora experience`.
+- Fetched (TinyFish, browser-rendered): scamadviser.com/check-website/aisure.uk (full verdict + WHOIS/hosting facts); LinkedIn post by Waddah Al-Btoush (full text); Companies House company/12364489 (official record).
+- Blocked/failed: gridinsoft.com (bot_blocked via TinyFish, 403 via curl — score from search snippets); trustpilot.com/review/aisure.uk (403, both www and uk); rdap.nominet.uk (unreachable); html.duckduckgo.com (rate-limited, empty).
+- Discarded: esure.ai / use.ai / aisoftwaredevelopers.co.uk / mgigolf / insure.com Trustpilot pages (name-similar, unrelated); aisure.co.za (different company, Scam Detector's page); unrelated Reddit "AI sure" matches; HSB "aiSure Protection" (different product).

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ButtonGroup Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--duration-fast:180ms;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-6);background:var(--color-surface);margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.btn-group{display:flex;border:1px solid var(--color-border);border-radius:var(--radius-xs);overflow:hidden;width:fit-content;margin-bottom:var(--space-3)}
+.btn-group-fluid{width:100%}
+.btn-group-item{display:flex;align-items:center;justify-content:center;gap:var(--space-1);height:32px;padding:0 var(--space-2);border:none;background:transparent;color:var(--color-text-tertiary);cursor:pointer;font-family:var(--font-body);font-size:var(--text-xs);font-weight:500;transition:background var(--duration-fast) ease,color var(--duration-fast) ease}
+.btn-group-item:hover{background:var(--color-surface-sunken);color:var(--color-text)}
+.btn-group-item.active{background:var(--color-accent-muted);color:var(--color-accent-dark)}
+.btn-group-item+.btn-group-item{border-left:1px solid var(--color-border)}
+.btn-group-fluid .btn-group-item{flex:1}
+.status{font-size:var(--text-xs);color:var(--color-text-tertiary)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>ButtonGroup</h1>
+<p class="desc">Grouped buttons for mutually exclusive selection (like radio buttons but styled as buttons).</p>
+<div class="demo-label">Basic selection group</div>
+<div class="demo">
+<div class="btn-group" id="bg1" role="group">
+<button class="btn-group-item active" onclick="selectGroup('bg1',this)">Profile</button>
+<button class="btn-group-item" onclick="selectGroup('bg1',this)">Settings</button>
+<button class="btn-group-item" onclick="selectGroup('bg1',this)">Messages</button>
+</div>
+</div>
+<div class="demo-label">Filter toggle</div>
+<div class="demo">
+<div class="btn-group" id="bg2" role="group">
+<button class="btn-group-item active" onclick="selectGroup('bg2',this);document.getElementById('filter-status').textContent='All'">All</button>
+<button class="btn-group-item" onclick="selectGroup('bg2',this);document.getElementById('filter-status').textContent='Active'">Active</button>
+<button class="btn-group-item" onclick="selectGroup('bg2',this);document.getElementById('filter-status').textContent='Completed'">Completed</button>
+</div>
+<p class="status">Selected: <strong id="filter-status">All</strong></p>
+</div>
+<div class="demo-label">Time range</div>
+<div class="demo">
+<div class="btn-group" id="bg3" role="group">
+<button class="btn-group-item active" onclick="selectGroup('bg3',this)">Today</button>
+<button class="btn-group-item" onclick="selectGroup('bg3',this)">Week</button>
+<button class="btn-group-item" onclick="selectGroup('bg3',this)">Month</button>
+<button class="btn-group-item" onclick="selectGroup('bg3',this)">Year</button>
+</div>
+</div>
+<div class="demo-label">Fluid width</div>
+<div class="demo">
+<div class="btn-group btn-group-fluid" id="bg4" role="group" style="width:100%">
+<button class="btn-group-item active" onclick="selectGroup('bg4',this)">Left</button>
+<button class="btn-group-item" onclick="selectGroup('bg4',this)">Center</button>
+<button class="btn-group-item" onclick="selectGroup('bg4',this)">Right</button>
+</div>
+</div>
+<script>
+function selectGroup(groupId,btn){document.querySelectorAll('#'+groupId+' .btn-group-item').forEach(function(b){b.classList.remove('active')});btn.classList.add('active')}
+</script>
+</div>
+</body>
+</html>

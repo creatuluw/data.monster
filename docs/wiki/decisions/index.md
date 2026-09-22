@@ -47,3 +47,12 @@
 - [library-component-builder skill is the canonical path for new library components](./library-component-builder-canonical-path.md) - Context
 - [Library packages carry blockKind — table/text are built-in blocks, not chart types](./library-packages-carry-blockkind.md) - Context
 - [Use speed-highlight/core for code highlighting instead of Prism](./speed-highlight-over-prism.md) - Context
+- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](./linked-table-raw-fields-transient-autojoin.md) - Context
+- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](./chart-blocks-start-empty-needssetup-gate.md) - Context
+- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](./skeleton-card-is-the-inline-role-assignment.md) - Context
+- [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](./skeleton-pick-create-moved-from-inline-dropdowns.md) - Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New)
+- [App gets virtual multi-tab navigation: bottom bar is the tab bar](./app-gets-virtual-multi-tab-navigation-bottom-bar.md) - Context
+- [Tab bar shows only explicitly opened tabs — navigation never creates tabs](./tab-bar-shows-only-explicitly-opened-tabs.md) - Context
+- [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](./drawer-chrome-restyle-reverted-control-kit-stands.md) - Context
+- [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](./all-drawers-adopt-the-data-tabledrawer-design.md) - Context
+- [Timeout and retry defend against hung IPC](./timeout-and-retry-defend-against-hung-ipc.md) - Context

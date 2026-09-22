@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Table Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--duration-fast:180ms;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+thead{border-bottom:1px solid var(--color-border)}
+th{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-tertiary);text-align:left;padding:var(--space-3) var(--space-6);background:var(--color-surface-raised);white-space:nowrap}
+td{padding:var(--space-3) var(--space-6);color:var(--color-text);border-bottom:1px solid var(--color-border);font-family:var(--font-body);font-size:var(--text-sm)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-surface-sunken)}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);padding:2px var(--space-2);border:1px solid;font-family:var(--font-body);font-size:9px;font-weight:600;line-height:1.5;border-radius:var(--radius-xs)}
+.tag-success{background:oklch(0.95 0.03 160);color:oklch(0.4 0.1 160);border-color:oklch(0.88 0.04 160)}
+.tag-warning{background:oklch(0.96 0.03 80);color:oklch(0.42 0.1 80);border-color:oklch(0.9 0.03 80)}
+.tag-danger{background:oklch(0.95 0.03 22);color:oklch(0.38 0.12 22);border-color:oklch(0.9 0.04 22)}
+.tag-default{background:var(--color-surface-sunken);color:var(--color-text-secondary);border-color:var(--color-border)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Table</h1>
+<p class="desc">Data table with hover rows, column headers, and inline status tags.</p>
+<div class="demo-label">Student records</div>
+<div class="demo">
+<div class="table-wrap">
+<table>
+<thead><tr><th>Name</th><th>Group</th><th>Role</th><th>Status</th><th>Progress</th></tr></thead>
+<tbody>
+<tr><td>Emma de Vries</td><td>DG-3A</td><td>Student</td><td><span class="tag tag-success">active</span></td><td>78%</td></tr>
+<tr><td>Thomas Bakker</td><td>DG-3B</td><td>Student</td><td><span class="tag tag-warning">at risk</span></td><td>45%</td></tr>
+<tr><td>Sanne Jansen</td><td>DG-3A</td><td>Student</td><td><span class="tag tag-success">active</span></td><td>92%</td></tr>
+<tr><td>Lars de Groot</td><td>DG-3C</td><td>Student</td><td><span class="tag tag-danger">inactive</span></td><td>12%</td></tr>
+<tr><td>Mila Visser</td><td>DG-3B</td><td>Mentor</td><td><span class="tag tag-success">active</span></td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</body>
+</html>

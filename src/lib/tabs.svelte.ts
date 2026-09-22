@@ -19,17 +19,13 @@ export const tabs = {
 	}
 };
 
-/** call on every navigation: keeps the active tab's path/label in sync */
+/** call on every navigation: while a tab is active it tracks the current URL;
+ *  the base session (before any open-in-new-tab) is NOT a tab. */
 export function ensureActive(path: string, label: string) {
-	let t = state.list.find((x) => x.id === state.activeId);
-	if (!t) {
-		t = { id: nextId++, path, label };
-		state.list.push(t);
-		state.activeId = t.id;
-	} else {
-		t.path = path;
-		t.label = label;
-	}
+	const t = state.list.find((x) => x.id === state.activeId);
+	if (!t) return;
+	t.path = path;
+	t.label = label;
 }
 
 export function pathLabel(path: string): string {
@@ -56,8 +52,8 @@ export function closeTab(id: number) {
 	if (i === -1) return;
 	state.list.splice(i, 1);
 	if (state.list.length === 0) {
+		// last tab closed: fall back to the base session on the current page
 		state.activeId = null;
-		goto('/');
 		return;
 	}
 	if (state.activeId === id) {

@@ -1,3 +1,5 @@
+// @ts-nocheck — node built-ins used to read embedded doc sources; runtime is vitest/node,
+// but the app tsconfig intentionally has no node types (tests live outside src/).
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';

@@ -5,7 +5,7 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
+	import { FolderOpen, Settings, MoreVertical, Link, Check, BookOpen } from 'lucide-svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { tabs, ensureActive, openInNewTab, activate, closeTab, pathLabel } from '$lib/tabs.svelte';
 import { initDmEvents } from '$lib/dm-events';
@@ -112,6 +112,7 @@ import { initDmEvents } from '$lib/dm-events';
 		query: 'Query',
 		table: 'Data',
 		settings: 'Settings',
+		agent: 'Agent prompts',
 		'internal-db': 'Internal DB',
 		labs: 'Labs',
 		workspaces: 'Workspaces',
@@ -177,6 +178,9 @@ import { initDmEvents } from '$lib/dm-events';
 				</a>
 				<span class="tag tag-success">Persistent</span>
 				<div class="header-actions">
+					<a href="/agent" class="btn btn-ghost btn-sm" title="Agent prompts">
+						<BookOpen size={12} />
+					</a>
 					<a href="/settings" class="btn btn-ghost btn-sm" title="Settings">
 						<Settings size={12} />
 					</a>

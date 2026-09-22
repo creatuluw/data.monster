@@ -11,3 +11,9 @@
 - [Pointer cursor comes from one global rule in app.css](./pointer-cursor-from-global-rule-app-css.md) - Guideline
 - [Render markdown via marked + .prose-chat, never a new pipeline](./render-markdown-via-marked-prose-chat.md) - When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in the `.prose-chat` cl
 - [Drawers reuse the shared drawerResize action](./drawers-reuse-the-shared-drawerresize-action.md) - Guideline
+- [Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash](./leave-wiki-recap-noise-uncommitted.md) - Guideline
+- [Config drawers are one scrolling column — settings sections, Danger zone last](./config-drawers-one-scrolling-column.md) - Guideline
+- [Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows](./adding-a-component-never-auto-opens-the-config.md) - When a component is added to a page-editor row (`addComponent` in the page editor), the **config drawer must NOT auto-open**. The newly added block stays on the
+- [Pick values flow through one codec — src/lib/charts/pickers.ts](./pick-values-flow-through-one-codec-src-lib-charts.md) - Guideline
+- [Pick display labels resolve through roleLabels() — never hand-roll chip labels](./pick-display-labels-resolve-through-rolelabels.md) - Guideline
+- [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline

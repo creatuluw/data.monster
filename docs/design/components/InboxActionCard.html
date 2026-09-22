@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InboxActionCard Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--radius-lg:6px;--shadow-sm:0 1px 2px oklch(0.22 0.005 250 / 0.07);--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--max-width:72rem;--leading-relaxed:1.8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-6);background:var(--color-surface);margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.action-card{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);border-radius:var(--radius-lg);background:var(--color-surface);cursor:pointer;font-family:var(--font-mono);transition:border-color var(--duration-fast) ease,box-shadow var(--duration-fast) ease;max-width:380px}
+.action-card:hover{border-color:var(--color-accent);box-shadow:var(--shadow-sm)}
+.action-card.overdue{border-left:3px solid oklch(0.55 0.2 22)}
+.action-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2)}
+.action-card-title-group{display:flex;flex-direction:column;gap:2px;min-width:0}
+.action-title{font-family:var(--font-mono);font-weight:400;font-size:var(--text-sm);color:var(--color-accent-dark);line-height:1.4}
+.action-subtitle{display:inline-flex;align-items:center;gap:4px;font-size:var(--text-xs);color:var(--color-text-tertiary);line-height:1.4}
+.action-subtitle.overdue-text{color:oklch(0.45 0.15 22);font-weight:600}
+.action-card-body{margin-top:var(--space-1)}
+.action-desc{font-size:var(--text-xs);color:var(--color-text-secondary);line-height:1.5;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.action-card-footer{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);border-top:1px dotted var(--color-border);padding-top:var(--space-2)}
+.action-tags{display:flex;flex-wrap:wrap;gap:var(--space-1)}
+.action-tag-chip{display:inline-flex;align-items:center;padding:2px var(--space-2);border:1px solid var(--color-border);border-radius:var(--radius-xs);background:var(--color-surface);color:var(--color-accent);font-family:var(--font-body);font-size:9px;font-weight:600;line-height:1.5}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);padding:2px var(--space-2);border:1px solid;font-family:var(--font-body);font-size:9px;font-weight:600;line-height:1.5;border-radius:var(--radius-xs)}
+.tag-accent{background:var(--color-accent-muted);color:var(--color-accent-dark);border-color:oklch(0.82 0.03 41)}
+.tag-success{background:oklch(0.95 0.03 160);color:oklch(0.4 0.1 160);border-color:oklch(0.88 0.04 160)}
+.tag-warning{background:oklch(0.96 0.03 80);color:oklch(0.42 0.1 80);border-color:oklch(0.9 0.03 80)}
+.tag-danger{background:oklch(0.95 0.03 22);color:oklch(0.38 0.12 22);border-color:oklch(0.9 0.04 22)}
+.drawer-open-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:24px;height:24px;padding:0;border:1px solid var(--color-border);border-radius:var(--radius-xs);background:var(--color-surface);color:var(--color-text-tertiary);cursor:pointer;transition:color var(--duration-fast) ease}
+.drawer-open-btn:hover{color:var(--color-accent);border-color:var(--color-accent);background:var(--color-accent-muted)}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--space-6)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>InboxActionCard</h1>
+<p class="desc">Action card for inbox items with status tags, due dates, and expandable details.</p>
+<div class="demo-label">Action cards</div>
+<div class="demo">
+<div class="grid-2">
+<article class="action-card">
+<div class="action-card-header">
+<div class="action-card-title-group">
+<span class="action-title">Review student progress report</span>
+<span class="action-subtitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 2024-06-15</span>
+</div>
+<button class="drawer-open-btn" aria-label="Open details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></button>
+</div>
+<div class="action-card-body"><p class="action-desc">Review the quarterly progress report for Emma de Vries and provide feedback on her mathematics scores.</p></div>
+<div class="action-card-footer">
+<div class="action-tags"><span class="action-tag-chip">math</span><span class="action-tag-chip">review</span></div>
+<span class="tag tag-warning">In uitvoering</span>
+</div>
+</article>
+
+<article class="action-card overdue">
+<div class="action-card-header">
+<div class="action-card-title-group">
+<span class="action-title">Update group assignment roster</span>
+<span class="action-subtitle overdue-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Overdue: 2024-05-30</span>
+</div>
+<button class="drawer-open-btn" aria-label="Open details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></button>
+</div>
+<div class="action-card-body"><p class="action-desc">Reorganize student groups for the upcoming semester based on performance data.</p></div>
+<div class="action-card-footer">
+<div class="action-tags"><span class="action-tag-chip">admin</span></div>
+<span class="tag tag-danger">Afgewezen</span>
+</div>
+</article>
+
+<article class="action-card">
+<div class="action-card-header">
+<div class="action-card-title-group">
+<span class="action-title">Schedule mentor meeting</span>
+<span class="action-subtitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> 2024-06-20</span>
+</div>
+<button class="drawer-open-btn" aria-label="Open details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></button>
+</div>
+<div class="action-card-body"><p class="action-desc">Plan the weekly mentor meeting to discuss at-risk students and intervention strategies.</p></div>
+<div class="action-card-footer">
+<div class="action-tags"><span class="action-tag-chip">meeting</span></div>
+<span class="tag tag-accent">Backlog</span>
+</div>
+</article>
+</div>
+</div>
+</div>
+</body>
+</html>

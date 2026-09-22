@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which open source apps implement value driver trees with live data and/or analysis? — fractal research report</title>
+<!--
+  ============================================================================
+  FRACTAL RESEARCH · HTML REPORT TEMPLATE (self-contained, portable)
+  Design lineage: html-docs research templates (thariqs.github.io/html-effectiveness)
+
+  HOW TO FILL THIS IN (the orchestrator agent, after synthesis):
+  1. Copy this file to <report_dir>/report.html. The markdown artifacts
+     (agents/, research.log, metrics.json) stay — this page is the deliverable.
+  2. Replace every {{PLACEHOLDER}}. Search for "{{" to find them all.
+  3. Answer section: keep one <h2>+paragraphs per major branch (one branch =
+     one h2, named after the sub-question it answers). Rank strongest first.
+  4. Optional strategy sections are marked "OPTIONAL — delete if not applicable":
+     Blind spots (perspective_expander), Sources (grounded_research),
+     The question, examined (socratic). Delete the ones the run didn't use.
+  5. Build TREE below in <script> from research.log: decompose events give
+     parent→children, answer events give status. One node per question:
+       { id, q, status, children: [...] }
+     status ∈ explored | validated | synthesized | dead_end. dead_end nodes:
+     keep them — visible dead ends are findings.
+  6. Verify: open report.html in a browser (or show_in_browser). Zero external
+     dependencies — must work offline, from file://.
+  ============================================================================
+-->
+<style>
+  :root {
+    --ivory:   #FAF9F5;
+    --slate:   #141413;
+    --clay:    #D97757;
+    --oat:     #E3DACC;
+    --olive:   #788C5D;
+    --sky:     #6A8CAF;
+    --rust:    #B04A3F;
+    --gray-150:#F0EEE6;
+    --gray-300:#D1CFC5;
+    --gray-500:#87867F;
+    --gray-700:#3D3D3A;
+    --serif: ui-serif, Georgia, "Times New Roman", serif;
+    --sans:  system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono:  ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ivory:   #1C1C1A;
+      --slate:   #EDEBE4;
+      --clay:    #D97757;
+      --oat:     #3A362F;
+      --gray-150:#26261F;
+      --gray-300:#3D3D3A;
+      --gray-500:#A5A39B;
+      --gray-700:#CFCDC5;
+    }
+    body { background: var(--ivory); }
+    .demo, aside, .card { background: #232320; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--ivory);
+    color: var(--gray-700);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    padding: 56px 24px 120px;
+  }
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 48px;
+  }
+  @media (max-width: 960px) { .page { grid-template-columns: 1fr; } aside { order: 2; position: static; } }
+
+  /* ── header ───────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 33px;
+    color: var(--slate);
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+    line-height: 1.25;
+  }
+  .lead { max-width: 680px; margin-bottom: 16px; font-size: 16.5px; }
+  .lead strong { color: var(--slate); }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--slate);
+    margin: 40px 0 12px;
+  }
+  h3 { font-family: var(--serif); font-weight: 500; font-size: 17px; color: var(--slate); margin: 24px 0 8px; }
+  p { margin-bottom: 12px; max-width: 680px; }
+  ul, ol { margin: 0 0 12px 22px; max-width: 680px; }
+  li { margin-bottom: 5px; }
+  code { font-family: var(--mono); font-size: 13px; }
+  a { color: var(--clay); }
+  section { scroll-margin-top: 24px; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--gray-500);
+    margin-bottom: 8px;
+  }
+  .meta span {
+    border: 1px solid var(--gray-300);
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--gray-150);
+  }
+  .meta b { color: var(--slate); font-weight: 600; }
+
+  /* ── confidence + citation chips ──────── */
+  .conf { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+  .conf.high   { background: rgba(120,140,93,.18);  color: var(--olive); }
+  .conf.medium { background: rgba(217,119,87,.15);  color: var(--clay); }
+  .conf.low    { background: rgba(176,74,63,.15);   color: var(--rust); }
+  .src {
+    font-family: var(--mono); font-size: 12px;
+    border-bottom: none;
+  }
+
+  .card {
+    border: 1.5px solid var(--gray-300);
+    border-radius: 14px;
+    background: #fff;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  .card.dead-ends { border-style: dashed; }
+
+  /* ── research tree ────────────────────── */
+  .tree { font-size: 13.5px; }
+  .tree details { margin: 3px 0 3px 0; }
+  .tree details > summary {
+    cursor: pointer; list-style: none;
+    padding: 4px 8px; border-radius: 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .tree details > summary::-webkit-details-marker { display: none; }
+  .tree details > summary:hover { background: var(--gray-150); }
+  .tree details > summary::before { content: "▸"; color: var(--gray-500); font-size: 10px; }
+  .tree details[open] > summary::before { content: "▾"; }
+  .tree .leaf { padding: 4px 8px 4px 22px; }
+  .tree .q { color: var(--slate); }
+  .tree .nid { font-family: var(--mono); font-size: 10.5px; color: var(--gray-500); }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; position: relative; top: 0px; align-self: center; }
+  .dot.explored    { background: var(--olive); }
+  .dot.validated   { background: var(--sky); }
+  .dot.synthesized { background: var(--slate); }
+  .dot.dead_end    { background: var(--rust); }
+  .tree .branch { margin-left: 18px; border-left: 1px solid var(--gray-300); padding-left: 10px; }
+
+  /* ── sidebar ──────────────────────────── */
+  aside {
+    position: sticky; top: 32px; align-self: start;
+    border: 1.5px solid var(--gray-300); border-radius: 12px;
+    background: #fff; padding: 18px 18px 12px;
+  }
+  aside .label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-500); margin-bottom: 10px;
+  }
+  aside nav a {
+    display: block; text-decoration: none; color: var(--gray-700);
+    font-size: 13px; padding: 4px 0; border-bottom: 1px solid var(--gray-150);
+  }
+  aside nav a:hover { color: var(--clay); }
+  aside dl { margin-top: 16px; }
+  aside dt { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-500); margin-top: 10px; }
+  aside dd { font-size: 13.5px; color: var(--slate); }
+  aside button {
+    margin-top: 16px; width: 100%;
+    appearance: none; border: 1.5px solid var(--gray-300);
+    background: var(--gray-150); border-radius: 6px;
+    font-family: var(--mono); font-size: 11px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  aside button:hover { background: var(--oat); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; font-family: var(--mono); color: var(--gray-500); margin-top: 14px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+
+  @media print {
+    body { padding: 0; background: #fff; }
+    aside, aside button { display: none; }
+    .page { grid-template-columns: 1fr; gap: 0; }
+    .tree details { display: block; }
+    a { color: inherit; text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <main>
+    <div class="eyebrow">Fractal research · grounded_research</div>
+    <h1>Which open source apps implement value driver trees with live data and/or analysis?</h1>
+    <p class="lead">
+      <strong>No mature open-source app does value driver trees with live data.</strong> Five research branches (dedicated apps, BI platforms, FP&amp;A engines, viz libraries, same-concept-other-name tools) agree: the niche is empty at the top and fragmented at the bottom. The closest match is <strong>react-kpi-tree</strong> (Apache-2.0, 3&#9733; &#8212; genuine live data binding via polling adapters but a self-described learning project); compute is healthy but UI-less (FinanceToolkit, DoWhy); UI-bearing strategy tools are dead (bambooBSC, hillfog); and Power BI's decomposition tree has no OSS clone (ECharts request #18043 closed unimplemented). The verified gap &#8212; a data-bound, computed, editable driver tree &#8212; is unclaimed.
+    </p>
+    <div class="meta">
+      <span>2026-09-17</span>
+      <span>strategy <b>grounded_research</b></span>
+      <span>6 nodes</span>
+      <span>depth <b>1</b></span>
+      <span>6 agents</span>
+    </div>
+
+
+    <section id="shortlist">
+      <h2>Ranked shortlist</h2>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <tr style="text-align:left;"><th>Tool</th><th>License</th><th>Live data?</th><th>Computes?</th><th>Maturity</th></tr>
+        <tr><td><a href="https://github.com/YoungjaeKim/react-kpi-tree">react-kpi-tree</a></td><td>Apache-2.0</td><td>&#10003; polling adapters</td><td>&#10007; renders given values</td><td>3&#9733;, learning project</td></tr>
+        <tr><td><a href="https://github.com/BrightGrafana/bright-tree-panel">Grafana Interactive Tree Panel</a></td><td>Apache-2.0</td><td>&#10003; any table datasource</td><td>&#10007; aggregation in query</td><td>active 2026-05</td></tr>
+        <tr><td><a href="https://github.com/JerBouma/FinanceToolkit">FinanceToolkit</a></td><td>MIT</td><td>&#10003; input statements</td><td>&#10003; Extended DuPont</td><td>5.4k&#9733;, mature</td></tr>
+        <tr><td><a href="https://github.com/ljftwq-dev/revenue-model-builder">revenue-model-builder</a></td><td>unverified</td><td>programmatic</td><td>&#10003; full driver math + sensitivity</td><td>7&#9733;</td></tr>
+        <tr><td><a href="https://github.com/modeleonai/modeleon">Modeleon</a></td><td>Apache-2.0</td><td>Excel round-trip</td><td>&#10003; dependency-tracked formulas</td><td>47&#9733;, early</td></tr>
+        <tr><td><a href="https://github.com/peno022/kpi-tree-generator">kpi-tree-generator</a></td><td>MIT</td><td>&#10007; manual values</td><td>&#10007;</td><td>4&#9733;, self-hostable</td></tr>
+        <tr><td><a href="https://github.com/ungden/bizos-company-os">BIZOS company OS</a></td><td>none</td><td>reported</td><td>reported</td><td>76&#9733;</td></tr>
+        <tr><td><a href="https://github.com/billchen198318/bamboobsc">bambooBSC</a></td><td>Apache-2.0</td><td>&#10007; manual measures</td><td>&#10003; BSC scores</td><td>dead 2021</td></tr>
+        <tr><td><a href="https://thingsboard.io/iot-hub/calculated-fields/overall-equipment-effectiveness-oee/">ThingsBoard CE OEE</a></td><td>Apache-2.0</td><td>&#10003; telemetry</td><td>&#10003; fixed A&#215;P&#215;Q</td><td>very active</td></tr>
+        <tr><td>ECharts tree &#183; d3-hierarchy &#183; React Flow+elkjs &#183; Plot.tree</td><td>per-lib</td><td>DIY binding</td><td>&#10007;</td><td>1.2k&#8211;67k&#9733;</td></tr>
+      </table>
+    </section>
+
+    <!-- ══ ANSWER ══════════════════════════════════════════════════════ -->
+    <section id="answer">
+      <h2>Dedicated value/KPI driver-tree apps</h2>
+      <p>The dedicated niche holds five repos that actually render/compute trees &#8212; all hobby-scale.
+      Demand is real (consulting Excel tools, SAP's commercial VDT, SaaS like kpitree.co) but OSS supply
+      never followed; the space runs on Excel, PowerPoint, and closed BI. Term collision with Linux-kernel
+      and ML "driver trees" makes discovery worse.</p>
+      <ul>
+        <li><strong>react-kpi-tree</strong> (YoungjaeKim, Apache-2.0, React/React-Flow + Express/Mongo) &#8212; the only one with true live binding: OpenSearch/HTTP-JSON polling adapters push values into tree nodes. 3&#9733;, "teatime coding" <span class="conf high">verified</span></li>
+        <li><strong>kpi-tree-generator</strong> (MIT, Rails+React, runs kpi-tree.com) &#8212; dedicated authoring web app, self-hostable; manual values only <span class="conf high">verified</span></li>
+        <li><strong>tqtensor/kpi_tree</strong> &#8212; Power BI custom visual binding table data into node grids; dormant since 2019, no license <span class="conf high">verified</span></li>
+        <li><strong>kpi_tree_lib</strong> (Python) &#8212; decomposition-tree image generator from text + values dict <span class="conf high">verified</span></li>
+        <li><strong>BIZOS company OS</strong> (76&#9733;, Next.js/Supabase) &#8212; KPI-tree cascade screen inside a 19-screen business OS; binding depth unverified <span class="conf medium">reported</span></li>
+      </ul>
+
+      <h2>BI platforms (Superset, Grafana, Metabase, Redash, Lightdash, Evidence)</h2>
+      <p>No mainstream OSS BI ships a true decomposition tree (ad-hoc dimension drill with auto-aggregation).
+      What exists renders a hierarchy you must pre-shape in SQL &#8212; aggregation is never the panel's job.</p>
+      <ul>
+        <li><strong>Grafana Interactive Tree Panel</strong> (BrightGrafana, Apache-2.0, v1.7.7, updated 2026-05) &#8212; table in, interactive tree out; node clicks set dashboard variables to drive other live panels. Closest live-data tree UX in a mainstream platform <span class="conf high">verified</span></li>
+        <li><strong>Superset Tree Chart</strong> (built-in ECharts plugin) &#8212; plain id/parent hierarchy; Preset itself calls it "not super useful at visualizing quantitative data" <span class="conf high">verified</span></li>
+        <li><strong>Metabase</strong> &#8212; Treemap only (1&#8211;2 fixed nested dimensions); Redash/Lightdash/Evidence: nothing, Evidence offers only a custom-components hatch <span class="conf medium">reported</span></li>
+        <li><strong>Apache ECharts <code>tree</code> series</strong> &#8212; the DIY base with value-sized nodes; the Power-BI-style decomposition request was closed unimplemented (#18043) <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>FP&amp;A / financial-modeling engines</h2>
+      <p>The math half is served; the tree UI half is not. Interactive what-if VDT remains commercial-EPM
+      territory (SAP, Jedox, Anaplan).</p>
+      <ul>
+        <li><strong>FinanceToolkit</strong> (JerBouma, MIT, 5.4k&#9733;) &#8212; mature Extended DuPont (5-factor) from real statements; no tree UI <span class="conf high">verified</span></li>
+        <li><strong>revenue-model-builder</strong> (7&#9733;) &#8212; the most literal driver tree: revenue = base &#215; penetration &#215; share &#215; price, credibility grades, Monte Carlo + tornado sensitivity, out-of-sample validation. Near-zero adoption <span class="conf high">verified</span></li>
+        <li><strong>Modeleon</strong> (Apache-2.0, 47&#9733;) &#8212; dependency-tracked formula trees compiled to live Excel with audit trail; right structure, zero FP&amp;A semantics <span class="conf high">verified</span></li>
+        <li><strong>openfpa</strong> (MIT, new) &#8212; agent-native FP&amp;A kernel; delegates model structure to an AI agent rather than encoding a tree <span class="conf high">verified</span></li>
+        <li>Negative results: Grist/Baserow are generic formula engines; 'pydunder' doesn't exist; no OSS 'Foresight' <span class="conf high">verified-as-absent</span></li>
+      </ul>
+
+      <h2>Visualization libraries usable for driver trees</h2>
+      <p>Genuinely used: ECharts tree (BI dashboards), d3-hierarchy + custom renderer (the hand-rolled default),
+      React Flow + dagre/elkjs (KPI-card nodes), Observable Plot <code>tree</code> (tidy tabular data).
+      Not fit: Rete.js/LiteGraph (editor frameworks), pyvis (notebook-grade), Kedro-viz (domain-locked).</p>
+      <ul>
+        <li><strong>No OSS library computes the roll-up math</strong> &#8212; every candidate renders pre-computed values; sum/product decomposition is always yours <span class="conf high">verified</span></li>
+        <li><strong>svelteplot 0.14.2 has no tree/cluster mark</strong> &#8212; verified by inspecting the installed package; Plot's tree mark was never ported <span class="conf high">verified</span></li>
+        <li>Layout-vs-richness trade: d3-hierarchy/Plot give tidy layouts with poor rich-node support; React Flow gives arbitrary KPI-card nodes but pushes layout onto dagre/elkjs <span class="conf high">verified</span></li>
+      </ul>
+
+      <h2>The same concept under other names (BSC, OEE, influence diagrams, causal)</h2>
+      <p>The concept exists twice over and the halves never meet: UI-bearing strategy suites are dead, compute
+      engines are healthy but treeless.</p>
+      <ul>
+        <li><strong>bambooBSC</strong> (Apache-2.0, 232&#9733;) and successor <strong>hillfog</strong> (no license) &#8212; BSC KPI cascades + strategy maps; dormant since 2021/2022 <span class="conf high">verified</span></li>
+        <li><strong>ThingsBoard CE OEE</strong> (Apache-2.0, active) &#8212; the only live data-bound computed tree in OSS: OEE = Availability &#215; Performance &#215; Quality from telemetry. Hardwired to that one formula <span class="conf high">verified</span></li>
+        <li><strong>DoWhy</strong> (8.3k&#9733;), <strong>pgmpy</strong> (3.3k&#9733;), <strong>Pyro</strong> (9k&#9733;) &#8212; compute causal/probabilistic node values from data, no tree UI; <strong>CausalNex</strong> matched best but hit EOL 2026-06 <span class="conf high">verified</span></li>
+        <li><strong>DecisionProgramming.jl</strong> (MIT, active) &#8212; solves influence diagrams via MILP; academic, no rendering <span class="conf high">verified</span></li>
+        <li>KPI pyramids / hoshin / treasury driver trees: zero OSS hits <span class="conf medium">verified absence in searched indexes</span></li>
+      </ul>
+    </section>
+
+    <!-- ══ TENSIONS ═════════════════════════════════════════════════════ -->
+    <section id="tensions">
+      <h2>Tensions</h2>
+      <p>Four tensions surfaced; the first three are the same gap seen from different sides.</p>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Dedicated-apps, BI-platforms, and other-names branches independently conclude the interactive
+        data-bound VDT doesn't exist in OSS, while compute-side branches find the math healthy
+        (FinanceToolkit, DoWhy, pgmpy). Assessment: agreed gap, not a disagreement — the compute/UI halves
+        of the concept have never been joined in open source.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>"Tree panel" &#8800; "decomposition tree": Grafana/Superset render a hierarchy pre-shaped in SQL;
+        Power BI decomposes a measure along view-time dimensions with server-side aggregation. Assessment:
+        any "open source decomposition tree" claim must be checked against this distinction — all OSS
+        candidates found fall on the pre-shaped side.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>Adoption vs fit: the only tool with the full pattern (react-kpi-tree) is a 3&#9733; learning
+        project; the mature tools each cover one half. Assessment: react-kpi-tree and Grafana's tree panel
+        are pattern references, not dependencies.</p>
+      </div>
+      <div class="card">
+        <div class="label">Tension</div>
+        <p>data.monster engine: svelteplot 0.14.2 has no tree mark (verified locally), so a driver tree here
+        means porting Plot's tree mark, embedding d3-hierarchy, or custom nodes — in tension with the
+        "SveltePlot is the sole chart engine" decision. Assessment: node-based custom rendering (React-Flow
+        pattern) is the likeliest fit since driver trees are node-cards, not marks.</p>
+      </div>
+    </section>
+
+    <!-- ══ OPEN QUESTIONS ══════════════════════════════════════════════ -->
+    <section id="open-questions">
+      <h2>Open questions</h2>
+      <ul>
+        <li>Chinese platforms (Gitee) likely host active BSC/DuPont apps (bambooBSC clones suggest a Chinese-language ecosystem) — unsearched.</li>
+        <li>BIZOS's KPI-tree screen: computes roll-ups from live Supabase data, or a static chart? Unverified.</li>
+        <li>GrowthBook (60k&#9733;) may have shipped "metric trees" under another name — probe inconclusive.</li>
+        <li>Superset's third-party plugin directory wouldn't render; an unpublished decomposition-tree plugin can't be ruled out.</li>
+        <li>Licenses of revenue-model-builder, finance-bp-dashboard, tqtensor/kpi_tree unverified — check before reuse.</li>
+        <li>Is react-kpi-tree worth forking as a reference, or just a pattern demo? Unresolved.</li>
+      </ul>
+    </section>
+
+    <!-- ══ OPTIONAL — delete if not applicable ═════════════════════════ -->
+
+    <!-- ══ METHOD ══════════════════════════════════════════════════════ -->
+    <section id="method">
+      <h2>How this was researched</h2>
+      <p>Grounded strategy, depth 1, fan-out 5 (dedicated apps / BI platforms / FP&amp;A engines / viz libraries / other-names). Leaves searched via TinyFish Search + GitHub REST API (built-in websearch unavailable in leaf sessions — degradation noted per agent file) and deep-fetched the promising repos and doc pages.</p>
+      <div class="card">
+        <div class="label">Question tree</div>
+        <div class="tree" id="tree"></div>
+        <div class="legend">
+          <span><i class="dot explored"></i>explored</span>
+          <span><i class="dot validated"></i>validated</span>
+          <span><i class="dot synthesized"></i>synthesized</span>
+          <span><i class="dot dead_end"></i>dead end</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ── sidebar ─────────────────────────────────────────────────────── -->
+  <aside>
+    <div class="label">Contents</div>
+    <nav>
+      <a href="#answer">Answer</a>
+      <a href="#shortlist">Ranked shortlist</a>
+      <a href="#tensions">Tensions</a>
+      <a href="#open-questions">Open questions</a>
+      <!-- optional sections: keep only the ones present above -->
+      <a href="#sources">Sources</a>
+      <a href="#method">How this was researched</a>
+    </nav>
+    <dl>
+      <dt>Strategy</dt><dd>grounded_research</dd>
+      <dt>Nodes</dt><dd>6</dd>
+      <dt>Max depth</dt><dd>1</dd>
+      <dt>Agent files</dt><dd>6</dd>
+      <dt>Artifacts</dt><dd><code>agents/</code>, <code>research.log</code>, <code>metrics.json</code></dd>
+    </dl>
+    <button onclick="window.print()">Print / export PDF</button>
+  </aside>
+
+</div>
+
+<script>
+/* Build TREE from research.log: decompose events give parent→children,
+   answer/synthesize events give status. Keep dead ends. Root first. */
+const TREE = {
+  id: "q-001", q: "Which open source apps implement value driver trees with live data and/or analysis?", status: "synthesized",
+  children: [
+    { id: "q-002", q: "Dedicated value/KPI driver-tree apps with data binding", status: "explored", children: [] },
+    { id: "q-003", q: "BI platforms with decomposition/driver-tree visuals (Superset, Grafana, Metabase…)", status: "explored", children: [] },
+    { id: "q-004", q: "FP&A / financial-modeling engines doing driver decomposition", status: "explored", children: [] },
+    { id: "q-005", q: "Visualization libraries usable for data-bound driver trees", status: "explored", children: [] },
+    { id: "q-006", q: "Same concept, other names: BSC, OEE, influence diagrams, causal trees", status: "explored", children: [] },
+  ],
+};
+
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+function renderNode(n, depth) {
+  const hasKids = n.children && n.children.length;
+  const head =
+    `<span class="dot ${n.status}"></span>` +
+    `<span class="nid">${n.id}</span>` +
+    `<span class="q">${n.q}</span>`;
+  if (!hasKids) return el(`<div class="leaf">${head}</div>`);
+  const det = el(`<details${depth < 1 ? " open" : ""}><summary>${head}</summary></details>`);
+  const branch = el(`<div class="branch"></div>`);
+  n.children.forEach(c => branch.appendChild(renderNode(c, depth + 1)));
+  det.appendChild(branch);
+  return det;
+}
+
+document.getElementById("tree").appendChild(renderNode(TREE, 0));
+</script>
+</body>
+</html>

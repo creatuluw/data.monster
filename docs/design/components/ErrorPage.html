@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ErrorPage Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-text-on-accent:oklch(0.97 0.005 250);--color-border:oklch(0.86 0.006 250);--color-border-strong:oklch(0.72 0.012 250);--color-danger:oklch(0.58 0.17 22);--color-warning:oklch(0.76 0.13 80);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-md:1.25rem;--text-lg:1.563rem;--text-xl:1.953rem;--text-2xl:2.441rem;--text-4xl:clamp(3.2rem,7vw,5.06rem);--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;--space-24:6rem;--radius-xs:2px;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--max-width:72rem;--leading-relaxed:1.8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{margin:0;padding:0;font-family:var(--font-body)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo-link{display:block;border:1px solid var(--color-border);border-radius:var(--radius-sm);margin-bottom:var(--space-8);overflow:hidden;text-decoration:none;color:inherit;transition:border-color var(--duration-fast) var(--ease-out-expo),box-shadow var(--duration-fast) var(--ease-out-expo);position:relative}
+.demo-link:hover{border-color:var(--color-accent);box-shadow:0 0 0 1px var(--color-accent)}
+.demo-link:hover .demo-hint{opacity:1}
+.demo-link:active .error-page{transform:scale(0.69)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+
+/* Error page — kees-style layout */
+.error-page{min-height:400px;display:grid;place-items:center;padding:var(--space-24) var(--gutter);background:var(--color-surface-sunken)}
+.error-inner{text-align:center;max-width:36rem}
+.error-code{font-family:var(--font-body);font-size:var(--text-base);font-weight:600;color:var(--color-text);letter-spacing:-0.02em}
+.error-title{font-family:var(--font-body);font-size:clamp(2.2rem,5vw,3.2rem);font-weight:600;letter-spacing:-0.04em;color:var(--color-text);margin-top:var(--space-4)}
+.error-message{font-size:var(--text-md);line-height:var(--leading-relaxed);color:var(--color-text-secondary);margin-top:var(--space-6);max-width:48ch;margin-left:auto;margin-right:auto}
+.error-actions{margin-top:var(--space-10);display:flex;align-items:center;justify-content:center;gap:var(--space-6)}
+.btn{display:inline-flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);font-family:var(--font-body);font-size:var(--text-xs);font-weight:600;line-height:1.4;cursor:pointer;border:1px solid transparent;border-radius:var(--radius-xs);text-decoration:none;transition:transform var(--duration-fast) var(--ease-out-expo)}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--color-accent);color:var(--color-text-on-accent);border-color:var(--color-accent)}
+.btn-primary:hover{background:var(--color-accent-dark)}
+.link-secondary{font-family:var(--font-body);font-size:var(--text-sm);font-weight:600;color:var(--color-text);text-decoration:none;transition:color var(--duration-fast) var(--ease-out-expo)}
+.link-secondary:hover{color:var(--color-text-secondary)}
+.demo-hint{position:absolute;top:var(--space-3);right:var(--space-3);font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-accent);opacity:0;transition:opacity var(--duration-fast) var(--ease-out-expo);pointer-events:none}
+</style>
+</head>
+<body style="padding:var(--space-12) var(--gutter);background:var(--color-surface)">
+<div class="page">
+<h1>ErrorPage</h1>
+<p class="desc">Full-page error display with configurable code, message, and actions. Uses the kees-style centered layout.</p>
+
+<div class="demo-label">404 Not Found</div>
+<a href="ErrorPage404.html" class="demo-link">
+<span class="demo-hint">View full page ↗</span>
+<div class="error-page" style="transform:scale(0.7);transform-origin:top center;margin:-60px 0">
+<div class="error-inner">
+<p class="error-code">404</p>
+<h1 class="error-title">Page not found</h1>
+<p class="error-message">Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.</p>
+<div class="error-actions">
+<span class="btn btn-primary">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+Back to home
+</span>
+<span class="link-secondary">Contact support <span aria-hidden="true">→</span></span>
+</div>
+</div>
+</div>
+</a>
+
+<div class="demo-label">403 Forbidden</div>
+<a href="ErrorPage403.html" class="demo-link">
+<span class="demo-hint">View full page ↗</span>
+<div class="error-page" style="transform:scale(0.7);transform-origin:top center;margin:-60px 0">
+<div class="error-inner">
+<p class="error-code">403</p>
+<h1 class="error-title">Access denied</h1>
+<p class="error-message">You don't have permission to access this page. Contact your administrator if you believe this is a mistake.</p>
+<div class="error-actions">
+<span class="btn btn-primary">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+Back to home
+</span>
+<span class="link-secondary">Contact support <span aria-hidden="true">→</span></span>
+</div>
+</div>
+</div>
+</a>
+
+<div class="demo-label">500 Server Error</div>
+<a href="ErrorPage500.html" class="demo-link">
+<span class="demo-hint">View full page ↗</span>
+<div class="error-page" style="transform:scale(0.7);transform-origin:top center;margin:-60px 0">
+<div class="error-inner">
+<p class="error-code">500</p>
+<h1 class="error-title">Something went wrong</h1>
+<p class="error-message">An unexpected error occurred on the server. Please try again later or contact support.</p>
+<div class="error-actions">
+<span class="btn btn-primary">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+Back to home
+</span>
+<span class="link-secondary">Contact support <span aria-hidden="true">→</span></span>
+</div>
+</div>
+</div>
+</a>
+
+</div>
+</body>
+</html>

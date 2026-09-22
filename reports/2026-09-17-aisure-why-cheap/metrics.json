@@ -1,0 +1,25 @@
+{
+  "report_dir": ".",
+  "generated": "2026-09-17T17:26:41.551863+00:00",
+  "events_total": 7,
+  "event_counts": {
+    "run_start": 1,
+    "decompose": 1,
+    "answer": 3,
+    "synthesize": 1,
+    "run_end": 1
+  },
+  "nodes_total": 4,
+  "node_status_counts": {
+    "explored": 3,
+    "synthesized": 1
+  },
+  "decompositions": 1,
+  "fanout_max": 3,
+  "fanout_total_children": 3,
+  "max_depth": 1,
+  "agent_files": 4,
+  "leaves_with_search_trail": 3,
+  "agent_words_total": 3967,
+  "warnings": []
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toggle Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--color-border-strong:oklch(0.72 0.012 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--duration-base:340ms;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-6);background:var(--color-surface);margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-2);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.toggle-group{display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}
+.toggle{position:relative;width:40px;height:20px;appearance:none;-webkit-appearance:none;background:var(--color-border-strong);border-radius:var(--radius-xs);border:1px solid var(--color-border);cursor:pointer;transition:background var(--duration-fast) ease,border-color var(--duration-fast) ease;flex-shrink:0}
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--color-surface);border-radius:1px;transition:transform var(--duration-base) var(--ease-out-expo);box-shadow:0 1px 2px oklch(0.22 0.005 250 / 0.2)}
+.toggle:checked{background:var(--color-accent);border-color:var(--color-accent)}
+.toggle:checked::after{transform:translateX(20px)}
+.toggle:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
+.toggle-label{font-family:var(--font-body);font-size:var(--text-sm);color:var(--color-text-secondary);cursor:pointer}
+.status-text{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-top:var(--space-2)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Toggle</h1>
+<p class="desc">Switch/toggle component with smooth animation for boolean states.</p>
+<div class="demo-label">Basic toggles</div>
+<div class="demo">
+<div class="toggle-group"><input id="t1" type="checkbox" class="toggle" role="switch"><label class="toggle-label" for="t1">Off</label></div>
+<div class="toggle-group"><input id="t2" type="checkbox" class="toggle" role="switch" checked><label class="toggle-label" for="t2">On</label></div>
+<div class="toggle-group"><input id="t3" type="checkbox" class="toggle" role="switch" disabled><label class="toggle-label" for="t3">Disabled Off</label></div>
+<div class="toggle-group"><input id="t4" type="checkbox" class="toggle" role="switch" checked disabled><label class="toggle-label" for="t4">Disabled On</label></div>
+</div>
+<div class="demo-label">With state feedback</div>
+<div class="demo">
+<div class="toggle-group"><input id="t5" type="checkbox" class="toggle" role="switch" onchange="document.getElementById('s5').textContent=this.checked?'Enabled':'Disabled'"><label class="toggle-label" for="t5">Notifications</label></div>
+<p class="status-text">Status: <span id="s5">Disabled</span></p>
+</div>
+</div>
+</body>
+</html>

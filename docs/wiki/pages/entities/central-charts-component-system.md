@@ -8,7 +8,7 @@ timestamp: "2026-09-16T17:03:44.333Z"
 
 # Central-charts component system
 
-The shipped v1 implementation of the central-charts system: the reusable component set under `src/lib/components/charts/` that renders report pages composed of chart/block objects, plus the `/pages` list and `/pages/[slug]` dual-mode editor routes. Built on the `feature/central-charts` branch (commit `ae48ef2`, 20 commits; master held at a restore point — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md)).
+The shipped v1 implementation of the central-charts system: the reusable component set under `src/lib/components/charts/` that renders report pages composed of chart/block objects, plus the `/pages` list and `/pages/[slug]` dual-mode editor routes. Built on the `feature/central-charts` branch and merged into master via **PR #4** (2026-09-17, HEAD `f1fc3b9`) — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md).
 
 Implements the locked Q6–Q16 decision set; the plan itself is documented in [central-charts-spec-amp-task-list](../artifacts/central-charts-spec-amp-task-list.md) and [central-chart-component-design](../artifacts/central-chart-component-design.md).
 
@@ -16,7 +16,7 @@ Implements the locked Q6–Q16 decision set; the plan itself is documented in [c
 
 - **Location** (on `feature/central-charts`): `src/lib/components/charts/`
   - **Page runtime**: `PageGrid` (12-col grid host), `ChartCard` (block shell)
-  - **Editor**: `BlockInspector`, `ItemEditor`, `RelationshipEditor` — the Design-side panels of the dual-mode editor
+  - **Editor**: `BlockInspector`, `ItemEditor`, `RelationshipEditor` — the Design-side panels of the dual-mode editor; expressions are edited in [expreditor-component](./expreditor-component.md), and "Create in /data" deep-links out and back via [create-in-data-round-trip](./create-in-data-round-trip.md)
   - **Renderers**: `BarChartRenderer`, `HeatmapRenderer`, `TableRenderer` — one per v1 block type
   - Plus: registry, page specs, and semantic layer (v1 core)
 - **Routes**: `/pages` — responsive card grid + create modal; `/pages/[slug]` — the dual-mode Design ⇄ Code editor (old `chart/[id]` route deleted)
@@ -31,3 +31,4 @@ Implements the locked Q6–Q16 decision set; the plan itself is documented in [c
 ## Lifecycle
 
 - First added: 2026-09-15/16 on `feature/central-charts` (`ae48ef2`); newest `/pages` editor tweaks were in `stash@{0}` pending recovery — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md)
+- 2026-09-21: smart expression editing ([expreditor-component](./expreditor-component.md)) + [create-in-data-round-trip](./create-in-data-round-trip.md); page-editor drawers run `contained` inside `.app-body`, the focused-config chart stage is sized by a `fitToDrawer` action so the chart→drawer gap mirrors the page gutter, and the editor auto-saves every 60s.

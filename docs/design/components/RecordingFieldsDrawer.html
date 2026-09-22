@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecordingFieldsDrawer Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-text-placeholder:oklch(0.72 0.008 250);--color-border:oklch(0.86 0.006 250);--color-border-strong:oklch(0.72 0.012 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-md:1.25rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--duration-fast:180ms;--leading-relaxed:1.8;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:600px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:var(--space-6);border-bottom:1px solid var(--color-border);background:var(--color-surface)}
+.drawer-title{font-family:var(--font-display);font-size:var(--text-md);font-weight:600;color:var(--color-text)}
+.drawer-ref{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--color-accent)}
+.drawer-body{padding:var(--space-6)}
+.field{display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4)}
+.field-label{font-family:var(--font-mono);font-size:9px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-accent-dark)}
+.field-hint{font-family:var(--font-mono);font-size:9px;color:var(--color-text-tertiary);letter-spacing:0.02em}
+.input{padding:var(--space-2) var(--space-3);border:1px solid var(--color-border-strong);border-radius:var(--radius-xs);font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text);background:var(--color-surface);width:100%}
+.input:focus{outline:none;border-color:var(--color-accent);box-shadow:0 0 0 2px var(--color-accent-muted)}
+textarea.input{resize:vertical;min-height:60px}
+.field-group{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-4);margin-bottom:var(--space-4);background:var(--color-surface-raised)}
+.field-group-title{font-family:var(--font-mono);font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--color-text-tertiary);margin-bottom:var(--space-4)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>RecordingFieldsDrawer</h1>
+<p class="desc">Form drawer for capturing recording metadata with grouped fields.</p>
+<div class="demo">
+<div class="drawer-header"><div><span class="drawer-ref">REC-2024-089</span><h2 class="drawer-title">Recording Details</h2></div></div>
+<div class="drawer-body">
+<div class="field-group"><div class="field-group-title">Basic Information</div>
+<div class="field"><label class="field-label">Title</label><input class="input" value="Student Progress Review Q2"></div>
+<div class="field"><label class="field-label">Description</label><textarea class="input">Quarterly review meeting discussing student progress across all groups in the LRS platform.</textarea></div>
+</div>
+<div class="field-group"><div class="field-group-title">Metadata</div>
+<div class="field"><label class="field-label">Date</label><input class="input" type="date" value="2024-06-03"></div>
+<div class="field"><label class="field-label">Duration (minutes)</label><input class="input" value="45"></div>
+<div class="field"><label class="field-label">Participants</label><input class="input" value="Kees van Dijk, Anna de Boer"><span class="field-hint">Comma-separated names</span></div>
+</div>
+<div class="field-group"><div class="field-group-title">Tags</div>
+<div class="field"><input class="input" value="review, q2-2024, progress"></div>
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -25,3 +25,11 @@ Before assuming work is lost: `git branch -a --contains`, `git log feature/centr
 - `src/routes/pages - Copy/` is a stale identical duplicate of the old page (a delete candidate once back on the branch; SvelteKit serves it as a real route).
 
 Related: [central-charts-component-system](../pages/entities/central-charts-component-system.md)
+
+## RESOLVED — 2026-09-17: work merged via PR #4, master is current
+
+The same panic recurred ("2 days of work gone" — /pages, /data). Again nothing was lost: **`feature/central-charts` had been merged into `origin/master` as PR #4** (23 commits, ~20k lines, HEAD `f1fc3b9`), but local master was still sitting at the `Restore point: pre central-charts build` commit and was never pulled. Fixed with: stash → `git pull` (fast-forward) → `stash pop`.
+
+- **The rule of thumb above is now obsolete**: master is the current line of development again. But the first step stands and proved out twice: before assuming work is lost, check **`origin/master`** (`git log origin/master`, `git status -sb` behind/ahead count) in addition to `git branch -a --contains` and `git stash list`. In this repo "gone" has meant "on a branch or upstream, un-pulled" both times it was reported.
+- Stash-pop conflicts in auto-generated wiki files (changelog/memory churn): the stash side was a strictly older subset, so taking upstream for both files was safe — verify the stashed side holds no unique entries before discarding, per [stash-pop-silent-conflict-recovery](./stash-pop-silent-conflict-recovery.md).
+- Habit to avoid a third occurrence: `git pull` on master after every PR merge — something checked master out at the restore point after the merge and it went unnoticed for ~2 days.

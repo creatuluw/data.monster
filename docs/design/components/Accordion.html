@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accordion Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-border:oklch(0.86 0.006 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-sm:3px;--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--duration-base:340ms;--duration-slow:550ms;--max-width:72rem;--leading-relaxed:1.8}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:var(--space-6);background:var(--color-surface);margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-2);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.accordion-group{display:flex;flex-direction:column}
+.accordion{border:1px solid var(--color-border);background:var(--color-surface)}
+.accordion+.accordion{border-top:none}
+.accordion-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:var(--space-4) var(--space-6);background:var(--color-surface);border:none;cursor:pointer;font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;color:var(--color-text);text-align:left;transition:background var(--duration-fast) ease}
+.accordion-trigger:hover{background:var(--color-surface-raised)}
+.accordion-trigger:focus-visible{outline:2px solid var(--color-accent);outline-offset:-2px;z-index:1}
+.accordion-trigger-left{display:flex;align-items:center;gap:var(--space-3)}
+.accordion-ref{font-family:var(--font-mono);font-size:9px;letter-spacing:0.08em;color:var(--color-accent);min-width:48px}
+.accordion-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;transition:transform var(--duration-base) var(--ease-out-expo);color:var(--color-text-tertiary);flex-shrink:0}
+.accordion-trigger[aria-expanded=true] .accordion-icon{transform:rotate(180deg)}
+.accordion-trigger[aria-expanded=true]{background:var(--color-surface-raised);border-bottom:1px solid var(--color-border)}
+.accordion-panel{overflow:hidden;max-height:0;transition:max-height var(--duration-slow) var(--ease-out-expo)}
+.accordion-panel.open{max-height:500px}
+.accordion-content{padding:var(--space-6);font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--color-text-secondary);max-width:60ch}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Accordion</h1>
+<p class="desc">Collapsible sections for showing/hiding content. Click headers to expand.</p>
+<div class="demo-label">FAQ Example</div>
+<div class="demo">
+<div class="accordion-group" id="acc1">
+<div class="accordion">
+<button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)"><span class="accordion-trigger-left"><span class="accordion-ref">A.1</span> What is the LRS platform?</span><span class="accordion-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></button>
+<div class="accordion-panel"><div class="accordion-content">The LRS (Learning Record Store) platform is a centralized system for tracking and analyzing student learning data across multiple educational contexts. It stores xAPI statements and provides analytics dashboards.</div></div>
+</div>
+<div class="accordion">
+<button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)"><span class="accordion-trigger-left"><span class="accordion-ref">A.2</span> How do I add a new student?</span><span class="accordion-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></button>
+<div class="accordion-panel"><div class="accordion-content">Navigate to the Students section from the main menu, click the "Add Student" button, and fill in the required fields: name, email, and group assignment. Optional fields include role, status, and progress tracking.</div></div>
+</div>
+<div class="accordion">
+<button class="accordion-trigger" aria-expanded="false" onclick="toggleAccordion(this)"><span class="accordion-trigger-left"><span class="accordion-ref">A.3</span> What analytics are available?</span><span class="accordion-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></span></button>
+<div class="accordion-panel"><div class="accordion-content">The platform offers progress tracking per student, group-level comparisons, completion rates, time-on-task metrics, and custom report generation. All data can be exported to CSV or PDF formats.</div></div>
+</div>
+</div>
+</div>
+<script>
+function toggleAccordion(btn){var expanded=btn.getAttribute('aria-expanded')==='true';btn.setAttribute('aria-expanded',!expanded);var panel=btn.nextElementSibling;if(!expanded)panel.classList.add('open');else panel.classList.remove('open')}
+</script>
+</div>
+</body>
+</html>

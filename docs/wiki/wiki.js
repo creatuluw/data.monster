@@ -12181,6 +12181,39 @@ data-monster/
 - When phase 1 ships, the loopback HTTP surface is built once (REST + \`/mcp\` side by side over shared handlers) — marginal cost over MCP-only is small.
 - Ship the MCP server for MCP-capable harnesses; ship the \`dm\` skill+CLI for everything else. The skill documents the API; the API backs the MCP tools.
 `,
+  "decisions/all-drawers-adopt-the-data-tabledrawer-design.md": `---
+type: Decision
+title: All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed
+description: Context
+tags: [drawers, design-system, data-drawer-pattern, controls-kit]
+status: accepted
+supersedes: drawer-chrome-restyle-reverted-control-kit-stands
+timestamp: "2026-09-18T10:55:35.018Z"
+---
+
+# All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed
+
+## Context
+
+All drawers must share the styling and design patterns of the /data route drawer (TableDrawer) — direct user instruction, 2026-09-18. The /data pattern: flat section groups separated by dashed hairline dividers, 9px uppercase micro-labels/section-titles, mono for data values, outline danger button that flips into an inline confirm panel (Cancel / Delete permanently), single scrolling column — no tabbed Settings/Danger chrome.
+
+This supersedes the restraint in [[drawer-chrome-restyle-reverted-control-kit-stands]]: that revert rejected motifs synthesized from the lms/kees reference projects. This change is different in kind — it copies an in-app surface (/data) at the user's explicit direction, verified visually against the live app.
+
+## Decision
+
+- \`Section\` (controls kit) renders flat — no card border/background; consecutive sections get a dashed top divider via \`.section + .section\`; title 9px/700/0.1em uppercase tertiary.
+- \`Field\` labels are 9px/600/0.06em uppercase tertiary (TableDrawer's drawer-label); kit inputs use radius-xs to match \`.input\`.
+- \`DangerZone\` renders the /data danger flow: "Danger zone" micro-title, outline danger trigger (confirmLabel), inline confirm panel with description + Cancel/"Delete permanently". Internal confirm state; API unchanged.
+- \`DrawerTabs\` deleted; block/row drawers in /pages show settings sections then DangerZone (danger always visible at the bottom).
+- /library config snippet and /labs bar-chart + heatmap config snippets were converted from hand-rolled zinc controls to the kit.
+- BlockInspector's redundant in-body title removed (drawer header owns the title).
+
+## Consequences
+
+- The "config drawers use DrawerTabs" rule is replaced: one scrolling column, Danger zone last.
+- The /labs + /library pages now import the kit (Section/Field/Select/Toggle/TextInput/NumberInput) inside their config snippets.
+- Verification was done via the mocktauri harness (documented repro technique) + CDP screenshots against the dev server.
+`,
   "decisions/all-pages-capped-1920px-full-bleed-removed.md": `---
 type: Decision
 title: All pages capped at 1920px and centered; full-bleed exemption removed
@@ -12217,6 +12250,39 @@ PR #4 (2026-09-15) introduced a 1440px content cap via one shared layout lever p
 ## Update 2026-09-16 — mechanism evolved to a single \`.app-column\`
 
 Later the same day the user asked that the container "also contain the header, breadcrumb, content and all other like footers etc." and "always be as high as the viewport." The cap moved off \`.app-main > :global(*)\` and the separate \`.app-header\` rule onto one wrapper: \`.app-column\` in \`src/routes/+layout.svelte\` (capped, centered, \`flex: 1\` inside a \`height: 100vh\` \`.app-shell\`) now contains header + breadcrumb + content and gets full-viewport-height side borders above 1920px, with \`.app-main\` scrolling internally. Decision unchanged in substance — one lever, 1920px, zero exemptions; see the rule for the current mechanism.
+`,
+  "decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md": `---
+type: Decision
+title: "App gets virtual multi-tab navigation: bottom bar is the tab bar"
+description: Context
+tags: [navigation, layout, tab-bar, frontend]
+status: accepted
+timestamp: "2026-09-17T16:58:38.989Z"
+---
+
+# App gets virtual multi-tab navigation: bottom bar is the tab bar
+
+## Context
+
+The user wanted browser-like tabbed navigation inside the desktop app: right-click any link to another route (or a navigating button) → "Open in new tab", with the tabs shown in the bottom bar — the bottom bar **is** the tab bar.
+
+## Choice
+
+**Virtual tabs in the single webview** (PR #16, 2026-09-17), not OS-level windows:
+
+- A \`$state\`-backed store in \`src/lib/tabs.svelte.ts\` owns \`{ list, activeId }\`; a tab is just \`{ id, path, label }\` — no per-tab component state.
+- \`ensureActive(path, label)\` runs on every navigation (\`$page\` subscribe in the root layout): normal nav re-targets the current tab; \`openInNewTab\` pushes a tab + \`goto\`s.
+- A custom context menu (\`<svelte:window oncontextmenu>\` in \`+layout.svelte\`) offers **Open in new tab** on internal \`<a href>\` links; the bottom status bar renders the tab chips (click = activate, × = close; closing the last tab lands on \`/\` with a fresh tab).
+- Tab labels reuse breadcrumb route labels.
+
+## Alternatives considered
+
+- **Tauri multi-window / multi-webview** (real OS tabs) — heavier lifecycle, loses shared DuckDB-state ergonomics of one webview, way more code for the same UX.
+- **Browser-native context menu** — webview menu can't be extended with app actions; a custom menu is required.
+
+## Known limitation
+
+Right-click only works on real \`<a href>\` links. Buttons that navigate via \`goto()\` expose no destination, so they keep re-targeting the current tab; specific buttons can be tagged opt-in later if wanted.
 `,
   "decisions/central-charts-v1-scope-bar-heatmap-table.md": `---
 type: Decision
@@ -12256,6 +12322,43 @@ Plus a text block. Six scope calls:
 - The \`ref\` reservation means master-item adoption later is non-breaking.
 - Phase 5 explicitly deletes the draft \`/pages\` and the copied route — no legacy page format survives.
 `,
+  "decisions/chart-blocks-start-empty-needssetup-gate.md": `---
+type: Decision
+title: Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)
+description: Context
+tags: [central-charts, page-editor, library-registry, ux]
+status: accepted
+timestamp: "2026-09-17T13:14:59.135Z"
+---
+
+# Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)
+
+## Context
+
+Previously, dropping a new chart component onto a page-editor row auto-filled dimensions/measures with fallback picks (e.g. \`count(*)\`) and immediately queried — producing guessed charts or malformed SQL, with no guided path to a correct config.
+
+User direction (2026-09-17): fresh chart blocks should show **no data by default** — a skeleton silhouette with buttons to add dimensions/measures — and only render data once the chart type's requirements are met.
+
+## Decision
+
+1. **Fresh blocks start empty**: \`+ Component\` adds a chart with empty dimensions/measures (source table preselected). No fallback auto-fill, no \`count(*)\`.
+2. **\`needsSetup(chart)\`** — a pure function in the component registry (\`registry.ts\`) returns true while any role (dimension/measure) is below its declared min. It is the single source of truth for "not ready yet".
+3. **The gate covers both query and render**: page-runtime marks the block \`unconfigured\` and **never issues a query** while \`needsSetup\` is true; \`PageGrid.svelte\` renders a setup \`ChartCard\` (\`'setup'\` status) hosting [[skeletonsetup-component]] (in-chart pickers) when the data context is loaded, else a plain dashed silhouette with **Add dimension / Add measure** buttons that open the inspector drawer. *(Amended 2026-09-17, PRs #10 + #11: pickers moved in-chart; the pulsing silhouette now lives only inside SkeletonSetup — PageGrid's old wrapper silhouette rendered a duplicate and was removed.)*
+4. The moment every role minimum is met, the query runs and real data replaces the skeleton.
+
+## Alternatives considered
+
+- Keep auto-fill defaults — rejected: guessed charts hide misconfiguration and can emit malformed SQL.
+- Gate render only, still query — rejected: wasted queries and possible SQL errors for unconfigured blocks.
+
+## Consequences
+
+- Do NOT re-introduce fallback/auto-fill defaults for new blocks — the empty template + skeleton is deliberate.
+- Any new block status must be added to \`ChartCard\`'s status union (unknown statuses fall through to children).
+- Registry component definitions own their role minimums; \`needsSetup\` reads them, so new component packages get the skeleton behavior for free.
+
+Related: [[library-registry-drives-editor-and-library]], [[library-packages-carry-blockkind]].
+`,
   "decisions/consolidate-chart-engines-to-picasso-js.md": `---
 type: Decision
 title: Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot
@@ -12290,6 +12393,46 @@ Deleted entirely: \`echarts-charts/\`, \`observable-charts/\`, \`svelteplot-char
 - ~3,400 lines of lab/chart code removed; new chart types added to both survivors.
 - \`docs/src/lib/charts/svelteplot/\` reference components also deleted.
 - Future chart-type work goes into both engines in parallel so the comparison stays fair.
+`,
+  "decisions/drawer-chrome-restyle-reverted-control-kit-stands.md": `---
+type: Decision
+title: Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected
+description: Context
+tags: [drawers, design-system, pr-18, revert]
+status: accepted
+timestamp: "2026-09-17T18:07:13.000Z"
+---
+
+# Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected
+
+## Context
+
+PR #18 shipped the shared controls kit (commit \`2af2dfd\`, kept) and — in a second commit — a drawer chrome restyle (\`dc2c3a6\`) that studied \`E:\\lms.pippeloi.nl\` and \`E:\\kees.pippeloi.nl\` and folded their motifs into the drawers:
+
+- 2px backdrop blur on overlay drawers
+- bordered 28px square close button (hover fills sunken)
+- body/header padding aligned to the modal rhythm (space-4/5)
+- \`Section\` flattened from hairline cards into flat content groups separated by dashed hairlines (matching the skeleton cards / role-picker modal motif)
+
+## Decision
+
+The chrome restyle is **reverted** (revert commit \`974d37e\`, PR #18). The user rejected the visual change; only the controls kit from the first commit stands. Drawers keep their pre-restyle chrome: plain 0.3-opacity backdrop, borderless padded close button, and \`Section\` as a hairline card (border + radius + surface).
+
+## Rationale
+
+- User preference wins over synthesized cross-project patterns — the lms/kees reference study produced a direction the user didn't want on second look.
+- Keeping the revert as its own commit (rather than squash-editing) preserves the history; branch tip \`974d37e\` can be squash-merged cleanly.
+
+## Consequences
+
+- **Do not re-apply** the backdrop blur, bordered square close, or Section flattening. The prior rule "Drawer sections are flat content groups with dashed hairline separators" has been withdrawn (deleted 2026-09-17).
+- [[drawer-form-controls-come-from-the-shared-controls]] still stands — form controls must come from the kit.
+- If a future drawer-chrome pass is wanted, get user sign-off on the visual direction before wiring reference-project motifs into the shared drawer shell.
+
+## Related
+
+- [[shared-controls-kit-charts-controls]] — the kit that survived the revert
+- [[chartconfigdrawer-component]] — the drawer shell whose chrome reverted
 `,
   "decisions/index.md": `# Decisions
 
@@ -12329,6 +12472,25 @@ Deleted entirely: \`echarts-charts/\`, \`observable-charts/\`, \`svelteplot-char
 - [Typography: Geist display — Syne dropped](./typography-geist-display-syne-dropped.md) - Context
 - [Typography: Host Grotesk headings, Geist body — Inter dropped](./typography-host-grotesk-headings-geist-body.md) - Typography: Host Grotesk headings, Geist body — Inter dropped
 - [Typography settles: Inter everywhere (display + body), Geist Mono for data detail](./typography-settles-inter-everywhere-geist-mono.md) - Context
+- [/library becomes the central component library (proposed — spec interview in progress)](./library-central-component-library.md) - Context
+- [Library Q2: registry v1 is display-only — editor wiring deferred](./library-q2-registry-display-only.md) - Context
+- [Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside](./library-q3-master-detail-layout.md) - Context
+- [Library components are self-contained extension-style packages — own definition, logic, and data](./library-extension-style-components.md) - Context
+- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](./library-q4-dedicated-tabbed-views.md) - Context
+- [Library demos render the real components fed dummy query-shaped data — no demo-only clones](./library-demos-reuse-real-components.md) - Context
+- [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](./library-registry-ts-module.md) - Context
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](./library-registry-drives-editor-and-library.md) - Context
+- [library-component-builder skill is the canonical path for new library components](./library-component-builder-canonical-path.md) - Context
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](./library-packages-carry-blockkind.md) - Context
+- [Use speed-highlight/core for code highlighting instead of Prism](./speed-highlight-over-prism.md) - Context
+- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](./linked-table-raw-fields-transient-autojoin.md) - Context
+- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](./chart-blocks-start-empty-needssetup-gate.md) - Context
+- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](./skeleton-card-is-the-inline-role-assignment.md) - Context
+- [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](./skeleton-pick-create-moved-from-inline-dropdowns.md) - Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New)
+- [App gets virtual multi-tab navigation: bottom bar is the tab bar](./app-gets-virtual-multi-tab-navigation-bottom-bar.md) - Context
+- [Tab bar shows only explicitly opened tabs — navigation never creates tabs](./tab-bar-shows-only-explicitly-opened-tabs.md) - Context
+- [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](./drawer-chrome-restyle-reverted-control-kit-stands.md) - Context
+- [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](./all-drawers-adopt-the-data-tabledrawer-design.md) - Context
 `,
   "decisions/labs-catalog-placeholder-first.md": `---
 type: Decision
@@ -12396,6 +12558,441 @@ After [consolidating chart engines](consolidate-chart-engines-to-picasso-js.md),
 - Old engine subroutes (\`/labs/picasso-charts\`, \`/labs/chart-lib\`, \`/labs/unovis-charts\`, \`/labs/charts\`) are **unlinked but still on disk** — delete when the per-type structure proves out.
 - Future chart types each get a card + playground; port from the kees reference when a match exists (see [kees reference learning](../learnings/kees-reference-ports-cleanly.md)).
 - The reference's task-breakdown drawer was NOT ported (kees-specific data model); revisit when the heatmap hooks into real query results.
+`,
+  "decisions/library-central-component-library.md": `---
+type: Decision
+title: /library becomes the central component library (proposed — spec interview in progress)
+description: Context
+tags: [library, components, pages, frontend, spec-interview]
+status: proposed
+timestamp: "2026-09-17T06:54:06.275Z"
+---
+
+# /library becomes the central component library (proposed — spec interview in progress)
+
+## Context
+
+On 2026-09-17 the user kicked off a spec for a \`/library\` page (route \`src/routes/library/+page.svelte\`, currently a LabsPlaceholder stub, linked from the home page). Stated goal:
+
+- \`/library\` shows **all components used in the UI** — one central library surface.
+- **Component devs add components to the library**, and adding a chart there **makes it available to the full app** for use on \`/pages\` report pages.
+- First task: add the barchart exactly as shown on \`/pages/smoke-test\` (the central-charts \`barchart-component\`).
+
+An interview is in progress (one question at a time, lettered options per [interview-one-question-at-a-time](../rules/interview-one-question-at-a-time.md)).
+
+## The choice (as stated by the user, not yet fully locked)
+
+\`/library\` is the canonical component library: the registry where page-usable components live, surfaced for devs, and consumed by \`/pages\`.
+
+## Open question — relation to \`/labs\` (Q1, asked, unanswered)
+
+- **A)** \`/library\` is the new canonical home; \`/labs\` stays untouched for now, superseded/merged later
+- **B)** \`/library\` is specifically the page-editor **block library** (what can be dropped on a \`/pages\` page); \`/labs\` stays the separate chart-type experimentation playground
+- **C)** \`/library\` **replaces \`/labs\` immediately** — one catalog, one entry per component
+
+Q2 (what "available to the full app" means mechanically) is **locked: B — registry v1 is display-only**, editor wiring deferred — see [library-q2-registry-display-only](library-q2-registry-display-only.md).
+
+## Alternatives considered
+
+- Keep \`/labs\` as the only catalog (status quo) — rejected: \`/labs\` is placeholder-first experimentation after theunspokenpitch.com, not a registry of app-usable components.
+
+## Consequences
+
+- The relationship to \`/labs\` (and its 32-card placeholder catalog) decides whether ~30 placeholder cards get superseded — see [labs-catalog-placeholder-first](labs-catalog-placeholder-first.md).
+- Whatever lands, chart entries should build on the shared chart fundament ([labs-charts-reusable-fundament](../rules/labs-charts-reusable-fundament.md)) and the central-charts component set ([central-charts-component-system](../pages/entities/central-charts-component-system.md)).
+
+## Status
+
+**Proposed** — spec interview in progress; update/supersede when Q1+ are answered.
+`,
+  "decisions/library-component-builder-canonical-path.md": `---
+type: Decision
+title: library-component-builder skill is the canonical path for new library components
+description: Context
+tags: [library, skill, tdd, e2e]
+status: accepted
+timestamp: "2026-09-17T07:37:52.221Z"
+---
+
+# library-component-builder skill is the canonical path for new library components
+
+## Context
+
+/library became the central component library (registry drives editor + library). Component devs need a repeatable path from idea → registered, tested component. The user asked for a pi skill that owns this path, built per the agentskills.io spec, with TDD + Karpathy conformance embedded, evals attached, and a mandatory e2e report per component. Plus a dev-facing guide page in /library.
+
+## Choice
+
+Create \`.pi/skills/library-component-builder/\` (agentskills.io spec: name matches dir, frontmatter valid, references/ + evals/, SKILL.md < 500 lines, progressive disclosure). The skill is **portable**: TDD rules, Karpathy behavioral rules, the LibraryEntry contract and the e2e report format are all embedded inline (references/CONTRACT.md + references/E2E-REPORT.md) — no external skill or path dependencies.
+
+Workflow inside the skill: idea → interview (one question at a time, lettered options, ask only what the contract needs) → plan with agreed seams → TDD build (red before green, vertical slices, tests in tests/ only) → registration → verification (vitest/svelte-check/build + UI checks against the user-owned dev app) → REPORT.md gate (definitions tested, works in UI, code/data/logic checklist — all PASS with evidence or not done).
+
+Evals: evals/evals.json (3 prompt cases: plain build request, pre-answered variant, out-of-vocabulary adversarial ask) + evals/grade.mjs grader-aggregator per the add-evals-to-skill format.
+
+Dev guide: /library/dev route (static beats [id]) explains the package contract, registration, test-first build and report gate, and points to the skill; linked from the /library grid as a "For developers" card.
+
+## Alternatives
+
+- Point the skill at the external TDD/Karpathy skills on E:\\skills.te9.dev — rejected: not portable, breaks isolation.
+- Web docs page only (no skill) — rejected by user: the interview + gates must live in the skill so any agent session follows them.
+
+## Consequences
+
+- New components SHOULD be built through the skill; the /library/dev page is the human-readable mirror of the same contract.
+- Every new component package gains a 5th file: REPORT.md (the done gate).
+- CONTRACT.md is a portable copy of src/lib/library/types.ts — code wins on disagreement; update the reference when the contract changes.
+`,
+  "decisions/library-demos-reuse-real-components.md": `---
+type: Decision
+title: Library demos render the real components fed dummy query-shaped data — no demo-only clones
+description: Context
+tags: [library, components, demo, reuse, spec-interview, frontend]
+status: accepted
+timestamp: "2026-09-17T07:09:06.554Z"
+---
+
+# Library demos render the real components fed dummy query-shaped data — no demo-only clones
+
+## Context
+
+Exchange in the \`/library\` spec interview (parent: [[library-central-component-library]]; prior locks: Q2 display-only registry [[library-q2-registry-display-only]], Q3 master-detail [[library-q3-master-detail-layout]], Q4 dedicated tabbed views [[library-q4-dedicated-tabbed-views]], self-contained extension-style components [[library-extension-style-components]]). The open question: do library demos render a demo-only clone of each component, or the real component the app itself uses? The user answered "what makes sense?" — delegating the call — and the recommendation was taken as locked (2026-09-17).
+
+## The choice
+
+**A — reuse. Library demos render the real production components**, fed dummy **query-result-shaped** data. No demo-only clones. One renderer, two data sources: live workspace queries in \`/pages\` production, component-shipped dummy fixtures in the library demo.
+
+## Rationale
+
+- The point of \`/library\` is showing **the real components the app uses** — a demo-only clone would drift from the real one; the demo would lie.
+- One renderer, two data sources = less code. The chart core already takes props; feeding it dummy query-result-shaped data is trivial.
+- Extension authors write **one** component (definition + logic + data), exactly matching the "own definitions in code, logic and data" requirement — the same registry entry serves demo and production.
+
+## Alternatives considered
+
+- **Demo-only clone per component** — rejected: drifts from the real component (demo lies), doubles the code to maintain, and forces extension authors to author two things (real + demo).
+
+## Consequences
+
+- Dummy demo data must be shaped like real query results so the unchanged component consumes it — the demo-data contract is "query-result-shaped fixture."
+- Strengthens the extension contract from [[library-extension-style-components]]: one entry = demo + production; a component that renders in the library is by construction the component \`/pages\` uses.
+- Q8 (registry's home) asked, **unanswered**: A) TypeScript registry module under \`src/lib/library/\` (types + \`register()\` + entries), each component a self-contained folder under \`src/lib/library/components/<name>/\`; B) user has a specific structure in mind. This was flagged as the last question before writing the spec + todo and building.
+- Chart entries build on the shared chart fundament ([labs-charts-reusable-fundament](../rules/labs-charts-reusable-fundament.md)) and the central-charts set ([central-charts-component-system](../pages/entities/central-charts-component-system.md)).
+`,
+  "decisions/library-extension-style-components.md": `---
+type: Decision
+title: Library components are self-contained extension-style packages — own definition, logic, and data
+description: Context
+tags: [library, components, architecture, extensions, spec-interview]
+status: accepted
+timestamp: "2026-09-17T07:04:02.525Z"
+---
+
+# Library components are self-contained extension-style packages — own definition, logic, and data
+
+## Context
+
+Fourth exchange in the \`/library\` spec interview (parent: [[library-central-component-library]]; Q2 locked display-only registry v1: [[library-q2-registry-display-only]]; Q3 locked master-detail layout: [[library-q3-master-detail-layout]]). The user stated the component model for the library:
+
+- **Each component has its own card.**
+- **Clicking a card shows a demo of the component**, with **dummy data** if the component needs data to render.
+- **Each component carries its own definitions in code, logic, and data** — self-contained.
+- **The goal: one way of wiring in components, like extensions** — so any dev can create a new component by importing assets into the defined data and code structures.
+
+(Q4 — where the demo appears: detail route \`/library/<id>\` vs modal vs inline expansion — was asked, **unanswered**.)
+
+## The choice (user-stated goal, 2026-09-17)
+
+Library components are **self-contained extension-style packages**: definition + logic + (dummy) data travel with the component, plugged into one standard wiring mechanism. The demo-on-card behavior is part of the contract — a component must be renderable standalone with its own dummy data.
+
+## Rationale
+
+- One wiring path means adding a component is purely additive — no per-component plumbing in the app shell
+- Self-containment makes components portable/testable in isolation and demos automatic
+- Extension-style authoring opens component creation to any dev (and later agents) without touching app internals
+
+## Alternatives considered
+
+- Centrally-defined components (app owns each component's registration, data, and demo wiring) — rejected: N-th component costs N integrations; the user explicitly wants import-and-it-works
+
+## Consequences
+
+- The library registry defines a component contract: metadata + render + demo data source
+- Demos must not depend on live workspace tables — dummy data ships with the component
+- Tension to resolve: Q3 locked a master-detail (sidebar index + right pane) layout, while the user now describes a **card grid**; Q4's answer (route vs modal vs inline) will settle the demo surface
+- Builds on the shared chart fundament ([labs-charts-reusable-fundament](../rules/labs-charts-reusable-fundament.md)) and the central-charts component set ([central-charts-component-system](../pages/entities/central-charts-component-system.md))
+
+## Status
+
+Accepted as the stated goal of the spec; mechanics of the wiring/contract still being defined in the interview.
+`,
+  "decisions/library-packages-carry-blockkind.md": `---
+type: Decision
+title: Library packages carry blockKind — table/text are built-in blocks, not chart types
+description: Context
+tags: [library, blockKind, page-editor, central-charts]
+status: accepted
+timestamp: "2026-09-17T08:34:47.888Z"
+---
+
+# Library packages carry blockKind — table/text are built-in blocks, not chart types
+
+## Context
+
+\`/pages\` renders report pages from four block kinds: the chart types **bar** and **heatmap** (registry-driven), plus the built-in **table** and **text** blocks that \`PageGrid\` renders directly. The mandate was to surface *every* page component in \`/library\` — but the library registry v1 only knew about chart types.
+
+## Choice
+
+Table and text ship as regular \`/library\` packages carrying a new **\`blockKind\`** field:
+
+- \`'chart'\` entries feed the chart registry exactly as before (they are renderable chart types).
+- \`'table'\` / \`'text'\` are marked as built-in block kinds: they appear in the \`/library\` grid with real demos (their detail pages render the actual \`TableRenderer\` / text card), but they are **not** registered into the chart registry.
+
+## Alternatives considered
+
+- **Register table/text as chart types** — rejected: \`PageGrid\` renders these two kinds directly as built-ins; pushing them through the chart-type registry would corrupt block-spec validation.
+- **Exclude table/text from \`/library\`** — rejected: breaks the "every page component is visible in the library" invariant.
+
+## Consequences
+
+- The library grid now shows 4 components (+ dev card); page builders can discover all block kinds in one place.
+- Anything that iterates library packages must branch on \`blockKind\` before assuming a chart renderer exists.
+- Future built-in block kinds follow the same pattern: package + \`blockKind\`, never a fake chart registration.
+`,
+  "decisions/library-q2-registry-display-only.md": `---
+type: Decision
+title: "Library Q2: registry v1 is display-only — editor wiring deferred"
+description: Context
+tags: [library, components, registry, pages, scope, spec-interview]
+status: accepted
+timestamp: "2026-09-17T06:55:23.690Z"
+---
+
+# Library Q2: registry v1 is display-only — editor wiring deferred
+
+## Context
+
+Follow-up question in the \`/library\` spec interview (parent: [[library-central-component-library]]). The stated goal — "adding a chart to the library makes it available to the full app" — needed a mechanical meaning. Question 2 offered:
+
+- **A)** Registry drives the page editor: components self-register (id, label, demo, config schema) in one central registry module; the \`/pages\` editor's add-block picker auto-lists everything registered — library page and editor read the same source
+- **B)** Registry v1 is display-only: \`/library\` just shows the components with live demos; wiring it into the page editor's block picker is a separate later task
+- **C)** Registry drives the editor picker AND each entry declares its config-panel schema, so the editor gets full configuration for free — bigger scope now
+
+## The choice (user answered "b", 2026-09-17)
+
+**B — registry v1 is display-only.** \`/library\` in v1 is a demo/gallery surface showing registered components with live demos. Making those components appear in the page editor's block picker is explicitly a **separate later task**, not part of v1.
+
+## Rationale
+
+Smallest thing that delivers value: a place to browse and demo components now, with the editor integration deferred until the registry shape proves itself. Mirrors how central-charts v1 scoped down ([[central-charts-v1-scope-bar-heatmap-table]]) rather than building the full integration surface up front.
+
+## Alternatives considered
+
+- **A (registry drives editor picker)** — rejected for v1: couples the library page build to the page-editor block picker before either's shape is settled
+- **C (A + config schema in registry)** — rejected for v1: biggest scope; config schemas per entry duplicate/anticipate what the editor's own option panels ([[q9-chart-option-panels-schema-driven]]) will need
+
+## Consequences
+
+- Adding a component to \`/library\` in v1 does **not** make it appear in the \`/pages\` editor — expect this; it is intentional, not a bug
+- A/C remain the growth path: when editor wiring lands, the registry module gains id/label/demo (+ config schema) and the picker reads it
+- First v1 entry is still the barchart as shown on \`/pages/smoke-test\` ([[barchart-component]])
+- Q1 (relation to \`/labs\`) was still open at the parent decision's last update
+
+## Status
+
+Accepted (interview answer, 2026-09-17).
+`,
+  "decisions/library-q3-master-detail-layout.md": `---
+type: Decision
+title: "Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside"
+description: Context
+tags: [library, components, layout, spec-interview, frontend]
+status: accepted
+timestamp: "2026-09-17T06:59:36.555Z"
+---
+
+# Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside
+
+## Context
+
+Third question in the \`/library\` spec interview (parent: [[library-central-component-library]]; Q2 locked display-only registry v1: [[library-q2-registry-display-only]]). With the first entry settled (the barchart as it renders on \`/pages/smoke-test\`), the open question was what the \`/library\` page itself looks like per component:
+
+- **A)** \`/ui\`-style: one full-width live demo section per component + short spec header (name, id, purpose), long-scroll page
+- **B)** \`/labs\`-style card grid: thumbnail mini-demos in a responsive grid, click-through to detail pages later
+- **C)** Left index + right live demo: sidebar list of registered components; main pane shows the selected component full-size with its config schema alongside (mini editor preview)
+- **D)** Other
+
+## The choice (user answered "c", 2026-09-17)
+
+**C — master-detail layout.** A left sidebar indexes the registered components; selecting one shows it rendered full-size in the main pane, with its config schema displayed alongside.
+
+## Rationale
+
+- Full-size live demos (the actual rendered component, not a thumbnail) at all times, without the endless scroll of A — the sidebar keeps the full component index reachable from every selection
+- Scales better than long-scroll as component count grows
+- The alongside config-schema display is the seed of the eventual editor wiring deferred by Q2 — it *shows* the schema read-only but does not edit, so it stays compatible with Q2's display-only v1
+
+## Alternatives considered
+
+- **A (\`/ui\`-style long scroll)** — rejected: full demos are good, but the index is only at the top; degrades with many components
+- **B (\`/labs\` card grid)** — rejected: thumbnails can't show a chart at real fidelity; click-through detail pages add a second surface to build
+
+## Consequences
+
+- \`/library\` v1 is a two-pane page: left component index, right full-size demo + config schema display
+- No per-component detail routes needed (unlike B); no long-scroll sections (unlike A)
+- The schema pane is display-only in v1 — editing via it remains deferred per [[library-q2-registry-display-only]]
+- Interview continues beyond Q3
+`,
+  "decisions/library-q4-dedicated-tabbed-views.md": `---
+type: Decision
+title: "Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab"
+description: Context
+tags: [library, components, tabs, detail-view, spec-interview, frontend]
+status: accepted
+timestamp: "2026-09-17T07:05:40.051Z"
+---
+
+# Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab
+
+## Context
+
+Fifth exchange in the \`/library\` spec interview (parent: [[library-central-component-library]]; Q2 locked display-only registry v1: [[library-q2-registry-display-only]]; Q3 locked master-detail layout: [[library-q3-master-detail-layout]]; last exchange locked self-contained extension-style components: [[library-extension-style-components]]). Q4 — where the component demo appears: detail route \`/library/<id>\` vs modal vs inline expansion — had been asked and left unanswered.
+
+## The choice (user answered "a", 2026-09-17)
+
+**Q4 = A — a dedicated view per component** (not a modal, not inline expansion), and the user added the structure: **all dedicated views are split into tabs, with Preview (the live demo) as the default/first tab.**
+
+Confirmed in the interview: "Preview (live demo, default) is confirmed." Q5 — which tabs exist beyond Preview (Schema / Code / Docs) — is open.
+
+## Rationale
+
+- A full dedicated view gives the live demo room to render at real fidelity — modals and inline expansions constrain size
+- Tabs separate concerns (demo vs schema vs source vs docs) without long-scroll or second surfaces
+- Preview-first ordering matches the library's purpose: see the component working before anything else
+
+## Alternatives considered
+
+- **Modal demo** — rejected: constrains the live demo's size and interactivity
+- **Inline expansion in the index** — rejected: same size constraint, and the component index stays cluttered by open demos
+
+## Consequences
+
+- Each component gets a dedicated view (detail route) whose body is a tab strip with Preview active by default
+- The tab set beyond Preview is Q5, still open
+- Relation to Q3's master-detail layout needs settling: whether the left index remains and the right pane becomes the dedicated view, or dedicated views replace the right pane entirely — unresolved
+- Demos in dedicated views use the component's own dummy data per [[library-extension-style-components]]
+- Interview continues (Q5: tab contents)
+`,
+  "decisions/library-registry-drives-editor-and-library.md": `---
+type: Decision
+title: Library registry drives editor + /library in one shot (supersedes display-only v1)
+description: Context
+tags: [library, central-charts, registry, extensions]
+status: accepted
+supersedes: "["library-q2-registry-display-only"]"
+timestamp: "2026-09-17T07:17:26.416Z"
+---
+
+# Library registry drives editor + /library in one shot (supersedes display-only v1)
+
+## Context
+
+The /library route (interviewed 2026-09-17) becomes the central component library: every chart component usable in /pages is shown here, and component devs add new components as self-contained extension packages. Earlier same-day decisions said registry v1 would be display-only (editor wiring deferred) with a master-detail layout.
+
+## Choice
+
+Full scope in one go (user chose "C" then "one go"): the library registry feeds the SAME central chart registry the /pages runtime consumes — registering a component makes it appear in /library AND in the page editor's add-block picker AND gets a schema-driven config panel, by construction. Layout: card grid on /library + detail route /library/[id] with tabs Preview (default) | Schema | Code | Docs. Demos render the REAL renderer (src/lib/components/charts/renderers/*) fed bundled dummy rows — never a clone. Preview bypasses DuckDB entirely.
+
+## Alternatives
+
+- Display-only registry, wire the editor later — rejected by user (wanted full wiring now).
+- Master-detail layout — superseded by cards + detail route (user answer to the layout question).
+- Demo-only standalone chart — rejected: a clone drifts from the real component.
+
+## Consequences
+
+- src/lib/library/ = extension surface: types.ts (LibraryEntry), registry.ts (registerLibraryComponent → also calls registerChartType), components/<type>/ packages (def.ts + demo.ts + docs.md + index.ts with ?raw source for the Code tab).
+- src/lib/charts/registry-setup.svelte.ts now only imports packages and registers them — chart definitions moved into packages (bar-chart, heatmap).
+- Editor add-block buttons iterate getLibraryComponents(); new blocks get role-aware defaults (fills each role to its min).
+- Adding a chart anywhere in the app = drop a folder under src/lib/library/components/ + register it in registry-setup.
+- Supersedes [[library-q2-registry-display-only]] and refines [[library-q3-master-detail-layout]].
+`,
+  "decisions/library-registry-ts-module.md": `---
+type: Decision
+title: Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders
+description: Context
+tags: [library, registry, components, spec-interview, frontend]
+status: accepted
+timestamp: "2026-09-17T07:10:29.142Z"
+---
+
+# Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders
+
+## Context
+
+Exchange in the \`/library\` spec interview (parent: [[library-central-component-library]]; prior locks: Q2 display-only registry [[library-q2-registry-display-only]], Q3 master-detail layout [[library-q3-master-detail-layout]], Q4 dedicated tabbed views [[library-q4-dedicated-tabbed-views]], self-contained extension-style components [[library-extension-style-components]], demos render real components with dummy query-shaped data [[library-demos-reuse-real-components]]). The last open question before writing the spec + todo was where the registry lives. The user answered **"a"** (2026-09-17), and the interview moved on to the next question (whether the bar-chart entry reuses the central-charts BarChart — open).
+
+## The choice
+
+**A — the registry is a TypeScript registry module under \`src/lib/library/\`**: types + a \`register()\` API + the entries, with each component living as a self-contained folder under \`src/lib/library/components/<name>/\` (definition, logic, and data in one place, matching [[library-extension-style-components]]).
+
+## Rationale
+
+- A TS module keeps the registry in code — typed, greppable, no DB/metadata indirection for v1 (consistent with Q2: display-only, no editor wiring yet).
+- Self-contained component folders match the extension-style contract: one entry = demo + production.
+
+## Alternatives considered
+
+- **B — user-specified structure** — declined by answering A; no custom structure proposed.
+
+## Consequences
+
+- \`src/lib/library/\` becomes the canonical home for the library registry and component entries; the existing route stub \`src/routes/library/+page.svelte\` consumes it.
+- First entry (barchart) wiring is the next open question: reuse [[barchart-component]] from central-charts with dummy query-shaped demo data, vs a fresh demo-only chart.
+- Then: write the spec + todo and build.
+`,
+  "decisions/linked-table-raw-fields-transient-autojoin.md": `---
+type: Decision
+title: Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional
+description: Context
+tags: [central-charts, master-items, data-binding]
+status: accepted
+timestamp: "2026-09-17T13:06:00.758Z"
+---
+
+# Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional
+
+## Context
+
+User asked for table-first data binding on all chart components: pick a source table, then pick dimensions/measures from that table's fields or fields of relationship-linked tables — either by selecting an existing master item from the library or creating one on the spot (saved to the lib).
+
+Existing locked decisions: [[master-item-library-table-binding-q6]] (workspace-level master items, stable ids, explicit table binding) and [[q7-relationship-graph-drives-item-availability]] (relationship graph drives availability + auto-JOIN).
+
+Open fork: when a user picks a **raw field from a linked table** (not the source table), does it become a master item or stay transient?
+
+- **A) Transient auto-JOIN** — chart stores field + table directly, query auto-JOINs; no library entry.
+- **B) Must become a master item** — picking a linked field forces the create-form.
+- **C) Hybrid** — source-table fields transient, linked-table fields forced into the lib.
+
+## Decision
+
+**A — raw fields (source or linked) stay transient.** The inspector picker pool is **master items + raw fields from the selected table + raw fields from linked tables**, symmetric for dimensions and measures. Creating a master item is an *optional* path (\`✚ Create…\` inline form → \`saveMasterItem\` → chart refs the stable id), never forced.
+
+## Consequences (shipped, TDD red→green, vitest 104/104)
+
+- \`spec-types.ts\` — \`DimensionSpec\`/\`MeasureSpec\` gain an optional \`table\` field (linked-table binding on raw entries; master-item refs unchanged).
+- \`items.ts\` — raw entries with \`table ≠ source\` feed \`involvedTables\` → existing \`buildJoins\` BFS auto-JOINs them.
+- \`compile.ts\` — linked dimensions compile qualified (\`"clients"."region"\`), validated against their own table.
+- \`relationships.ts\` — new \`linkedTables()\` helper (BFS from source, excludes source) drives the picker groups.
+- \`BlockInspector.svelte\` — table-first: switching source table prunes dims/refs no longer reachable; grouped pickers (⭐ master items | source fields | \`⤳ linked\` fields | \`✚ Create…\`); measures default \`sum(field)\` with an agg dropdown; host reloads the library via \`onItemsChanged\`.
+
+## Alternatives rejected
+
+- **B** — forcing every linked field into the lib pollutes the master-item library with one-offs and adds friction; contradicts "creation is optional".
+- **C** — asymmetric rules are harder to explain than either extreme; the auto-JOIN machinery made transient linked fields nearly free.
+
+## Rationale
+
+The auto-JOIN machinery already handled master items from linked tables; extending \`involvedTables\` to raw entries was a smaller diff than inspector-enforced creation, and keeps the library curated rather than a dump of every picked field.
 `,
   "decisions/master-item-library-table-binding-q6.md": `---
 type: Decision
@@ -13123,6 +13720,110 @@ The user answered **C**.
 
 - Design interview turn, 2026-09-15 (user's Q9 answer "C"; Q10 posed with lean B).
 `,
+  "decisions/skeleton-card-is-the-inline-role-assignment.md": `---
+type: Decision
+title: Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional
+description: Context
+tags: [central-charts, page-editor, ux, skeleton]
+status: accepted
+timestamp: "2026-09-17T15:32:10.396Z"
+---
+
+# Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional
+
+## Context
+
+The needsSetup gate decision ([[chart-blocks-start-empty-needssetup-gate]]) shipped skeleton cards whose "Add dimension / Add measure" buttons opened the config drawer. User asked (2026-09-17, PR #10) for an in-chart UX: pick or create dimensions/measures right on the chart, without leaving the canvas.
+
+## Decision
+
+The skeleton card itself is the assignment surface. \`SkeletonSetup.svelte\` renders inline grouped dropdowns per unmet role — ⭐ master items | source-table fields | linked-table fields | \`✚ Create…\` — plus a two-field inline create form (label + expression) that saves a master item via the host and wires the ref. The drawer remains for full editing, but the common path never opens it.
+
+Verified by CDP e2e both directions: data renders only when all role minimums are met, and **removing** a role (deleting the measure row) re-engages the skeleton.
+
+## Alternatives
+
+- Keep drawer-only assignment — rejected: extra clicks for the 90% case.
+- A floating popover from chart marks — rejected: more moving parts; the skeleton already occupies the same space.
+
+## Consequences
+
+- Pick/create UX on unconfigured blocks must stay on the card; don't route new affordances through the drawer by default.
+- The pick-value codec is shared ([[pick-values-flow-through-one-codec-pickers-ts]]), so drawer and card cannot drift.
+- The host (\`/pages/[slug]\` + PageGrid) owns master-item persistence via the \`onCreateMasterItem\` callback; SkeletonSetup stays persistence-free.
+
+Related: [[chart-blocks-start-empty-needssetup-gate]], [[skeletonsetup-component]], [[adding-a-component-never-auto-opens-the-config]].
+`,
+  "decisions/skeleton-pick-create-moved-from-inline-dropdowns.md": `---
+type: Decision
+title: Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)
+description: "Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New)"
+tags: [central-charts, page-editor, ux, skeleton, modal]
+status: accepted
+supersedes: "["skeleton-card-is-the-inline-role-assignment"]"
+timestamp: "2026-09-17T16:05:15.482Z"
+---
+
+# Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)
+
+# Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New)
+
+## Context
+
+[[skeleton-card-is-the-inline-role-assignment]] shipped \`SkeletonSetup.svelte\` with **inline grouped dropdowns** per unmet role (⭐ master items | source fields | linked fields | Create…). User asked (2026-09-17) for buttons again instead — each "Add dimension / Add measure" button opens a **modal**, matching the new-page modal pattern, containing a **searchahead dropdown select** over the pick options plus a **+ New** button for creating a master item inline.
+
+## Decision
+
+- The skeleton card keeps the assignment surface (card-not-drawer still holds), but each unmet role renders as a **button**; clicking opens a **modal built on the new-page modal's exact overlay pattern**.
+- Inside the modal: a **searchahead** (filter-as-you-type dropdown over grouped pick options) and a **+ New** button (label + expression → master item).
+- The searchahead is **built inline in the modal**, not extracted from \`SearchAhead.svelte\` — that file is a hardcoded \`/ui\` showcase demo, not prop-driven ([[searchahead-svelte-is-a-ui-showcase-demo-not-prop-driven]]). Extract a real prop-driven component only when a second consumer appears.
+- Pick values still flow through the shared codec ([[pick-values-flow-through-one-codec-src-lib-charts]]); the host (\`/pages/[slug]\` + PageGrid) still owns master-item persistence via \`onCreateMasterItem\`.
+
+## Alternatives
+
+- Keep inline grouped dropdowns — rejected by user: too dense/cluttered on the card; buttons keep the skeleton visually quiet until needed.
+- Prop-driven refactor of \`SearchAhead.svelte\` — rejected: YAGNI with a single consumer; the inline version is small.
+
+## Consequences
+
+- Modal ≠ drawer: the drawer remains for full editing; the modal is the quick pick/create path from the card.
+- Any future modal in the app should reuse the new-page modal overlay pattern rather than invent a new one (user explicitly asked for "as with the new page modal").
+- CDP e2e continues to gate this flow (needsSetup gate unchanged).
+`,
+  "decisions/speed-highlight-over-prism.md": `---
+type: Decision
+title: Use speed-highlight/core for code highlighting instead of Prism
+description: Context
+tags: [frontend, library, dependencies, syntax-highlighting]
+status: accepted
+timestamp: "2026-09-17T08:51:57.993Z"
+---
+
+# Use speed-highlight/core for code highlighting instead of Prism
+
+## Context
+
+The \`/library/[id]\` detail page's Code tab highlighted source snippets with \`prismjs\` + \`prism-svelte\` wrapped in a hand-rolled \`<pre>\` block chrome (background, mono font, gutter).
+
+## Choice
+
+Swap to **@speed-highlight/core** (\`highlightHTML(src, lang, { block: true, showLineNumbers: true })\`, theme \`@speed-highlight/core/themes/github-light.css\`). Prism is fully removed: \`prismjs\`, \`prism-svelte\`, \`@types/prismjs\` uninstalled.
+
+## Alternatives considered
+
+- **Keep Prism** — worked, but three packages for one tab and a custom \`<pre>\` wrapper to maintain.
+- **Shiki** — heavier (TextMate grammars + WASM oniguruma); more than the tab needs.
+
+## Rationale
+
+User-requested; also a net simplification: speed-highlight renders its own block chrome (background, mono font, line-number gutter), so the hand-rolled wrapper is gone — the file row (path + copy button) is all that sits above each block. Async API fits Svelte 5 (\`$state\` + \`$effect\` keyed on the entry).
+
+## Consequences
+
+- Language is chosen by file extension in \`+page.svelte\`: \`.ts\` → \`ts\`, \`.svelte\` → \`html\` (no Svelte grammar — see [[speed-highlight-core-has-no-svelte-grammar]]), \`.md\` → \`md\`, unknown → \`plain\`.
+- Renaming/dropping those mappings silently degrades snippets to \`plain\`.
+- Code entries stay keyed by full repo path (see [[library-code-entries-are-keyed-by-full-repo-paths]]).
+`,
   "decisions/svelteplot-sole-chart-engine.md": `---
 type: Decision
 title: SveltePlot is the sole chart engine — all legacy chart libraries removed
@@ -13156,6 +13857,37 @@ The 2026-09-12 decision (consolidate to Picasso.js + LayerChart) left several en
 - Supersedes the Picasso+LayerChart consolidation — that stack is no longer in the codebase.
 
 Source: PR creatuluw/data.monster#1 (commits incl. \`62a9162\`).
+`,
+  "decisions/tab-bar-shows-only-explicitly-opened-tabs.md": `---
+type: Decision
+title: Tab bar shows only explicitly opened tabs — navigation never creates tabs
+description: Context
+tags: [navigation, tabs, ux]
+status: accepted
+timestamp: "2026-09-17T17:01:26.482Z"
+---
+
+# Tab bar shows only explicitly opened tabs — navigation never creates tabs
+
+## Context
+
+PR #16 shipped the virtual tab system with a bottom tab bar. As first built, every navigation kept a tab in play (\`ensureActive\` on every nav) and closing your last tab spawned a fresh one at \`/\` — so the bar filled with every route you visited, not just tabs you asked for. The user asked: "in the tabs bar show only tabs I opened with open in new tab."
+
+## Choice (PR #17, +7/−11, one file: \`src/lib/tabs.svelte.ts\`)
+
+- The bar **starts empty**. Only **Open in new tab** (right-click context menu) creates a tab chip.
+- Navigation **re-targets a tab only while you are *in* an opened tab**. Plain navigation with no active tab creates nothing.
+- Closing your **last** tab empties the bar and **leaves you on the current page** (no auto-respawn at \`/\`).
+
+## Alternatives considered
+
+- Auto-create a tab per visited route (browser-history style, as the first build effectively did) — rejected: the bar became clutter, defeating its purpose.
+- Respawn a home tab on last close — rejected: surprising navigation the user didn't ask for.
+
+## Consequences
+
+- Tabs are now purely user-created; any future nav code must not auto-spawn tabs.
+- Amends (does not supersede) [[app-gets-virtual-multi-tab-navigation-bottom-bar]] — the tab system itself is unchanged, only its creation/retention semantics.
 `,
   "decisions/two-surface-report-page-format.md": `---
 type: Decision
@@ -13707,7 +14439,7 @@ okf_version: "0.1"
 <!-- wiki-nav:start -->
 ## Navigation map
 
-Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 92 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-16T05:23:47.589Z.
+Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 184 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T07:27:48.594Z.
 
 Each entry: [title](concept-id.md) — description. Links are clickable in /wiki; pass the concept-id (link target minus .md) to wiki_get.
 
@@ -13722,24 +14454,43 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 
 ### Pages
 
+- [aisure.uk pricing research report](pages/artifacts/aisure-uk-pricing-research-report.md) — Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
+- [App tour set (docs/tours/)](pages/artifacts/app-tour-set-docs-tours.md) — The interactive demo-tour deliverable for all 8 app features: one standalone HTML player per feature (connect, preview, query, data-tables, pages, labs, settings, analyst), built from real-UI CDP captures — not staged mocks.
 - [Central chart component design](pages/artifacts/central-chart-component-design.md) — What it documents
 - [Central-charts spec &amp; task list](pages/artifacts/central-charts-spec-amp-task-list.md) — The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
 - [Central charts spec & tasks](pages/artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [Design-system reference doc (docs/design-system-data-monster.html)](pages/artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
+- [Feature skill catalog (docs/features/)](pages/artifacts/feature-skill-catalog-docs-features.md) — What it is
 - [LLM agent connection research report](pages/artifacts/llm-agent-connection-research-report.md) — Fractal-research report on how to connect any LLM / coding agent / harness to data.monster and let it operate the app — add data & content, run analysis. Produc
 - [LLM Sensitive Data Privacy Research](pages/artifacts/llm-sensitive-data-privacy-research.md) — Research report (15 cited sources) on how to use LLMs with sensitive data in a data-analyst app. Compiled 2026-09-12 from web research; motivated by Data Monste
 - [LLM & Sensitive Data White Paper](pages/artifacts/llm-sensitive-data-white-paper.md) — Dutch-language white paper ("LLM's & Gevoelige Data") condensing the LLM privacy research into a single self-contained HTML file designed for mobile reading.
 - [LLM Sensitive-Data White Paper — Finance Edition](pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md) — Non-technical (finance-audience) edition of the LLM sensitive-data white paper, in Dutch. Fully rewritten 2026-09-12 around one spine: *"wie traint er mee, en w
+- [OSS value driver trees research report](pages/artifacts/oss-value-driver-trees-research-report.md) — What it documents
+- [App tab system (virtual tabs + bottom tab bar)](pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md) — The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra
 - [BarChart component](pages/entities/barchart-component.md) — What is it?
+- [central-api (frontend invoke client)](pages/entities/central-api-frontend-invoke-client.md) — What is it?
+- [Central-charts component system](pages/entities/central-charts-component-system.md) — The shipped v1 implementation of the central-charts system: the reusable component set under \`src/lib/components/charts/\` that renders report pages composed of 
 - [Chart fundament](pages/entities/chart-fundament.md) — Shared, tested pure-TS core under every /labs chart component — buildBars aggregation and sameDatum positional selection matching; components stay thin renderers.
-- [Chart page spec (spec-types + validator)](pages/entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
+- [Chart page spec (spec-types + validator)](pages/entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the PageDoc data contract (spec-types.ts + validate.ts) - columned rows (PageColumn span/height), blocks, measures/dimensions, rowColumns/normalizePageDoc
 - [ChartConfigDrawer component](pages/entities/chartconfigdrawer-component.md) — A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in \`/labs\`: a chart accepts an optional \`config\` snippet and togg
+- [Create-in-/data round-trip](pages/entities/create-in-data-round-trip.md) — Deep-link flow from a /pages chart's pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached to the chart + focused drawer reopened.
+- [database command module](pages/entities/database-command-module.md) — The Rust command module owning DuckDB **lifecycle** in the Tauri backend: initialize, graceful shutdown, and full reset. It is the code that turns a user-select
 - [Design system (app.css tokens + /ui showcase)](pages/entities/design-system-app-css-tokens-ui-showcase.md) — The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/components/\` + \`src/lib/components/ds/\` component libraries, the \`/ui\` showcase page, a
+- [dev-cdp.cmd (repo-root double-click CDP restart)](pages/entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md) — \`dev-cdp.cmd\` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manu
+- [ExprEditor component](pages/entities/expreditor-component.md) — Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table.
 - [Field Functions library](pages/entities/field-functions-library.md) — A user-extensible library of SQL field functions (e.g. formatting, extraction, math) that can be applied to table columns from the column drawer, backed by the
 - [Heatmap component](pages/entities/heatmap-component.md) — Reusable SveltePlot-based heatmap component (generic \`<T>\`, cell grid with threshold colors), ported 2026-09-14 from the kees.pippeloi.nl reference. First compo
-- [LabsPlaceholder component](pages/entities/labsplaceholder-component.md) — A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
-- [PageGrid component](pages/entities/pagegrid-component.md) — The canvas renderer for the central-charts page editor: lays out a
+- [LabsPlaceholder component](pages/entities/labsplaceholder-component.md) — The shared Svelte 5 placeholder shell that renders a section page with "Placeholder — coming soon." Every not-yet-built chart type in \`/labs\` shows it, and other not-yet-built sections (e.g. \`/library\`) reuse it via the \`section\` prop.
+- [library-component-builder skill (.pi/skills)](pages/entities/library-component-builder-skill-pi-skills.md) — A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview → 
+- [Library page (/library)](pages/entities/library-page-library.md) — A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
+- [Library registry system (src/lib/library + /library routes)](pages/entities/library-registry-system.md) — The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the 
+- [LLM prompt button (/library detail)](pages/entities/llm-prompt-button-library-detail.md) — LLM prompt button (/library detail)
+- [PageGrid component](pages/entities/pagegrid-component.md) — The canvas renderer + editing surface of the central-charts page editor: lays out a \`PageDoc\` as rows of 12-col CSS grids — each row an optional-height shell of
 - [Pages & master-items storage (Rust)](pages/entities/pages-master-items-storage-rust.md) — The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD
 - [remote_chat command](pages/entities/remote-chat-command.md) — Tauri command that proxies remote LLM chat completions (e.g. z.ai \`/chat/completions\`) through the Rust backend, streaming tokens back as \`local-llm:*\` events. 
+- [RolePickerModal component](pages/entities/rolepickermodal-component.md) — The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linke
+- [Shared controls kit (charts/controls)](pages/entities/shared-controls-kit-charts-controls.md) — The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
+- [SkeletonSetup component](pages/entities/skeletonsetup-component.md) — The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: a card button per unmet role opens the RolePickerModal (searchable picks over ⭐ master items | source-table fields | linked-table fields, + New) — the common configuration path never opens the config drawer.
 - [.wiki_ignore staleness policy](pages/entities/wiki-ignore-staleness-policy.md) — Project-level additive ignore config layered on the wiki-context extension's built-in ignores.
 - [Page Templates](pages/TEMPLATES.md) — Reference templates for Concept, Entity, and Artifact pages. Follow these when using wiki_note_page.
 
@@ -13747,10 +14498,26 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 
 - [Agent connection: MCP server embedded in the Rust backend](decisions/agent-connection-mcp-embedded-in-rust-backend.md) — Context
 - [Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside](decisions/agent-surfaces-rust-backend-mcp-and-rest.md) — Context
+- [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context
+- [All pages capped at 1920px and centered; full-bleed exemption removed](decisions/all-pages-capped-1920px-full-bleed-removed.md) — Context
+- [App gets virtual multi-tab navigation: bottom bar is the tab bar](decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md) — Context
 - [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table.md) — Context
+- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context
 - [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](decisions/consolidate-chart-engines-to-picasso-js.md) — Context
+- [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context
 - [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](decisions/labs-catalog-placeholder-first.md) — Context
 - [Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component](decisions/labs-per-chart-type.md) — Labs goes per-chart-type; first chart (heatmap) built on SveltePlot
+- [/library becomes the central component library (proposed — spec interview in progress)](decisions/library-central-component-library.md) — Context
+- [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context
+- [Library demos render the real components fed dummy query-shaped data — no demo-only clones](decisions/library-demos-reuse-real-components.md) — Context
+- [Library components are self-contained extension-style packages — own definition, logic, and data](decisions/library-extension-style-components.md) — Context
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context
+- [Library Q2: registry v1 is display-only — editor wiring deferred](decisions/library-q2-registry-display-only.md) — Context
+- [Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside](decisions/library-q3-master-detail-layout.md) — Context
+- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](decisions/library-q4-dedicated-tabbed-views.md) — Context
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context
+- [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context
+- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context
 - [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context
 - [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early.md) — Context
 - [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](decisions/measures-dimensions-are-duckdb-expressions.md) — Context
@@ -13770,22 +14537,46 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Q7 locked: relationship graph drives chart item availability and auto-JOIN](decisions/q7-relationship-graph-drives-item-availability.md) — Context
 - [Q8 locked: one canonical query engine with per-type hooks](decisions/q8-one-canonical-query-engine-per-type-hooks.md) — Context
 - [Q9 locked: chart option panels are schema-driven with a custom-panel hatch](decisions/q9-chart-option-panels-schema-driven.md) — Context
+- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context
+- [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New)
+- [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context
 - [SveltePlot is the sole chart engine — all legacy chart libraries removed](decisions/svelteplot-sole-chart-engine.md) — Context
+- [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context
 - [Two-surface report pages: code mode edits a declarative spec, not Svelte source](decisions/two-surface-report-page-format.md) — Q3 LOCKED (A): the report page is one declarative spec document edited by both surfaces — parity by construction. C (registry escape hatch) stays a future growth path.
+- [Typography: Bricolage Grotesque display — Poppins dropped](decisions/typography-bricolage-grotesque-display.md) — Context
+- [Typography: Calluna headings, Inter body, Geist Mono data — Squada One/Libre Baskerville dropped](decisions/typography-calluna-headings-inter-body.md) — Context
+- [Typography: Figtree bold display, Inter body, Geist Mono data](decisions/typography-figtree-bold-display-inter-body.md) — Context
+- [Typography: Figtree headings — Calluna dropped](decisions/typography-figtree-headings-calluna-dropped.md) — Context
+- [Typography: Geist display — Syne dropped](decisions/typography-geist-display-syne-dropped.md) — Context
+- [Typography: Host Grotesk headings, Geist body — Inter dropped](decisions/typography-host-grotesk-headings-geist-body.md) — Typography: Host Grotesk headings, Geist body — Inter dropped
 - [Typography: Inter for all UI, Geist Mono reserved for data detail](decisions/typography-inter-mono-for-data.md) — Context
+- [Typography: Poppins headings — Figtree dropped](decisions/typography-poppins-headings-figtree-dropped.md) — Context
+- [Typography settles: Inter everywhere (display + body), Geist Mono for data detail](decisions/typography-settles-inter-everywhere-geist-mono.md) — Context
+- [Typography: Space Grotesk display, Bricolage dropped](decisions/typography-space-grotesk-display-bricolage-dropped.md) — Context
+- [Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped](decisions/typography-squada-one-headings-libre-baskerville.md) — Context (superseded by [[typography-calluna-headings-inter-body]])
+- [Typography: Syne display — Space Grotesk dropped](decisions/typography-syne-display-space-grotesk-dropped.md) — Typography: Syne display — Space Grotesk dropped
 
 ### Rules
 
-- [All pages capped at 1920px and centered by the shared layout — no per-page opt-out](rules/app-content-capped-at-shared-max-width.md) — Guideline
+- [Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows](rules/adding-a-component-never-auto-opens-the-config.md) — When a component is added to a page-editor row (\`addComponent\` in the page editor), the **config drawer must NOT auto-open**. The newly added block stays on the
+- [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](rules/app-content-capped-at-shared-max-width.md) — One wrapper, .app-column, owns header + breadcrumb + content, is capped at 1920px, centered, and always exactly viewport-high with full-height side borders.
 - [Card spacing comes from the grid gap, never per-card margins](rules/card-spacing-from-grid-gap-not-margins.md) — In any grid of chart/component cards (page editor canvas, labs), inter-card
+- [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline
+- ["Demo" means an app-tour-demo UI tour, not eval suites](rules/demo-means-app-tour-demo-not-eval-suites.md) — Guideline
+- [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline
+- [Drawers reuse the shared drawerResize action](rules/drawers-reuse-the-shared-drawerresize-action.md) — Guideline
 - [Each /labs chart owns its config panel](rules/each-labs-chart-owns-its-config-panel.md) — Guideline
 - [Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal](rules/feature-loop-hard-rules.md) — Guideline
-- [Inter for UI text, Geist Mono only for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Guideline
+- [Two-font rule: Inter for all UI (display + body), Geist Mono for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Inter everywhere for UI text; Geist Mono reserved for data detail (tables, chart ticks, tags, IDs).
 - [Interview the user one question at a time with lettered multiple-choice options](rules/interview-one-question-at-a-time.md) — Guideline
 - [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/
 - [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament
+- [Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash](rules/leave-wiki-recap-noise-uncommitted.md) — Guideline
+- [Pick display labels resolve through roleLabels() — never hand-roll chip labels](rules/pick-display-labels-resolve-through-rolelabels.md) — Guideline
+- [Pick values flow through one codec — src/lib/charts/pickers.ts](rules/pick-values-flow-through-one-codec-src-lib-charts.md) — Guideline
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css
 - [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-from-global-rule-app-css.md) — Guideline
+- [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in the \`.prose-chat\` cl
 - [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-in-todos.md) — Guideline
 
@@ -13793,35 +14584,68 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 
 - [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-stale-hmr-webview.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel).
 - [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-app-main-disable-flex-stretch.md) — Symptom
+- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17).
+- [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](learnings/calluna-not-on-google-fonts-css2-drops-silently.md) — Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]).
 - [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via 
 - [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs
+- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md) — Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmous
+- [CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps](learnings/cdp-form-probes-must-be-container-scoped-shared.md) — Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form).
+- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](learnings/cdp-gate-assertions-need-settle-time-after-doc.md) — Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):
+- [CDP probe \`$\` is querySelector — indexing it silently kills clicks](learnings/cdp-probe-is-queryselector-indexing-it-silently.md) — Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7).
 - [CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface](learnings/cdp-repro-traps-duckdb-lock.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] and [[webview2-cdp-gotchas-env-var-flag-stale]] — two more repro-environment traps hit while chasing the 
+- [Central-charts work lives on feature/central-charts — master is held at a restore point](learnings/central-charts-work-lives-on-feature-branch.md) — Discovered 2026-09-16 when the user reported the \`/pages\` work as "completely lost."
 - [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview)
+- [Chart segment selection is parent-held {dimension, value} transient state](learnings/chart-segment-selection-parent-held-state.md) — Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
+- [Component spawn grows too-small explicit-height rows to 320px minimum](learnings/component-spawn-grows-too-small-explicit-height.md) — Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8).
 - ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is benign. It appears when 
 - [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-probes.md) — Symptom: a CDP DOM probe checking for the label \`"Rows"\` failed on the Page
+- [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](learnings/d2-diagrams-not-interactive.md) — Question
 - [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with \`--remote-debugging-port\` and drive 
 - [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
+- [Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern](learnings/extending-docs-features-requires-add-evals.md) — Constraints of add-evals-to-skill (hit while building [[feature-skill-catalog-docs-features]])
 - [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring \`.env\` into the app (2026-09-11).
+- [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](learnings/hard-reload-storms-deadlock-duckdb-in-process.md) — Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
 - [kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4](learnings/kees-reference-ports-cleanly.md) — \`E:\\kees.pippeloi.nl\` (esp. \`src/routes/work/high-level\`) is the reference project for chart-type components being ported into Labs.
 - [Labs bar-chart "hang" is an infinite vite reconnect/reload loop, not a component bug](learnings/labs-hang-vite-reload-loop.md) — Reported 2026-09-14: clicking the bar chart card in /labs hung the page (heatmap fine). Root cause found same day: vitest import reachable from src via $lib/charts tripped vite's dep-optimizer, amplified by tailwind re-emitting app.css on any file churn. Fixed in PR #3 (commit 9f18749).
+- [Library code entries are keyed by full repo paths](learnings/library-code-entries-are-keyed-by-full-repo-paths.md) — What
+- [The /library vs /pages config-drawer difference is scope, not components](learnings/library-vs-pages-config-drawer-scope.md) — Symptom
 - [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directly relevant to Data M
 - [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary docs. Extends [[llm
 - [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](learnings/local-llm-blank-screen-delay-was-hidden.md) — Symptom
+- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique docu
 - [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: \`.archive/\` (entire superseded old app + chart-engine trials) and \`src-tauri/target/\` (Rust build artif
+- [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](learnings/normalizepagedoc-field-whitelist.md) — Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr
 - [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a block carries a **block-level \`title\`** *and* (for chart blocks) **\`chart.title\` / \`
+- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t
+- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
+- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
+- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal.
+- [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section).
+- [settings-tour and analyst-tour built — honest-beats-staged applied to the chat](learnings/settings-tour-and-analyst-tour-built.md) — Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in docs/tours/ (connect, preview, query, data-tables, pages, labs, settings, analyst).
+- [speed-highlight/core has no Svelte grammar](learnings/speed-highlight-core-has-no-svelte-grammar.md) — Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
+- [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](learnings/squada-one-is-single-weight-400.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
+- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]].
+- [Stale vite module graph can survive reloads — only a full app restart clears it](learnings/stale-vite-module-graph-can-survive-reloads-only-a.md) — Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix 
 - [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES.
 - [Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash](learnings/stash-pop-silent-conflict-recovery.md) — Discovered 2026-09-14 while committing session work (PR #3).
 - [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-empty-aliases-crash.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
 - [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](learnings/svelteplot-barx-bar-y-orientation.md) — Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
 - [SveltePlot internals: match datums by position, not identity; guard empty data](learnings/svelteplot-datum-identity-empty-guard.md) — Two engine-level gotchas discovered while porting [[heatmap-component]] (2026-09-14), from the explanation of the SveltePlot 0.14.2 implementation. They apply t
+- [SveltePlot 0.14.2 has no tree mark — verified in the installed package](learnings/svelteplot-has-no-tree-mark.md) — Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart engine — ships no tr
 - [SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse](learnings/svelteplot-ordinal-domain-sorts-alphabetically.md) — Discovered 2026-09-14 while making the /labs bar chart sort desc: page-side data sorting had **no visible effect** because svelteplot's ordinal scales **sort th
 - [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom
+- [Tour DOM snapshots scale with the live DOM — bound secondary frames, keep one big frame when size is the story](learnings/tour-dom-snapshots-scale-with-live-dom.md) — Discovered 2026-09-16 finishing the query-tour (see [[app-tour-set-docs-tours]]).
+- [Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours](learnings/tour-html-captures-embed-google-fonts-import.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
 - [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-walk-ancestor-opacity-chain.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15):
 - [WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite](learnings/webview2-cdp-gotchas-env-var-flag-stale.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit while verifying the 2026-09-12 redesign:
+- [wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths](learnings/wiki-note-page-wikilinks-resolve-relative.md) — Discovered 2026-09-16 while writing the [[feature-skill-catalog-docs-features]] artifact page.
 - [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom
+- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-c
 
 ### Preferences
 
+- [Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself](preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md) — Agent may run the CDP restart chain itself
+- [CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)](preferences/cdp-verify-the-dev-app-via-webview2-additional.md) — How to get the dev app CDP-drivable (exact procedure)
 - [Never start npm run dev / tauri dev — the user owns the dev app](preferences/never-start-npm-run-dev-tauri-dev.md) — The LLM must never launch the dev app itself — no \`npm run dev\`, \`npx tauri dev\`, or background dev-server starts. The user starts and owns the dev app.
 <!-- wiki-nav:end -->
 
@@ -13894,6 +14718,32 @@ In a **flex column** scroll container, auto-margin centering silently disables s
 ## Related
 
 - [[app-content-capped-at-shared-max-width]] — the layout lever this bug lived in
+`,
+  "learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md": `---
+type: Learning
+title: Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption
+description: "Hit twice while rewiring the drawers (PR #18, 2026-09-17)."
+tags: [bash, encoding, workflow, gotcha]
+timestamp: "2026-09-17T17:25:31.321Z"
+---
+
+# Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption
+
+Hit twice while rewiring the drawers (PR #18, 2026-09-17).
+
+## Symptom 1 — heredoc writes corrupt
+
+Writing large Svelte files via a bash heredoc left literal \`U+FFFD\` replacement characters where en-dashes should be (\`–\` → \`�\`).
+
+## Symptom 2 — terminal render lies
+
+Later, a file that looked like it contained \`U+FFFD\` actually contained a **proper em-dash** — the terminal just can't render it. "Fixing" it would have corrupted a good file.
+
+## Rules
+
+- When a file's content contains non-ASCII (en/em-dashes, arrows), don't write it through an inline heredoc — write the script to a file first, or use python.
+- To patch existing mojibake, use python with explicit escapes (\`\\ufffd\`) so the match can't be mangled by the shell.
+- Before "fixing" a suspected bad character, check the actual bytes (e.g. python \`open(..., encoding='utf-8').read()\` + \`ord()\`) — terminal rendering is not evidence of corruption.
 `,
   "learnings/calluna-not-on-google-fonts-css2-drops-silently.md": `---
 type: Learning
@@ -13969,6 +14819,101 @@ What this means for testing strategy:
 
 Extends [[drive-data-monster-s-real-ui-over-cdp]] and [[cdp-repro-traps-duckdb-lock]] — same repro environment, one more limitation.
 `,
+  "learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md": `---
+type: Learning
+title: "CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events"
+description: "Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmous"
+tags: [cdp, e2e, contextmenu, debugging]
+timestamp: "2026-09-17T16:58:47.818Z"
+---
+
+# CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events
+
+Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmouseevent]], [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]].
+
+## Symptom
+
+CDP e2e of the right-click → "Open in new tab" flow: a synthetic \`contextmenu\` dispatched from \`Runtime.evaluate\` bubbled fine, but the handler stayed silent. Switching to a **real** \`Input.dispatchMouseEvent\` with \`button: 'right', clickCount: 1\` also stayed silent — and that's what exposed the truth: the handler existed in \`<script>\` but \`<svelte:window oncontextmenu={...}>\` was never written into the markup.
+
+## Lessons
+
+- For context-menu e2e, the real user path is \`Input.dispatchMouseEvent\` with \`button: 'right'\` (synthesized DOM events may not reach Svelte window-level handlers).
+- **Before blaming event synthesis, verify the binding actually exists** — grep the file for the \`<svelte:window …>\` / \`on:…\` attribute. A "synthetic events don't work" conclusion on top of a missing binding sends you debugging the wrong layer.
+- Read probe results *after* the action completes, not before — a reordered \`before\` read made a working tab-switch look failed.
+`,
+  "learnings/cdp-form-probes-must-be-container-scoped-shared.md": `---
+type: Learning
+title: CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps
+description: Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form).
+tags: [cdp, e2e, testing, svelte, master-items]
+timestamp: "2026-09-17T14:10:03.156Z"
+---
+
+# CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps
+
+Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form).
+
+## Symptom
+
+\`createMeasure\` silently early-returned: values visibly in the DOM, form still open, no error, nothing saved.
+
+## Two-stage misdiagnosis
+
+1. First blamed event synthesis — "synthetic \`input\` events aren't reaching Svelte's bind" — and switched to trusted CDP input (\`Input.dispatchMouseEvent\` + real text insertion, per [[cdp-can-click-svelteplot-marks-dispatchmouseevent]]). Reasonable, but not the cause.
+2. Actual cause: the probe's placeholder-based selector (\`$$all(...)[0]\`) hit the **seeded measure row's inputs**, which share the exact same placeholders as the create form. The trusted keystrokes landed in the row, the create form stayed empty, and \`createMeasure\` early-returned on empty form fields.
+
+## Heuristic
+
+- **Scope form-fill probes to the form container** (\`form $$ input[placeholder=...]\`), never placeholder- or index-only \`$$all(...)[0]\` selectors — duplicate placeholders are common wherever list rows and a create/edit form coexist (master-items, labels, tags).
+- Before blaming event synthesis / Svelte bind for "values in DOM but save no-ops", **verify the probe hit the right elements** — dump the matched elements' ancestors first.
+`,
+  "learnings/cdp-gate-assertions-need-settle-time-after-doc.md": `---
+type: Learning
+title: CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped
+description: "Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):"
+tags: [cdp, e2e, page-editor]
+timestamp: "2026-09-17T15:32:10.396Z"
+---
+
+# CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped
+
+Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):
+
+1. **Settle time after doc mutations.** The page-editor runtime re-loads (re-queries) on every doc change. A probe that deletes a measure row and immediately asserts the chart state sees the *pre-reload* UI — a phantom FAIL. Wait for the reload to settle before asserting; the gate does re-engage on role removal.
+2. **Scope svg counts to the chart container.** Page-wide \`document.querySelectorAll('svg').length\` counts lucide icons too — assert on the chart/card subtree only when "chart rendered vs skeleton" is the question.
+`,
+  "learnings/cdp-probe-is-queryselector-indexing-it-silently.md": `---
+type: Learning
+title: CDP probe \`$$\` is querySelector — indexing it silently kills clicks
+description: "Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7)."
+tags: [cdp, e2e, testing, probe, gotcha]
+timestamp: "2026-09-17T16:12:55.452Z"
+---
+
+# CDP probe \`$$\` is querySelector — indexing it silently kills clicks
+
+Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7).
+
+## The bug
+
+In the CDP probe tooling, \`$$\` is **\`querySelector\` — it returns ONE element**, not an array. Writing \`$$('...button')[0]\` yields \`undefined\`, and \`clickEl(undefined)\` then **throws silently**. Symptom: a step "fails" while the app itself is fine — the click never happened.
+
+## Why it's nasty
+
+- The failure looks like an app bug (button inert / flow stops mid-way), sending you debugging the product instead of the probe.
+- Subsequent step failures are a **cascade**: e.g. measure applied, dimension never did, so every downstream assertion fails too. One dead probe poisons the rest of the run.
+- It surfaced only across cold-start runs — on a warm run with proven selectors, step 6 passed end-to-end.
+
+## Rules
+
+- \`$$(...)\` → one element or null. Use it directly: \`clickEl($$('...'))\`. Never index it.
+- If you need a list, index via a scoped query inside a known container (see [[cdp-form-probes-must-be-container-scoped-shared]]).
+- First run after a cold start: vite is still re-optimizing deps, so fixed sleeps under-wait. **Poll-until (condition with timeout) instead of fixed sleeps.**
+
+## Source
+
+- Session 2026-09-17, PR #12 verification run — 5 of 7 steps "failed", root cause was this one probe line; fixed probe → 7/7 green with zero app changes.
+`,
   "learnings/cdp-repro-traps-duckdb-lock.md": `---
 type: Learning
 title: "CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface"
@@ -14015,6 +14960,14 @@ Before assuming work is lost: \`git branch -a --contains\`, \`git log feature/ce
 - \`src/routes/pages - Copy/\` is a stale identical duplicate of the old page (a delete candidate once back on the branch; SvelteKit serves it as a real route).
 
 Related: [central-charts-component-system](../pages/entities/central-charts-component-system.md)
+
+## RESOLVED — 2026-09-17: work merged via PR #4, master is current
+
+The same panic recurred ("2 days of work gone" — /pages, /data). Again nothing was lost: **\`feature/central-charts\` had been merged into \`origin/master\` as PR #4** (23 commits, ~20k lines, HEAD \`f1fc3b9\`), but local master was still sitting at the \`Restore point: pre central-charts build\` commit and was never pulled. Fixed with: stash → \`git pull\` (fast-forward) → \`stash pop\`.
+
+- **The rule of thumb above is now obsolete**: master is the current line of development again. But the first step stands and proved out twice: before assuming work is lost, check **\`origin/master\`** (\`git log origin/master\`, \`git status -sb\` behind/ahead count) in addition to \`git branch -a --contains\` and \`git stash list\`. In this repo "gone" has meant "on a branch or upstream, un-pulled" both times it was reported.
+- Stash-pop conflicts in auto-generated wiki files (changelog/memory churn): the stash side was a strictly older subset, so taking upstream for both files was safe — verify the stashed side holds no unique entries before discarding, per [stash-pop-silent-conflict-recovery](./stash-pop-silent-conflict-recovery.md).
+- Habit to avoid a third occurrence: \`git pull\` on master after every PR merge — something checked master out at the restore point after the merge and it went unnoticed for ~2 days.
 `,
   "learnings/chart-authoring-two-surfaces-serializable-spec.md": `---
 type: Learning
@@ -14043,6 +14996,56 @@ This is a hard constraint on the central reusable-chart design being interviewed
 
 - Q2 pending: do the surfaces author chart **instances** (configure existing types), **new chart types** (add to the 32-card catalog), or instances-now/types-code-only?
 - If instances: where do UI-authored charts persist — \`/pages\`, a new "charts" store, or exported code?
+`,
+  "learnings/chart-segment-selection-parent-held-state.md": `---
+type: Learning
+title: Chart segment selection is parent-held {dimension, value} transient state
+description: Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
+tags: [frontend, charts, state]
+timestamp: "2026-09-17T08:04:25.250Z"
+---
+
+# Chart segment selection is parent-held {dimension, value} transient state
+
+Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only needs to hold a transient \`selected\` object of shape \`{ dimension, value }\` in the parent — click selects/deselects a segment, window-click clears it.
+
+Non-obvious because the renderer gives no API surface for selection; the state shape is the whole contract. This bit us on the library page: the chart rendered fine but segments were unselectable because no \`selected\` state was held in the parent.
+
+## Source
+
+- \`src/routes/library/[id]/+page.svelte\` — holds \`{dimension, value}\` demo state; mirrors \`/pages\` behavior
+`,
+  "learnings/component-spawn-grows-too-small-explicit-height.md": `---
+type: Learning
+title: Component spawn grows too-small explicit-height rows to 320px minimum
+description: "Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8)."
+tags: [page-editor, pagegrid, skeleton, cdp]
+timestamp: "2026-09-17T15:18:52.909Z"
+---
+
+# Component spawn grows too-small explicit-height rows to 320px minimum
+
+Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8).
+
+## Symptom
+
+Adding a component to a page-editor row with an explicit small height (the 180px default) rendered the [[needsSetup-gate]] skeleton **clipped** — its buttons unreachable, \`clipPx > 0\` on the row.
+
+## Behavior (as shipped)
+
+- A component spawning into an **explicit-height row below 320px** grows that row to a **320px minimum at spawn time**.
+- Auto-height rows and taller rows are untouched.
+- The bump happens **only at spawn** — a later drag-resize below 320px still works. That invariant matters: enforcing the minimum continuously would break intentional small rows after spawn.
+
+## Verification
+
+CDP live-run: 180px row + added bar chart → row at 320px, skeleton fully visible, \`clipPx: 0\`, buttons reachable (109/109 vitest, svelte-check clean).
+
+## Relationships
+
+- [[../pages/entities/pagegrid-component]] — the canvas renderer whose row sizing owns the bump
+- [[adding-a-component-never-auto-opens-the-config]] — sibling spawn-time rule (skeleton is the start state)
+- [[normalizepagedoc-field-whitelist]] — row-height persistence context
 `,
   "learnings/couldn-t-find-callback-id-tauri-warning.md": `---
 type: Learning
@@ -14079,6 +15082,39 @@ casing mismatch.
 
 Related probe gotchas: [[visibility-probes-walk-ancestor-opacity-chain]],
 [[apparent-ui-bug-stale-hmr-webview]].
+`,
+  "learnings/d2-diagrams-not-interactive.md": `---
+type: Learning
+title: D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook
+description: Question
+tags: [d2, diagrams, interactivity, research, te9-research]
+timestamp: "2026-09-17T13:55:02.347Z"
+---
+
+# D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook
+
+## Question
+
+Can D2 (d2lang.com) render an interactive diagram — select elements, attach behavior/links — and if not, what does?
+
+## Answer (web-verified 2026-09-17, te9-research run)
+
+**D2: no native interactivity.** Exactly two features exist — \`tooltip\` (hover text) and \`link\` (click → external URL). No selection, no click callbacks, no event API. Verified against d2lang.com's own "Interactive" tour; unchanged since Dec 2022.
+
+**DIY path exists.** D2's SVG output is scriptable. Verified live against the official \`@terrastruct/d2\` WASM package: every shape renders as \`<g class="{base64url(shapeName)}">\`. A host page can decode those base64url classes and attach its own click/selection handlers. Caveat: that class scheme is **undocumented** — it can break on upgrades.
+
+## Alternatives with native interactivity
+
+- **Text DSL with JS callbacks**: Mermaid — \`click nodeId callback\`, requires \`securityLevel: 'loose'\`, browser-only.
+- **Interactive diagram components** (all MIT, selection + click events out of the box): Cytoscape.js, React Flow, **Svelte Flow**, AntV X6, Rete.js.
+- **Whiteboard-style embedding**: Excalidraw (MIT); tldraw (production needs a license key).
+- **Commercial gold standard**: GoJs, yFiles.
+
+**data.monster fit**: the app is SvelteKit — Svelte Flow or Cytoscape.js are the natural choices if interactive diagrams land in-app.
+
+## Source
+
+- \`reports/2026-09-17-d2-interactive-diagrams/report.html\` — full report (audit trail: \`agents/\`, \`research.log\`, \`metrics.json\` alongside).
 `,
   "learnings/drive-data-monster-s-real-ui-over-cdp.md": `---
 type: Learning
@@ -14197,6 +15233,39 @@ Discovered while wiring \`.env\` into the app (2026-09-11).
 - Settings UI and Analyst both consume \`get_settings\`, so no frontend change was required for env config.
 - See [[decisions/proxy-remote-llm-calls-through-rust-not-webview-fetch]] for the related rule that all LLM calls go through Rust.
 `,
+  "learnings/hard-reload-storms-deadlock-duckdb-in-process.md": `---
+type: Learning
+title: Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart
+description: Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
+tags: [cdp, e2e, duckdb, tauri, debugging]
+timestamp: "2026-09-17T14:10:03.156Z"
+---
+
+# Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart
+
+Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
+
+## Symptom
+
+After a session of repeated hard reloads (the reload storm during earlier e2e attempts), **every backend write fails** with DuckDB \`resource deadlock would occur\`. The UI keeps working — forms fill, probes pass, no visible error — but saves silently no-op. Probing the frontend forever finds nothing because the frontend is fine; the Rust-side connection is wedged.
+
+## Root cause
+
+Each hard webview reload races \`shutdownDuckdb\` against in-flight commands in the same instance. Once the race is lost, the DuckDB connection is deadlocked in-process and never recovers — distinct from [[cdp-repro-traps-duckdb-lock]], where a *second instance* is pinned by the workspace file lock.
+
+## Fix / prevention
+
+- **Fix**: full app restart (close app → \`Get-Process msedgewebview2 | Stop-Process -Force\` → relaunch with the CDP env var per [[cdp-verify-the-dev-app-via-webview2-additional]]). No amount of UI probing fixes a wedged connection.
+- **Prevention**: run an e2e pass as **exactly one clean pass, zero hard reloads**. If a pass goes sideways mid-flight, stop, restart, and rerun the whole pass — don't reload-and-continue.
+
+Related: [[couldn-t-find-callback-id-tauri-warning]] (benign reload artifact — but reloads are not free), [[stale-vite-module-graph-can-survive-reloads-only-a]] (the other reason restarts beat reloads).
+
+## Update 2026-09-21 — second root cause found and fixed in the backend
+
+The same "resource deadlock would occur" error has a **second, distinct cause**: \`execute_query\` used to run synchronously on the main/UI thread, so a long query blocked the thread while webview IPC re-entered it — Windows failed the call with EDEADLK-class errors. Overlapping frontend invokes (e.g. [expreditor-component](../pages/entities/expreditor-component.md) firing preview queries while typing) trigger exactly this.
+
+**Fix shipped** (\`src-tauri/src/commands/queries.rs\` + \`state.rs\`): \`execute_query\` is now an \`async\` command that clones the connection (\`DuckDbState.conn\` is now \`Arc<Mutex<Option<Connection>>>\`) into \`spawn_blocking\` — query work no longer touches the main/UI thread. Frontend-side, ExprEditor additionally serializes its preview queries so two invokes can't overlap.
+`,
   "learnings/index.md": `# Learnings
 
 - ["Couldn't find callback id" Tauri warning is a benign reload artifact](./couldn-t-find-callback-id-tauri-warning-is-a-benign-reload-a.md) - \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is benign. It appears when
@@ -14225,6 +15294,30 @@ Discovered while wiring \`.env\` into the app (2026-09-11).
 - [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](./auto-margins-app-main-disable-flex-stretch.md) - Symptom
 - [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](./squada-one-is-single-weight-400.md) - Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
 - [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](./calluna-not-on-google-fonts-css2-drops-silently.md) - Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]).
+- [Chart segment selection is parent-held {dimension, value} transient state](./chart-segment-selection-parent-held-state.md) - Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
+- [The /library vs /pages config-drawer difference is scope, not components](./library-vs-pages-config-drawer-scope.md) - Symptom
+- [Library code entries are keyed by full repo paths](./library-code-entries-are-keyed-by-full-repo-paths.md) - What
+- [speed-highlight/core has no Svelte grammar](./speed-highlight-core-has-no-svelte-grammar.md) - Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
+- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](./query-editor-blowup-was-app-column-min-height-auto.md) - Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
+- [SveltePlot 0.14.2 has no tree mark — verified in the installed package](./svelteplot-0-14-2-has-no-tree-mark-verified-in-the-installed.md) - Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart engine — ships no tr
+- [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](./normalizepagedoc-field-whitelist.md) - Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr
+- [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](./d2-diagrams-not-interactive.md) - Question
+- [Stale vite module graph can survive reloads — only a full app restart clears it](./stale-vite-module-graph-can-survive-reloads-only-a.md) - Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix
+- [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](./hard-reload-storms-deadlock-duckdb-in-process.md) - Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
+asure form).
+- [Component spawn grows too-small explicit-height rows to 320px minimum](./component-spawn-grows-too-small-explicit-height.md) - Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8).
+- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](./cdp-gate-assertions-need-settle-time-after-doc.md) - Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):
+- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](./searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) - Discovered 2026-09-17 building the skeleton pick/create modal.
+- [CDP probe \`$$\` is querySelector — indexing it silently kills clicks](./cdp-probe-is-queryselector-indexing-it-silently.md) - Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7).
+- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](./cdp-context-menu-e2e-real-right-click-dispatch-and.md) - Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmous
+- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](./bash-heredoc-writes-mangle-non-ascii-patch-with.md) - Hit twice while rewiring the drawers (PR #18, 2026-09-17).
+- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](./z-ai-glm-coding-plan-keys-use-the-anthropic.md) - Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-c
+- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](./scale-standalone-html-docs-via-root-font-size-px.md) - Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
+- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](./mock-tauri-browser-repro-harness-is-gone-verify.md) - Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique docu
+- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](./stale-component-css-after-an-edit-can-be-fixed.md) - Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]].
+- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](./pages-editor-auto-saves-silently-every-60s-no-ui.md) - User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t
+- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](./shallow-url-state-sveltekit-replacestate.md) - Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](./sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) - Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
 `,
   "learnings/kees-reference-ports-cleanly.md": `---
 type: Learning
@@ -14285,6 +15378,69 @@ Verified: 9/9 tests from \`tests/\`, \`svelte-check\` 0 errors, build clean.
 - A vite instance left over from the chart-lib dep removals ([[svelteplot-sole-chart-engine]]) has stale \`optimizeDeps\` — clean restart required before page comparisons are meaningful.
 
 **Triage rule: "Labs card hangs, no console errors, \`[vite] connecting\` flicker" → check for a vite reconnect loop before blaming the chart component.**
+`,
+  "learnings/library-code-entries-are-keyed-by-full-repo-paths.md": `---
+type: Learning
+title: Library code entries are keyed by full repo paths
+description: What
+tags: [library, registry, frontend, conventions]
+timestamp: "2026-09-17T08:41:47.662Z"
+---
+
+# Library code entries are keyed by full repo paths
+
+## What
+
+The code-source map exported by each library component package is keyed by the **full repo path** of the file, not a bare filename — e.g. \`src/lib/library/components/bar-chart/def.ts\`, \`src/lib/components/charts/renderers/BarChartRenderer.svelte\`. All registered component packages follow this.
+
+## Why it exists
+
+The \`/library/[id]\` detail page's **Code tab** renders each entry as a speed-highlight/core block (see [[speed-highlight-over-prism]]) with the path as its header, plus a copy button per block — so a reader always knows exactly where extension code lives in the repo.
+
+## Gotcha
+
+New component extensions must key their code entries by full repo path or their Code tab silently loses the location info. Extension packages live under \`src/lib/library/components/<type>/\`; renderers under \`src/lib/components/charts/renderers/\`.
+
+## Relationships
+
+- Shape defined by [[library-registry-system]] (one folder per component: \`def.ts\`, \`demo.ts\`, \`docs.md\`, \`index.ts\`)
+
+## Source
+
+- \`src/lib/library/components/<type>/index.ts\` — code entries keyed by full repo path
+`,
+  "learnings/library-vs-pages-config-drawer-scope.md": `---
+type: Learning
+title: The /library vs /pages config-drawer difference is scope, not components
+description: Symptom
+tags: [library, pages, blockinspector, demo-drawer, heatmap, mergeoptions]
+timestamp: "2026-09-17T08:34:47.889Z"
+---
+
+# The /library vs /pages config-drawer difference is scope, not components
+
+## Symptom
+
+The \`/library/bar\` demo drawer looked like it showed only a few "dummy" options, while the drawer on \`/pages/smoke-test\` showed many. Read as two different component sets.
+
+## What's actually going on
+
+They are the **same components** — one registry, same renderers; \`/pages\` renders exactly what \`/library\` previews. The difference is drawer *scope*:
+
+- \`/pages\` → \`BlockInspector\` edits the **whole block spec**: title, source table, dimensions, measures, roles, options, annotations. Full data binding exists only here.
+- \`/library\` → the demo drawer edits **demo options** only, fed by demo data.
+
+## Fix shipped
+
+The library demo drawer now labels this honestly: a read-only **"Demo data"** section (dimensions × measures · row count) plus **"Demo options"** with the same schema-driven fields, live-updating the chart. So the drawer no longer reads as dummy — it's explicit about what's demo-scope vs full binding.
+
+## Re-verified on heatmap (2026-09-17): the options merge is ALSO identical
+
+User report: "the heatmap I can add in /pages is not the same as \`/library/heatmap\`." End-to-end trace confirmed both surfaces render the **same** \`HeatmapRenderer.svelte\` from the registered \`heatmap\` package *and* build chart options with the exact same \`mergeOptions\` (schema defaults + def defaults + block options — identical to the library demo merge). So a visual difference between the two surfaces can **never** come from the component or the options merge — the only remaining variable is the **data/props layer**: the query + pivot output fed into the renderer.
+
+## Rule of thumb
+
+When \`/pages\` and \`/library\` previews look divergent, check in order: (1) drawer scope, (2) the fed data/props (query/pivot output) — never assume different components or different option merging; both are shared machinery. See [[library-registry-system]] and decision \`library-packages-carry-blockkind\` (blockKind field).
 `,
   "learnings/llm-api-data-retention-no-training-no.md": `---
 type: Learning
@@ -14377,6 +15533,20 @@ Add \`"thinking": {"type": "disabled"}\` to the request body in \`local_llm.rs\`
 - One early test still returned reasoning despite the flag; repeat/stability checks showed 0 reasoning chunks — verify with more than one request before concluding the flag is ignored.
 - If thinking is ever wanted back (e.g. better answers on hard prompts), the parser needs to handle \`reasoning_content\` and the UI needs a collapsible "thinking" section — that was deliberately skipped.
 `,
+  "learnings/mock-tauri-browser-repro-harness-is-gone-verify.md": `---
+type: Learning
+title: Mock-Tauri browser repro harness is gone — verify visually via self-contained routes
+description: "Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique docu"
+tags: [testing, repro, cdp, mock-tauri]
+timestamp: "2026-09-18T10:39:36.983Z"
+---
+
+# Mock-Tauri browser repro harness is gone — verify visually via self-contained routes
+
+Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique documented in [[query-editor-blowup-was-app-column-min-height-auto]] - **the mocktauri harness has been removed from the repo**. That learning's repro recipe no longer works.
+
+Fallback that does work: open a **self-contained route** (one that needs no Tauri data, e.g. \`/labs/bar-chart\`) in the agent browser and verify visually there. Don't burn time hunting for the harness; it's gone.
+`,
   "learnings/never-tree-scan-archive-or-src-tauri.md": `---
 type: Learning
 title: Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees
@@ -14390,6 +15560,29 @@ timestamp: "2026-09-12T10:56:35.295Z"
 The repo contains very large generated/historical trees: \`.archive/\` (entire superseded old app + chart-engine trials) and \`src-tauri/target/\` (Rust build artifacts). Recursive scans over them stall — a \`du -sh .archive/\` hung long enough for the user to ask "what is taking so long", and one build alone made file-change detection report ~3485 changed files.
 
 When gauging sizes or scanning the repo, work from the root listing and skip these trees. They are also why \`.wiki_ignore\` excludes them ([[wiki-ignore-staleness-policy]]).
+`,
+  "learnings/normalizepagedoc-field-whitelist.md": `---
+type: Learning
+title: normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load
+description: "Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr"
+tags: [central-charts, spec-types, normalizePageDoc, persistence, bug]
+timestamp: "2026-09-17T13:22:53.727Z"
+---
+
+# normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load
+
+Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it correctly.
+
+## Symptom
+A PageDoc field saves fine but never survives a page reload / Code-mode apply.
+
+## Root cause
+\`normalizePageDoc\` (in \`src/lib/charts/spec-types.ts\`) **rebuilds each row/column as a fresh object** — it is a field whitelist. It ran \`{ columns: … }\` and dropped \`row.height\` even though \`load_page\` had returned it. Any PageDoc field not explicitly passed through in the rebuild is silently stripped on every load.
+
+## Rule
+When adding any new field to the PageDoc contract ([[chart-page-spec-spec-types-validator]]), update \`normalizePageDoc\` to carry it through — the save path alone proves nothing. Symptom signature: "saved in DB, gone on reload" = look at normalizePageDoc first.
+
+Fix was one line: \`({ height: row.height, columns: rowColumns(row) })\`; column heights already survived. Round-trip tests (row + column height) added as the regression check.
 `,
   "learnings/pagedoc-block-title-and-chart-title-rendering.md": `---
 type: Learning
@@ -14408,6 +15601,88 @@ In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a bl
 **Fix:** inspector now writes \`chart.title\` / \`chart.subtitle\` (and a Subtitle field was added).
 
 **Rule of thumb:** when adding inspector/spec fields, write to the level the renderer actually reads — and verify field→render wiring in the running app, not just the store.
+`,
+  "learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md": `---
+type: Learning
+title: Pages editor auto-saves silently every 60s — no UI signal is deliberate
+description: "User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t"
+tags: [pages-editor, auto-save, ux]
+timestamp: "2026-09-21T07:28:17.171Z"
+---
+
+# Pages editor auto-saves silently every 60s — no UI signal is deliberate
+
+User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips the \`saving\`/\`saved\` state flips** — the save button never changes while auto-saving. Failures still surface via the existing red error line; silently swallowing a failed save would lose work unnoticed.
+
+Two things that look like bugs but are deliberate — do not "fix":
+- **No saving/saved feedback on auto-save**: the user explicitly asked for the save to be silent ("not showing any signal/change in the ui when saving it"). Manual saves keep the state feedback.
+- **No dirty-checking**: it saves even when nothing changed — a no-op write was judged cheaper than change tracking (\`ponytail:\` skip in the turn).
+
+The save button is also icon-only now; Saved/Saving state lives on \`title\`/\`aria-label\` (hover only).
+`,
+  "learnings/query-editor-blowup-was-app-column-min-height-auto.md": `---
+type: Learning
+title: "Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique"
+description: "Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine."
+tags: [css, flexbox, layout, query-page, debugging]
+timestamp: "2026-09-17T11:35:05.562Z"
+---
+
+# Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique
+
+Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
+
+Root cause: \`.app-shell\` (100vh flex column) → \`.app-column { flex: 1 }\` had NO \`min-height: 0\`. Flex items default to \`min-height: auto\` (min-content floor), so once the query page's content min-content (100-row result table + multi-line query) exceeded the viewport, \`.app-column\` grew past 100vh (4613px), every inner \`flex: 1\` / \`min-height: 0\` chain followed the inflated parents, and the editor pane (height: 38% of \`.editor-results-split\`) ballooned. The inner chain (\`min-height: 0\` + \`overflow: hidden\` on every level) is useless unless EVERY flex-item level from the 100vh root down also releases \`min-height: auto\` — \`.app-column\` was the one missing link. Fix: one line, \`min-height: 0\` on \`.app-column\` in \`src/routes/+layout.svelte\`.
+
+Verified: vite build + \`vite preview\` on a spare port, Tauri mocked by injecting \`window.__TAURI_INTERNALS__\` (invoke returning fake workspace/tables/DESCRIBE/COUNT/SELECT results) in \`src/app.html\` guarded by \`?mocktauri=1\` — the full app boots in a plain browser and the click flow reproduces/verifies. GOTCHA: after rebuilding, RESTART \`vite preview\` — it resolves the asset manifest at startup and keeps serving the OLD hashed CSS to cache-busted navigations, which silently defeats re-verification.
+
+Static DOM repro of just the page's own CSS is not enough for layout bugs — the bug lived in the layout chain above the page, and only the full app build showed it.
+`,
+  "learnings/scale-standalone-html-docs-via-root-font-size-px.md": `---
+type: Learning
+title: Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays
+description: Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
+tags: [css, docs, design-system, html]
+timestamp: "2026-09-18T10:22:58.435Z"
+---
+
+# Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays
+
+Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
+
+**The gotcha**: \`zoom: 0.8\` on the root is the tempting one-liner, but it breaks every \`position: fixed\` overlay — in that doc, three modal backdrops + the toast container misrender. Zoom is not equivalent to scaling.
+
+**The two levers that scale a doc deterministically**:
+
+1. \`html { font-size: 80% }\` — every rem token (type scale, spacing scale, max-width caps) scales from root.
+2. Sweep px literals ≥4 by ×0.8.
+
+**Sweep exceptions**:
+
+- Sub-4px values (1–3px hairlines, focus rings, indicators) stay full-size — ×0.8 makes sub-pixel mush.
+- Viewport media queries (e.g. 640px) stay untouched — they measure the window, not elements.
+- Update px labels in the doc prose to match (spacing labels, "Grid Base"); rem token labels stay truthful — the root shrank, the tokens didn't.
+
+Applies to the project's other standalone HTML deliverables (\`docs/tours/*\` players, \`docs/markdown-viewer.html\`) if they ever need scaling. Same family as [[tour-html-captures-embed-google-fonts-import]].
+
+Update 2026-09-18: the 80% pass on \`docs/design-system-data-monster.html\` itself was reverted the same day at user request (old original size + 72rem layout preferred). The technique stands as the way to scale a standalone doc if ever needed again.`,
+  "learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md": `---
+type: Learning
+title: SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads
+description: Discovered 2026-09-17 building the skeleton pick/create modal.
+tags: [ui-components, searchahead, showcase, yagni]
+timestamp: "2026-09-17T16:05:15.482Z"
+---
+
+# SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads
+
+Discovered 2026-09-17 building the skeleton pick/create modal.
+
+**Fact:** \`SearchAhead.svelte\` (the \`/ui\` showcase component) is a hardcoded demo with no props — its options and behavior are baked in for the showcase page. It is **not** a reusable, prop-driven component.
+
+**Consequence:** Don't reach for it when you need a searchahead elsewhere; you'll waste a read and then have to build anyway. Build the (small) inline version where you need it, and only extract a real prop-driven \`SearchAhead\` when a second consumer exists.
+
+Used-in: [[skeleton-pick-create-moved-from-inline-dropdowns]] — the pick modal's searchahead is inline, reusing the new-page modal overlay pattern instead.
 `,
   "learnings/settings-swap-for-tours-must-cover-env-too.md": `---
 type: Learning
@@ -14454,6 +15729,49 @@ Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in d
 
 Gotchas hit while building are in [[settings-swap-for-tours-must-cover-env-too]]. Both builds verify GESLAAGD (0.0px click deviation).
 `,
+  "learnings/shallow-url-state-sveltekit-replacestate.md": `---
+type: Learning
+title: "Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history"
+description: Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
+tags: [sveltekit, url-state, shallow-routing, svelte5]
+timestamp: "2026-09-22T07:33:09.581Z"
+---
+
+# Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history
+
+Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
+
+**The technique** — sync ephemeral view state (active tab) to the URL:
+
+- Use \`replaceState(url, {})\` from \`$app/navigation\` (SvelteKit's shallow-routing helper), **not** \`window.history.replaceState\` and **not** \`goto()\`. The SvelteKit version updates the reactive \`page.url\` (from \`$app/state\`) without re-running load functions, without navigation, and without a history entry. Raw \`window.history.replaceState\` would leave \`page.url\` desynced from the address bar, breaking any effect that reads it.
+- Guard the \`$effect\` against no-op writes (\`if ((page.url.searchParams.get('tab') ?? 'tables') === activeTab) return;\`) or it fires on every dependency touch and loops.
+- Strip the param when the value equals the default (\`replaceState('/data', {})\`) — keeps URLs clean.
+- Coexists with consume-once preset params: the \`add=1&table=…&return=…\` deep-link preset ([[create-in-data-round-trip]]) is parsed and stripped at init, before the tab effect runs, so the two never fight over the URL.
+
+Reusable anywhere a filter/tab/panel state should survive reload or be shareable (e.g. /labs, /query filters).
+`,
+  "learnings/speed-highlight-core-has-no-svelte-grammar.md": `---
+type: Learning
+title: speed-highlight/core has no Svelte grammar
+description: Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
+tags: [frontend, syntax-highlighting, library, svelte]
+timestamp: "2026-09-17T08:51:57.994Z"
+---
+
+# speed-highlight/core has no Svelte grammar
+
+## Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
+
+- **No Svelte grammar.** \`.svelte\` files must map to \`html\` — the template markup tokenizes fine but script/style blocks get generic markup coloring. Never promise Svelte-accurate highlighting from this lib.
+- **\`highlightHTML(..., { block: true })\` emits a CLASSLESS root \`<div>\`.** (Corrects an earlier claim here that it "ships its own chrome.") The theme CSS only matches \`[class*=shj-lang-]\` — a class that only \`highlightElement\` adds at runtime, never \`highlightHTML\`. Without it you get unstyled wrapping divs: no mono, no pre-wrap, no gutter. Fix: put \`shj-lang-<lang>\` on your own wrapper div — that is the library's intended theme activation, and the wrapper then supplies background, border, mono font and line-number flex layout. A small scoped override fits it to the app.
+- **Async API.** \`highlightHTML\` returns a Promise — in Svelte 5, resolve into \`$state\` from an \`$effect\` keyed on the entry, not at module init.
+- **Language codes are its own set** (\`ts\`, \`md\`, \`plain\`, …). Unknown extensions must be forced to \`plain\` or highlighting silently fails.
+
+## Source
+
+- \`src/routes/library/[id]/+page.svelte\` — language map, async highlight in effect, \`shj-lang-*\` wrapper
+- Decision: [[speed-highlight-over-prism]]
+`,
   "learnings/squada-one-is-single-weight-400.md": `---
 type: Learning
 title: Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold
@@ -14474,6 +15792,50 @@ Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-
 - Contrast now comes from **font-family contrast** (condensed display vs serif body vs mono), not the weight axis — the old Inter-era instinct "bump the weight" no longer applies.
 
 Libre Baskerville, by contrast, has real 400/700 + italic — body weights are safe.
+`,
+  "learnings/stale-component-css-after-an-edit-can-be-fixed.md": `---
+type: Learning
+title: Stale component CSS after an edit can be fixed with touch — no dev-server restart needed
+description: "Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]]."
+tags: [vite, hmr, stale-cache, debugging, dev-server]
+timestamp: "2026-09-18T10:55:35.019Z"
+---
+
+# Stale component CSS after an edit can be fixed with touch — no dev-server restart needed
+
+Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]].
+
+Symptom: after editing a Svelte component (e.g. \`controls/Section.svelte\`), the dev server served the NEW JS module but the OLD compiled CSS from \`?svelte&type=style\` — HMR even fired with fresh \`?t=\` URLs, hard-reloads didn't help, and only SOME components were stale (Field picked up its new CSS, Section didn't). Curling the style module showed the old rules verbatim.
+
+Root cause: the file-watcher missed the change, so vite's transform cache for the style module never invalidated. Editing through tools that do atomic replace (write-new-file + rename) seems to trigger this more often than in-editor saves.
+
+Fix WITHOUT restarting the user's dev app: \`touch\` the changed files. The watcher fires, the style module re-transforms, and the next page load gets the new CSS. Verify with \`curl "http://localhost:6123/src/lib/<file>.svelte?svelte&type=style&lang.css"\` and grep for a marker from the new CSS.
+
+Also learned while verifying: a plain \`curl\` of \`File.svelte?type=style&lang.css\` (no \`svelte\` param) 500s through the tailwind plugin (\`Invalid declaration: Snippet\` — it parses the whole SFC as CSS). That error form is an artifact of the direct request, not the real graph import (\`?svelte&type=style&lang.css\`) — don't chase it.
+`,
+  "learnings/stale-vite-module-graph-can-survive-reloads-only-a.md": `---
+type: Learning
+title: Stale vite module graph can survive reloads — only a full app restart clears it
+description: "Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix "
+tags: [hmr, vite, webview, cdp, verification, dev-loop, gotcha]
+timestamp: "2026-09-17T14:02:42.517Z"
+---
+
+# Stale vite module graph can survive reloads — only a full app restart clears it
+
+Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix (Ctrl+R) is the *first* rung — this is the case where reload doesn't work.
+
+**Symptom**: newly edited code provably on disk (and vite serving fresh transforms for some modules) but one component (PageGrid) keeps running old code — instrumented \`console.log\` in the new handler never fires. Hard reloads **and cache-busted reloads do not clear it**; only some modules (\`+page.svelte\`, \`app.css\`) hot-update. The webview is stuck on a stale module graph.
+
+**Collateral damage**: the repeated reload attempts themselves degraded IPC — the webview entered a \`vite connecting\` + \`AppState.shutdown\` loop where every reload killed DuckDB IPC.
+
+**Diagnosis traps that cost real time**:
+- URL-probing vite transforms via curl with **unencoded \`[\` / \`]\`** returns curl error 3 and empty output — looks exactly like "stale transform served". Always URL-encode brackets before drawing conclusions.
+- **Python/shell-written edits may not trip vite's watcher** (hit on a CRLF file): disk file correct, HMR never fired. A real edit-tool change provably fires HMR; if you must script the edit, use python with newline preservation to force the watcher.
+
+**Fix**: stop probing and restart the app fully — close it, \`Get-Process msedgewebview2 | Stop-Process -Force\`, relaunch with the CDP env var (exact procedure: [[cdp-verify-the-dev-app-via-webview2-additional]]). And when verification is blocked by staleness you can't break, prefer restructuring the fix so it doesn't depend on cross-module wiring you can't verify live (this turn: dropped a host→PageGrid prop; the inspector now self-seeds on mount).
+
+Related: [[labs-hang-vite-reload-loop]] (the other vite reload-loop failure mode), [[webview2-cdp-gotchas-env-var-flag-stale]].
 `,
   "learnings/stale-wiki-file-floods-are-ignored.md": `---
 type: Learning
@@ -14534,6 +15896,28 @@ The pop conflicted: the background **wiki-recap agent** had written newer recap 
 
 ## Prevention
 After ANY stash pop in this repo, sanity-check that the expected number of modified files is actually present before editing further — concurrent wiki-recap writes make silent conflicts the norm, not the exception.
+`,
+  "learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md": `---
+type: Learning
+title: SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back
+description: Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
+tags: [sveltekit, shallow-routing, replacestate, cdp, bug]
+timestamp: "2026-09-22T08:01:17.161Z"
+---
+
+# SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back
+
+Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
+
+Symptom: a \`$effect\` guarded by \`page.url.searchParams.get('tab')\` worked on the first tab click but silently stopped writing on the second — the tab content switched but the URL froze.
+
+Root cause: SvelteKit's \`replaceState()\` from \`$app/navigation\` updates \`location.href\` and history state immediately, but **\`page.url\` keeps returning the URL at mount time** — replaceState-written params are invisible to \`page.url\` reads (observed on @sveltejs/kit 2.57; matches open kit issues about \`page.url\` not reflecting shallow-routing writes). So a guard like \`if (page.url.get('tab') === activeTab) return;\` compares against a stale URL: the first write succeeds, but on the next change the guard sees the old param (or null) and early-returns wrongly.
+
+Rules that follow:
+
+- Never guard shallow-routing write effects by reading back \`page.url\` — reads are stale after pushState/replaceState.
+- Make the effect track only the source state (\`untrack\` any \`page.url\` reads) and write unconditionally; make the first-run write idempotent (write the URL it would already be at). Self-rerun loops are impossible when \`page.url\` isn't a dependency.
+- CDP e2e on the Tauri webview (port 9223 via dev-cdp.cmd) is the ground truth for URL-state bugs — console instrumentation through HMR (\`console.debug\` in the effect) revealed the stale reads in one run after three wrong theories (stale webview, hydration race, popstate reverts).
 `,
   "learnings/svelteplot-band-axis-empty-aliases-crash.md": `---
 type: Learning
@@ -14598,6 +15982,21 @@ If zero-row data reaches \`Plot\`, scale transforms produce NaN and the plot bre
 
 - [[kees-reference-ports-cleanly]] — the reference implementations already encode both workarounds; port them verbatim.
 - [[heatmap-component]] — first component using both patterns (\`src/lib/components/Heatmap.svelte\`).
+`,
+  "learnings/svelteplot-has-no-tree-mark.md": `---
+type: Learning
+title: SveltePlot 0.14.2 has no tree mark — verified in the installed package
+description: "Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart engine — ships no tr"
+timestamp: "2026-09-17T13:07:25.353Z"
+---
+
+# SveltePlot 0.14.2 has no tree mark — verified in the installed package
+
+Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart engine — ships no tree/hierarchy mark of any kind.
+
+- **Implication**: any tree visualization (value driver tree, decomposition tree, org/roll-up tree) must be built from custom SVG/marks; there is nothing to configure into existence.
+- **Related gap confirmed by the same research** (reports/2026-09-17-oss-value-driver-trees): no OSS chart library computes tree roll-up math, and no mature OSS app renders value driver trees with live data (closest: react-kpi-tree, Apache-2.0, a learning project; Grafana's Interactive Tree Panel is the best live-data tree UX in mainstream BI). An interactive DuckDB-backed VDT would be the first mature OSS one.
+- See [[svelteplot-scale-null-not-false]] and [[svelteplot-datum-identity-empty-guard]] for other verified svelteplot internals facts.
 `,
   "learnings/svelteplot-ordinal-domain-sorts-alphabetically.md": `---
 type: Learning
@@ -14807,6 +16206,33 @@ When a remote LLM provider returns 401 from the app, **test the stored key with 
 - Same \`code 1000 Authentication Failed\` on coding and non-coding endpoints — the endpoint choice does not change auth behavior.
 - Key management: https://z.ai → console → API Keys.
 `,
+  "learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md": `---
+type: Learning
+title: z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4
+description: "Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-c"
+tags: [llm, z-ai, api-keys, endpoints]
+timestamp: "2026-09-17T20:27:37.764Z"
+---
+
+# z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4
+
+Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-coder (pi fork) can use a z.ai subscription.
+
+## The fact
+
+z.ai issues **two kinds of credentials** for **two different endpoints**:
+
+- **Plain API credit** keys → OpenAI-compatible endpoint \`https://api.z.ai/api/paas/v4\` (what \`remote_chat\` and most OpenAI-style clients target).
+- **GLM Coding Plan (subscription)** keys → the **Anthropic-compatible** endpoint \`https://api.z.ai/api/anthropic\`. These keys are not valid for the OpenAI-style \`/paas/v4\` route.
+
+## Why it matters for this project
+
+The app's [[remote-chat-command]] proxies z.ai \`/chat/completions\` (OpenAI-style, \`/paas/v4\`). If the user's key comes from a GLM Coding Plan subscription, the Analyst chat will 401 "code 1000 Authentication Failed" with a perfectly valid key — looking exactly like the bad-key case in [[z-ai-401-code-1000-authentication]]. The fix is a settings surface for the anthropic-compatible endpoint (or endpoint auto-detection), not a new key.
+
+## Rule of thumb
+
+Before declaring a z.ai key "bad": ask **which plan issued it**. Coding Plan → \`api: anthropic\`-style client against \`https://api.z.ai/api/anthropic\`; plain API key → OpenAI-style against \`/api/paas/v4\`.
+`,
   "memory.md": `---
 okf_version: "0.1"
 ---
@@ -14817,29 +16243,37 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-16T19:02:41.656Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T08:01:17.275Z.
 
 ## Recent Decisions
 
-- [Typography settles: Inter everywhere (display + body), Geist Mono for data detail](decisions/typography-settles-inter-everywhere-geist-mono.md) — Context (2026-09-16)
-- [Typography: Host Grotesk headings, Geist body — Inter dropped](decisions/typography-host-grotesk-headings-geist-body.md) — Typography: Host Grotesk headings, Geist body — Inter dropped (2026-09-16)
-- [Typography: Geist display — Syne dropped](decisions/typography-geist-display-syne-dropped.md) — Context (2026-09-16)
-- [Typography: Syne display — Space Grotesk dropped](decisions/typography-syne-display-space-grotesk-dropped.md) — Typography: Syne display — Space Grotesk dropped (2026-09-16)
-- [Typography: Space Grotesk display, Bricolage dropped](decisions/typography-space-grotesk-display-bricolage-dropped.md) — Context (2026-09-16)
-- [Typography: Bricolage Grotesque display — Poppins dropped](decisions/typography-bricolage-grotesque-display.md) — Context (2026-09-16)
-- [Typography: Poppins headings — Figtree dropped](decisions/typography-poppins-headings-figtree-dropped.md) — Context (2026-09-16)
-- [Typography: Figtree bold display, Inter body, Geist Mono data](decisions/typography-figtree-bold-display-inter-body.md) — Context (2026-09-16)
-- [Typography: Figtree headings — Calluna dropped](decisions/typography-figtree-headings-calluna-dropped.md) — Context (2026-09-16)
-- [Typography: Calluna headings, Inter body, Geist Mono data — Squada One/Libre Baskerville dropped](decisions/typography-calluna-headings-inter-body.md) — Context (2026-09-16)
-- [Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped](decisions/typography-squada-one-headings-libre-baskerville.md) — Context (superseded by [[typography-calluna-headings-inter-body]]) (2026-09-16)
-- [All pages capped at 1920px and centered; full-bleed exemption removed](decisions/all-pages-capped-1920px-full-bleed-removed.md) — Context (2026-09-16)
-- [Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside](decisions/agent-surfaces-rust-backend-mcp-and-rest.md) — Context (2026-09-15)
-- [Agent connection: MCP server embedded in the Rust backend](decisions/agent-connection-mcp-embedded-in-rust-backend.md) — Context (2026-09-15)
-- [Page editor route nests under /pages/<slug> (was /page/<slug>); /data goes full-width](decisions/page-editor-route-nests-under-pages-slug.md) — Context (2026-09-15)
+- [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
+- [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context (2026-09-17)
+- [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context (2026-09-17)
+- [App gets virtual multi-tab navigation: bottom bar is the tab bar](decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md) — Context (2026-09-17)
+- [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New) (2026-09-17)
+- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context (2026-09-17)
+- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context (2026-09-17)
+- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context (2026-09-17)
+- [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context (2026-09-17)
+- [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
+- [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
+- [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
+- [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context (2026-09-17)
+- [Library demos render the real components fed dummy query-shaped data — no demo-only clones](decisions/library-demos-reuse-real-components.md) — Context (2026-09-17)
+- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](decisions/library-q4-dedicated-tabbed-views.md) — Context (2026-09-17)
 
 ## Active Rules
 
-- [Three-font rule: Host Grotesk headings (bold 700), Geist body, Geist Mono data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Guideline (2026-09-16)
+- [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
+- [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
+- [Pick display labels resolve through roleLabels() — never hand-roll chip labels](rules/pick-display-labels-resolve-through-rolelabels.md) — Guideline (2026-09-17)
+- [Pick values flow through one codec — src/lib/charts/pickers.ts](rules/pick-values-flow-through-one-codec-src-lib-charts.md) — Guideline (2026-09-17)
+- [Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows](rules/adding-a-component-never-auto-opens-the-config.md) — When a component is added to a page-editor row (\`addComponent\` in the page editor), the **config drawer must NOT auto-open**. The newly adde… (2026-09-17)
+- [Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash](rules/leave-wiki-recap-noise-uncommitted.md) — Guideline (2026-09-17)
+- [Drawers reuse the shared drawerResize action](rules/drawers-reuse-the-shared-drawerresize-action.md) — Guideline (2026-09-17)
+- [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in … (2026-09-17)
+- [Two-font rule: Inter for all UI (display + body), Geist Mono for data detail](rules/inter-for-ui-text-geist-mono-only-for-data-detail.md) — Inter everywhere for UI text; Geist Mono reserved for data detail (tables, chart ticks, tags, IDs). (2026-09-16)
 - [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](rules/app-content-capped-at-shared-max-width.md) — One wrapper, .app-column, owns header + breadcrumb + content, is capped at 1920px, centered, and always exactly viewport-high with full-heig… (2026-09-16)
 - ["Demo" means an app-tour-demo UI tour, not eval suites](rules/demo-means-app-tour-demo-not-eval-suites.md) — Guideline (2026-09-16)
 - [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-from-global-rule-app-css.md) — Guideline (2026-09-15)
@@ -14855,30 +16289,32 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-16T19
 
 ## Preferences & Conventions
 
+- [Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself](preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md) — Agent may run the CDP restart chain itself (2026-09-17)
+- [CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)](preferences/cdp-verify-the-dev-app-via-webview2-additional.md) — How to get the dev app CDP-drivable (exact procedure) (2026-09-17)
 - [Never start npm run dev / tauri dev — the user owns the dev app](preferences/never-start-npm-run-dev-tauri-dev.md) — The LLM must never launch the dev app itself — no \`npm run dev\`, \`npx tauri dev\`, or background dev-server starts. The user starts and owns … (2026-09-15)
 
 ## Recent Learnings — development patterns
 
-- [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](learnings/calluna-not-on-google-fonts-css2-drops-silently.md) — Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]). (2026-09-16)
-- [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](learnings/squada-one-is-single-weight-400.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)
-- [Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours](learnings/tour-html-captures-embed-google-fonts-import.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]). (2026-09-16)
-- [Central-charts work lives on feature/central-charts — master is held at a restore point](learnings/central-charts-work-lives-on-feature-branch.md) — Discovered 2026-09-16 when the user reported the \`/pages\` work as "completely lost." (2026-09-16)
-- [Tour DOM snapshots scale with the live DOM — bound secondary frames, keep one big frame when size is the story](learnings/tour-dom-snapshots-scale-with-live-dom.md) — Discovered 2026-09-16 finishing the query-tour (see [[app-tour-set-docs-tours]]). (2026-09-16)
-- [settings-tour and analyst-tour built — honest-beats-staged applied to the chat](learnings/settings-tour-and-analyst-tour-built.md) — Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in docs/tours/ (connect, preview, query, data-tables, pages, labs,… (2026-09-16)
-- [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section). (2026-09-16)
-- [wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths](learnings/wiki-note-page-wikilinks-resolve-relative.md) — Discovered 2026-09-16 while writing the [[feature-skill-catalog-docs-features]] artifact page. (2026-09-16)
-- [Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern](learnings/extending-docs-features-requires-add-evals.md) — Constraints of add-evals-to-skill (hit while building [[feature-skill-catalog-docs-features]]) (2026-09-16)
-- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-app-main-disable-flex-stretch.md) — Symptom (2026-09-15)
-- [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-probes.md) — Symptom: a CDP DOM probe checking for the label \`"Rows"\` failed on the Page (2026-09-15)
-- [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-walk-ancestor-opacity-chain.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15): (2026-09-15)
-- [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-stale-hmr-webview.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel). (2026-09-15)
-- [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a block carries a **block-level \`title\`** *and* (for chart blocks)… (2026-09-15)
-- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`oncli… (2026-09-15)
-- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, eve… (2026-09-15)
-- [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-empty-aliases-crash.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted. (2026-09-15)
-- [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview) (2026-09-15)
-- [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/componen… (2026-09-15)
-- [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](learnings/svelteplot-scale-null-not-false.md) — Symptom (2026-09-15)
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app). (2026-09-22)
+- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines). (2026-09-22)
+- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(tru… (2026-09-21)
+- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]]. (2026-09-18)
+- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser … (2026-09-18)
+- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%. (2026-09-18)
+- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while check… (2026-09-17)
+- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17). (2026-09-17)
+- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md) — Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplo… (2026-09-17)
+- [CDP probe \`$$\` is querySelector — indexing it silently kills clicks](learnings/cdp-probe-is-queryselector-indexing-it-silently.md) — Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7). (2026-09-17)
+- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal. (2026-09-17)
+- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](learnings/cdp-gate-assertions-need-settle-time-after-doc.md) — Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10): (2026-09-17)
+- [Component spawn grows too-small explicit-height rows to 320px minimum](learnings/component-spawn-grows-too-small-explicit-height.md) — Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8). (2026-09-17)
+- [CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps](learnings/cdp-form-probes-must-be-container-scoped-shared.md) — Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form). (2026-09-17)
+- [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](learnings/hard-reload-storms-deadlock-duckdb-in-process.md) — Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor. (2026-09-17)
+- [Stale vite module graph can survive reloads — only a full app restart clears it](learnings/stale-vite-module-graph-can-survive-reloads-only-a.md) — Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: … (2026-09-17)
+- [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](learnings/d2-diagrams-not-interactive.md) — Question (2026-09-17)
+- [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](learnings/normalizepagedoc-field-whitelist.md) — Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save… (2026-09-17)
+- [SveltePlot 0.14.2 has no tree mark — verified in the installed package](learnings/svelteplot-has-no-tree-mark.md) — Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart … (2026-09-17)
+- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fi… (2026-09-17)
 
 ## Architecture
 
@@ -14902,6 +16338,30 @@ The core workflow flows through routes: **Connect** (\`/connect\`) ingests CSV/P
 Organization is split between product code and process artifacts. Product code lives in \`src/\` (frontend: routes, components, reusable chart canvases, Svelte 5 rune stores) and \`src-tauri/\` (Rust backend: per-domain command modules — files, queries, tables, labels, saved_queries, internal_db, postgres, local_llm, workspace, settings — plus state and utils). Process artifacts document how features are built: \`.specs/\` holds spec-driven feature specs with task logs (chart-lib, field-function-library, local-llm, tauri-migration), \`.prds/\` holds product requirement docs with interviews (reporting-dashboard-pages, table-relationships), \`docs/\` holds research notes, picasso.js chart examples, re-usable chart specs, the eight-feature interactive demo-tour set (\`docs/tours/\` — real-UI captures replayed as standalone HTML players), and this wiki, \`reports/\` holds generated deep-research run outputs, and \`prompts.md\`/\`opencode.json\`/\`.pi/\` configure the AI-agent tooling used in development.
 
 History and experimentation are deliberately quarantined. \`.archive/\` keeps superseded versions — including the original browser-only app (\`data-monster-old\`, DuckDB-WASM with a Node server) and chart-engine trials (echarts, svelteplot, observable) — while the nested \`data.monster/\` project generates the design-system documentation site, and \`build/\` is static-export output. \`global_superstore.csv\` at the root is the sample retail dataset used for demos and testing.
+`,
+  "pages/artifacts/aisure-uk-pricing-research-report.md": `---
+type: Artifact
+title: aisure.uk pricing research report
+description: "Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu"
+tags: [research, report, te9-research]
+timestamp: "2026-09-17T17:31:28.139Z"
+---
+
+# aisure.uk pricing research report
+
+Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisure.uk/ ("every AI tool, one platform, free to start, £9.99/mo unlimited") so cheap?*
+
+## What it documents
+
+- **Verdict**: the advertised promise cannot cost what it charges — a heavy user of the named frontier models costs $70–300+/mo at list API prices while Pro is £9.99 with no fair-use clause. The gap is closed by some mix of: invisible server-side throttling, cheaper models served under premium labels, grey-market model supply, an ad-monetized free tier, and a growth subsidy — layered over trust red flags (domain registered Mar 2026, hidden WHOIS, Scamadviser 0/100, zero organic reviews) against a real UK company (Noahsure Group LTD, Companies House 12364489, Stripe merchant-of-record).
+- **Leaves**: \`d1-001\` offer (verified from the site's own JS bundles — daily caps, ads, terms), \`d1-002\` economics (Poe/Merlin comparator metering, grey-market token brokers), \`d1-003\` trust (scam scores, WHOIS, the one cautionary hands-on review).
+
+## Details
+
+- **Location**: \`reports/2026-09-17-aisure-why-cheap/\`
+- **Format**: standard te9-research run dir — \`research.log\` (JSONL event stream), \`agents/*.md\` (leaf files with search trails + \`d0-001-orchestrator.md\` root synthesis), \`metrics.json\` (4 nodes, 3 leaves, ~4k words), \`report.html\` (rendered HTML report).
+- **Generated**: 2026-09-17 by the te9-research fractal-research skill (sub-agent fan-out + bottom-up synthesis).
+- Sibling report artifact: [llm-agent-connection-research-report](./llm-agent-connection-research-report.md).
 `,
   "pages/artifacts/app-tour-set-docs-tours.md": `---
 type: Artifact
@@ -15044,6 +16504,39 @@ The executable spec + task list for phase 1 of the central chart system: 13 FRs 
 - \`.specs/central-charts/spec.md\` — the 13 FRs
 - \`.specs/central-charts/tasks.json\` — the 13 tasks with acceptance criteria
 `,
+  "pages/artifacts/design-system-reference-doc-docs-design.md": `---
+type: Artifact
+title: Design-system reference doc (docs/design-system-data-monster.html)
+description: "The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo"
+tags: [design-system, docs, tokens, frontend]
+timestamp: "2026-09-18T10:18:58.868Z"
+---
+
+# Design-system reference doc (docs/design-system-data-monster.html)
+
+The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and component patterns. Open it in a browser for the team-facing answer to "what does our design system currently look like."
+
+## What it documents
+
+- The [app design system](../entities/design-system-app-css-tokens-ui-showcase.md) — the same tokens as \`src/app.css\`, restated as a readable spec/reference
+- Contents after the 2026-09-17 re-theme: Inter (display + body) / Geist Mono (data detail) two-font system; ledger-green accent \`oklch(0.44 0.1 158)\` with hue-160–165 neutrals and brand-hue status colors (success 158, warning 85, danger 25); sage / gold(copper) / sand ramp strips as \`:root\` tokens; bordered-card pattern (hairline border, \`radius-md\`, \`space-6\` padding, hover = border-strong + shadow, grid gap — not per-card margins); Geist Mono \`.tag\` badges; a Data Table section (mono cells, uppercase mono headers, green row hover); \`--max-width\` 72rem; \`DM-*\` branding, v3.0
+- 2026-09-18 scale pass **reverted the same day** at user request — the doc renders at the old file’s original size: 100% root font-size, original px literals (9px/10px labels, 80px swatches, 520px modal, 9999px radius-full), and the old layout tokens restored (\`--max-width: 72rem\`; gutter was already identical). The 80% root + ×0.8 px-sweep technique itself stands, documented in [the scaling learning](../../learnings/scale-standalone-html-docs-via-root-font-size-px.md).
+
+## Details
+
+- **Location**: \`docs/design-system-data-monster.html\`
+- **Format**: single self-contained HTML — inline CSS, Google Fonts link (Inter 400/600/700)
+- **Generated from**: the 2026-09-17 conversion pass — 55 exact-value token replacements plus structural fixes (fonts link, card pattern, input/tag fonts, ramps, data-table section), all sourced from \`src/app.css\`; replaced the dead orange "SYNAPSE" theme (Source Serif 4 + Manrope, 72rem cap). Spacing/radius/shadow/motion tokens were already identical to the app and untouched. The prose-chat/blockquote banned-pattern section was deliberately skipped.
+
+## Maintenance gotcha
+
+Hand-maintained, **not generated** from \`app.css\` — it drifts silently when the app re-types or re-tokens (it sat on a dead theme for weeks). After any token/typography change, re-value this doc too — same family as [the tours' embedded-fonts gotcha](../../learnings/tour-html-captures-embed-google-fonts-import.md).
+
+## Source
+
+- \`docs/design-system-data-monster.html\` — the deliverable itself
+- \`src/app.css\` — source of truth for every token value
+`,
   "pages/artifacts/feature-skill-catalog-docs-features.md": `---
 type: Artifact
 title: Feature skill catalog (docs/features/)
@@ -15095,6 +16588,9 @@ _Documents, diagrams, and deliverables will be listed here._
 - [Central-charts spec &amp; task list](./central-charts-spec-amp-task-list.md) - The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
 - [Central charts spec & tasks](./central-charts-spec-tasks.md) - The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
 - [LLM agent connection research report](./llm-agent-connection-research-report.md) - Fractal-research report on how to connect any LLM / coding agent / harness to data.monster and let it operate the app — add data & content, run analysis. Produc
+- [OSS value driver trees research report](./oss-value-driver-trees-research-report.md) - What it documents
+- [aisure.uk pricing research report](./aisure-uk-pricing-research-report.md) - Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
+- [Design-system reference doc (docs/design-system-data-monster.html)](./design-system-reference-doc-docs-design-system-data-monster-.md) - The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 `,
   "pages/artifacts/llm-agent-connection-research-report.md": `---
 type: Artifact
@@ -15228,9 +16724,72 @@ Dutch-language white paper ("LLM's & Gevoelige Data") condensing the LLM privacy
 
 - \`docs/research/llm-sensitive-data-privacy.md\` — full research this white paper condenses
 `,
+  "pages/artifacts/oss-value-driver-trees-research-report.md": `---
+type: Artifact
+title: OSS value driver trees research report
+description: What it documents
+tags: [research, value-driver-tree, oss, charts]
+timestamp: "2026-09-17T13:07:44.566Z"
+---
+
+# OSS value driver trees research report
+
+## What it documents
+
+Fractal-research (te9-research) report answering: *which open source apps implement value driver trees (VDTs) with live data and/or analysis?* Produced 2026-09-17 for scoping a potential VDT feature in data.monster.
+
+## Key findings
+
+- **No mature OSS app does value driver trees with live data.** Closest match: **react-kpi-tree** (Apache-2.0, 3★, real polling-adapter data binding — but a learning project). Grafana's Interactive Tree Panel is the best live-data tree UX in mainstream BI; Superset/Metabase offer nothing real.
+- The concept is split in two: **healthy compute engines without trees** (FinanceToolkit DuPont 5.4k★, revenue-model-builder, Modeleon, DoWhy) and **dead UIs without compute** (bambooBSC, hillfog).
+- Power BI's decomposition tree has no OSS clone — ECharts' request was closed unimplemented.
+- For data.monster: svelteplot 0.14.2 has no tree mark (verified in the installed package — see [svelteplot-has-no-tree-mark](../../learnings/svelteplot-has-no-tree-mark.md)), and no library computes roll-up math — an interactive, DuckDB-backed VDT would be the first mature OSS one.
+
+## Details
+
+- **Location**: \`reports/2026-09-17-oss-value-driver-trees/report.html\` (self-contained HTML; open directly in browser)
+- **Audit trail**: \`reports/2026-09-17-oss-value-driver-trees/agents/\` + \`research.log\` + \`metrics.json\` (per-branch evidence, search trails, tensions)
+- **Format**: fractal-research HTML report template (same lineage as the [LLM agent connection research report](llm-agent-connection-research-report.md))
+- **Generated from**: depth-1 grounded fan-out, 5 leaves, via the te9-research skill
+
+## Source
+
+- \`reports/2026-09-17-oss-value-driver-trees/\` — report + audit trail
+`,
   "pages/concepts/index.md": `# Concepts
 
 _Abstract ideas and definitions will be listed here._
+`,
+  "pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md": `---
+type: Entity
+title: App tab system (virtual tabs + bottom tab bar)
+description: "The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra"
+tags: [navigation, tabs, layout]
+timestamp: "2026-09-17T17:01:49.911Z"
+---
+
+# App tab system (virtual tabs + bottom tab bar)
+
+The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tracked in a rune store, rendered in one webview (see the [tab-system decision](../../decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md)). Since PR #17 the bar holds **only tabs the user explicitly opened** — regular navigation never creates one.
+
+## Details
+
+- **Location**: \`src/lib/tabs.svelte.ts\` (store + actions), \`src/routes/+layout.svelte\` (nav-sync effect, context menu, tab-bar rendering — \`.status-bar.tab-bar\`)
+- **Interface / Schema**:
+  - \`type Tab = { id: number; path: string; label: string }\`
+  - \`tabs\` — exported \`$state\` store exposing \`list\` / \`activeId\`; the bar renders empty when no tabs are open
+  - \`openInNewTab(path, label?)\` — the **only** tab-creating action (push tab + \`goto\`)
+  - Navigation re-targets the active tab **only while \`activeId\` is set**; plain nav with no open tab creates nothing
+  - \`activate(id)\` / \`closeTab(id)\` — switch / remove; closing the **last** tab empties the bar and stays on the current route
+  - \`pathLabel(path)\` — label fallback from the last path segment
+- **Configuration**: none — pure client state, not persisted across restarts
+- [Tab bar shows only explicitly opened tabs](../../decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — PR #17 semantics amendment
+- [design-system-app-css-tokens-ui-showcase](./design-system-app-css-tokens-ui-showcase.md) — the bottom bar / tab chips use the shared design system
+
+## Lifecycle
+
+- First added: 2026-09-17 (PR #16, 2 files +195) — replaced the empty status bar with the tab bar.
+- Significant changes: 2026-09-17 (PR #17, one file +7/−11) — explicit-only tabs: bar starts empty, nav never creates a tab, last-close leaves the page instead of respawning at \`/\`.
 `,
   "pages/entities/barchart-component.md": `---
 type: Entity
@@ -15317,7 +16876,7 @@ timestamp: "2026-09-16T17:03:44.333Z"
 
 # Central-charts component system
 
-The shipped v1 implementation of the central-charts system: the reusable component set under \`src/lib/components/charts/\` that renders report pages composed of chart/block objects, plus the \`/pages\` list and \`/pages/[slug]\` dual-mode editor routes. Built on the \`feature/central-charts\` branch (commit \`ae48ef2\`, 20 commits; master held at a restore point — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md)).
+The shipped v1 implementation of the central-charts system: the reusable component set under \`src/lib/components/charts/\` that renders report pages composed of chart/block objects, plus the \`/pages\` list and \`/pages/[slug]\` dual-mode editor routes. Built on the \`feature/central-charts\` branch and merged into master via **PR #4** (2026-09-17, HEAD \`f1fc3b9\`) — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md).
 
 Implements the locked Q6–Q16 decision set; the plan itself is documented in [central-charts-spec-amp-task-list](../artifacts/central-charts-spec-amp-task-list.md) and [central-chart-component-design](../artifacts/central-chart-component-design.md).
 
@@ -15325,7 +16884,7 @@ Implements the locked Q6–Q16 decision set; the plan itself is documented in [c
 
 - **Location** (on \`feature/central-charts\`): \`src/lib/components/charts/\`
   - **Page runtime**: \`PageGrid\` (12-col grid host), \`ChartCard\` (block shell)
-  - **Editor**: \`BlockInspector\`, \`ItemEditor\`, \`RelationshipEditor\` — the Design-side panels of the dual-mode editor
+  - **Editor**: \`BlockInspector\`, \`ItemEditor\`, \`RelationshipEditor\` — the Design-side panels of the dual-mode editor; expressions are edited in [expreditor-component](./expreditor-component.md), and "Create in /data" deep-links out and back via [create-in-data-round-trip](./create-in-data-round-trip.md)
   - **Renderers**: \`BarChartRenderer\`, \`HeatmapRenderer\`, \`TableRenderer\` — one per v1 block type
   - Plus: registry, page specs, and semantic layer (v1 core)
 - **Routes**: \`/pages\` — responsive card grid + create modal; \`/pages/[slug]\` — the dual-mode Design ⇄ Code editor (old \`chart/[id]\` route deleted)
@@ -15340,6 +16899,7 @@ Implements the locked Q6–Q16 decision set; the plan itself is documented in [c
 ## Lifecycle
 
 - First added: 2026-09-15/16 on \`feature/central-charts\` (\`ae48ef2\`); newest \`/pages\` editor tweaks were in \`stash@{0}\` pending recovery — see [central-charts-work-lives-on-feature-branch](../../learnings/central-charts-work-lives-on-feature-branch.md)
+- 2026-09-21: smart expression editing ([expreditor-component](./expreditor-component.md)) + [create-in-data-round-trip](./create-in-data-round-trip.md); page-editor drawers run \`contained\` inside \`.app-body\`, the focused-config chart stage is sized by a \`fitToDrawer\` action so the chart→drawer gap mirrors the page gutter, and the editor auto-saves every 60s.
 `,
   "pages/entities/chart-fundament.md": `---
 type: Entity
@@ -15379,9 +16939,9 @@ It is the concrete implementation of the [labs-charts-reusable-fundament](../../
   "pages/entities/chart-page-spec-spec-types-validator.md": `---
 type: Entity
 title: Chart page spec (spec-types + validator)
-description: "Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src"
+description: "Central-charts FR-1: the PageDoc data contract (spec-types.ts + validate.ts) - columned rows (PageColumn span/height), blocks, measures/dimensions, rowColumns/normalizePageDoc"
 tags: [central-charts, spec, types, validation, charts]
-timestamp: "2026-09-15T09:36:11.957Z"
+timestamp: "2026-09-17T10:40:02.220Z"
 ---
 
 # Chart page spec (spec-types + validator)
@@ -15390,7 +16950,7 @@ Central-charts FR-1: the TypeScript module holding the page document spec — \`
 
 ## What is it?
 
-The data contract of the central chart system. A \`PageDoc\` is \`{ slug, title, rows[] }\`; each row holds blocks (\`chart\` | \`table\` | \`text\`) with optional 12-column \`span\`. Measures are DuckDB expressions (\`{ expr, label?, fmt? }\`), dimensions are columns with optional \`grain\` — or master-item \`{ ref }\` references per the master-items amendment. Annotations use whitelisted svelteplot marks (\`arrow dot line ruleX ruleY text rect\`).
+The data contract of the central chart system. A \`PageDoc\` is \`{ slug, title, rows[] }\`; since 2026-09-17 each row declares **explicit columns** - \`PageRow = { columns?: PageColumn[], height?, blocks? }\`, \`PageColumn = { span?, height?, blocks }\` - the column owns the horizontal \`span\` (1-12) and an optional fixed pixel height, the row an optional \`height\`. Legacy \`{ blocks: [...] }\` rows (span on the block) remain valid: \`rowColumns(row)\` maps each legacy block to its own column so old pages keep rendering, and \`normalizePageDoc(doc)\` converts every row to the columns shape at load/apply so both surfaces edit the uniform shape. Blocks are \`chart\` | \`table\` | \`text\`. Measures are DuckDB expressions (\`{ expr, label?, fmt? }\`), dimensions are columns with optional \`grain\` - or master-item \`{ ref }\` references per the master-items amendment. Annotations use whitelisted svelteplot marks (\`arrow dot line ruleX ruleY text rect\`).
 
 ## Why it matters
 
@@ -15398,10 +16958,12 @@ Every later FR builds on it: the query compiler (FR-2) compiles these specs to S
 
 ## Details
 
-- **Location**: \`src/lib/charts/spec-types.ts\`, \`src/lib/charts/validate.ts\`; tests in \`tests/validate.test.ts\` (22 tests, suite 31/31)
-- **Interface**: \`validatePageDoc(doc: unknown): ValidationError[]\`; type exports \`PageDoc\`, \`ChartBlock/TableBlock/TextBlock\`, \`ChartBlockSpec\`, \`MeasureSpec\`, \`DimensionSpec\`, \`FilterSpec\`, \`SortSpec\`, \`AnnotationSpec\`, \`TooltipSpec\`, \`AxisOptions\`
+- **Location**: \`src/lib/charts/spec-types.ts\`, \`src/lib/charts/validate.ts\`; tests in \`tests/validate.test.ts\` (column/height rules covered), plus \`tests/page-runtime.test.ts\` for the id scheme
+- **Interface**: \`validatePageDoc(doc: unknown): ValidationError[]\`; \`rowColumns(row): PageColumn[]\`; \`normalizePageDoc(doc): PageDoc\`; type exports \`PageDoc\`, \`PageRow\`, \`PageColumn\`, \`ChartBlock/TableBlock/TextBlock\`, \`ChartBlockSpec\`, \`MeasureSpec\`, \`DimensionSpec\`, \`FilterSpec\`, \`SortSpec\`, \`AnnotationSpec\`, \`TooltipSpec\`, \`AxisOptions\`
+- **Block ids**: runtime ids are \`r{ri}-c{ci}-b{bi}\` (row/column/block index) since the column rework - was \`r{ri}-b{bi}\`; the editor parses them back via \`configId.split('-')\`
+- **Validation** (2026-09-17): rows accept \`columns[]\` or legacy \`blocks[]\`; \`span\` integer 1-12; \`height\` (row or column) a number >= 40
 - **Configuration**: block/chart-type/grain/op whitelists are hardcoded in \`validate.ts\` with a \`ponytail:\` note — FR-3 swaps them for registry lookups
-- **Span rule**: integer 1–12, matching the Q13 explicit-grid decision
+- **Span rule**: integer 1-12, on the *column* since 2026-09-17 (legacy: on the block) - the Q13 explicit-grid decision, amended so columns own the split
 - [chart-authoring-two-surfaces-serializable-spec](../../learnings/chart-authoring-two-surfaces-serializable-spec.md) — the user-stated requirement this module implements
 - [central-charts-spec-tasks](../artifacts/central-charts-spec-tasks.md) — the spec/task plan (FR-1 = this module)
 - [measures-dimensions-are-duckdb-expressions](../../decisions/measures-dimensions-are-duckdb-expressions.md) — why MeasureSpec is \`expr\`, not column+agg sugar
@@ -15411,6 +16973,7 @@ Every later FR builds on it: the query compiler (FR-2) compiles these specs to S
 ## Lifecycle
 
 - First added: 2026-09-15, TDD red→green (FR-1 of 17). Build started from git tag \`restore-point/central-charts-start\` (commit \`e936b7f\`, pushed to GitHub) — the master restore point before the central-charts build.
+- 2026-09-17: rows gained explicit \`PageColumn\`s (span + optional height) with legacy-blocks normalization (\`rowColumns\`/\`normalizePageDoc\`); block ids became \`r-c-b\`; validator grew column/height rules.
 - Planned: FR-3 moves the validator's hardcoded whitelists into the registry.
 `,
   "pages/entities/chartconfigdrawer-component.md": `---
@@ -15423,14 +16986,15 @@ timestamp: "2026-09-15T11:55:15.360Z"
 
 # ChartConfigDrawer component
 
-A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in \`/labs\`: a chart accepts an optional \`config\` snippet and toggles its own drawer via a \`<Bolt />\` button at the top-right of the chart card. Also reused by the \`/pages/<slug>\` focused config mode at 50vw. First used by the BarChart component at \`/labs/bar-chart\`.
+A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in \`/labs\`: a chart accepts an optional \`config\` snippet and toggles its own drawer via a \`<Bolt />\` button at the top-right of the chart card. Also reused by the \`/pages/<slug>\` focused config mode at 45vw. First used by the BarChart component at \`/labs/bar-chart\`.
 
 ## Details
 
 - **Location**: \`src/lib/components/charts/ChartConfigDrawer.svelte\`
-- **Interface / Schema**: props are \`open\` (bindable), \`title\`, \`width\` (default \`30vw\`), \`overlay\` (default \`true\`, dim backdrop), and a \`children\` snippet for the fields. Ships shared \`.field\` / \`.field-label\` / \`.field-hint\` / \`.input\` styles for whatever the chart renders inside. Charts open it with the title \`<title> configuration\`. No \`onclose\` prop — close is via the bindable \`open\`.
-- **Hosting pattern** (2026-09-15): the chart component renders the drawer when the caller passes a \`config\` snippet — the Bolt toggle only appears if the snippet is passed (opt-in; heatmap doesn't have it yet). Before this, the *page* hosted the drawer via a Configure button + Settings2 icon — superseded.
-- **Two widths in use**: labs bolt-drawer stays 30vw; the page editor's focused config mode opens it at **50vw** with the focused chart alone on the left ([page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md)).
+- **Interface / Schema**: props are \`open\` (bindable), \`title\`, \`width\` (default \`30vw\`), \`overlay\` (default \`true\`, dim backdrop), \`contained\` (default \`false\`), and a \`children\` snippet for the fields. Ships shared \`.field\` / \`.field-label\` / \`.field-hint\` / \`.input\` styles for whatever the chart renders inside. Charts open it with the title \`<title> configuration\`. No \`onclose\` prop — close is via the bindable \`open\`.
+- **Hosting pattern** (2026-09-15): the chart component renders the drawer when the caller passes a \`config\` snippet — the Bolt toggle only appears if the snippet is passed (opt-in; as of 2026-09-17 both bar and heatmap forward it). Before this, the *page* hosted the drawer via a Configure button + Settings2 icon — superseded.
+- **Two widths in use**: labs bolt-drawer stays 30vw; the page editor's focused config mode opens it at **45vw** with the focused chart alone on the left ([page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md)).
+- **Contained mode** (2026-09-21): \`contained\` positions the drawer (and its overlay) \`absolute\` inside the positioned ancestor spanning \`.app-body\` instead of viewport-\`fixed\` — it stays **below the header/breadcrumb and above the tab bar**, and \`.app-body\`'s \`overflow:hidden\` clips the closed off-slide state. Requires the ancestor to be positioned: \`+layout.svelte\` gave \`.app-body\` \`position: relative\` for exactly this. Off for usages nested inside positioned cards (labs). All four page-editor drawers (block/row/column/picker) now run \`contained\`.
 - **Pattern source**: the drawer shell (overlay + slide-in panel + header/close) reuses the established \`ColumnFunctionDrawer.svelte\` pattern rather than a new abstraction — pages stay thin, no generic field renderer needed.
 - **Marked \`data-drawer\`** and card click-to-deselect ignores \`button\` clicks, so configuring never clears a selection.
 
@@ -15457,6 +17021,39 @@ Props like \`category\`, \`value\`, \`tooltip\`, \`labelFor\`, \`selected\` are 
 - First added: 2026-09-15 — bar-chart config drawer request; four live-bound fields (title, subtitle, color, heightVh), edits apply immediately. Originally page-hosted (Configure button, Settings2 icon).
 - 2026-09-15: hosting moved into the chart component — optional \`config\` snippet prop + \`<Bolt />\` toggle top-right of the chart card; page-level button and drawer removed; drawer title now \`<title> configuration\`.
 - 2026-09-15: grew \`width\` + \`overlay\` props; reused by the \`/pages/<slug>\` focused config mode at 50vw (labs behavior unchanged).
+- 2026-09-17: reached \`/library\` detail-page previews — the demo passes a \`config\` snippet to the real renderer (bar and heatmap both forward it to \`ChartCard\`), with schema-driven option fields using the same markup as \`BlockInspector\` (Orientation / Top N / Other label live-update the chart).
+- 2026-09-21: \`contained\` prop — page-editor drawers anchor to \`.app-body\` (below header, above tab bar) instead of the viewport; focused-config width 50vw → 45vw; DrawerTabs chrome removed per [all-drawers-adopt-the-data-tabledrawer-design](../../decisions/all-drawers-adopt-the-data-tabledrawer-design.md).
+`,
+  "pages/entities/create-in-data-round-trip.md": `---
+type: Entity
+title: Create-in-/data round-trip
+description: "Deep-link flow from a /pages chart's pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached to the chart + focused drawer reopened."
+tags: [central-charts, master-items, navigation, data-route]
+timestamp: "2026-09-22T07:24:11.009Z"
+---
+
+# Create-in-/data round-trip
+
+Deep-link flow from a \`/pages\` chart's pick surfaces to the **full master-item editor in \`/data\`** and back. The in-chart RolePickerModal's + New form is compact; this is the escape hatch when the user wants the full-panel editor — "Create in /data" buttons in [RolePickerModal](./rolepickermodal-component.md) and the focused-drawer BlockInspector, wired through [SkeletonSetup](./skeletonsetup-component.md) and [PageGrid](./pagegrid-component.md).
+
+## Details
+
+- **Outbound URL contract**: \`/data?tab=<measures|dimensions>&add=1&table=<boundTable>&return=<pageSlug>&block=<blockId>\`.
+- **Participants** (\`src/lib/components/charts/\` + both routes):
+  - \`onExternalCreate(kind, table)\` prop — added to RolePickerModal, SkeletonSetup (pass-through), BlockInspector; PageGrid passes blockId and hosts call \`openInData()\` in \`/pages/[slug]/+page.svelte\`, which **silently saves the page first** (\`handleSave(true)\`) so in-place edits survive navigation.
+  - \`TableOverview.svelte\` — parses the params at init (whitelisted \`KNOWN_TABS\`), builds an \`ItemEditorPreset\`, then \`replaceState('/data', {})\` so **params are consumed once** — reloading doesn't re-trigger the form.
+  - \`ItemEditor.svelte\` — new \`preset\` + \`metas\` (typed columns for [ExprEditor](./expreditor-component.md) suggestions) props; an \`$effect\` waits for the table list, opens the creation form, preselects the bound table.
+  - Return leg: after save with \`returnTo\`+\`block\` set, \`goto(/pages/<slug>?configure=<block>&attach=<itemId>)\`; the page editor's \`$effect\` finds the item, pushes \`{ ref: id }\` into the chart's dimensions/measures (skipping if already present), silently saves, reopens the focused config drawer with the new item, and strips the params with \`replaceState\`.
+- **Edge handling**: \`handleSave(silent)\` grew a silent mode (no saving spinner / Saved flash) — also used by the 60s auto-save.
+
+## Relationships
+
+- Escape hatch beside the inline path: [skeleton-card-is-the-inline-role-assignment](../../decisions/skeleton-card-is-the-inline-role-assignment.md) (in-chart stays the default; /data is the full-panel option).
+- Expression entry on both legs via [expreditor-component](./expreditor-component.md).
+
+## Lifecycle
+
+- First added: 2026-09-21 — "Create in /data" buttons + preset deep-link + attach-on-return, one pass.
 `,
   "pages/entities/database-command-module.md": `---
 type: Entity
@@ -15507,7 +17104,7 @@ The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/comp
   - Brand accent: ledger green \`oklch(0.44 0.1 158)\` — single accent; neutrals tinted toward hue ~160
   - \`--color-copper-*\` re-valued to **gold** — rare micro-accent only (growth highlights); name kept, value changed
   - \`sage-*\` ramp re-harmonized to brand green; status hues: danger ≈ hue 25, warning ≈ 85, success = brand
-- **Typography**: three-font system — Poppins (\`--font-display\`, headings only, sans, weights 400/600/700 from Google Fonts), Inter (\`--font-body\`, all copy/UI), Geist Mono (\`--font-mono\`, data detail + \`.tag\` badges) (2026-09-16)
+- **Typography**: two-font system — Inter (\`--font-display\` + \`--font-body\`, all UI, weights 400/600/700 from Google Fonts), Geist Mono (\`--font-mono\`, data detail + \`.tag\` badges) (settled 2026-09-17)
 - **Chart palettes**: category palettes lead with brand green; blue is allowed as a categorical data hue, never as brand
 - **Layout**: \`--max-width\` = 120rem (1920px); one \`.app-column\` wrapper in \`src/routes/+layout.svelte\` (header + breadcrumb + content) owns the cap, centering, and full-viewport-height side borders — no full-bleed opt-out (2026-09-16)
 - **Anti-pattern**: 3px border-left blockquote stripe is a banned AI-tell — use full hairline border + sunken background instead
@@ -15521,6 +17118,7 @@ The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/comp
 
 - [Professional-finance redesign decision](../../decisions/professional-finance-redesign-ledger.md) — the decision that defined this system
 - [Typography: Poppins / Inter / Geist Mono decision](../../decisions/typography-poppins-headings-figtree-dropped.md) — the font pairing now baked into the token layer (display face churned Squada One → Calluna → Figtree → Poppins on 2026-09-16)
+- [Design-system reference doc](../artifacts/design-system-reference-doc-docs-design.md) — the \`docs/\` HTML deliverable restating these tokens (re-themed 2026-09-17)
 
 ## Lifecycle
 
@@ -15531,6 +17129,68 @@ The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/comp
 - 2026-09-16: cap raised to 120rem (1920px) and the full-bleed class removed — every page, no exemptions; same day the cap moved onto the single \`.app-column\` wrapper (viewport-high, full-height side borders) that now contains header + breadcrumb + content
 - 2026-09-16 (later): typography re-paired again — Calluna (display) / Inter (body) / Geist Mono (data + badges); tours recaptured
 - 2026-09-16 (latest): display face swapped twice more same day — Calluna → Figtree (variable 300–900) → **Poppins** (400/600/700); tours recaptured after each swap
+- 2026-09-17: typography settled — Inter everywhere (display + body), Geist Mono for data detail (see [settles decision](../../decisions/typography-settles-inter-everywhere-geist-mono.md)); same day the [design-system reference doc](../artifacts/design-system-reference-doc-docs-design.md) was re-themed from the dead SYNAPSE theme to these tokens
+`,
+  "pages/entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md": `---
+type: Entity
+title: dev-cdp.cmd (repo-root double-click CDP restart)
+description: \`dev-cdp.cmd\` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manu
+tags: [cdp, tooling, dev-experience, tauri]
+timestamp: "2026-09-17T16:12:55.453Z"
+---
+
+# dev-cdp.cmd (repo-root double-click CDP restart)
+
+\`dev-cdp.cmd\` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manual restart procedure in [preferences/cdp-verify-the-dev-app-via-webview2-additional](../../preferences/cdp-verify-the-dev-app-via-webview2-additional.md).
+
+## What it does
+
+One double-click instead of remembering the 3-step PowerShell chain:
+
+1. Kills leftover \`msedgewebview2\` processes (the stale-process trap that silently drops the debug flag).
+2. Sets \`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223\`.
+3. Launches the dev app (\`npm run dev\`) with the env var in scope.
+
+## Details
+
+- **Location**: \`dev-cdp.cmd\` (repo root)
+- **Why it exists**: the env var must be set in the same shell that launches the app, and stale flag-less WebView2 processes silently ignore it — easy to get wrong by hand, so it's scripted.
+- Related: [drive-data-monster-s-real-ui-over-cdp](../../learnings/drive-data-monster-s-real-ui-over-cdp.md), [webview2-cdp-gotchas-env-var-flag-stale](../../learnings/webview2-cdp-gotchas-env-var-flag-stale.md)
+
+## Lifecycle
+
+- First added: 2026-09-17, shipped in PR #12 alongside the skeleton pick/create modal flow.
+`,
+  "pages/entities/expreditor-component.md": `---
+type: Entity
+title: ExprEditor component
+description: "Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table."
+tags: [central-charts, master-items, duckdb, editor, svelte]
+timestamp: "2026-09-22T07:24:11.009Z"
+---
+
+# ExprEditor component
+
+Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete as you type over bound-table fields, ⭐ master items, and a curated DuckDB function catalog; SQL syntax highlighting under the caret; per-kind starter templates; live validation + result preview run against the bound table. Replaced the plain mono \`TextInput\` in every master-item expression field.
+
+## Details
+
+- **Location**: \`src/lib/components/charts/ExprEditor.svelte\`; function catalog in \`src/lib/charts/duckdb-functions.ts\` (both 2026-09-21).
+- **Props**: \`value\` (bindable), \`kind: 'measure' | 'dimension'\`, \`table\`, \`columns\` (string or \`{ name, type }\` — typed columns power smarter suggestions), \`masterItems\`, \`placeholder\`, \`preview\` (default true).
+- **Autocomplete**: fuzzy-ranked token matches (fields ×10, master items ×9, functions ×8), grouped listbox — ↑/↓ + Enter/Tab insert, Esc dismiss, Ctrl+Space lists all. Master-item matches insert the item's full expression.
+- **Function catalog**: \`DUCKDB_FUNCTIONS\` — ~80 curated entries in 7 categories (\`agg\` incl. \`FILTER\`, \`win\`, \`date\`, \`str\`, \`math\`, \`cond\`, \`cast\`); snippets mark the caret landing spot with \`§\` (stripped on insert).
+- **Templates**: per-kind starter chips (measure: share-of-total, conditional agg, filtered count, vs-last-period…; dimension: month period, year-month, bucket mapping…), appended to the current expression with the caret placed.
+- **Live preview**: debounced 500ms, runs \`select (<expr>) as v from "<table>" limit 5\` (1 row for measures) via \`executeQuery\`; shows ✓ result chips or the truncated DuckDB error. A serialized promise queue guarantees **never two preview queries in flight** — overlapping invokes while typing are what tripped the IPC deadlock in the Tauri backend (see [hard-reload-storms-deadlock-duckdb-in-process](../../learnings/hard-reload-storms-deadlock-duckdb-in-process.md)).
+- **Hosts**: [ItemEditor](./create-in-data-round-trip.md)'s create form (\`/data\` measures + dimensions tabs), BlockInspector's in-form creation (focused config drawer), and [RolePickerModal](./rolepickermodal-component.md)'s + New form.
+
+## Relationships
+
+- Feeds master-item creation in the [central-charts component system](./central-charts-component-system.md) semantic layer.
+- Its serialized preview queue exists because of [hard-reload-storms-deadlock-duckdb-in-process](../../learnings/hard-reload-storms-deadlock-duckdb-in-process.md) — the execute_query \`spawn_blocking\` fix is the backend half of the same fix.
+
+## Lifecycle
+
+- First added: 2026-09-21 — replaced the mono TextInput expression fields in ItemEditor, BlockInspector, and RolePickerModal in the same pass.
 `,
   "pages/entities/field-functions-library.md": `---
 type: Entity
@@ -15608,75 +17268,244 @@ _Concrete named things will be listed here._
 - [Chart page spec (spec-types + validator)](./chart-page-spec-spec-types-validator.md) - Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
 - [Pages & master-items storage (Rust)](./pages-master-items-storage-rust.md) - The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD
 - [ChartConfigDrawer component](./chartconfigdrawer-component.md) - A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in \`/labs\`: a chart accepts an optional \`config\` snippet and togg
-- [PageGrid component](./pagegrid-component.md) - The canvas renderer for the central-charts page editor: lays out a
 - [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
+- [Library page (/library)](./library-page-library.md) - A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
+- [Library registry system (src/lib/library + /library routes)](./library-registry-system.md) - The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the
+- [library-component-builder skill (.pi/skills)](./library-component-builder-skill-pi-skills.md) - A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview →
+- [PageGrid component](./pagegrid-component.md) - The canvas renderer + editing surface of the central-charts page editor: lays out a \`PageDoc\` as rows of 12-col CSS grids — each row an optional-height shell of
+- [LLM prompt button (/library detail)](./llm-prompt-button-library-detail.md) - LLM prompt button (/library detail)
+- [SkeletonSetup component](./skeletonsetup-component.md) - The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: inline grouped dropdowns (⭐ master items | source-table fields | linked-
+- [dev-cdp.cmd (repo-root double-click CDP restart)](./dev-cdp-cmd-repo-root-double-click-cdp-restart.md) - \`dev-cdp.cmd\` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manu
+- [App tab system (virtual tabs + bottom tab bar)](./app-tab-system-virtual-tabs-bottom-tab-bar.md) - The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra
+- [Shared controls kit (charts/controls)](./shared-controls-kit-charts-controls.md) - The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
+- [RolePickerModal component](./rolepickermodal-component.md) - The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linke
+- [ExprEditor component](./expreditor-component.md) - Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table.
+- [Create-in-/data round-trip](./create-in-data-round-trip.md) - Deep-link flow from a /pages chart pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached + focused drawer reopened.
 `,
   "pages/entities/labsplaceholder-component.md": `---
 type: Entity
 title: LabsPlaceholder component
-description: A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` s
+description: The shared Svelte 5 placeholder shell that renders a section page with "Placeholder — coming soon." Every not-yet-built chart type in \`/labs\` shows it, and other not-yet-built sections (e.g. \`/library\`) reuse it via the \`section\` prop.
 tags: [labs, charts, svelte, frontend]
-timestamp: "2026-09-15T07:14:56.316Z"
+timestamp: "2026-09-17T06:00:00.000Z"
 ---
 
 # LabsPlaceholder component
 
-A one-prop Svelte 5 component that renders the standard Labs page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` shows until its real implementation lands.
+A small Svelte 5 component that renders the standard section page shell with "Placeholder — coming soon." It is what every not-yet-built chart type in \`/labs\` shows until its real implementation lands — and, since 2026-09-17, the shared shell for not-yet-built sections outside Labs too.
 
 ## Details
 
 - **Location**: \`src/lib/components/LabsPlaceholder.svelte\`
-- **Interface**: single prop \`title: string\` — rendered as the page \`<h1>\` and \`<svelte:head>\` title (\`{title} — Labs — Data Monster\`)
+- **Interface**: \`title: string\` (page \`<h1>\`) plus optional \`section: string\` (defaults to \`'Labs'\`) — the \`<svelte:head>\` title is \`[title, section, 'Data Monster'].filter(Boolean).join(' — ')\`, so an empty \`section\` drops the middle segment (e.g. \`Library — Data Monster\`)
 - **Style**: same \`section-header\` shell as other Labs pages (display-font title only; the LABS eyebrow badge was removed 2026-09-15 from all chart pages — the \`/labs\` catalog index keeps its own header)
 
 ## Relationships
 
 - Instantiates the placeholder side of the decision [labs-per-chart-type](../../decisions/labs-per-chart-type.md) / [labs-catalog-placeholder-first](../../decisions/labs-catalog-placeholder-first.md)
 - Used by the 30 unbuilt chart routes under \`src/routes/labs/\` (32 total; the built ones are [heatmap-component](./heatmap-component.md) and [barchart-component](./barchart-component.md))
+- Used by \`src/routes/library/+page.svelte\` — first consumer outside \`/labs\` (\`section=""\`)
 - When a chart is implemented, this component is replaced by one built on the shared reusable-chart fundament ([labs-charts-reusable-fundament](../../rules/labs-charts-reusable-fundament.md))
 
 ## Lifecycle
 
 - First added: 2026-09-14, when the Labs catalog was scaffolded to mirror theunspokenpitch.com's 30 chart types
-- Each placeholder route is a 5-line file: import, render \`<LabsPlaceholder title="..." />\`
+- 2026-09-17: gained the optional \`section\` prop when \`/library\` became the first non-Labs consumer
+- Each placeholder route is a 3–5-line file: import, render \`<LabsPlaceholder title="..." />\`
 
 ## Source
 
 - \`src/lib/components/LabsPlaceholder.svelte\`
 - \`src/routes/labs/*/+page.svelte\` — consumers
+- \`src/routes/library/+page.svelte\` — first non-Labs consumer
+`,
+  "pages/entities/library-component-builder-skill-pi-skills.md": `---
+type: Entity
+title: library-component-builder skill (.pi/skills)
+description: "A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview → "
+tags: [library, skill, pi-skills, tdd, agentskills]
+timestamp: "2026-09-17T07:39:13.178Z"
+---
+
+# library-component-builder skill (.pi/skills)
+
+A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview → plan → strict TDD build → registration → REPORT.md gate. It is the agent-side counterpart to the human-facing \`/library/dev\` guide page.
+
+## Details
+
+- **Location**: \`.pi/skills/library-component-builder/\`
+- **Structure**:
+  - \`SKILL.md\` — workflow: idea → interview (one question at a time, lettered options, ask only what the contract needs) → plan with agreed seams → strict TDD (red before green, vertical slices, tests in \`tests/\` only) → Karpathy behavioral rules as hard constraints → registration → REPORT.md gate (all-PASS with evidence or not done)
+  - \`references/CONTRACT.md\` — portable copy of the \`LibraryEntry\` / \`ChartTypeDefinition\` package contract (def/demo/docs/index/REPORT, renderer props, code/data/logic checklist)
+  - \`references/E2E-REPORT.md\` — the REPORT.md format: definitions unit-tested + works in UI (card, Preview, add-block, config panel) + checklist, evidence required
+  - \`evals/\` — 3 prompt cases (plain build, pre-answered variant, adversarial out-of-vocabulary ask that must be pushed back on) + \`grade.mjs\` grader-aggregator
+- **Portability rule**: TDD rules, Karpathy constraints, contract, and report format are all embedded inline — zero references to external skill paths; works isolated in any pi session in this repo
+- **Conformance**: name matches directory, valid frontmatter, progressive disclosure, SKILL.md under 500 lines
+
+## Relationships
+
+- Implements [library-component-builder-canonical-path](../../decisions/library-component-builder-canonical-path.md) — the decision naming it the canonical build path
+- Feeds [library-registry-system](./library-registry-system.md) — components it builds register via \`registerLibraryComponent\`
+- \`references/CONTRACT.md\` is a portable copy of \`src/lib/library/types.ts\` — code wins on disagreement; update the reference when the contract changes
+- \`/library/dev\` route is the human-readable mirror (linked from the \`/library\` grid as a "For developers" card)
+
+## Lifecycle
+
+- First added: 2026-09-17 — built per the agentskills.io spec with TDD + Karpathy rules embedded and evals attached; skipped the with/without-skill eval benchmark (needs harness runs per case; \`grade.mjs\` is ready when wanted)
+`,
+  "pages/entities/library-page-library.md": `---
+type: Entity
+title: Library page (/library)
+description: "A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist"
+tags: [library, components, frontend, route]
+timestamp: "2026-09-17T06:54:06.276Z"
+---
+
+# Library page (/library)
+
+A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs register components — and adding a chart to the library makes it available app-wide for use on \`/pages\` report pages. Currently a placeholder; the barchart from \`/pages/smoke-test\` is slated as the first entry.
+
+## Why it matters
+
+It is the discovery/registration surface between component development and the page editor — the intended single place a component goes from "built" to "usable everywhere."
+
+## Details
+
+- **Location**: \`src/routes/library/+page.svelte\`
+- **Current state**: placeholder — renders \`<LabsPlaceholder title="Library" section="" />\` (so the head title is \`Library — Data Monster\`)
+- **Reachable from**: the home page's bottom link row (\`/labs →\` \`/library →\`), added 2026-09-17
+- **Configuration**: none yet
+
+## Relationships
+
+- Placeholder shell: [labsplaceholder-component](./labsplaceholder-component.md) — first consumer outside \`/labs\`
+- First planned entry: [barchart-component](./barchart-component.md) (as used on the smoke-test page)
+- Intended consumer: [central-charts-component-system](./central-charts-component-system.md) page editor
+- Governing direction (proposed, interview in progress): [library-central-component-library](../../decisions/library-central-component-library.md)
+
+## Lifecycle
+
+- First added: 2026-09-17 — placeholder route + home link; spec interview for its real shape started the same day
+
+## Source
+
+- \`src/routes/library/+page.svelte\`
+- \`src/routes/+page.svelte\` — home-page link
+`,
+  "pages/entities/library-registry-system.md": `---
+type: Entity
+title: Library registry system (src/lib/library + /library routes)
+description: "The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the "
+tags: [library, registry, charts, central-charts]
+timestamp: "2026-09-17T07:18:39.178Z"
+---
+
+# Library registry system (src/lib/library + /library routes)
+
+The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the central chart registry, so an extension-style component package becomes usable app-wide (library page, page-editor block picker, schema-driven config panel) by construction.
+
+## Details
+
+- **Location**: \`src/lib/library/\` — \`types.ts\` (\`LibraryEntry\`, \`LibraryDemo\`), \`registry.ts\` (\`registerLibraryComponent\` → also calls \`registerChartType\`, plus \`getLibraryComponents\`/\`getLibraryComponent\`), and \`components/<type>/\` packages
+- **Routes**: \`/library\` (card grid) + \`/library/[id]\` (detail view, tabs: Preview / Schema / Code / Docs — Preview default)
+- **Registration**: one \`registerLibraryComponent(entry)\` line per component in \`src/lib/charts/registry-setup.svelte.ts\` (currently bar-chart + heatmap)
+- **Extension contract** — one folder per component:
+  - \`def.ts\` — \`ChartTypeDefinition\` (roles, optionsSchema, hooks, annotations)
+  - \`demo.ts\` — dummy rows + aliases (no DuckDB needed)
+  - \`docs.md\` — usage notes (Docs tab)
+  - \`index.ts\` — wires def + REAL renderer + demo + \`?raw\` source (Code tab)
+- **Demos render the real renderer** with bundled dummy query-shaped data — no demo-only clones, no workspace required
+- \`app.d.ts\` references \`vite/client\` so \`?raw\` imports type-check
+- Table/text page-editor blocks stay built-ins, not library entries
+
+## Relationships
+
+- Implements [library-registry-drives-editor-and-library](../../decisions/library-registry-drives-editor-and-library.md) (see [the decision](../../decisions/library-registry-drives-editor-and-library.md)) — supersedes display-only v1
+- Built on [chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md) — \`ChartTypeDefinition\` is the same type driving \`PageGrid\` renderers and \`BlockInspector\` panels
+- The page editor's add-block picker iterates the registry with role-aware defaults (e.g. heatmap pre-gets 2 dimensions); config panels are registry-driven via \`getChartType\`
+- Related decisions: [library-extension-style-components](../../decisions/library-extension-style-components.md), [library-demos-reuse-real-components](../../decisions/library-demos-reuse-real-components.md), [library-q4-dedicated-tabbed-views](../../decisions/library-q4-dedicated-tabbed-views.md)
+
+## Lifecycle
+
+- First added: 2026-09-17 — full scope in one pass: registry + \`/library\` routes + editor picker wiring; 85 tests pass, build green
+`,
+  "pages/entities/llm-prompt-button-library-detail.md": `---
+type: Entity
+title: LLM prompt button (/library detail)
+description: LLM prompt button (/library detail)
+tags: [library, frontend, agents, prompts]
+timestamp: "2026-09-17T11:51:34.914Z"
+---
+
+# LLM prompt button (/library detail)
+
+# LLM prompt button (/library detail)
+
+A \`Bot\`-icon button in the top-right of the \`/library/[id]\` page head (tooltip on hover explains what it is). Click copies a ready-to-paste bootstrap prompt that gives any LLM coding agent the full context to build, change, or maintain that component extension — and puts the agent into **interview-first mode** before any code is written.
+
+## Why it matters
+
+It turns the library detail page into the handshake surface between the human browsing components and the agent that will edit them. Since 2026-09-17 the copied prompt no longer asks the human to pre-write the task: the \`Task:\` slot opens as \`Task: OPEN — not decided yet\`, instructing the agent to interview the user first — one question per turn, lettered multiple-choice options ending with "Other — tell me" — restate the agreed task in one sentence, get confirmation, and only then start the skill's build workflow. This bakes the repo's [interview-one-question-at-a-time rule](../../rules/interview-one-question-at-a-time.md) directly into the prompt.
+
+## Details
+
+- **Location**: \`src/routes/library/[id]/+page.svelte\` — a single \`llmPrompt\` template string is the single source (no other file references it)
+- **Interface**: button → clipboard copy; tooltip explains purpose
+- **Prompt structure**: skill reference → component id/label → package path + file list → registration file → \`Task: OPEN\` interview-first block (agent asks the questions, user confirms the task statement) → the enforced rules (red-green tests, thin renderer, vitest/svelte-check/build + /library preview verify, all-PASS REPORT.md)
+- **Gotcha**: the prompt embeds the skill's enforced rules — keep it in sync when [library-component-builder-skill-pi-skills](./library-component-builder-skill-pi-skills.md) changes its contract
+
+## Relationships
+
+- References [library-component-builder-skill-pi-skills](./library-component-builder-skill-pi-skills.md) — the prompt bootstraps that skill's workflow
+- Lives on the detail pages of [library-registry-system](./library-registry-system.md)
+- Implements the repo rule: interview the user one question at a time with lettered options ([rules/interview-one-question-at-a-time](../../rules/interview-one-question-at-a-time.md))
+
+## Lifecycle
+
+- First added: 2026-09 — code-tab polish pass (Prism highlighting, path headers, copy buttons)
+- 2026-09-17 — \`Task: <placeholder>\` replaced with the interview-first \`Task: OPEN\` block; the agent now asks the questions instead of the human writing the brief (1-line change to \`llmPrompt\`)
 `,
   "pages/entities/pagegrid-component.md": `---
 type: Entity
 title: PageGrid component
-description: "The canvas renderer for the central-charts page editor: lays out a"
+description: "The canvas renderer + editing surface of the central-charts page editor: lays out a \`PageDoc\` as rows of 12-col CSS grids — each row an optional-height shell of"
 tags: [central-charts, page-editor, svelte]
-timestamp: "2026-09-15T13:14:38.562Z"
+timestamp: "2026-09-17T10:44:47.272Z"
 ---
 
 # PageGrid component
 
-The canvas renderer for the central-charts page editor: lays out a
-[chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md) \`PageDoc\` as rows of 12-col CSS grid
-rows, one block per cell, and dispatches each block to its renderer (chart,
-table, or text). Also implements focused config mode.
+The canvas renderer + editing surface of the central-charts page editor: lays out a \`PageDoc\` as rows of 12-col CSS grids — each row an optional-height shell of explicit \`PageColumn\`s (span 1–12, optional pixel height) — dispatches each block to its renderer (chart/table/text), and hosts the grid-editing affordances (drag-resize grips, + Component / + Row buttons, per-block/row/column config entry points). PageGrid stays dumb: callbacks hand edits to the host editor (\`/pages/[slug]\`), which mutates the doc and autosaves.
 
 ## Details
 
 - **Location**: \`src/lib/components/charts/PageGrid.svelte\`
-- **Interface / Schema**: props \`{ doc: PageDoc, runtime: PageRuntime, configureId?: string | null, onConfigure?: (id) => void }\`
-- **Layout**: outer \`div.space-y-4.pb-16\` (16px between rows + tooltip overflow room); each row \`grid grid-cols-12 gap-4\`; blocks take \`grid-column: span <block.span>\` per [q13-explicit-grid-rows-blocks-take-col-spans](../../decisions/q13-explicit-grid-rows-blocks-take-col-spans.md).
-- **Block dispatch**: \`chart\` → registry renderer when data is ready, else \`ChartCard\` fallback (missing/loading/error/empty states); \`table\` → TableRenderer; \`text\` → plain card.
-- **Config entry**: per-block ⚡ Bolt button (z-index 30 above svelteplot overlay svgs) → focused two-panel config per [page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md) via [chartconfigdrawer-component](./chartconfigdrawer-component.md).
+- **Interface**: props \`{ doc: PageDoc, runtime: PageRuntime, configureId?: string | null, onConfigure?: (blockId) => void, onConfigureRow?: (ri) => void, onConfigureColumn?: (ri, ci) => void, onAdd?: (ri, ci) => void, onAddRow?: () => void }\`
+- **Layout**: row shells stack (\`space-y-4\` + tooltip overflow room); each row renders \`rowColumns(row)\` (from spec-types) as \`grid grid-cols-12 gap-4\` — the **column** owns the span per [q13-explicit-grid-rows-blocks-take-col-spans](../../decisions/q13-explicit-grid-rows-blocks-take-col-spans.md) (amended 2026-09-17: span moved from block to column); legacy flat-\`blocks\` rows keep rendering through the same helper. Rows are the only page-level primitive — components are added inside columns.
+- **Block dispatch**: \`chart\` → registry renderer when data is ready; \`unconfigured\` (\`needsSetup\` true) → \`ChartCard\` status \`'setup'\` hosting [skeletonsetup-component](./skeletonsetup-component.md) when the data context (\`schemas\`/\`items\`/\`relationships\`) is loaded, else a plain dashed silhouette + **Add dimension / Add measure** buttons (no-data-context fallback); remaining states → \`ChartCard\` fallback (missing/loading/error/empty); \`table\` → TableRenderer; \`text\` → plain card.
+- **Editing affordances** (2026-09-17):
+  - Row bottom grip — pointer-capture drag sets \`row.height\` (min 80px).
+  - Grip between columns — takes/gives \`span\` from the next sibling, clamped 1–12.
+  - \`+\` per column — \`onAdd(ri, ci)\`; the host opens the library-registry-driven component picker (picking into an occupied column makes the host spawn a fresh column).
+  - \`+ Row\` — \`onAddRow()\`; host appends \`{ columns: [{ span: 12, blocks: [] }] }\` and autosaves (empty canvas shows the button top-left).
+  - Row/column ⚙ \`Settings2\` buttons → \`onConfigureRow\` / \`onConfigureColumn\` (host-side drawers); per-block ⚡ Bolt button → focused two-panel config per [page-editor-block-config-focused-two-panel](../../decisions/page-editor-block-config-focused-two-panel.md).
 - **Focused mode**: when \`configureId\` is set, renders only that block full-width; the editor supplies the 50vw drawer.
 - **Spacing**: implements [card-spacing-from-grid-gap-not-margins](../../rules/card-spacing-from-grid-gap-not-margins.md) — gap-only spacing, uniform 16px.
 
+## Relationships
+
+- Renders [chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md) \`PageDoc\`s; runtime block ids are \`r{ri}-c{ci}-b{bi}\`.
+- Config surfaces: [chartconfigdrawer-component](./chartconfigdrawer-component.md) (blocks) plus host row/column drawers in \`/pages/[slug]\`.
+- The \`+ Component\` picker iterates [library-registry-system](./library-registry-system.md) — registered components are the menu, by construction.
+- [page-editor-tri-mode-design-code-settings](../../decisions/page-editor-tri-mode-design-code-settings.md) — canvas shows only visualizations & data; settings live in drawers.
+- Renders [skeletonsetup-component](./skeletonsetup-component.md) inside \`unconfigured\` blocks' cards — the skeleton silhouette lives only there (PR #11 removed PageGrid's duplicate wrapper).
+
 ## Lifecycle
 
-- First added: 2026-09-15 with the central-charts page editor; sidebar removed and canvas made full-width by [page-editor-tri-mode-design-code-settings](../../decisions/page-editor-tri-mode-design-code-settings.md) (same day).
-
-## Source
-
-- \`src/lib/components/charts/PageGrid.svelte\`
+- First added: 2026-09-15 with the central-charts page editor; canvas made full-width same day (tri-mode decision).
+- 2026-09-17: explicit-columns rework — row/column drag-resize grips, \`+ Component\` / \`+ Row\` affordances, row/column config callbacks, host picker wiring; spans moved from block to column.
+- 2026-09-17 (PR #11): duplicate-skeleton fix — the \`unconfigured\` branch no longer wraps SkeletonSetup in its own pulse silhouette (unconfigured charts showed two stacked skeletons); plain silhouette + drawer buttons survive only in the no-data-context fallback.
+- 2026-09-21: \`onExternalCreate(kind, table, blockId)\` prop — skeleton/modal "Create in /data" requests reach the host with the block id for the [create-in-data-round-trip](./create-in-data-round-trip.md); \`onSelect\` typed as \`{ dimension, value }\`.
 `,
   "pages/entities/pages-master-items-storage-rust.md": `---
 type: Entity
@@ -15730,6 +17559,102 @@ Tauri command that proxies remote LLM chat completions (e.g. z.ai \`/chat/comple
 ## Lifecycle
 
 - First added: 2026-09 — replaced the broken fetch-based \`sendRemote\` after CORS blocked direct webview calls (~100 lines net deleted by unifying both paths on \`streamViaEvents()\`).
+`,
+  "pages/entities/rolepickermodal-component.md": `---
+type: Entity
+title: RolePickerModal component
+description: "The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linke"
+tags: [central-charts, page-editor, skeleton]
+timestamp: "2026-09-17T17:31:28.140Z"
+---
+
+# RolePickerModal component
+
+The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linked-table fields, plus a + New form that creates a master item on the spot. Applying pushes the pick into the chart spec via the shared pick codec — the config drawer stays closed.
+
+## Details
+
+- **Location**: \`src/lib/components/charts/RolePickerModal.svelte\`; opened by \`SkeletonSetup.svelte\`, props wired in \`src/routes/pages/[slug]/+page.svelte\`.
+- **Props**: \`kind: 'dimension' | 'measure'\`, \`chart: ChartBlockSpec\`, \`schemas\`, \`items: MasterItem[]\`, \`relationships\`, \`onCreateMasterItem?(kind, table, label, expr) => Promise<string>\`, \`onExternalCreate?(kind, table)\`, \`onClose()\`.
+- **Logic**: entries built from \`availableItems\`/\`linkedTables\` (\`$lib/charts/relationships\`); picks decoded via \`dimensionFromPick\`/\`measureFromPick\`, labels via \`roleLabels()\` (\`$lib/charts/pickers\`); shows an in-chart summary of what the chart already carries (PR #13); form chrome from the shared controls kit (\`TextInput\`, \`Btn\`).
+
+## Relationships
+
+- Implements the pick/create half of [skeleton-pick-create-moved-from-inline-dropdowns](../../decisions/skeleton-pick-create-moved-from-inline-dropdowns.md); opened from [skeletonsetup-component](./skeletonsetup-component.md).
+- Decodes through the one pick codec [pick-values-flow-through-one-codec-src-lib-charts](../../rules/pick-values-flow-through-one-codec-src-lib-charts.md); labels resolve via [pick-display-labels-resolve-through-rolelabels](../../rules/pick-display-labels-resolve-through-rolelabels.md).
+- Form controls from [shared-controls-kit-charts-controls](./shared-controls-kit-charts-controls.md).
+- The + New form's expression field is the [ExprEditor component](./expreditor-component.md); "Create in /data" opens the [create-in-data-round-trip](./create-in-data-round-trip.md).
+
+## Lifecycle
+
+- First added: 2026-09-17 (PR #12), replacing SkeletonSetup's inline dropdowns + ✚ Create… mini form; in-chart summary added in PR #13; rewired onto the shared controls kit in PR #18.
+- 2026-09-21: create form's expression input → ExprEditor; "Create in /data" button added beside "New master item".
+`,
+  "pages/entities/shared-controls-kit-charts-controls.md": `---
+type: Entity
+title: Shared controls kit (charts/controls)
+description: "The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's"
+tags: [svelte, design-system, drawers, controls, ui]
+timestamp: "2026-09-17T17:25:31.321Z"
+---
+
+# Shared controls kit (charts/controls)
+
+The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's semantic design tokens. Added 2026-09-17 (PR #18) to replace per-drawer hand-rolled input chrome.
+
+## What it is
+
+\`src/lib/components/charts/controls/\` — \`Field\`, \`TextInput\`, \`NumberInput\`, \`Select\`, \`Toggle\`, \`Section\`, \`DangerZone\`, \`RemoveBtn\`, \`Btn\`, plus \`controls.css\`. Every drawer speaks this one token language; no raw zinc or ad-hoc Tailwind input classes.
+
+## Details
+
+- **Location**: \`src/lib/components/charts/controls/\`
+- **Interface**: Svelte 5 idioms throughout — \`$bindable\` values, snippet children (\`{@render children()}\`), callback props instead of event forwarding. \`Toggle\` is a real switch (not a checkbox), \`DangerZone\` is the single danger panel (three former duplicates collapsed into it), \`RemoveBtn\` grew a \`disabled\` prop during the rewire.
+- **Configuration / chrome source**: \`controls.css\` is the single source of input chrome — 30px input height, 2–4px radii, tabular numerals, ledger-green focus rings, chevron selects, segmented tabs. It is loaded via a plain script import (component \`<style>\` blocks are scoped, so shared chrome must not live there).
+- **Verified surfaces**: BlockInspector, page-editor row/column drawers, page settings, RolePickerModal, DrawerTabs — rewired in PR #18 with logic untouched; svelte-check clean, 119/119 tests, CDP interaction pass.
+
+## Relationships
+
+- Implements the [design-system-app-css-tokens-ui-showcase](./design-system-app-css-tokens-ui-showcase.md) token layer (semantic tokens, annual-report light + ledger green).
+- Used by [chartconfigdrawer-component](./chartconfigdrawer-component.md), BlockInspector, RolePickerModal, and the \`/pages/[slug]\` row/column/page-settings drawers. (DrawerTabs was a consumer until it was deleted in the 2026-09-18 one-scrolling-column restyle.)
+- Governed by the rule [drawer-form-controls-come-from-the-shared-controls-kit](../../rules/drawer-form-controls-come-from-the-shared-controls.md) — extend the kit, never fork it.
+
+## Lifecycle
+
+- First added: 2026-09-17, PR #18 (15 files, +995/−292) — kit built and all existing drawers rewired in one pass.
+- 2026-09-18: kit restyled to the \`/data\` drawer pattern (Section flat + dashed dividers, Field labels, DangerZone per \`/data\`, tightened input radius); adoption extended to the \`/labs\` config snippets and the \`/library/[id]\` detail config snippet; \`/pages\` editor drawers dropped DrawerTabs for the flat flow with danger last (see decision all-drawers-adopt-the-data-pattern).
+- Natural growth path remaining: \`/connect\` and the query editor reuse the kit as-is.
+`,
+  "pages/entities/skeletonsetup-component.md": `---
+type: Entity
+title: SkeletonSetup component
+description: "The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: a card button per unmet role opens the RolePickerModal (searchable picks over ⭐ master items | source-table fields | linked-table fields, + New) — the common configuration path never opens the config drawer."
+tags: [central-charts, page-editor, skeleton]
+timestamp: "2026-09-17T15:32:10.396Z"
+---
+
+# SkeletonSetup component
+
+The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: a card button per unmet role (e.g. **Add dimension** / **Add measure**) plus summary chips of what the chart already carries; each button opens the [RolePickerModal](./rolepickermodal-component.md) — searchable picks over ⭐ master items, source-table fields, and linked-table fields, with a + New form — so the common configuration path never opens the config drawer.
+
+## Details
+
+- **Location**: \`src/lib/components/charts/SkeletonSetup.svelte\`; hosted by \`src/lib/components/charts/PageGrid.svelte\`, props + \`onCreateMasterItem\` callback wired in \`src/routes/pages/[slug]/+page.svelte\` (PR #10).
+- **Props**: \`chart: ChartBlockSpec\`, \`schemas\`, \`items\`, \`relationships\`, \`onCreateMasterItem?(kind, table, label, expr) => Promise<id>\`, \`onExternalCreate?(kind, table)\` — the host persists the item and refreshes the library; the component mutates the spec directly, same as the drawer. \`onExternalCreate\` opens the [create-in-/data round-trip](./create-in-data-round-trip.md) instead of creating in-chart.
+- **Logic**: derives unmet roles from the registry's role minimums; item availability via \`availableItems\`/\`linkedTables\` from \`$lib/charts/relationships\`; pick decoding via the shared codec.
+
+## Relationships
+
+- Implements the inline half of [chart-blocks-start-empty-needssetup-gate](../../decisions/chart-blocks-start-empty-needssetup-gate.md) (see [skeleton-card-inline-role-assignment](../../decisions/skeleton-card-is-the-inline-role-assignment.md)).
+- Uses [pick-values-flow-through-one-codec-pickers-ts](../../rules/pick-values-flow-through-one-codec-src-lib-charts.md) (\`src/lib/charts/pickers.ts\`), shared with [chartconfigdrawer-component](./chartconfigdrawer-component.md).
+- Rendered by [pagegrid-component](./pagegrid-component.md) inside the block card shell.
+- Opens [rolepickermodal-component](./rolepickermodal-component.md) for pick/create (PR #12).
+
+## Lifecycle
+
+- First added: 2026-09-17 (PR #10), replacing the drawer-opening buttons on the skeleton. CDP e2e 5/5, vitest 117/117.
+- 2026-09-17 (PR #12): inline dropdowns + \`✚ Create…\` mini form replaced by card buttons opening the RolePickerModal; in-chart summary chips added in PR #13.
+- 2026-09-21: \`onExternalCreate\` pass-through — the modal's "Create in /data" button reaches the host via the skeleton ([create-in-data-round-trip](./create-in-data-round-trip.md)).
 `,
   "pages/entities/wiki-ignore-staleness-policy.md": `---
 type: Entity
@@ -15808,6 +17733,17 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [PageGrid component](./entities/pagegrid-component.md) — The canvas renderer for the central-charts page editor: lays out a
 - [LLM agent connection research report](./artifacts/llm-agent-connection-research-report.md) — Fractal-research report on how to connect any LLM / coding agent / harness to data.monster and let it operate the app — add data & content, run analysis. Produc
 - [central-api (frontend invoke client)](./entities/central-api-frontend-invoke-client.md) — What is it?
+- [Library page (/library)](./entities/library-page-library.md) — A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
+- [Library registry system (src/lib/library + /library routes)](./entities/library-registry-system.md) — The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the
+- [library-component-builder skill (.pi/skills)](./entities/library-component-builder-skill-pi-skills.md) — A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview →
+- [LLM prompt button (/library detail)](./entities/llm-prompt-button-library-detail.md) — A \`Bot\`-icon button in the top-right of the \`/library/[id]\` page head (tooltip on hover explains what it is). Click copies a ready-to-paste bootstrap prompt tha
+- [OSS value driver trees research report](./artifacts/oss-value-driver-trees-research-report.md) — What it documents
+- [SkeletonSetup component](./entities/skeletonsetup-component.md) — The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: inline grouped dropdowns (⭐ master items | source-table fields | linked-
+- [dev-cdp.cmd (repo-root double-click CDP restart)](./entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md) — \`dev-cdp.cmd\` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manu
+- [App tab system (virtual tabs + bottom tab bar)](./entities/app-tab-system-virtual-tabs-bottom-tab-bar.md) — The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra
+- [Shared controls kit (charts/controls)](./entities/shared-controls-kit-charts-controls.md) — The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
+- [aisure.uk pricing research report](./artifacts/aisure-uk-pricing-research-report.md) — Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
+- [Design-system reference doc (docs/design-system-data-monster.html)](./artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 `,
   "pages/TEMPLATES.md": `---
 type: Concept
@@ -15881,9 +17817,73 @@ a stable structure so pages are consistent, skimmable, and well-linked.
 - Generated from: [what data, process, or session produced it]
 \`\`\`
 `,
+  "preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md": `---
+type: Preference
+title: Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself
+description: Agent may run the CDP restart chain itself
+tags: [cdp, tauri, dev-app, restart, verification]
+timestamp: "2026-09-17T14:26:51.537Z"
+---
+
+# Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself
+
+# Agent may run the CDP restart chain itself
+
+Amends [[never-start-npm-run-dev-tauri-dev]] for exactly one case: when CDP verification is needed and the app isn't running (or DuckDB/webview state is wedged), the agent MAY run this chained command itself, from the repo root:
+
+\`\`\`powershell
+Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Stop-Process -Force; $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223"; npm run dev
+\`\`\`
+
+- Granted by the user on 2026-09-17 after the CDP UI-pass sessions ("if for some reason you need it again you can run it yourself").
+- Scope: this chain only. Starting the dev app any other way, or \`npm run dev\` without the flag, stays user-owned.
+- Watch for: DuckDB writes failing with "resource deadlock would occur" after reload storms — that means the backend needs this full restart, not just a webview reload.
+- Verify after launch: \`curl http://localhost:9223/json/version\` returns JSON.
+`,
+  "preferences/cdp-verify-the-dev-app-via-webview2-additional.md": `---
+type: Preference
+title: CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)
+description: How to get the dev app CDP-drivable (exact procedure)
+tags: [cdp, tauri, webview2, dev-app, verification, e2e]
+timestamp: "2026-09-17T13:42:38.440Z"
+---
+
+# CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)
+
+# How to get the dev app CDP-drivable (exact procedure)
+
+CDP UI verification needs the webview's debug port. It is set via env var, read at webview spawn, and silently ignored if a stale flag-less WebView2 process already holds the user-data-dir.
+
+## Procedure (give the user this, in one PowerShell session, in order)
+
+\`\`\`powershell
+# 1. close the dev app window, then kill leftover webview processes
+Get-Process msedgewebview2 | Stop-Process -Force
+
+# 2. set the flag in the SAME shell that launches the app (env vars don't cross shells)
+$env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="--remote-debugging-port=9223"
+
+# 3. launch the usual dev command in that same session (user-owned — agent never starts it)
+\`\`\`
+
+## Gotchas
+
+- Env var name is \`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS\` (NOT \`WEBVIEW2_ADDITIONAL_ARGS\`, NOT a CLI arg).
+- Symptom of the stale-process trap: app runs on the vite URL (6123) but no 922x port listens. 19+ msedgewebview2 processes is normal — kill them all, relaunch with the env var set.
+- Verify before driving: \`curl http://localhost:9223/json/version\` must return JSON.
+- Node ≥21 has native WebSocket — CDP scripts need zero deps.
+- \`localhost\` may resolve IPv6 vs vite's IPv4 — if the app can't reach the dev URL, vite needs \`--host\` (dual-stack).
+
+## Source
+
+- docs/wiki/learnings/webview2-cdp-gotchas-env-var-flag-stale.md
+- Session 2026-09-17: user hit the stale-process trap after setting the flag correctly.
+`,
   "preferences/index.md": `# Preferences
 
 - [Never start npm run dev / tauri dev — the user owns the dev app](./never-start-npm-run-dev-tauri-dev.md) - The LLM must never launch the dev app itself — no \`npm run dev\`, \`npx tauri dev\`, or background dev-server starts. The user starts and owns the dev app.
+- [CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)](./cdp-verify-the-dev-app-via-webview2-additional.md) - How to get the dev app CDP-drivable (exact procedure)
+- [Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself](./agent-may-run-the-cdp-restart-chain-kill-webviews.md) - Agent may run the CDP restart chain itself
 `,
   "preferences/never-start-npm-run-dev-tauri-dev.md": `---
 type: Preference
@@ -15902,6 +17902,22 @@ If work needs the running app (CDP verification, e2e smoke, visual checks), the 
 Why (from this session, 2026-09-15): repeated LLM-driven kill/restart cycles caused stale-HMR webviews that looked like real bugs, recycled the CDP debug port mid-probe, and disrupted the user's open window. Restart churn cost more time than the bugs it chased. Related: [[apparent-ui-bug-stale-hmr-webview]], [[webview2-cdp-gotchas-env-var-flag-stale]].
 
 Exception: one-shot build/test commands (\`cargo check\`, \`vitest run\`, \`vite build\`) are fine — they exit and don't own the app window.
+`,
+  "rules/adding-a-component-never-auto-opens-the-config.md": `---
+type: Rule
+title: Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows
+description: When a component is added to a page-editor row (\`addComponent\` in the page editor), the **config drawer must NOT auto-open**. The newly added block stays on the
+tags: [central-charts, page-editor, ux, config-drawer]
+timestamp: "2026-09-17T14:33:20.445Z"
+---
+
+# Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows
+
+When a component is added to a page-editor row (\`addComponent\` in the page editor), the **config drawer must NOT auto-open**. The newly added block stays on the canvas as its skeleton (per [[chart-blocks-start-empty-needssetup-gate]]) until the user explicitly opens the drawer — via the cog icon or the skeleton's Add dimension / Add measure buttons. Auto-opening was a bug (PR #8, 2026-09-17): it hid the skeleton state the needsSetup design is built around.
+
+The complementary half: when the drawer **does** open on an empty chart, it seeds one picker row per unfilled role (once per mount). The user starts from a guided row, not a blank list — but deleting the seeded row still works and no data renders until role minimums are met.
+
+Applies to: any code path that adds a block to a page (\`+ Component\`, future drag-drop, agent-driven APIs). Never open the config drawer from an add path; open it only from a user click.
 `,
   "rules/app-content-capped-at-shared-max-width.md": `---
 type: Rule
@@ -15973,6 +17989,36 @@ the tooltip-overflow allowance moved to the grid's \`pb-16\`.
 - \`src/lib/components/charts/ChartCard.svelte\` — explicit comment: "No vertical margin: spacing comes from the page grid gap; tooltip overflow room lives on the grid container (PageGrid pb-16 / labs page padding)."
 - \`src/lib/components/charts/PageGrid.svelte\` — \`space-y-4 pb-16\` container, \`grid grid-cols-12 gap-4\` rows; verified 16px in both directions via CDP (PR #4).
 `,
+  "rules/config-drawers-one-scrolling-column.md": `---
+type: Rule
+title: Config drawers are one scrolling column — settings sections, Danger zone last
+description: Guideline
+tags: [page-editor, drawers, ui-consistency, data-drawer-pattern]
+timestamp: "2026-09-18T10:55:10.000Z"
+---
+
+# Config drawers are one scrolling column — settings sections, Danger zone last
+
+## Guideline
+
+Every config/settings drawer follows the /data (TableDrawer) pattern: a single
+scrolling column of flat \`Section\` groups separated by dashed hairline dividers,
+with the \`DangerZone\` section (dashed divider + outline danger button → inline
+confirm) always last. No tabbed Settings/Danger chrome.
+
+## When it applies
+
+- Page-editor drawers: block inspector, row settings, column settings, page settings.
+- Chart config drawers (\`ChartConfigDrawer\`): /labs charts, /library preview config.
+- Any future drawer: compose it from the shared kit (\`Section\`, \`Field\`, controls) — never hand-roll body chrome.
+
+## Rationale
+
+The user directed (2026-09-18) that all drawers share the styling and design
+patterns of the /data route drawer. DrawerTabs was deleted in the same pass;
+keeping it would fork the pattern. Danger zones are always visible at the
+bottom of the scroll, matching /data's Danger zone section.
+`,
   "rules/demo-means-app-tour-demo-not-eval-suites.md": `---
 type: Rule
 title: "Demo" means an app-tour-demo UI tour, not eval suites
@@ -16020,11 +18066,64 @@ tours) are nothing alike, and kees.pippeloi.nl is this repo's reference
 project — the signal was available before shipping. Discovered when the user
 rejected the eval-suite deliverables.
 `,
+  "rules/drawer-form-controls-come-from-the-shared-controls.md": `---
+type: Rule
+title: Drawer form controls come from the shared controls kit — never hand-roll input chrome
+description: Guideline
+tags: [svelte, ui, drawers, design-system, controls-kit]
+timestamp: "2026-09-17T17:25:31.321Z"
+---
+
+# Drawer form controls come from the shared controls kit — never hand-roll input chrome
+
+## Guideline
+
+When building or editing any drawer, inspector, or modal form in the app, its controls come from the shared kit in \`src/lib/components/charts/controls/\` — \`Field\`, \`TextInput\`, \`NumberInput\`, \`Select\`, \`Toggle\`, \`Section\`, \`DangerZone\`, \`RemoveBtn\`, \`Btn\` — styled by the single \`controls.css\`.
+
+Never hand-roll input chrome, add per-consumer styles for inputs, or drop back to raw zinc / ad-hoc Tailwind classes. If a control need isn't covered, **extend the kit** (new component or prop), don't fork a local copy.
+
+## When it applies
+
+- Existing surfaces: page-editor drawers (block inspector, row/column, page settings), RolePickerModal.
+- Planned reuse: \`/library\` pages, \`/connect\`, and the query editor (named as next steps in PR #18) — reuse the kit as-is.
+
+## Rationale
+
+Before PR #18 (2026-09-17) five surfaces had drifted apart: three duplicated hand-rolled danger panels, fake-toggle checkboxes, mixed input heights and focus states, raw zinc everywhere. One kit on the app's semantic tokens (30px height, tabular numerals, ledger-green focus rings) keeps every surface identical and future drawer work cheap. Related: config drawers must be one scrolling column (see [[config-drawers-one-scrolling-column]]) and reuse the \`drawerResize\` action.
+`,
+  "rules/drawers-reuse-the-shared-drawerresize-action.md": `---
+type: Rule
+title: Drawers reuse the shared drawerResize action
+description: Guideline
+tags: [ui, drawers, svelte]
+timestamp: "2026-09-17T10:45:15.052Z"
+---
+
+# Drawers reuse the shared drawerResize action
+
+## Guideline
+
+Any right-anchored overlay drawer in the app attaches the shared action, instead of hand-rolled resize logic:
+
+\`\`\`svelte
+<div class="drawer" class:drawer-open={open} use:drawerResize>
+\`\`\`
+
+\`src/lib/components/drawer-resize.ts\` injects a left-edge drag handle. Because the drawer is anchored right, dragging the edge **left** widens it: \`width = startW + (startX − clientX)\`, clamped to \`[240px, 90vw]\`. Pointer-capture based; removes the handle on destroy.
+
+## When it applies
+
+Every new right-anchored drawer. Current adopters: \`TableDrawer.svelte\`, \`ColumnFunctionDrawer.svelte\`, \`ChartConfigDrawer.svelte\`.
+
+## Rationale
+
+One consistent resize interaction across the app — same clamp, same cursor, same cleanup. Introduced 2026-09-17 and adopted by all three existing drawers in the same pass; per-drawer re-implementations would drift on clamps and pointer handling.
+`,
   "rules/each-labs-chart-owns-its-config-panel.md": `---
 type: Rule
 title: Each /labs chart owns its config panel
 description: Guideline
-tags: [labs, charts, config]
+tags: [labs, library, charts, config]
 timestamp: "2026-09-15T07:33:25.479Z"
 ---
 
@@ -16040,7 +18139,7 @@ In \`/labs\`, chart configuration UI lives **inside the chart component**, never
 
 ## When it applies
 
-Every chart-type component built on the [[chart-fundament]] (bar chart done; heatmap gets it with one prop pass when its page needs a panel; applies to the 30 charts still to come).
+Every chart-type component built on the [[chart-fundament]], on **every surface that shows a chart** — not just \`/labs\`. Confirmed surfaces: \`/labs\` pages, \`/library\` detail-page previews (2026-09-17: the demo passes a \`config\` snippet to the real renderer, fields rendered schema-driven with the same markup as \`BlockInspector\`), and the \`/pages\` focused config mode. User directive 2026-09-17: "this is an integral part of every chart" — the Bolt toggle + drawer ships with the chart, never bolted on per-page.
 
 ## Rationale
 
@@ -16090,6 +18189,14 @@ Stated by the user as "hard rules — no exceptions" (2026-09-14 feature-loop ru
 - [Card spacing comes from the grid gap, never per-card margins](./card-spacing-from-grid-gap-not-margins.md) - In any grid of chart/component cards (page editor canvas, labs), inter-card
 - [All pages are capped at 1920px and centered by the shared layout — no per-page opt-out](./app-content-capped-at-shared-max-width.md) - Guideline
 - [Pointer cursor comes from one global rule in app.css](./pointer-cursor-from-global-rule-app-css.md) - Guideline
+- [Render markdown via marked + .prose-chat, never a new pipeline](./render-markdown-via-marked-prose-chat.md) - When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in the \`.prose-chat\` cl
+- [Drawers reuse the shared drawerResize action](./drawers-reuse-the-shared-drawerresize-action.md) - Guideline
+- [Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash](./leave-wiki-recap-noise-uncommitted.md) - Guideline
+- [Config drawers are one scrolling column — settings sections, Danger zone last](./config-drawers-one-scrolling-column.md) - Guideline
+- [Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows](./adding-a-component-never-auto-opens-the-config.md) - When a component is added to a page-editor row (\`addComponent\` in the page editor), the **config drawer must NOT auto-open**. The newly added block stays on the
+- [Pick values flow through one codec — src/lib/charts/pickers.ts](./pick-values-flow-through-one-codec-src-lib-charts.md) - Guideline
+- [Pick display labels resolve through roleLabels() — never hand-roll chip labels](./pick-display-labels-resolve-through-rolelabels.md) - Guideline
+- [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline
 `,
   "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md": `---
 type: Rule
@@ -16202,6 +18309,89 @@ User directive (2026-09-14, bar-chart task): labs charts "need an architecture t
 
 - Established during the heatmap port and formalized in the bar-chart TODO (\`TODO-b476a398\`, 2026-09-14): components live in \`src/lib/components/\`, playground routes at \`/labs/<type>\` on synthetic data.
 `,
+  "rules/leave-wiki-recap-noise-uncommitted.md": `---
+type: Rule
+title: Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash
+description: Guideline
+tags: [git, workflow, wiki-recap, pr, feature-loop]
+timestamp: "2026-09-17T11:52:26.740Z"
+---
+
+# Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash
+
+## Guideline
+
+When opening a PR (per [[rules/feature-loop-hard-rules]]), if \`git status\` shows
+dirty \`docs/wiki/\` files you didn't touch, **leave them uncommitted in the
+working tree**. Do NOT stash them, do NOT commit them:
+
+1. Branch from fresh master (\`git pull --ff-only\`, then branch).
+2. Stage and commit **only the files your task actually changed**.
+3. Push, open the PR, and let the recap noise keep sitting in the tree.
+
+## Why
+
+The background **wiki-recap agent** writes to \`docs/wiki/\` across sessions, so
+dirty wiki files in your tree are (a) not yours and (b) constantly changing.
+Stashing them leads to silent stash-pop conflicts because the recap agent has
+already written newer versions of the same files — see
+[[learnings/stash-pop-silent-conflict-recovery]] (PR #3 lost a session that
+way). Selective commit sidesteps the whole problem: the stash never exists, so
+it can't fail. The recap files get committed by whichever session owns them.
+
+Also prevents shipping another session's half-written recap into your PR
+("recap noise", PR #6).
+
+## Applies to
+
+Every PR push in this repo when the working tree has dirty \`docs/wiki/\` files
+you don't recognize. Sanity-check the dirty list first — if a dirty file IS
+yours, commit it with your change.
+`,
+  "rules/pick-display-labels-resolve-through-rolelabels.md": `---
+type: Rule
+title: Pick display labels resolve through roleLabels() — never hand-roll chip labels
+description: Guideline
+tags: [central-charts, page-editor, code-reuse]
+timestamp: "2026-09-17T16:23:09.422Z"
+---
+
+# Pick display labels resolve through roleLabels() — never hand-roll chip labels
+
+## Guideline
+
+Any surface that shows **which dimensions/measures are already in a chart** (chips, "already in chart" summaries, inspector lists) must get display labels from the shared \`roleLabels()\` resolver in \`src/lib/charts/pickers.ts\` — never hand-roll label formatting in a component.
+
+## When it applies
+
+Every renderer of chart roles: the skeleton card's chips (dark pills = dimensions, light pills = measures), the pick/create modal's header summary, and any future surface (block inspector, /library demo editor, bulk edit).
+
+## Rationale
+
+One resolver resolves \`ref:\` / \`col:\` / \`field:\` picks into human labels (⭐ master labels, plain columns, expressions, linked tables flagged) so all surfaces stay consistent — same reason the [[pick-values-flow-through-one-codec-src-lib-charts|pick-value codec]] is centralized. Introduced PR #13 (visibility fix: users couldn't see what they'd already added while picking). Covered by \`tests/pickers.test.ts\` (2 label tests).
+`,
+  "rules/pick-values-flow-through-one-codec-src-lib-charts.md": `---
+type: Rule
+title: Pick values flow through one codec — src/lib/charts/pickers.ts
+description: Guideline
+tags: [central-charts, page-editor, code-reuse]
+timestamp: "2026-09-17T15:32:10.396Z"
+---
+
+# Pick values flow through one codec — src/lib/charts/pickers.ts
+
+## Guideline
+
+Any surface that turns a dimension/measure picker selection into a chart-spec entry (or back) must use the pure codec in \`src/lib/charts/pickers.ts\` — \`dimensionFromPick\` / \`dimensionPickValue\` / \`measureFromPick\` / \`measurePickValue\`. The wire format is \`ref:<id>\` (master item) | \`col:<table>:<col>\` | \`field:<table>:<col>\`, and the linked-table measure fallback (\`sum("table"."col")\` + \`table\`) lives there too.
+
+## When it applies
+
+Adding any third surface that edits chart roles (e.g. a /library demo editor, a bulk-edit panel). Never re-implement the string format in a component.
+
+## Rationale
+
+The block inspector (drawer) and the in-chart [[skeletonsetup-component]] both encode/decode the same pick strings; one module (8 unit tests, \`tests/pickers.test.ts\`) is the only way to keep them from drifting. Introduced PR #10.
+`,
   "rules/pin-tailwind-source-scanning.md": `---
 type: Rule
 title: Pin Tailwind @source scanning to src/ and app.html in app.css
@@ -16269,6 +18459,26 @@ Every time a new interactive element is added anywhere in the app — no per-com
 
 Windows/Chrome does not give buttons a pointer cursor by default, so every button in the app looked "dead" until this rule landed (added 2026-09-15, verified via CDP full-scan across /pages, /data, /analyst, /settings, /labs/bar-chart — 0 exceptions). One global rule is the root-cause fix; per-component cursor styles would drift and multiply.
 `,
+  "rules/render-markdown-via-marked-prose-chat.md": `---
+type: Rule
+title: Render markdown via marked + .prose-chat, never a new pipeline
+description: When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in the \`.prose-chat\` cl
+tags: [frontend, markdown, design-system]
+timestamp: "2026-09-17T08:04:25.249Z"
+---
+
+# Render markdown via marked + .prose-chat, never a new pipeline
+
+When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in the \`.prose-chat\` class. Do not add a new markdown parser or hand-roll prose styles.
+
+## When it applies
+
+Any UI surface that must display markdown as styled, design-system-consistent content. Established on the library detail page docs tab (\`src/routes/library/[id]/+page.svelte\`), which reuses the same pipeline the analyst chat uses.
+
+## Rationale
+
+\`marked\` + \`.prose-chat\` is the app's single markdown pipeline — reuse keeps typography and spacing consistent across surfaces and avoids duplicate prose stylesheets. Check for an existing rendering path before writing a new one.
+`,
   "rules/route-external-api-calls-through-rust.md": `---
 type: Rule
 title: Route external API calls through Rust commands, never webview fetch
@@ -16331,14 +18541,29 @@ var WIKI_PAGES = [
   { path: "memory.md", label: "Memory — the live contract", group: "" },
   { path: "overview.md", label: "Overview", group: "" },
   { path: "architecture/file-tree.md", label: "File tree", group: "Architecture" },
+  { path: "decisions/library-central-component-library.md", label: "/library becomes the central component library (proposed — spec interview in progress)", group: "Decisions" },
   { path: "decisions/agent-connection-mcp-embedded-in-rust-backend.md", label: "Agent connection: MCP server embedded in the Rust backend", group: "Decisions" },
   { path: "decisions/agent-surfaces-rust-backend-mcp-and-rest.md", label: "Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside", group: "Decisions" },
+  { path: "decisions/all-drawers-adopt-the-data-tabledrawer-design.md", label: "All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed", group: "Decisions" },
   { path: "decisions/all-pages-capped-1920px-full-bleed-removed.md", label: "All pages capped at 1920px and centered; full-bleed exemption removed", group: "Decisions" },
+  { path: "decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md", label: "App gets virtual multi-tab navigation: bottom bar is the tab bar", group: "Decisions" },
   { path: "decisions/central-charts-v1-scope-bar-heatmap-table.md", label: "Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred", group: "Decisions" },
+  { path: "decisions/chart-blocks-start-empty-needssetup-gate.md", label: "Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)", group: "Decisions" },
   { path: "decisions/consolidate-chart-engines-to-picasso-js.md", label: "Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot", group: "Decisions" },
   { path: "decisions/index.md", label: "Decisions", group: "Decisions" },
+  { path: "decisions/drawer-chrome-restyle-reverted-control-kit-stands.md", label: "Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected", group: "Decisions" },
   { path: "decisions/labs-catalog-placeholder-first.md", label: "Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first", group: "Decisions" },
   { path: "decisions/labs-per-chart-type.md", label: "Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component", group: "Decisions" },
+  { path: "decisions/library-extension-style-components.md", label: "Library components are self-contained extension-style packages — own definition, logic, and data", group: "Decisions" },
+  { path: "decisions/library-demos-reuse-real-components.md", label: "Library demos render the real components fed dummy query-shaped data — no demo-only clones", group: "Decisions" },
+  { path: "decisions/library-packages-carry-blockkind.md", label: "Library packages carry blockKind — table/text are built-in blocks, not chart types", group: "Decisions" },
+  { path: "decisions/library-q2-registry-display-only.md", label: "Library Q2: registry v1 is display-only — editor wiring deferred", group: "Decisions" },
+  { path: "decisions/library-q3-master-detail-layout.md", label: "Library Q3: /library layout is master-detail — left index + full-size live demo with schema alongside", group: "Decisions" },
+  { path: "decisions/library-q4-dedicated-tabbed-views.md", label: "Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab", group: "Decisions" },
+  { path: "decisions/library-registry-drives-editor-and-library.md", label: "Library registry drives editor + /library in one shot (supersedes display-only v1)", group: "Decisions" },
+  { path: "decisions/library-registry-ts-module.md", label: "Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders", group: "Decisions" },
+  { path: "decisions/library-component-builder-canonical-path.md", label: "library-component-builder skill is the canonical path for new library components", group: "Decisions" },
+  { path: "decisions/linked-table-raw-fields-transient-autojoin.md", label: "Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional", group: "Decisions" },
   { path: "decisions/master-items-amendment-semantic-layer-moves-early.md", label: "Master-items amendment: semantic layer moves early into central-charts v1", group: "Decisions" },
   { path: "decisions/measures-dimensions-are-duckdb-expressions.md", label: "Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)", group: "Decisions" },
   { path: "decisions/page-editor-block-config-focused-two-panel.md", label: "Page editor block config: focused two-panel mode via cog icon (no selection ring)", group: "Decisions" },
@@ -16358,7 +18583,10 @@ var WIKI_PAGES = [
   { path: "decisions/q7-relationship-graph-drives-item-availability.md", label: "Q7 locked: relationship graph drives chart item availability and auto-JOIN", group: "Decisions" },
   { path: "decisions/q8-one-canonical-query-engine-per-type-hooks.md", label: "Q8 locked: one canonical query engine with per-type hooks", group: "Decisions" },
   { path: "decisions/q9-chart-option-panels-schema-driven.md", label: "Q9 locked: chart option panels are schema-driven with a custom-panel hatch", group: "Decisions" },
+  { path: "decisions/skeleton-card-is-the-inline-role-assignment.md", label: "Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional", group: "Decisions" },
+  { path: "decisions/skeleton-pick-create-moved-from-inline-dropdowns.md", label: "Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)", group: "Decisions" },
   { path: "decisions/svelteplot-sole-chart-engine.md", label: "SveltePlot is the sole chart engine — all legacy chart libraries removed", group: "Decisions" },
+  { path: "decisions/tab-bar-shows-only-explicitly-opened-tabs.md", label: "Tab bar shows only explicitly opened tabs — navigation never creates tabs", group: "Decisions" },
   { path: "decisions/two-surface-report-page-format.md", label: "Two-surface report pages: code mode edits a declarative spec, not Svelte source", group: "Decisions" },
   { path: "decisions/typography-settles-inter-everywhere-geist-mono.md", label: "Typography settles: Inter everywhere (display + body), Geist Mono for data detail", group: "Decisions" },
   { path: "decisions/typography-bricolage-grotesque-display.md", label: "Typography: Bricolage Grotesque display — Poppins dropped", group: "Decisions" },
@@ -16372,85 +18600,134 @@ var WIKI_PAGES = [
   { path: "decisions/typography-space-grotesk-display-bricolage-dropped.md", label: "Typography: Space Grotesk display, Bricolage dropped", group: "Decisions" },
   { path: "decisions/typography-squada-one-headings-libre-baskerville.md", label: "Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped", group: "Decisions" },
   { path: "decisions/typography-syne-display-space-grotesk-dropped.md", label: "Typography: Syne display — Space Grotesk dropped", group: "Decisions" },
+  { path: "decisions/speed-highlight-over-prism.md", label: "Use speed-highlight/core for code highlighting instead of Prism", group: "Decisions" },
   { path: "learnings/apparent-ui-bug-stale-hmr-webview.md", label: "Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging", group: "Learnings" },
   { path: "learnings/auto-margins-app-main-disable-flex-stretch.md", label: "Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%", group: "Learnings" },
+  { path: "learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md", label: "Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption", group: "Learnings" },
   { path: "learnings/calluna-not-on-google-fonts-css2-drops-silently.md", label: "Calluna is not on Google Fonts — css2 returns 200 but silently drops it", group: "Learnings" },
   { path: "learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md", label: "CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot", group: "Learnings" },
+  { path: "learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md", label: "CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events", group: "Learnings" },
   { path: "learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md", label: "CDP e2e cannot synthesize trusted clicks on svelteplot marks", group: "Learnings" },
+  { path: "learnings/cdp-form-probes-must-be-container-scoped-shared.md", label: "CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps", group: "Learnings" },
+  { path: "learnings/cdp-gate-assertions-need-settle-time-after-doc.md", label: "CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped", group: "Learnings" },
+  { path: "learnings/cdp-probe-is-queryselector-indexing-it-silently.md", label: "CDP probe `$$` is querySelector — indexing it silently kills clicks", group: "Learnings" },
   { path: "learnings/cdp-repro-traps-duckdb-lock.md", label: "CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface", group: "Learnings" },
   { path: "learnings/central-charts-work-lives-on-feature-branch.md", label: "Central-charts work lives on feature/central-charts — master is held at a restore point", group: "Learnings" },
   { path: "learnings/chart-authoring-two-surfaces-serializable-spec.md", label: "Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec", group: "Learnings" },
+  { path: "learnings/chart-segment-selection-parent-held-state.md", label: "Chart segment selection is parent-held {dimension, value} transient state", group: "Learnings" },
+  { path: "learnings/component-spawn-grows-too-small-explicit-height.md", label: "Component spawn grows too-small explicit-height rows to 320px minimum", group: "Learnings" },
   { path: "learnings/couldn-t-find-callback-id-tauri-warning.md", label: "Couldn't find callback id\" Tauri warning is a benign reload artifact", group: "Learnings" },
   { path: "learnings/css-text-transform-changes-innertext-probes.md", label: "CSS text-transform changes innerText, not textContent — probe labels case-insensitively", group: "Learnings" },
+  { path: "learnings/d2-diagrams-not-interactive.md", label: "D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook", group: "Learnings" },
   { path: "learnings/drive-data-monster-s-real-ui-over-cdp.md", label: "Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging", group: "Learnings" },
   { path: "learnings/evidence-chart-architecture.md", label: "Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy", group: "Learnings" },
   { path: "learnings/extending-docs-features-requires-add-evals.md", label: "Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern", group: "Learnings" },
   { path: "learnings/get-settings-merges-env-env-over.md", label: "get_settings merges env/.env over settings.json — env is source of truth", group: "Learnings" },
+  { path: "learnings/hard-reload-storms-deadlock-duckdb-in-process.md", label: "Hard-reload storms deadlock DuckDB in-process — writes fail with \"resource deadlock would occur\" until full restart", group: "Learnings" },
   { path: "learnings/kees-reference-ports-cleanly.md", label: "kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4", group: "Learnings" },
   { path: "learnings/labs-hang-vite-reload-loop.md", label: "Labs bar-chart \"hang\" is an infinite vite reconnect/reload loop, not a component bug", group: "Learnings" },
   { path: "learnings/index.md", label: "Learnings", group: "Learnings" },
+  { path: "learnings/library-code-entries-are-keyed-by-full-repo-paths.md", label: "Library code entries are keyed by full repo paths", group: "Learnings" },
   { path: "learnings/llm-api-data-retention-no-training-no.md", label: "LLM API data retention: \"no training\" ≠ \"no storage\"; local models are ZDR by construction", group: "Learnings" },
   { path: "learnings/llm-provider-retention-part-2-kimi-z-ai.md", label: "LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework", group: "Learnings" },
   { path: "learnings/local-llm-blank-screen-delay-was-hidden.md", label: "Local LLM blank-screen delay was hidden thinking tokens — disable via \"thinking\": {\"type\": \"disabled\"}", group: "Learnings" },
+  { path: "learnings/mock-tauri-browser-repro-harness-is-gone-verify.md", label: "Mock-Tauri browser repro harness is gone — verify visually via self-contained routes", group: "Learnings" },
   { path: "learnings/never-tree-scan-archive-or-src-tauri.md", label: "Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees", group: "Learnings" },
+  { path: "learnings/normalizepagedoc-field-whitelist.md", label: "normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load", group: "Learnings" },
   { path: "learnings/pagedoc-block-title-and-chart-title-rendering.md", label: "PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there", group: "Learnings" },
+  { path: "learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md", label: "Pages editor auto-saves silently every 60s — no UI signal is deliberate", group: "Learnings" },
+  { path: "learnings/query-editor-blowup-was-app-column-min-height-auto.md", label: "Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique", group: "Learnings" },
+  { path: "learnings/scale-standalone-html-docs-via-root-font-size-px.md", label: "Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays", group: "Learnings" },
+  { path: "learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md", label: "SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads", group: "Learnings" },
   { path: "learnings/settings-swap-for-tours-must-cover-env-too.md", label: "Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin", group: "Learnings" },
   { path: "learnings/settings-tour-and-analyst-tour-built.md", label: "settings-tour and analyst-tour built — honest-beats-staged applied to the chat", group: "Learnings" },
+  { path: "learnings/shallow-url-state-sveltekit-replacestate.md", label: "Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history", group: "Learnings" },
+  { path: "learnings/speed-highlight-core-has-no-svelte-grammar.md", label: "speed-highlight/core has no Svelte grammar", group: "Learnings" },
   { path: "learnings/squada-one-is-single-weight-400.md", label: "Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold", group: "Learnings" },
+  { path: "learnings/stale-component-css-after-an-edit-can-be-fixed.md", label: "Stale component CSS after an edit can be fixed with touch — no dev-server restart needed", group: "Learnings" },
+  { path: "learnings/stale-vite-module-graph-can-survive-reloads-only-a.md", label: "Stale vite module graph can survive reloads — only a full app restart clears it", group: "Learnings" },
   { path: "learnings/stale-wiki-file-floods-are-ignored.md", label: "Stale-wiki file floods — only noise if an ignore pattern actually matches the tree", group: "Learnings" },
   { path: "learnings/stash-pop-silent-conflict-recovery.md", label: "Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash", group: "Learnings" },
+  { path: "learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md", label: "SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back", group: "Learnings" },
+  { path: "learnings/svelteplot-has-no-tree-mark.md", label: "SveltePlot 0.14.2 has no tree mark — verified in the installed package", group: "Learnings" },
   { path: "learnings/svelteplot-band-axis-empty-aliases-crash.md", label: "svelteplot band axis crashes on empty aliases (duplicate key)", group: "Learnings" },
   { path: "learnings/svelteplot-barx-bar-y-orientation.md", label: "SveltePlot BarX vs BarY: BarX is the horizontal bar mark", group: "Learnings" },
   { path: "learnings/svelteplot-datum-identity-empty-guard.md", label: "SveltePlot internals: match datums by position, not identity; guard empty data", group: "Learnings" },
   { path: "learnings/svelteplot-ordinal-domain-sorts-alphabetically.md", label: "SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse", group: "Learnings" },
   { path: "learnings/svelteplot-scale-null-not-false.md", label: "SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale", group: "Learnings" },
+  { path: "learnings/library-vs-pages-config-drawer-scope.md", label: "The /library vs /pages config-drawer difference is scope, not components", group: "Learnings" },
   { path: "learnings/tour-dom-snapshots-scale-with-live-dom.md", label: "Tour DOM snapshots scale with the live DOM — bound secondary frames, keep one big frame when size is the story", group: "Learnings" },
   { path: "learnings/tour-html-captures-embed-google-fonts-import.md", label: "Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours", group: "Learnings" },
   { path: "learnings/visibility-probes-walk-ancestor-opacity-chain.md", label: "Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything", group: "Learnings" },
   { path: "learnings/webview2-cdp-gotchas-env-var-flag-stale.md", label: "WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite", group: "Learnings" },
   { path: "learnings/wiki-note-page-wikilinks-resolve-relative.md", label: "wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths", group: "Learnings" },
   { path: "learnings/z-ai-401-code-1000-authentication.md", label: "z.ai 401 \"code 1000 Authentication Failed\" means the key itself is bad — verify with curl, not app code", group: "Learnings" },
+  { path: "learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md", label: "z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4", group: "Learnings" },
   { path: "pages/TEMPLATES.md", label: "Page Templates", group: "Pages" },
   { path: "pages/index.md", label: "Pages", group: "Pages" },
+  { path: "pages/artifacts/aisure-uk-pricing-research-report.md", label: "aisure.uk pricing research report", group: "Pages / Artifacts" },
   { path: "pages/artifacts/app-tour-set-docs-tours.md", label: "App tour set (docs/tours/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/index.md", label: "Artifacts", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-chart-component-design.md", label: "Central chart component design", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-tasks.md", label: "Central charts spec & tasks", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-amp-task-list.md", label: "Central-charts spec &amp; task list", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/design-system-reference-doc-docs-design.md", label: "Design-system reference doc (docs/design-system-data-monster.html)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/feature-skill-catalog-docs-features.md", label: "Feature skill catalog (docs/features/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-sensitive-data-white-paper.md", label: "LLM & Sensitive Data White Paper", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-agent-connection-research-report.md", label: "LLM agent connection research report", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-sensitive-data-privacy-research.md", label: "LLM Sensitive Data Privacy Research", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md", label: "LLM Sensitive-Data White Paper — Finance Edition", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/oss-value-driver-trees-research-report.md", label: "OSS value driver trees research report", group: "Pages / Artifacts" },
   { path: "pages/concepts/index.md", label: "Concepts", group: "Pages / Concepts" },
   { path: "pages/entities/wiki-ignore-staleness-policy.md", label: ".wiki_ignore staleness policy", group: "Pages / Entities" },
+  { path: "pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md", label: "App tab system (virtual tabs + bottom tab bar)", group: "Pages / Entities" },
   { path: "pages/entities/barchart-component.md", label: "BarChart component", group: "Pages / Entities" },
   { path: "pages/entities/central-api-frontend-invoke-client.md", label: "central-api (frontend invoke client)", group: "Pages / Entities" },
   { path: "pages/entities/central-charts-component-system.md", label: "Central-charts component system", group: "Pages / Entities" },
   { path: "pages/entities/chart-fundament.md", label: "Chart fundament", group: "Pages / Entities" },
   { path: "pages/entities/chart-page-spec-spec-types-validator.md", label: "Chart page spec (spec-types + validator)", group: "Pages / Entities" },
   { path: "pages/entities/chartconfigdrawer-component.md", label: "ChartConfigDrawer component", group: "Pages / Entities" },
+  { path: "pages/entities/create-in-data-round-trip.md", label: "Create-in-/data round-trip", group: "Pages / Entities" },
   { path: "pages/entities/database-command-module.md", label: "database command module", group: "Pages / Entities" },
   { path: "pages/entities/design-system-app-css-tokens-ui-showcase.md", label: "Design system (app.css tokens + /ui showcase)", group: "Pages / Entities" },
+  { path: "pages/entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md", label: "dev-cdp.cmd (repo-root double-click CDP restart)", group: "Pages / Entities" },
   { path: "pages/entities/index.md", label: "Entities", group: "Pages / Entities" },
+  { path: "pages/entities/expreditor-component.md", label: "ExprEditor component", group: "Pages / Entities" },
   { path: "pages/entities/field-functions-library.md", label: "Field Functions library", group: "Pages / Entities" },
   { path: "pages/entities/heatmap-component.md", label: "Heatmap component", group: "Pages / Entities" },
   { path: "pages/entities/labsplaceholder-component.md", label: "LabsPlaceholder component", group: "Pages / Entities" },
+  { path: "pages/entities/library-page-library.md", label: "Library page (/library)", group: "Pages / Entities" },
+  { path: "pages/entities/library-registry-system.md", label: "Library registry system (src/lib/library + /library routes)", group: "Pages / Entities" },
+  { path: "pages/entities/library-component-builder-skill-pi-skills.md", label: "library-component-builder skill (.pi/skills)", group: "Pages / Entities" },
+  { path: "pages/entities/llm-prompt-button-library-detail.md", label: "LLM prompt button (/library detail)", group: "Pages / Entities" },
   { path: "pages/entities/pagegrid-component.md", label: "PageGrid component", group: "Pages / Entities" },
   { path: "pages/entities/pages-master-items-storage-rust.md", label: "Pages & master-items storage (Rust)", group: "Pages / Entities" },
   { path: "pages/entities/remote-chat-command.md", label: "remote_chat command", group: "Pages / Entities" },
+  { path: "pages/entities/rolepickermodal-component.md", label: "RolePickerModal component", group: "Pages / Entities" },
+  { path: "pages/entities/shared-controls-kit-charts-controls.md", label: "Shared controls kit (charts/controls)", group: "Pages / Entities" },
+  { path: "pages/entities/skeletonsetup-component.md", label: "SkeletonSetup component", group: "Pages / Entities" },
+  { path: "preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md", label: "Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself", group: "Preferences" },
+  { path: "preferences/cdp-verify-the-dev-app-via-webview2-additional.md", label: "CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)", group: "Preferences" },
   { path: "preferences/never-start-npm-run-dev-tauri-dev.md", label: "Never start npm run dev / tauri dev — the user owns the dev app", group: "Preferences" },
   { path: "preferences/index.md", label: "Preferences", group: "Preferences" },
+  { path: "rules/adding-a-component-never-auto-opens-the-config.md", label: "Adding a component never auto-opens the config drawer — skeleton is the start state; drawer-open seeds picker rows", group: "Rules" },
   { path: "rules/labs-charts-reusable-fundament.md", label: "All /labs charts are built on the shared reusable-chart fundament", group: "Rules" },
   { path: "rules/app-content-capped-at-shared-max-width.md", label: "All pages are capped at 1920px and centered by the shared layout — no per-page opt-out", group: "Rules" },
   { path: "rules/card-spacing-from-grid-gap-not-margins.md", label: "Card spacing comes from the grid gap, never per-card margins", group: "Rules" },
+  { path: "rules/config-drawers-one-scrolling-column.md", label: "Config drawers are one scrolling column — settings sections, Danger zone last", group: "Rules" },
   { path: "rules/demo-means-app-tour-demo-not-eval-suites.md", label: "Demo\" means an app-tour-demo UI tour, not eval suites", group: "Rules" },
+  { path: "rules/drawer-form-controls-come-from-the-shared-controls.md", label: "Drawer form controls come from the shared controls kit — never hand-roll input chrome", group: "Rules" },
+  { path: "rules/drawers-reuse-the-shared-drawerresize-action.md", label: "Drawers reuse the shared drawerResize action", group: "Rules" },
   { path: "rules/each-labs-chart-owns-its-config-panel.md", label: "Each /labs chart owns its config panel", group: "Rules" },
   { path: "rules/feature-loop-hard-rules.md", label: "Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal", group: "Rules" },
   { path: "rules/interview-one-question-at-a-time.md", label: "Interview the user one question at a time with lettered multiple-choice options", group: "Rules" },
   { path: "rules/keep-test-files-and-vitest-imports-out-of-src.md", label: "Keep test files and vitest imports out of src/", group: "Rules" },
+  { path: "rules/leave-wiki-recap-noise-uncommitted.md", label: "Leave wiki-recap noise uncommitted — branch fresh and commit selectively, never stash", group: "Rules" },
+  { path: "rules/pick-display-labels-resolve-through-rolelabels.md", label: "Pick display labels resolve through roleLabels() — never hand-roll chip labels", group: "Rules" },
+  { path: "rules/pick-values-flow-through-one-codec-src-lib-charts.md", label: "Pick values flow through one codec — src/lib/charts/pickers.ts", group: "Rules" },
   { path: "rules/pin-tailwind-source-scanning.md", label: "Pin Tailwind @source scanning to src/ and app.html in app.css", group: "Rules" },
   { path: "rules/pointer-cursor-from-global-rule-app-css.md", label: "Pointer cursor comes from one global rule in app.css", group: "Rules" },
+  { path: "rules/render-markdown-via-marked-prose-chat.md", label: "Render markdown via marked + .prose-chat, never a new pipeline", group: "Rules" },
   { path: "rules/route-external-api-calls-through-rust.md", label: "Route external API calls through Rust commands, never webview fetch", group: "Rules" },
   { path: "rules/index.md", label: "Rules", group: "Rules" },
   { path: "rules/spec-driven-features-tdd-karpathy-in-todos.md", label: "Spec-driven features: TDD + Karpathy skills referenced in every todo", group: "Rules" },

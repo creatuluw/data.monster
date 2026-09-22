@@ -1,0 +1,32 @@
+		<!-- row settings drawer: tabbed — settings | danger zone (row delete lives only there) -->
+		{#if rowConfig !== null && doc.rows?.[rowConfig]}
+			{@const row = doc.rows[rowConfig]}
+			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="45vw" onClosed={() => (rowConfig = null)}>
+				<DrawerTabs active={rowTab} onchange={(t) => (rowTab = t)} />
+
+				{#if rowTab === 'settings'}
+					<Section title="Columns">
+						{#each row.columns ?? [] as col, ci (ci)}
+							<div class="flex items-center gap-2">
+								<span class="text-xs w-14" style="color: var(--color-text-secondary)">Column {ci + 1}</span>
+								<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />
+								<span class="text-xs" style="color: var(--color-text-tertiary)">/ 12 width</span>
+								<RemoveBtn title="Remove column" disabled={(row.columns?.length ?? 0) <= 1} onclick={() => removeColumn(rowConfig!, ci)} />
+							</div>
+						{/each}
+						<button class="text-xs inline-flex items-center gap-1" style="color: var(--color-text-secondary)" onclick={() => addColumn(rowConfig!)}><Plus size={12} /> Split into another column</button>
+					</Section>
+					<Field label="Row height" hint="px, optional — components fill it unless they set their own">
+						<NumberInput min={40} placeholder="auto" value={row.height ?? undefined} oncommit={(v) => (row.height = v)} />
+					</Field>
+				{:else}
+					<DangerZone
+						heading="Delete this row"
+						description="Removes the row and every component inside its columns. This cannot be undone (until you hit Save)."
+						confirmLabel="Delete row"
+						onconfirm={() => { removeRow(rowConfig!); rowConfig = null; }}
+					/>
+				{/if}
+			</ChartConfigDrawer>
+		{/if}
+

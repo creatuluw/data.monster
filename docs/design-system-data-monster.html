@@ -4,47 +4,83 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>data.monster — Design System + Components</title>
-    <meta name="seed" content="DS2-SYNAPSE-8847" />
+    <meta name="seed" content="DS-LEDGER-v3" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Source+Serif+4:opsz,wght@8..60,200..900&family=Manrope:wght@200..800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;600&family=Inter:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <style>
       /* ─────────────────────────────────────────────
-       SYNAPSE DESIGN SYSTEM — Token Definitions
+       DATA.MONSTER DESIGN SYSTEM — Token Definitions
        Precision data aesthetic, OKLCH color space
-       Seed: DS2-SYNAPSE-8847
+       Theme: ledger green (OKLCH hue 158)
     ───────────────────────────────────────────── */
 
       :root {
         /* ── Color Tokens (OKLCH) ── */
-        --color-accent: oklch(0.70 0.22 50);
-        --color-accent-light: oklch(0.79 0.17 62);
-        --color-accent-dark: oklch(0.60 0.20 45);
-        --color-accent-muted: oklch(0.94 0.04 55);
+        --color-accent: oklch(0.44 0.1 158);
+        --color-accent-light: oklch(0.55 0.11 160);
+        --color-accent-dark: oklch(0.37 0.09 156);
+        --color-accent-muted: oklch(0.94 0.025 160);
 
-        --color-surface: oklch(0.985 0.003 55);
-        --color-surface-raised: oklch(0.965 0.005 55);
-        --color-surface-sunken: oklch(0.94 0.006 55);
+        --color-surface: oklch(0.99 0.003 160);
+        --color-surface-raised: oklch(0.965 0.004 160);
+        --color-surface-sunken: oklch(0.94 0.005 160);
 
-        --color-text: oklch(0.12 0.01 55);
-        --color-text-secondary: oklch(0.38 0.012 55);
-        --color-text-tertiary: oklch(0.56 0.01 55);
-        --color-text-on-accent: oklch(0.97 0.005 55);
+        --color-text: oklch(0.16 0.01 165);
+        --color-text-secondary: oklch(0.4 0.012 165);
+        --color-text-tertiary: oklch(0.56 0.01 165);
+        --color-text-on-accent: oklch(0.98 0.005 160);
 
-        --color-border: oklch(0.86 0.006 55);
-        --color-border-strong: oklch(0.72 0.012 55);
-        --color-grid: oklch(0.9 0.004 55);
+        --color-border: oklch(0.88 0.006 165);
+        --color-border-strong: oklch(0.72 0.012 165);
+        --color-grid: oklch(0.91 0.005 165);
 
-        --color-success: oklch(0.72 0.14 215);
-        --color-warning: oklch(0.79 0.17 62);
-        --color-danger: oklch(0.67 0.24 30);
+        --color-success: oklch(0.6 0.12 158);
+        --color-warning: oklch(0.75 0.12 85);
+        --color-danger: oklch(0.55 0.16 25);
+
+        /* Green ramp (status, data categories) — harmonized with brand hue 158 */
+        --color-sage-50: oklch(0.97 0.012 160);
+        --color-sage-100: oklch(0.94 0.022 159);
+        --color-sage-200: oklch(0.88 0.035 158);
+        --color-sage-300: oklch(0.79 0.05 158);
+        --color-sage-400: oklch(0.7 0.07 158);
+        --color-sage-500: oklch(0.61 0.09 158);
+        --color-sage-600: oklch(0.51 0.095 158);
+        --color-sage-700: oklch(0.42 0.09 158);
+        --color-sage-800: oklch(0.34 0.075 158);
+        --color-sage-900: oklch(0.22 0.055 160);
+
+        /* Gold ramp — rare micro-accent (growth, highlights). Never decorative. */
+        --color-copper-50: oklch(0.975 0.015 95);
+        --color-copper-100: oklch(0.95 0.03 95);
+        --color-copper-200: oklch(0.9 0.055 92);
+        --color-copper-300: oklch(0.84 0.08 90);
+        --color-copper-400: oklch(0.8 0.09 88);
+        --color-copper-500: oklch(0.76 0.1 86);
+        --color-copper-600: oklch(0.66 0.1 84);
+        --color-copper-700: oklch(0.52 0.08 82);
+        --color-copper-800: oklch(0.42 0.06 82);
+        --color-copper-900: oklch(0.32 0.045 82);
+
+        /* Ink-neutral ramp, tinted toward brand hue */
+        --color-sand-50: oklch(0.985 0.003 160);
+        --color-sand-100: oklch(0.965 0.004 160);
+        --color-sand-200: oklch(0.925 0.005 160);
+        --color-sand-300: oklch(0.875 0.006 162);
+        --color-sand-400: oklch(0.72 0.008 162);
+        --color-sand-500: oklch(0.55 0.009 162);
+        --color-sand-600: oklch(0.4 0.01 163);
+        --color-sand-700: oklch(0.3 0.009 163);
+        --color-sand-800: oklch(0.22 0.008 164);
+        --color-sand-900: oklch(0.16 0.007 164);
 
         /* ── Typography Tokens ── */
-        --font-display: "Source Serif 4", serif;
-        --font-body: "Manrope", sans-serif;
+        --font-display: "Inter", sans-serif;
+        --font-body: "Inter", sans-serif;
         --font-mono: "Geist Mono", "Courier New", Courier, monospace;
 
         --text-xs: 0.6875rem;
@@ -82,9 +118,9 @@
         --radius-full: 9999px;
 
         /* ── Shadow Tokens ── */
-        --shadow-sm: 0 1px 2px oklch(0.22 0.005 55 / 0.07);
-        --shadow-md: 0 2px 8px oklch(0.22 0.005 55 / 0.09);
-        --shadow-lg: 0 6px 24px oklch(0.22 0.005 55 / 0.12);
+        --shadow-sm: 0 1px 2px oklch(0.22 0.005 160 / 0.07);
+        --shadow-md: 0 2px 8px oklch(0.22 0.005 160 / 0.09);
+        --shadow-lg: 0 6px 24px oklch(0.22 0.005 160 / 0.12);
 
         /* ── Motion Tokens ── */
         --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -100,7 +136,7 @@
         --gutter: clamp(1rem, 3vw, 2rem);
 
         /* ── Grid Overlay ── */
-        --grid-color: oklch(0.9 0.004 55 / 0.35);
+        --grid-color: oklch(0.91 0.005 165 / 0.35);
         --grid-spacing: 24px;
       }
 
@@ -266,7 +302,7 @@
         position: sticky;
         top: 0;
         z-index: 100;
-        background: oklch(0.985 0.003 55 / 0.92);
+        background: oklch(0.99 0.003 160 / 0.92);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border-bottom: 1px solid var(--color-border);
@@ -565,7 +601,7 @@
       .color-swatch .copy-confirm {
         position: absolute;
         inset: 0;
-        background: oklch(0.70 0.22 50 / 0.9);
+        background: oklch(0.44 0.1 158 / 0.9);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -632,6 +668,50 @@
         background: var(--color-danger);
       }
 
+      /* Ramp strips (sage / gold / sand) */
+      .ramp-block {
+        margin-top: var(--space-12);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+      }
+
+      .ramp-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-2);
+      }
+
+      .ramp-label span:last-child {
+        color: var(--color-text-tertiary);
+      }
+
+      .ramp-row {
+        display: flex;
+        gap: 1px;
+        background: var(--color-border);
+      }
+
+      .ramp-step {
+        flex: 1;
+        height: 44px;
+        position: relative;
+      }
+
+      .ramp-step span {
+        position: absolute;
+        bottom: 4px;
+        left: 5px;
+        font-family: var(--font-mono);
+        font-size: 8px;
+        color: oklch(1 0 0 / 0.55);
+        mix-blend-mode: difference;
+      }
+
       /* ─────────────────────────────────────────────
        Typography Section
     ───────────────────────────────────────────── */
@@ -692,7 +772,7 @@
 
       .specimen-4xl {
         font-size: var(--text-4xl);
-        font-weight: 800;
+        font-weight: 700;
         letter-spacing: -0.04em;
       }
       .specimen-3xl {
@@ -973,13 +1053,13 @@
 
       .btn-danger {
         background: var(--color-danger);
-        color: oklch(0.97 0.005 30);
+        color: oklch(0.97 0.005 22);
         border-color: var(--color-danger);
       }
 
       .btn-danger:hover {
-        background: oklch(0.55 0.18 30);
-        border-color: oklch(0.55 0.18 30);
+        background: oklch(0.46 0.14 25);
+        border-color: oklch(0.46 0.14 25);
       }
 
       .btn-sm {
@@ -1005,7 +1085,7 @@
         gap: var(--space-1);
         padding: 2px var(--space-2);
         border: 1px solid;
-        font-family: var(--font-body);
+        font-family: var(--font-mono);
         font-size: 9px;
         font-weight: 600;
         line-height: 1.5;
@@ -1021,25 +1101,25 @@
       .tag-accent {
         background: var(--color-accent-muted);
         color: var(--color-accent-dark);
-        border-color: oklch(0.82 0.04 55);
+        border-color: oklch(0.82 0.04 160);
       }
 
       .tag-success {
-        background: oklch(0.95 0.03 215);
-        color: oklch(0.40 0.12 215);
-        border-color: oklch(0.88 0.04 215);
+        background: oklch(0.95 0.025 158);
+        color: oklch(0.35 0.08 158);
+        border-color: oklch(0.88 0.035 158);
       }
 
       .tag-warning {
-        background: oklch(0.96 0.03 62);
-        color: oklch(0.42 0.10 62);
-        border-color: oklch(0.90 0.03 62);
+        background: oklch(0.96 0.025 85);
+        color: oklch(0.42 0.09 85);
+        border-color: oklch(0.9 0.03 85);
       }
 
       .tag-danger {
-        background: oklch(0.95 0.03 30);
-        color: oklch(0.38 0.12 30);
-        border-color: oklch(0.90 0.04 30);
+        background: oklch(0.95 0.03 25);
+        color: oklch(0.38 0.12 25);
+        border-color: oklch(0.9 0.04 25);
       }
 
       /* Input Fields */
@@ -1059,7 +1139,7 @@
       .field-label {
         font-family: var(--font-display);
         font-size: var(--text-sm);
-        font-weight: 600;
+        font-weight: 700;
         color: var(--color-text);
       }
 
@@ -1073,7 +1153,7 @@
       .input {
         padding: var(--space-2) var(--space-3);
         border: 1px solid var(--color-border-strong);
-        font-family: var(--font-mono);
+        font-family: var(--font-body);
         font-size: var(--text-sm);
         color: var(--color-text);
         background: var(--color-surface);
@@ -1085,7 +1165,6 @@
 
       .input::placeholder {
         color: var(--color-text-tertiary);
-        font-family: var(--font-mono);
       }
 
       .input:focus {
@@ -1096,7 +1175,7 @@
 
       .input:invalid:not(:placeholder-shown) {
         border-color: var(--color-danger);
-        box-shadow: 0 0 0 2px oklch(0.95 0.03 30);
+        box-shadow: 0 0 0 2px oklch(0.95 0.03 25);
       }
 
       /* Toggle Switch */
@@ -1145,7 +1224,7 @@
         background: var(--color-surface);
         border-radius: 1px;
         transition: transform var(--duration-base) var(--ease-out-expo);
-        box-shadow: 0 1px 2px oklch(0.22 0.005 55 / 0.2);
+        box-shadow: 0 1px 2px oklch(0.22 0.005 160 / 0.2);
       }
 
       .toggle:checked {
@@ -1166,19 +1245,23 @@
       .card-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1px;
-        background: var(--color-border);
+        gap: var(--space-4);
       }
 
       .card {
         background: var(--color-surface);
-        padding: var(--space-8);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-6);
         position: relative;
-        transition: background var(--duration-fast) ease;
+        transition:
+          box-shadow var(--duration-fast) ease,
+          border-color var(--duration-fast) ease;
       }
 
       .card:hover {
-        background: var(--color-surface-raised);
+        border-color: var(--color-border-strong);
+        box-shadow: var(--shadow-md);
       }
 
       .card-id {
@@ -1187,16 +1270,6 @@
         letter-spacing: 0.1em;
         color: var(--color-text-tertiary);
         margin-bottom: var(--space-4);
-        display: flex;
-        align-items: center;
-        gap: var(--space-2);
-      }
-
-      .card-id::before {
-        content: "";
-        width: 4px;
-        height: 4px;
-        background: var(--color-accent);
       }
 
       .card-title {
@@ -1222,6 +1295,53 @@
         gap: var(--space-3);
         padding-top: var(--space-4);
         border-top: 1px dashed var(--color-border);
+      }
+
+      /* Data table — Geist Mono cells, uppercase mono headers, green row hover */
+      .data-table {
+        min-width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: var(--text-sm);
+      }
+
+      .data-table thead tr {
+        background: var(--color-surface-raised);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .data-table th {
+        white-space: nowrap;
+        padding: var(--space-3) var(--space-4);
+        font-family: var(--font-mono);
+        font-weight: 400;
+        font-size: var(--text-xs);
+        color: var(--color-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .data-table td {
+        padding: var(--space-3) var(--space-4);
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--color-text-secondary);
+        border-bottom: 1px solid var(--color-border);
+        white-space: nowrap;
+      }
+
+      .data-table tbody tr {
+        transition: background var(--duration-fast) ease;
+      }
+
+      .data-table tbody tr:hover {
+        background: var(--color-accent-muted);
+      }
+
+      .table-shell {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        overflow-x: auto;
       }
 
       /* ─────────────────────────────────────────────
@@ -1347,7 +1467,7 @@
       .modal-backdrop {
         position: fixed;
         inset: 0;
-        background: oklch(0.12 0.01 55 / 0.6);
+        background: oklch(0.16 0.01 165 / 0.6);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
         z-index: 1000;
@@ -1674,7 +1794,7 @@
         gap: var(--space-1);
         padding: 2px var(--space-2);
         background: var(--color-accent-muted);
-        border: 1px solid oklch(0.82 0.04 55);
+        border: 1px solid oklch(0.82 0.04 160);
         border-radius: var(--radius-xs);
         font-family: var(--font-mono);
         font-size: 9px;
@@ -1686,7 +1806,7 @@
       }
 
       .searchahead-chip:hover {
-        background: oklch(0.88 0.04 215);
+        background: oklch(0.88 0.035 158);
       }
 
       .searchahead-chip::after {
@@ -2154,7 +2274,7 @@
         <a href="#" class="nav-brand">
           <span class="brand-mark"></span>
           data.monster
-          <span class="nav-seed">DS2-SYNAPSE-8847</span>
+          <span class="nav-seed">DS-LEDGER-v3</span>
         </a>
         <ul class="nav-links">
           <li><a href="#colors">Colors</a></li>
@@ -2171,7 +2291,7 @@
     <header class="hero grid-bg">
       <div class="hero-classification entrance">
         <span class="class-line"></span>
-        Design System Specification — v2.0
+        Design System Specification — v3.0
       </div>
       <h1 class="hero-title entrance entrance-d1">
         Strict. Proficient.<br /><span class="accent-word">Trusted.</span>
@@ -2226,7 +2346,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent</span>
-            <span class="color-swatch-value">oklch(0.70 0.22 50)</span>
+            <span class="color-swatch-value">oklch(0.44 0.1 158)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2242,7 +2362,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Light</span>
-            <span class="color-swatch-value">oklch(0.79 0.17 62)</span>
+            <span class="color-swatch-value">oklch(0.55 0.11 160)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2258,7 +2378,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Dark</span>
-            <span class="color-swatch-value">oklch(0.60 0.20 45)</span>
+            <span class="color-swatch-value">oklch(0.37 0.09 156)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2274,7 +2394,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Accent Muted</span>
-            <span class="color-swatch-value">oklch(0.94 0.04 55)</span>
+            <span class="color-swatch-value">oklch(0.94 0.025 160)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2292,7 +2412,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Surface</span>
-            <span class="color-swatch-value">oklch(0.985 0.003 55)</span>
+            <span class="color-swatch-value">oklch(0.99 0.003 160)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2308,7 +2428,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Raised</span>
-            <span class="color-swatch-value">oklch(0.965 0.005 55)</span>
+            <span class="color-swatch-value">oklch(0.965 0.004 160)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2324,7 +2444,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Sunken</span>
-            <span class="color-swatch-value">oklch(0.94 0.006 55)</span>
+            <span class="color-swatch-value">oklch(0.94 0.005 160)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2342,7 +2462,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Text Primary</span>
-            <span class="color-swatch-value">oklch(0.12 0.01 55)</span>
+            <span class="color-swatch-value">oklch(0.16 0.01 165)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2358,7 +2478,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Text Secondary</span>
-            <span class="color-swatch-value">oklch(0.38 0.012 55)</span>
+            <span class="color-swatch-value">oklch(0.4 0.012 165)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2376,7 +2496,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Success</span>
-            <span class="color-swatch-value">oklch(0.72 0.14 215)</span>
+            <span class="color-swatch-value">oklch(0.6 0.12 158)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2392,7 +2512,7 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Warning</span>
-            <span class="color-swatch-value">oklch(0.79 0.17 62)</span>
+            <span class="color-swatch-value">oklch(0.75 0.12 85)</span>
           </div>
           <div class="copy-confirm">Copied</div>
         </div>
@@ -2408,9 +2528,67 @@
           ></div>
           <div class="color-swatch-info">
             <span class="color-swatch-name">Danger</span>
-            <span class="color-swatch-value">oklch(0.67 0.24 30)</span>
+            <span class="color-swatch-value">oklch(0.55 0.16 25)</span>
           </div>
           <div class="copy-confirm">Copied</div>
+        </div>
+      </div>
+
+      <!-- Ramp strips — sage (brand green), gold (micro-accent), sand (ink neutrals) -->
+      <div class="ramp-block entrance entrance-d2">
+        <div>
+          <div class="ramp-label">
+            <span>sage — brand green ramp (status, data categories)</span>
+            <span>--color-sage-50 … 900</span>
+          </div>
+          <div class="ramp-row">
+            <div class="ramp-step" style="background: var(--color-sage-50)"><span>50</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-100)"><span>100</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-200)"><span>200</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-300)"><span>300</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-400)"><span>400</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-500)"><span>500</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-600)"><span>600</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-700)"><span>700</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-800)"><span>800</span></div>
+            <div class="ramp-step" style="background: var(--color-sage-900)"><span>900</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="ramp-label">
+            <span>gold — rare micro-accent (growth highlights). Never decorative.</span>
+            <span>--color-copper-50 … 900</span>
+          </div>
+          <div class="ramp-row">
+            <div class="ramp-step" style="background: var(--color-copper-50)"><span>50</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-100)"><span>100</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-200)"><span>200</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-300)"><span>300</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-400)"><span>400</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-500)"><span>500</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-600)"><span>600</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-700)"><span>700</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-800)"><span>800</span></div>
+            <div class="ramp-step" style="background: var(--color-copper-900)"><span>900</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="ramp-label">
+            <span>sand — ink-neutral ramp, tinted toward brand hue</span>
+            <span>--color-sand-50 … 900</span>
+          </div>
+          <div class="ramp-row">
+            <div class="ramp-step" style="background: var(--color-sand-50)"><span>50</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-100)"><span>100</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-200)"><span>200</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-300)"><span>300</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-400)"><span>400</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-500)"><span>500</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-600)"><span>600</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-700)"><span>700</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-800)"><span>800</span></div>
+            <div class="ramp-step" style="background: var(--color-sand-900)"><span>900</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -2430,7 +2608,7 @@
             <span class="type-token-name">--text-4xl</span>
             <span class="type-token-value">clamp(3.2, 7vw, 5.06)</span>
           </div>
-          <span class="type-sample-display specimen-4xl">Synapse</span>
+          <span class="type-sample-display specimen-4xl">Ledger</span>
         </div>
         <div class="type-row">
           <div class="type-meta">
@@ -2473,10 +2651,10 @@
             <span class="type-token-value">1rem / 400</span>
           </div>
           <p class="type-sample-body specimen-base">
-            Manrope brings geometric clarity with generous spacing and a
-            friendly character. Its clean lines and balanced x-height keep
-            paragraphs comfortable for long sessions, while the slightly
-            informal touch keeps text from feeling clinical or cold.
+            Inter carries every word of the interface — headings, body copy,
+            and controls alike. One neo-grotesque voice keeps the product
+            quiet and professional; hierarchy comes from size and weight,
+            never from a change of typeface.
           </p>
         </div>
         <div class="type-row">
@@ -2503,31 +2681,31 @@
       <!-- Font pair detail -->
       <div class="font-pair-grid entrance entrance-d2">
         <div class="font-pair-card">
-          <span class="font-pair-label">Display Font</span>
-          <h3 class="font-pair-name">Source Serif 4</h3>
+          <span class="font-pair-label">Interface Font — Display & Body</span>
+          <h3 class="font-pair-name">Inter</h3>
           <span class="font-pair-classification"
-            >Variable optical serif / Angle-accent terminals</span
+            >Neo-grotesque sans / 400 · 600 · 700 / every heading and paragraph</span
           >
-          <p class="font-pair-sample display-sample">
+          <p class="font-pair-sample body-sample">
             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
             abcdefghijklmnopqrstuvwxyz<br />
             0123456789<br />
-            <em>Precision. Velocity. Trust.</em>
+            <em>Precise. Professional. Trusted.</em>
           </p>
         </div>
         <div class="font-pair-card">
-          <span class="font-pair-label">Body Font</span>
-          <h3 class="font-pair-name" style="font-family: var(--font-body)">
-            Manrope
+          <span class="font-pair-label">Data Font — Detail</span>
+          <h3 class="font-pair-name" style="font-family: var(--font-mono)">
+            Geist Mono
           </h3>
           <span class="font-pair-classification"
-            >Variable sans / Geometric / Expanded metrics</span
+            >Monospace / tables, chart ticks, tags, IDs, code</span
           >
-          <p class="font-pair-sample body-sample">
+          <p class="font-pair-sample" style="font-family: var(--font-mono)">
             abcdefghijklmnopqrstuvwxyz<br />
             ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
             0123456789<br />
-            Clear. Open. Fast.
+            2026-09-17 · 14:32:07 UTC
           </p>
         </div>
       </div>
@@ -2713,7 +2891,7 @@
           <h3 class="component-group-title">Cards</h3>
           <div class="card-grid">
             <article class="card">
-              <span class="card-id">SY-001</span>
+              <span class="card-id">DM-001</span>
               <h4 class="card-title">Strict Patterns</h4>
               <p class="card-body">
                 Every visual value traces to a named token. Engineers and
@@ -2726,7 +2904,7 @@
               </div>
             </article>
             <article class="card">
-              <span class="card-id">SY-002</span>
+              <span class="card-id">DM-002</span>
               <h4 class="card-title">Measured Velocity</h4>
               <p class="card-body">
                 Movement communicates state change in the interface. When a
@@ -2739,7 +2917,7 @@
               </div>
             </article>
             <article class="card">
-              <span class="card-id">SY-003</span>
+              <span class="card-id">DM-003</span>
               <h4 class="card-title">Perceptual Accuracy</h4>
               <p class="card-body">
                 OKLCH ensures colors look equally distinct to all users.
@@ -2751,6 +2929,50 @@
                 <button class="btn btn-ghost btn-sm">Details</button>
               </div>
             </article>
+          </div>
+        </div>
+
+        <!-- ─── Data Table ─── -->
+        <div class="component-group">
+          <span class="component-group-label">Data Surfaces</span>
+          <h3 class="component-group-title">Data Table</h3>
+          <div class="table-shell">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Region</th>
+                  <th>MRR</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ACC-1042</td>
+                  <td>EMEA</td>
+                  <td>€ 48,210</td>
+                  <td><span class="tag tag-success">Healthy</span></td>
+                </tr>
+                <tr>
+                  <td>ACC-1077</td>
+                  <td>APAC</td>
+                  <td>€ 12,940</td>
+                  <td><span class="tag tag-warning">Watch</span></td>
+                </tr>
+                <tr>
+                  <td>ACC-1103</td>
+                  <td>AMER</td>
+                  <td>€ 96,050</td>
+                  <td><span class="tag tag-success">Healthy</span></td>
+                </tr>
+                <tr>
+                  <td>ACC-1128</td>
+                  <td>EMEA</td>
+                  <td>€ 3,780</td>
+                  <td><span class="tag tag-danger">Churn risk</span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -2767,7 +2989,7 @@
               id="acc-trigger-1"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">SY-ACC-01</span>
+                <span class="accordion-ref">DM-ACC-01</span>
                 Pipeline Configuration
               </span>
               <span class="accordion-icon">▾</span>
@@ -2800,7 +3022,7 @@
               id="acc-trigger-2"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">SY-ACC-02</span>
+                <span class="accordion-ref">DM-ACC-02</span>
                 Deployment Workflow
               </span>
               <span class="accordion-icon">▾</span>
@@ -2834,7 +3056,7 @@
               id="acc-trigger-3"
             >
               <span class="accordion-trigger-left">
-                <span class="accordion-ref">SY-ACC-03</span>
+                <span class="accordion-ref">DM-ACC-03</span>
                 Health Classification
               </span>
               <span class="accordion-icon">▾</span>
@@ -3128,7 +3350,7 @@
 
       <div class="principles-grid entrance entrance-d1">
         <div class="principle">
-          <span class="principle-ref">SY-P01</span>
+          <span class="principle-ref">DM-P01</span>
           <h3 class="principle-title">Structure enables velocity</h3>
           <p class="principle-desc">
             A consistent interface lets engineers focus on pipelines, not pixels.
@@ -3138,7 +3360,7 @@
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">SY-P02</span>
+          <span class="principle-ref">DM-P02</span>
           <h3 class="principle-title">Precision is trust</h3>
           <p class="principle-desc">
             Operators make decisions under pressure with high stakes. Ambiguous
@@ -3148,7 +3370,7 @@
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">SY-P03</span>
+          <span class="principle-ref">DM-P03</span>
           <h3 class="principle-title">Motion conveys state</h3>
           <p class="principle-desc">
             Every transition answers a question: what just changed? When a
@@ -3158,7 +3380,7 @@
           </p>
         </div>
         <div class="principle">
-          <span class="principle-ref">SY-P04</span>
+          <span class="principle-ref">DM-P04</span>
           <h3 class="principle-title">Vitality in the system</h3>
           <p class="principle-desc">
             Pure gray is a missed opportunity. Neutrals tinted toward the
@@ -3176,8 +3398,8 @@
     <footer class="footer">
       <span class="footer-brand">data.monster Design System</span>
       <div class="footer-meta">
-        <span>SEED: DS2-SYNAPSE-8847</span>
-        <span>v2.0</span>
+        <span>SEED: DS-LEDGER-v3</span>
+        <span>v3.0</span>
         <span>OKLCH</span>
       </div>
       <ul class="footer-links">
@@ -3198,7 +3420,7 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-header-left">
-            <span class="modal-header-ref">SY-MOD-01</span>
+            <span class="modal-header-ref">DM-MOD-01</span>
             <h2 class="modal-title" id="modal-confirm-title">
               Confirm Deployment
             </h2>
@@ -3243,7 +3465,7 @@
       <div class="modal">
         <div class="modal-header">
           <div class="modal-header-left">
-            <span class="modal-header-ref">SY-MOD-02</span>
+            <span class="modal-header-ref">DM-MOD-02</span>
             <h2 class="modal-title" id="modal-config-title">
               Edit Endpoint
             </h2>
@@ -3302,11 +3524,11 @@
       <div class="modal">
         <div
           class="modal-header"
-          style="border-bottom-color: oklch(0.90 0.04 30)"
+          style="border-bottom-color: oklch(0.9 0.04 25)"
         >
           <div class="modal-header-left">
             <span class="modal-header-ref" style="color: var(--color-danger)"
-              >SY-MOD-03</span
+              >DM-MOD-03</span
             >
             <h2
               class="modal-title"

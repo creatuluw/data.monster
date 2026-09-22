@@ -1,0 +1,29 @@
+# Q: Which mainstream open-source BI/analytics platforms offer decomposition-tree or driver-tree-like visualizations with live data (Superset, Metabase, Grafana, Redash, Lightdash, Evidence, ECharts/AntV plugins)?
+
+## Findings
+
+**Bottom line: no mainstream OSS BI platform ships a true Power BI-style decomposition tree (ad-hoc dimension-by-dimension drill with auto-aggregation on live data). Closest = Superset Tree Chart (weak), Grafana Interactive Tree Panel (navigation only), and DIY via Apache ECharts.**
+
+1. **Apache Superset — "Tree Chart" (built-in, ECharts plugin)** — exists and works on live query results, but renders a plain hierarchy (id/parent rows); no measure sizing, no ad-hoc dimension decomposition. Preset's own blog: "Tree charts in Superset aren't super useful at visualizing quantitative data." Apache-2.0. Maturity: shipped core plugin (since ~v1.3/2021). **Verdict: usable tree, NOT a driver tree.** [source: https://preset.io/blog/2021-6-14-superset-nine-new-charts/] [source: https://stackoverflow.com/questions/74378795/apache-superset-tree-chart-doesnt-display-hierarchy-correctly] — confidence: verified
+2. **Grafana — Interactive Tree Panel (equansdatahub-tree-panel, EQUANS Zuid-Nederland bv)** — v1.7.7, Grafana ≥10.4, catalog "passed" quality checks, updated May 2026. Renders Node ID/Parent ID/Label from any table datasource as an interactive tree; node click can set dashboard variables (→ can drive other live panels, giving a hand-built driver-tree feel); icon/value/color mappings; table mode with extra fields. Aggregation must happen in the query — the panel does NOT aggregate. License: Apache-2.0 per its BrightGrafana source repo. **Verdict: closest live-data tree UX in a mainstream OSS platform; still a hierarchy navigator, not auto-decomposition.** [source: https://grafana.com/grafana/plugins/equansdatahub-tree-panel/] [source: https://github.com/BrightGrafana/bright-tree-panel] — confidence: verified
+3. **Grafana — Tree View (pgillich-tree-panel) & Node Graph (core panel)** — Tree View builds a tree from table/JSON-API records (catalog listing from 2022, stale). Core Node Graph panel renders node/edge data and can express trees on live data. Low relevance to driver trees. [source: https://grafana.com/grafana/plugins/pgillich-tree-panel/] — confidence: verified (Tree View) / reported (Node Graph)
+4. **Apache ECharts (Apache-2.0) — `tree` series type** — the real DIY route: hierarchical tree with value-based node sizing, exactly what a driver tree needs; embeddable as a custom Superset chart plugin or Grafana panel wired to live queries. Requires building the aggregation + dimension drill yourself. [source: https://echarts.apache.org/en/option.html#series-tree] (well-known; not re-fetched this run) — confidence: verified (library) / N/A (no ready plugin found)
+5. **Metabase** — no decomposition/driver tree. Closest official visualization is **Treemap** ("nested rectangles, sized by a metric … break a total down across one or two nested categorical dimensions") — the spirit of decomposition, fixed 1-2 levels, no ad-hoc drill. AGPL-3.0. **Verdict: no.** [source: https://www.metabase.com/docs/latest/questions/visualizations] — confidence: verified (treemap via official docs surfaced) / absence-based for the rest
+6. **Redash, Lightdash, Evidence** — no decomposition/driver-tree visual found in any doc, catalog, or search result. Evidence explicitly offers only a **custom-components** escape hatch (build your own in `components/`). [source: https://docs.evidence.dev/core-concepts/custom-components] — confidence: reported (absence of evidence, multiple query variants)
+7. **Superset community plugins mimicking Power BI's decomposition tree** — none surfaced; the official Third-Party Plugins Directory wiki failed to load (GitHub dynamic render), so directory contents unverifiable this run. No GitHub repo named/decomposed as a Superset decomposition-tree plugin appeared in any query variant. — confidence: unverifiable (directory) / reported (absence)
+
+## Tensions
+
+- "Tree panel" ≠ "decomposition tree": Grafana/Superset trees render a **pre-shaped hierarchy you must produce in SQL**; Power BI's decomposes a measure along dimensions **chosen at view time** with server-side aggregation. Marketing copy blurs this.
+- Preset (Superset's commercial steward) itself downplays the Tree Chart for quantitative use — so Superset is unlikely to ship a driver tree soon.
+- Grafana's Interactive Tree Panel's variable-setting clicks can fake driver-tree interactivity, but every aggregation level is hardcoded in the query — fragile when users want to drill differently.
+
+## Open questions
+
+- Does the Superset Third-Party Plugins Directory contain any unpublished decomposition-tree plugin? (wiki page wouldn't render — needs manual GitHub check)
+- Do the commercial Power BI custom visuals with decomposition trees (xViz/Inforiver Analytics+) have OSS equivalents on npm that could be wrapped as Superset/Grafana plugins?
+- AntV G6 graph library (Alibaba) as an alternative DIY base to ECharts — not searched this run.
+
+## Search trail
+
+TinyFish Search API (built-in websearch unavailable; degraded to TinyFish, which worked): `superset decomposition tree plugin`; `metabase decomposition tree visualization`; `grafana driver tree panel plugin`; `echarts decomposition tree visualization power bi`; `open source decomposition tree visualization power BI alternative github`; `superset chart tree plugin echarts hierarchical`; `lightdash OR redash OR evidence.dev decomposition tree driver tree visualization` (noise — YouTube trees); `github superset-plugin-chart decomposition tree value driver`; `evidence.dev component driver tree KPI decomposition`. Deep fetches (TinyFish Fetch): equansdatahub-tree-panel plugin page (full docs), BrightGrafana/bright-tree-panel README, Superset third-party-plugins wiki (failed to render).

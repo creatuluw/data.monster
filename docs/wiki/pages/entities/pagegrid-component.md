@@ -15,7 +15,7 @@ The canvas renderer + editing surface of the central-charts page editor: lays ou
 - **Location**: `src/lib/components/charts/PageGrid.svelte`
 - **Interface**: props `{ doc: PageDoc, runtime: PageRuntime, configureId?: string | null, onConfigure?: (blockId) => void, onConfigureRow?: (ri) => void, onConfigureColumn?: (ri, ci) => void, onAdd?: (ri, ci) => void, onAddRow?: () => void }`
 - **Layout**: row shells stack (`space-y-4` + tooltip overflow room); each row renders `rowColumns(row)` (from spec-types) as `grid grid-cols-12 gap-4` — the **column** owns the span per [q13-explicit-grid-rows-blocks-take-col-spans](../../decisions/q13-explicit-grid-rows-blocks-take-col-spans.md) (amended 2026-09-17: span moved from block to column); legacy flat-`blocks` rows keep rendering through the same helper. Rows are the only page-level primitive — components are added inside columns.
-- **Block dispatch**: `chart` → registry renderer when data is ready, else `ChartCard` fallback (missing/loading/error/empty states); `table` → TableRenderer; `text` → plain card.
+- **Block dispatch**: `chart` → registry renderer when data is ready; `unconfigured` (`needsSetup` true) → `ChartCard` status `'setup'` hosting [skeletonsetup-component](./skeletonsetup-component.md) when the data context (`schemas`/`items`/`relationships`) is loaded, else a plain dashed silhouette + **Add dimension / Add measure** buttons (no-data-context fallback); remaining states → `ChartCard` fallback (missing/loading/error/empty); `table` → TableRenderer; `text` → plain card.
 - **Editing affordances** (2026-09-17):
   - Row bottom grip — pointer-capture drag sets `row.height` (min 80px).
   - Grip between columns — takes/gives `span` from the next sibling, clamped 1–12.
@@ -31,8 +31,11 @@ The canvas renderer + editing surface of the central-charts page editor: lays ou
 - Config surfaces: [chartconfigdrawer-component](./chartconfigdrawer-component.md) (blocks) plus host row/column drawers in `/pages/[slug]`.
 - The `+ Component` picker iterates [library-registry-system](./library-registry-system.md) — registered components are the menu, by construction.
 - [page-editor-tri-mode-design-code-settings](../../decisions/page-editor-tri-mode-design-code-settings.md) — canvas shows only visualizations & data; settings live in drawers.
+- Renders [skeletonsetup-component](./skeletonsetup-component.md) inside `unconfigured` blocks' cards — the skeleton silhouette lives only there (PR #11 removed PageGrid's duplicate wrapper).
 
 ## Lifecycle
 
 - First added: 2026-09-15 with the central-charts page editor; canvas made full-width same day (tri-mode decision).
 - 2026-09-17: explicit-columns rework — row/column drag-resize grips, `+ Component` / `+ Row` affordances, row/column config callbacks, host picker wiring; spans moved from block to column.
+- 2026-09-17 (PR #11): duplicate-skeleton fix — the `unconfigured` branch no longer wraps SkeletonSetup in its own pulse silhouette (unconfigured charts showed two stacked skeletons); plain silhouette + drawer buttons survive only in the no-data-context fallback.
+- 2026-09-21: `onExternalCreate(kind, table, blockId)` prop — skeleton/modal "Create in /data" requests reach the host with the block id for the [create-in-data-round-trip](./create-in-data-round-trip.md); `onSelect` typed as `{ dimension, value }`.

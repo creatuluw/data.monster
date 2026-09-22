@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InboxActionDrawer Component</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--color-accent:oklch(0.69 0.16 41);--color-accent-dark:oklch(0.44 0.14 41);--color-accent-muted:oklch(0.93 0.03 41);--color-surface:white;--color-surface-raised:oklch(0.96 0.005 250);--color-surface-sunken:oklch(0.935 0.006 250);--color-text:oklch(0.14 0.01 250);--color-text-secondary:oklch(0.4 0.012 250);--color-text-tertiary:oklch(0.58 0.01 250);--color-text-on-accent:oklch(0.97 0.005 250);--color-border:oklch(0.86 0.006 250);--color-border-strong:oklch(0.72 0.012 250);--font-display:"Source Serif 4",serif;--font-body:"Manrope",sans-serif;--font-mono:"Geist Mono",monospace;--text-xs:0.6875rem;--text-sm:0.8125rem;--text-base:1rem;--text-md:1.25rem;--text-lg:1.563rem;--text-2xl:2.441rem;--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;--space-6:1.5rem;--space-8:2rem;--space-12:3rem;--radius-xs:2px;--radius-sm:3px;--shadow-lg:0 6px 24px oklch(0.22 0.005 250 / 0.12);--gutter:clamp(1rem,3vw,2rem);--ease-out-expo:cubic-bezier(0.16,1,0.3,1);--duration-fast:180ms;--duration-base:340ms;--leading-relaxed:1.8;--max-width:72rem}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;color:var(--color-text);background:var(--color-surface);padding:var(--space-12) var(--gutter)}
+.page{max-width:var(--max-width);margin:0 auto}
+h1{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:700;letter-spacing:-0.03em;color:var(--color-text);margin-bottom:var(--space-2)}
+p.desc{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-8)}
+.demo{border:1px solid var(--color-border);border-radius:var(--radius-sm);overflow:hidden;margin-bottom:var(--space-8)}
+.demo-label{font-size:var(--text-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-4);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;padding:var(--space-6);border-bottom:1px solid var(--color-border);background:var(--color-surface)}
+.drawer-header-left{display:flex;flex-direction:column;gap:var(--space-1)}
+.drawer-ref{font-family:var(--font-mono);font-size:9px;letter-spacing:0.1em;color:var(--color-accent)}
+.drawer-title{font-family:var(--font-display);font-size:var(--text-md);font-weight:600;color:var(--color-text)}
+.btn-icon{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:transparent;border:1px solid var(--color-border);border-radius:var(--radius-xs);cursor:pointer;color:var(--color-text-tertiary);transition:color var(--duration-fast) ease}
+.btn-icon:hover{color:var(--color-text);border-color:var(--color-border-strong)}
+.drawer-body{padding:var(--space-6);font-size:var(--text-sm);color:var(--color-text-secondary);line-height:var(--leading-relaxed)}
+.drawer-body p{margin-bottom:var(--space-3)}
+.info-row{display:flex;flex-direction:column;gap:2px;margin-bottom:var(--space-4);padding:var(--space-3);background:var(--color-surface-raised);border:1px solid var(--color-border);border-radius:var(--radius-sm)}
+.info-label{font-family:var(--font-mono);font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:var(--color-text-tertiary)}
+.info-value{font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text)}
+.tag{display:inline-flex;align-items:center;gap:var(--space-1);padding:2px var(--space-2);border:1px solid;font-size:9px;font-weight:600;border-radius:var(--radius-xs);font-family:var(--font-body)}
+.tag-warning{background:oklch(0.96 0.03 80);color:oklch(0.42 0.1 80);border-color:oklch(0.9 0.03 80)}
+.tag-success{background:oklch(0.95 0.03 160);color:oklch(0.4 0.1 160);border-color:oklch(0.88 0.04 160)}
+.flex-row{display:flex;align-items:center;gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4)}
+</style>
+</head>
+<body>
+<div class="page">
+<h1>InboxActionDrawer</h1>
+<p class="desc">Detail drawer for inbox actions showing full metadata and status controls.</p>
+<div class="demo-label">Action detail drawer</div>
+<div class="demo" style="max-width:600px">
+<div class="drawer-header">
+<div class="drawer-header-left"><span class="drawer-ref">ACT-2024-147</span><h2 class="drawer-title">Review student progress report</h2></div>
+<button class="btn-icon" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+</div>
+<div class="drawer-body">
+<div class="flex-row"><span class="tag tag-warning">In uitvoering</span></div>
+<div class="info-row"><span class="info-label">Description</span><span class="info-value">Review quarterly progress report for Emma de Vries and provide detailed feedback on mathematics scores.</span></div>
+<div class="info-row"><span class="info-label">Assigned To</span><span class="info-value">Kees van Dijk</span></div>
+<div class="info-row"><span class="info-label">Created</span><span class="info-value">2024-06-01 14:30</span></div>
+<div class="info-row"><span class="info-label">Due Date</span><span class="info-value">2024-06-15</span></div>
+<div class="info-row"><span class="info-label">Source</span><span class="info-value">Case #CS-2024-089</span></div>
+<div class="info-row"><span class="info-label">Tags</span><span class="info-value">math, review, q2-2024</span></div>
+</div>
+</div>
+</div>
+</body>
+</html>

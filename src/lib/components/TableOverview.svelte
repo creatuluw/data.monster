@@ -4,8 +4,11 @@
 	import { getAllTableMeta, getTableLabels, getAllTags as getAllTagsOp, getAllGroups as getAllGroupsOp, getTableTypes, type TableMeta, type TableLabels } from '$lib/db-operations';
 	import Tabs from '$lib/components/Tabs.svelte';
 	import RelationshipEditor from '$lib/components/charts/RelationshipEditor.svelte';
-	import ItemEditor from '$lib/components/charts/ItemEditor.svelte';
+	import ItemEditor, { type ItemEditorPreset } from '$lib/components/charts/ItemEditor.svelte';
 	import { Sigma, Ruler } from 'lucide-svelte';
+	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
+	import { untrack } from 'svelte';
 
 	let {
 		tables = [],
@@ -26,6 +29,36 @@
 	let allTags = $state<string[]>([]);
 	let allGroups = $state<string[]>([]);
 	let tableTypes = $state<Record<string, string>>({});
+
+	// table -> typed columns, for the smart expression editor
+	let columnMetas = $derived(
+		Object.fromEntries(tableMetas.map((m) => [m.name, m.columns.map((c) => ({ name: c.name, type: c.type }))]))
+	);
+
+	// deep link from a chart drawer: /data?tab=measures&add=1&table=sales&return=revenue&block=r0-c0-b0
+	const KNOWN_TABS = ['tables', 'relationships', 'measures', 'dimensions', 'definitions'];
+	let incoming = $state<ItemEditorPreset | undefined>(undefined);
+	{
+		const q = page.url.searchParams;
+		const tab = q.get('tab');
+		if (tab && KNOWN_TABS.includes(tab)) activeTab = tab;
+		if (q.has('add') && (tab === 'measures' || tab === 'dimensions')) {
+			incoming = { open: true, table: q.get('table') ?? '', returnTo: q.get('return') ?? '', block: q.get('block') ?? '' };
+			// editor params consumed once (don't re-trigger on reload); tab param survives
+			replaceState(tab ? `/data?tab=${tab}` : '/data', {});
+		}
+	}
+
+	// tabs live in the URL: switching tabs writes ?tab=, the default tab cleans the URL.
+	// NOTE: never guard via page.url — SvelteKit's page.url does NOT reflect replaceState-written
+	// params (stays at the mount URL), so reads are stale. untrack already prevents self-reruns;
+	// first-run writes are idempotent (URL already equals what we'd write).
+	$effect(() => {
+		const tab = activeTab;
+		untrack(() => {
+			replaceState(tab === 'tables' ? '/data' : `/data?tab=${tab}`, {});
+		});
+	});
 
 	// table -> column names, for the semantic-layer editors
 	let columnSchemas = $derived(
@@ -292,10 +325,14 @@
 		<RelationshipEditor schemas={columnSchemas} />
 	{:else if activeTab === 'measures'}
 		<hr class="overview-divider" />
-		<ItemEditor kind="measure" schemas={columnSchemas} />
+		{#if !loading}
+			<ItemEditor kind="measure" schemas={columnSchemas} metas={columnMetas} preset={incoming} />
+		{/if}
 	{:else if activeTab === 'dimensions'}
 		<hr class="overview-divider" />
-		<ItemEditor kind="dimension" schemas={columnSchemas} />
+		{#if !loading}
+			<ItemEditor kind="dimension" schemas={columnSchemas} metas={columnMetas} preset={incoming} />
+		{/if}
 	{:else if activeTab === 'definitions'}
 		<hr class="overview-divider" />
 		<div class="tab-empty">

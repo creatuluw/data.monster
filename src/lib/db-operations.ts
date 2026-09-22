@@ -96,6 +96,17 @@ export async function setWorkspacePath(path: string): Promise<void> {
 	return invoke<void>('set_workspace_path', { path });
 }
 
+/** Race an invoke against a timeout — hung IPC (backend wedge) must surface, not stall forever. */
+export function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+	return new Promise<T>((resolve, reject) => {
+		const t = setTimeout(() => reject(new Error(message)), ms);
+		p.then(
+			(v) => { clearTimeout(t); resolve(v); },
+			(e) => { clearTimeout(t); reject(e); }
+		);
+	});
+}
+
 export async function executeQuery(sql: string): Promise<QueryResult | DmlResult> {
 	return invoke<QueryResult | DmlResult>('execute_query', { sql });
 }

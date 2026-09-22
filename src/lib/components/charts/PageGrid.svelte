@@ -25,6 +25,7 @@
 		items,
 		relationships,
 		onCreateMasterItem,
+		onExternalCreate,
 		onAdd,
 		onAddRow
 	}: {
@@ -41,6 +42,8 @@
 		relationships?: Relationship[];
 		/** host-side master-item creation for the in-chart ✚ flows; resolves to the new item id */
 		onCreateMasterItem?: (kind: 'dimension' | 'measure', table: string, label: string, expr: string) => Promise<string>;
+		/** open the /data master-item section for full-panel creation — host navigates + returns to blockId */
+		onExternalCreate?: (kind: 'dimension' | 'measure', table: string, blockId: string) => void;
 		/** + Component clicked — host opens the component picker; ci = first empty column (or 0 to spawn a new one) */
 		onAdd?: (ri: number, ci: number) => void;
 		/** + Row clicked — host appends a row (and autosaves) */
@@ -152,7 +155,7 @@
 				subtitle={block.chart.subtitle ?? ''}
 				tooltip={block.chart.tooltip}
 				selected={sel ? { dimension: sel.dimension, value: sel.value } : null}
-				onSelect={(s) => runtime.select(id, s)}
+				onSelect={(s: { dimension: string; value: string }) => runtime.select(id, s)}
 				colorScale={runtime.colorScale}
 				fmts={runtime.fmtsFor(state)}
 				heightVh={block.chart.heightVh ?? 0.3}
@@ -162,7 +165,7 @@
 			<!-- setup skeleton: no data until every role minimum is met -->
 			<ChartCard title={block.chart.title ?? def?.label ?? block.chart.type} subtitle={block.chart.subtitle ?? ''} status="setup">
 				{#if schemas && items && relationships}
-					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} />
+					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} onExternalCreate={(k, t) => onExternalCreate?.(k, t, id)} />
 				{:else}
 				<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
 					<div class="flex flex-col gap-1.5 w-full max-w-56" aria-hidden="true">

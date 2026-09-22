@@ -495,6 +495,9 @@
 		flex: 1;
 		overflow: hidden;
 		display: flex;
+		/* containing block for contained drawers/settings panels — keeps them
+		   below the header/breadcrumb and above the tab bar */
+		position: relative;
 	}
 
 	.app-main {

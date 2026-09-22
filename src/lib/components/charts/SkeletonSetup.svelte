@@ -19,7 +19,8 @@
 		schemas,
 		items,
 		relationships,
-		onCreateMasterItem
+		onCreateMasterItem,
+		onExternalCreate
 	}: {
 		chart: ChartBlockSpec;
 		schemas: TableSchemas;
@@ -27,6 +28,8 @@
 		relationships: Relationship[];
 		/** host saves the master item + refreshes the library; resolves to the new item id */
 		onCreateMasterItem?: (kind: 'dimension' | 'measure', table: string, label: string, expr: string) => Promise<string>;
+		/** open the /data master-item section for full-panel creation — host navigates + returns */
+		onExternalCreate?: (kind: 'dimension' | 'measure', table: string) => void;
 	} = $props();
 
 	const def = $derived(getChartType(chart.type));
@@ -94,6 +97,7 @@
 		{items}
 		{relationships}
 		{onCreateMasterItem}
+		{onExternalCreate}
 		onClose={() => (openKind = null)}
 	/>
 {/if}

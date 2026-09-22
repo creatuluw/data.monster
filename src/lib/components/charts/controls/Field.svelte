@@ -40,10 +40,11 @@
 	}
 
 	.field-label {
-		font-size: var(--text-xs);
-		font-weight: 500;
-		color: var(--color-text-secondary);
-		letter-spacing: 0.01em;
+		font-size: 9px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text-tertiary);
 	}
 
 	.field-inline .field-label {
@@ -51,8 +52,9 @@
 	}
 
 	.field-hint {
-		font-size: 10px;
+		font-size: 9px;
 		color: var(--color-text-tertiary);
 		margin-top: -2px;
+		letter-spacing: 0.02em;
 	}
 </style>

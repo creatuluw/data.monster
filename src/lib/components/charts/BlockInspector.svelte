@@ -9,7 +9,7 @@
 	import { saveMasterItem } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { DimensionSpec, MeasureSpec } from '$lib/charts/spec-types';
-	import { Plus } from 'lucide-svelte';
+	import { Plus, SquareArrowOutUpRight } from 'lucide-svelte';
 	import Field from './controls/Field.svelte';
 	import TextInput from './controls/TextInput.svelte';
 	import NumberInput from './controls/NumberInput.svelte';
@@ -18,6 +18,7 @@
 	import Section from './controls/Section.svelte';
 	import RemoveBtn from './controls/RemoveBtn.svelte';
 	import Btn from './controls/Btn.svelte';
+	import ExprEditor from './ExprEditor.svelte';
 
 	let {
 		doc,
@@ -28,7 +29,8 @@
 		items,
 		relationships,
 		onremove,
-		onItemsChanged
+		onItemsChanged,
+		onExternalCreate
 	}: {
 		doc: PageDoc;
 		ri: number;
@@ -41,6 +43,8 @@
 		onremove?: () => void;
 		/** fired after a master item was created on the spot — host reloads the library */
 		onItemsChanged?: () => void;
+		/** open the /data master-item section for full-panel creation — host navigates + returns */
+		onExternalCreate?: (kind: 'dimension' | 'measure', table: string) => void;
 	} = $props();
 
 	const block = $derived(doc.rows![ri].columns![ci].blocks[bi]);
@@ -164,10 +168,6 @@
 </script>
 
 <div class="inspector">
-	<h3 class="inspector-title">
-		{block.type === 'chart' ? `${def?.label ?? chart!.type} chart` : block.type} block
-	</h3>
-
 	<Section>
 		<div class="grid-2">
 			<Field label="Title">
@@ -210,6 +210,11 @@
 		<Section title="Dimensions">
 			{#snippet action()}
 				<Btn variant="ghost" size="sm" onclick={addDimension}><Plus size={12} /> add</Btn>
+				{#if onExternalCreate}
+					<button class="data-link" title="Create in /data — full editor" onclick={() => onExternalCreate?.('dimension', chart.source.table)}>
+						<SquareArrowOutUpRight size={12} /> /data
+					</button>
+				{/if}
 			{/snippet}
 			<div class="rows">
 				{#each chart.dimensions as d, i (i)}
@@ -244,8 +249,8 @@
 					<p class="create-title">New master dimension on <span class="mono">{chart.source.table}</span></p>
 					<div class="grid-2">
 						<TextInput placeholder="Label (e.g. Region)" bind:value={dimForm.label} />
-						<TextInput mono placeholder="Field or expression" bind:value={dimForm.expr} />
 					</div>
+					<ExprEditor bind:value={dimForm.expr} kind="dimension" table={chart.source.table} columns={tableCols} masterItems={usableItems.filter((it) => it.kind === 'dimension')} placeholder="Field or expression" />
 					{#if formError}<p class="form-error">{formError}</p>{/if}
 					<div class="form-actions">
 						<Btn variant="ghost" size="sm" onclick={() => (dimForm.open = false)}>Cancel</Btn>
@@ -258,6 +263,11 @@
 		<Section title="Measures">
 			{#snippet action()}
 				<Btn variant="ghost" size="sm" onclick={addMeasure}><Plus size={12} /> add</Btn>
+				{#if onExternalCreate}
+					<button class="data-link" title="Create in /data — full editor" onclick={() => onExternalCreate?.('measure', chart.source.table)}>
+						<SquareArrowOutUpRight size={12} /> /data
+					</button>
+				{/if}
 			{/snippet}
 			<div class="rows">
 				{#each chart.measures as m, i (i)}
@@ -297,8 +307,8 @@
 					<p class="create-title">New master measure on <span class="mono">{chart.source.table}</span></p>
 					<div class="grid-2">
 						<TextInput placeholder="Label (e.g. Revenue)" bind:value={measForm.label} />
-						<TextInput mono placeholder="Expression (e.g. sum(amount))" bind:value={measForm.expr} />
 					</div>
+					<ExprEditor bind:value={measForm.expr} kind="measure" table={chart.source.table} columns={tableCols} masterItems={usableItems.filter((it) => it.kind === 'measure')} placeholder="Expression (e.g. sum(amount))" />
 					<div class="fixed-w">
 						<Select small bind:value={measForm.fmt}>
 							{#each FMTS as f (f)}<option value={f}>{f}</option>{/each}
@@ -386,17 +396,8 @@
 	.inspector {
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-3);
+		gap: var(--space-4);
 		font-size: var(--text-sm);
-	}
-
-	.inspector-title {
-		font-family: var(--font-display);
-		font-size: var(--text-sm);
-		font-weight: 700;
-		color: var(--color-text);
-		letter-spacing: -0.01em;
-		padding: 0 2px;
 	}
 
 	.grid-2 {
@@ -472,7 +473,29 @@
 	.form-actions {
 		display: flex;
 		justify-content: flex-end;
-		gap: var(--space-1);
+		gap: var(--space-2);
+	}
+
+	/* "create in /data" link next to the section add-button */
+	.data-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		height: 24px;
+		padding: 0 var(--space-2);
+		border: 1px dashed var(--color-border);
+		border-radius: var(--radius-sm);
+		background: none;
+		color: var(--color-text-tertiary);
+		font-size: var(--text-xs);
+		cursor: pointer;
+		transition:
+			color var(--duration-fast) ease,
+			border-color var(--duration-fast) ease;
+	}
+	.data-link:hover {
+		color: var(--color-text);
+		border-color: var(--color-text-tertiary);
 	}
 
 	:global(.ctl-textarea) {

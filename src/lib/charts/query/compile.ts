@@ -55,9 +55,16 @@ function dimSelect(d: DimensionSpec, i: number, schema: TableSchemas, table: str
 	if ('ref' in d) throw new Error('unresolved master-item ref in dimensions — resolve first (FR-14)');
 	// linked-table field: validate + qualify against its own table
 	const dimTable = 'table' in d && d.table ? d.table : table;
-	checkColumn(schema, dimTable, d.col, `dimensions[${i}]`);
 	const alias = ident(d.label ?? d.col);
-	const col = dimTable !== table ? `${ident(dimTable)}.${ident(d.col)}` : ident(d.col);
+	let col: string;
+	try {
+		checkColumn(schema, dimTable, d.col, `dimensions[${i}]`);
+		col = dimTable !== table ? `${ident(dimTable)}.${ident(d.col)}` : ident(d.col);
+	} catch {
+		// ponytail: master dimensions carry user-authored expressions validated at creation
+		// (ExprEditor) — same trust level as measures, which compile raw; compile raw too
+		col = `(${d.col})`;
+	}
 	if (d.grain === undefined) return d.label ? `${col} AS ${alias}` : col;
 	const temporal = TEMPORAL_GRAINS[d.grain as keyof typeof TEMPORAL_GRAINS];
 	if (temporal) return `date_trunc('${temporal}', ${col}) AS ${alias}`;

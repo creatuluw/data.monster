@@ -27,6 +27,7 @@
 		loading: boolean;
 		queryTime: number;
 		loadedQuery: SavedQuery | null;
+		successNote: string;
 	}
 
 	let tabs = $state<QueryTab[]>([{
@@ -37,7 +38,8 @@
 		error: '',
 		loading: false,
 		queryTime: 0,
-		loadedQuery: null
+		loadedQuery: null,
+		successNote: ''
 	}]);
 	let activeTabId = $state('1');
 	let nextTabId = 2;
@@ -123,7 +125,8 @@
 			error: '',
 			loading: false,
 			queryTime: 0,
-			loadedQuery: null
+			loadedQuery: null,
+			successNote: ''
 		};
 		tabs = [...tabs, newTab];
 		activeTabId = newTab.id;
@@ -180,13 +183,13 @@
 		}
 
 		if (isCreateTableAs) {
-			updateTab({ loading: true, error: '' });
+			updateTab({ loading: true, error: '', successNote: '' });
 			const t0 = performance.now();
 			try {
 				await executeQuery(sql.trim());
 				await app.refreshTables();
 				const queryTime = performance.now() - t0;
-				updateTab({ result: null, queryTime, loading: false });
+				updateTab({ result: null, queryTime, loading: false, successNote: 'Table created successfully.' });
 			} catch (e) {
 				updateTab({
 					error: extractErrorMessage(e, 'Failed to create table'),
@@ -199,7 +202,7 @@
 
 		const cleanSql = stripped.replace(/;+\s*$/, '');
 
-		updateTab({ loading: true, error: '' });
+		updateTab({ loading: true, error: '', successNote: '' });
 		const t0 = performance.now();
 		try {
 			const pageSize = lower.includes('limit') ? 100 : 10000;
@@ -219,7 +222,7 @@
 	async function handlePageChange(page: number) {
 		const sql = activeTab.query.trim();
 		if (!sql) return;
-		updateTab({ loading: true, error: '' });
+		updateTab({ loading: true, error: '', successNote: '' });
 		try {
 			const result = await runPagedQuery(sql, page, 100);
 			updateTab({ result, loading: false });
@@ -631,7 +634,7 @@
 					const stripped = sql.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
 					const lower = stripped.toLowerCase();
 					if (!lower.startsWith('create') && !lower.startsWith('insert') && !lower.startsWith('drop') && !lower.startsWith('alter')) {
-						updateTab({ loading: true, error: '' });
+						updateTab({ loading: true, error: '', successNote: '' });
 						const t0 = performance.now();
 						try {
 							const previewSql = stripped.replace(/;+\s*$/, '');
@@ -893,8 +896,14 @@
 					{:else if !activeTab.result || activeTab.result.columns.length === 0}
 						<div class="results-empty">
 							<Database size={32} />
-							<span>No query results</span>
-							<span class="results-empty-hint">Write a query and press Run</span>
+							{#if activeTab.successNote}
+								<span>✓ {activeTab.successNote}</span>
+							{:else if activeTab.result?.isMutation}
+								<span>✓ Query executed successfully</span>
+							{:else}
+								<span>No query results</span>
+								<span class="results-empty-hint">Write a query and press Run</span>
+							{/if}
 						</div>
 					{:else}
 						<div class="results-table-wrap" bind:this={tableWrapEl} onscroll={onTableWrapScroll}>

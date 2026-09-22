@@ -1,5 +1,8 @@
 <script lang="ts">
 	import HeatmapRenderer from '$lib/components/charts/renderers/HeatmapRenderer.svelte';
+import Section from '$lib/components/charts/controls/Section.svelte';
+import Field from '$lib/components/charts/controls/Field.svelte';
+import Select from '$lib/components/charts/controls/Select.svelte';
 	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 
 	setupChartRegistry();
@@ -66,19 +69,19 @@
 		{heightVh}
 	>
 		{#snippet config()}
-			<div class="field">
-				<label class="field-label" for="cfg-scheme">scheme — enum</label>
-				<select class="input" id="cfg-scheme" bind:value={scheme}>
-					<option value="orrd">orrd</option>
-					<option value="blues">blues</option>
-					<option value="greens">greens</option>
-				</select>
-			</div>
-			<div class="field">
-				<label class="field-label" for="cfg-height">heightVh — viewport fraction</label>
-				<input class="range-input" id="cfg-height" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
-				<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
-			</div>
+			<Section>
+				<Field label="Scheme">
+					<Select bind:value={scheme}>
+						<option value="orrd">orrd</option>
+						<option value="blues">blues</option>
+						<option value="greens">greens</option>
+					</Select>
+				</Field>
+				<Field label="Height" hint="viewport fraction">
+					<input class="range-input" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
+					<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
+				</Field>
+			</Section>
 		{/snippet}
 	</HeatmapRenderer>
 </div>

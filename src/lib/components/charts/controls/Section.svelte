@@ -2,8 +2,9 @@
 	import type { Snippet } from 'svelte';
 
 	/**
-	 * Drawer control kit — section card: hairline panel with optional uppercase
-	 * micro-header and a right-aligned action snippet (e.g. "+ add").
+	 * Drawer control kit — flat section group (the /data drawer pattern): no
+	 * card chrome, consecutive sections separated by a dashed hairline,
+	 * optional uppercase micro-header + right-aligned action snippet.
 	 */
 	let {
 		title,
@@ -31,10 +32,12 @@
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
-		padding: var(--space-3) var(--space-4) var(--space-4);
-		border: 1px solid var(--color-border);
-		border-radius: var(--radius-md);
-		background: var(--color-surface);
+	}
+
+	/* dashed hairline between consecutive sections — /data drawer-divider rhythm */
+	.section + .section {
+		border-top: 1px dashed var(--color-border);
+		padding-top: var(--space-4);
 	}
 
 	.section-head {
@@ -45,9 +48,9 @@
 	}
 
 	.section-title {
-		font-size: 10px;
-		font-weight: 600;
-		letter-spacing: 0.08em;
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--color-text-tertiary);
 	}

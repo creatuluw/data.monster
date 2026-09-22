@@ -10,7 +10,7 @@
 //! by `dm_store::atomic_write` (window ≥ write debounce, so self-writes never loop).
 
 use notify::{RecursiveMode, Watcher};
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{mpsc, Mutex, OnceLock};
@@ -129,9 +129,9 @@ struct Active {
     _watcher: notify::RecommendedWatcher, // drop = stop watching
 }
 
-fn active() -> &'static Mutex<Option<Active>> {
-    static ACTIVE: OnceLock<Mutex<Option<Active>>> = OnceLock::new();
-    ACTIVE.get_or_init(|| Mutex::new(None))
+fn active() -> &'static Mutex<Vec<Active>> {
+    static ACTIVE: OnceLock<Mutex<Vec<Active>>> = OnceLock::new();
+    ACTIVE.get_or_init(|| Mutex::new(Vec::new()))
 }
 
 /// Start (or replace) the watcher for a workspace. Called on DuckDB init; a workspace
@@ -201,7 +201,88 @@ pub fn start(ws: PathBuf, app: tauri::AppHandle) -> Result<(), String> {
         }
     });
 
-    *active().lock().unwrap() = Some(Active { _watcher: watcher });
+    active().lock().unwrap().push(Active { _watcher: watcher });
+    Ok(())
+}
+
+/// Watch `data/incoming/` (FR-13): dropped CSV/Parquet/JSON files are auto-ingested
+/// with smart defaults (table name = filename stem), then moved into `data/main/`.
+pub fn start_incoming(app: tauri::AppHandle, ws: PathBuf) -> Result<(), String> {
+    let incoming = ws.join("data").join("incoming");
+    std::fs::create_dir_all(&incoming)
+        .map_err(|e| format!("failed to create data/incoming: {e}"))?;
+
+    let (tx, rx) = mpsc::channel();
+    let mut watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
+        if let Ok(event) = res {
+            for path in event.paths {
+                let _ = tx.send(path);
+            }
+        }
+    })
+    .map_err(|e| format!("failed to start incoming watcher: {e}"))?;
+    watcher
+        .watch(&incoming, RecursiveMode::NonRecursive)
+        .map_err(|e| format!("failed to watch data/incoming: {e}"))?;
+
+    std::thread::spawn(move || {
+        let mut pending: HashMap<PathBuf, Instant> = HashMap::new();
+        loop {
+            if let Ok(path) = rx.recv() {
+                if path.is_file() {
+                    pending.insert(path, Instant::now());
+                }
+            }
+            let deadline = Instant::now() + Duration::from_millis(DEBOUNCE_MS);
+            loop {
+                let timeout = deadline.checked_duration_since(Instant::now()).unwrap_or(Duration::ZERO);
+                match rx.recv_timeout(timeout) {
+                    Ok(path) => {
+                        if path.is_file() {
+                            pending.insert(path, Instant::now());
+                        }
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => break,
+                    Err(mpsc::RecvTimeoutError::Disconnected) => return,
+                }
+            }
+
+            for (path, seen) in pending.drain() {
+                if seen.elapsed() < Duration::from_millis(DEBOUNCE_MS) {
+                    continue; // still settling
+                }
+                if !path.exists() {
+                    continue; // moved/deleted since the event
+                }
+                use crate::state::DuckDbState;
+                let state = app.state::<DuckDbState>();
+                let guard = state.conn.lock();
+                let Some(conn) = guard.as_ref() else {
+                    let _ = app.emit(
+                        "dm:error",
+                        serde_json::json!({ "path": path.display().to_string(), "reason": "database not ready" }),
+                    );
+                    continue;
+                };
+                match crate::commands::incoming::ingest_incoming_file(conn, &ws, &path) {
+                    Ok(table) => {
+                        let _ = app.emit(
+                            "dm:changed",
+                            serde_json::json!({ "kind": "table", "name": table, "removed": false }),
+                        );
+                    }
+                    Err(reason) => {
+                        let _ = app.emit(
+                            "dm:error",
+                            serde_json::json!({ "path": path.display().to_string(), "reason": reason }),
+                        );
+                    }
+                }
+            }
+        }
+    });
+
+    active().lock().unwrap().push(Active { _watcher: watcher });
     Ok(())
 }
 

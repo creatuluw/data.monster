@@ -7,6 +7,7 @@ pub mod field_functions;
 pub mod files;
 pub mod folders;
 pub mod internal_db;
+pub mod incoming;
 pub mod items;
 pub mod labels;
 pub mod local_llm;

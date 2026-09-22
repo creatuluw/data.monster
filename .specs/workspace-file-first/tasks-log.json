@@ -48,5 +48,20 @@
     "task_id": "files-010",
     "title": "FR-10 Write-through everywhere else (shared helper)",
     "summary": "ItemEditor (the one true per-document editor surface): editing an EXISTING master item now writes through live via createWriteThrough (every draft field change -> dm/master-items/<id>.json within 400ms); creation keeps the explicit Save (stable id minted there - no half-drafted files); edit button became Done (flush + close). RelationshipEditor and saved-queries/connections UIs verified already mutation-immediate (every add/update/delete command writes files) - zero change needed, documented as scope note. Ceiling: drawer conflicts are last-write-wins (banner reserved for the pages editor). vitest 132/132, cargo 115/115, svelte-check clean."
+  },
+  {
+    "task_id": "files-011",
+    "title": "FR-11 Agent docs layer with progressive disclosure",
+    "summary": "src-tauri/agent-docs/ (README L0 36 lines, INDEX L1 routing table 27, concepts + 5 format docs L2 with Read-when headers + annotated examples, reference/page-doc-fields L3, recipes/common-tasks). commands/agent_docs.rs embeds via include_str! and syncs into the workspace when dm/docs/.version != app version; user README at root never overwritten; same-version no-op preserves user edits. Hooked into initialize_duckdb. Acceptance tests: 4 cargo (sync/no-op/regen/readme) + 4 vitest (line budgets, INDEX targets exist, JSON/SQL examples parse, secret-free connections example)."
+  },
+  {
+    "task_id": "files-012",
+    "title": "FR-12 /agent prompts page",
+    "summary": "Six starter prompts as frontmatter markdown (onboarding, dashboard-interview, add-measure, ingest-csv, cleanup, explain) in src/lib/agent-prompts/*.md; pure parsePrompt + import.meta.glob loader in agent-prompts.ts; /agent route renders cards via marked + .prose-chat with per-card copy button. Content contract tested: every prompt names the workspace placeholder, mandates README-first, interview prompts instruct one-question-at-a-time. Nav: BookOpen button in header + breadcrumb route label. 8 vitest tests; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-013",
+    "title": "FR-13 data/incoming drop folder auto-ingest",
+    "summary": "commands/incoming.rs: ingest_incoming_file detects csv/parquet/json by extension, table name = filename stem (validated, duplicate-table error), CREATE TABLE AS SELECT via the Connect readers, moves the file into data/main on success / leaves it on failure with a named error. dm_watch::start_incoming watches data/incoming (non-recursive, debounced) and emits dm:changed {kind:table} / dm:error; runs on initialize_duckdb alongside the dm/ watcher. 2 cargo tests; full suite 121/121."
   }
 ]

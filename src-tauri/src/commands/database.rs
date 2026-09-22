@@ -84,6 +84,9 @@ pub fn initialize_duckdb(
     if let Err(e) = crate::commands::dm_watch::start(workspace.to_path_buf(), app.clone()) {
         eprintln!("[database] Warning: dm/ watcher failed to start: {}", e);
     }
+    if let Err(e) = crate::commands::dm_watch::start_incoming(app.clone(), workspace.to_path_buf()) {
+        eprintln!("[database] Warning: data/incoming watcher failed to start: {}", e);
+    }
 
     let _ = app.emit("db-init-progress", "Cleaning up metadata...");
     let _ = cleanup_orphaned_metadata(&conn);

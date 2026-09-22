@@ -1,0 +1,197 @@
+{
+  "project": "workspace-file-first",
+  "spec": ".specs/workspace-file-first/spec.md",
+  "developmentMethodology": "TDD (RED-GREEN-REFACTOR cycle)",
+  "tasks": [
+    {
+      "id": "files-001",
+      "phase": "A — Files are canonical",
+      "title": "FR-1 dm/ conventions + atomic write (dm_store module)",
+      "description": "New Rust module src-tauri/src/commands/dm_store.rs: kind↔path mapping (pages, master-items/{measures,dimensions}, relationships, saved-queries, connections), atomic_write (temp + rename), parse-level shape checks per kind.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — path mapping round-trip for every kind, atomic write leaves no temp file on success, crash simulation leaves original untouched",
+        "Karpathy: plain functions, no trait hierarchy; shape checks return Result<(), String>, never panic",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 1,
+      "status": "pending",
+      "mapsTo": "FR-1"
+    },
+    {
+      "id": "files-002",
+      "phase": "A — Files are canonical",
+      "title": "FR-2 Pages file store (commands remap)",
+      "description": "Remap list_pages/get_page/save_page/delete_page in commands/pages.rs to dm/pages/*.json via dm_store; list reports invalid files without breaking; save writes atomically.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — CRUD over tempdir workspace, invalid file → listed in errors array, save to filename enforces slug",
+        "Frontend invoke signatures unchanged where possible (list/get/save/delete keep shapes)",
+        "Karpathy: no new error type — Result<T, String> like the rest of the codebase",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 2,
+      "status": "pending",
+      "mapsTo": "FR-2"
+    },
+    {
+      "id": "files-003",
+      "phase": "A — Files are canonical",
+      "title": "FR-3 Master items + relationships file store",
+      "description": "Items CRUD → dm/master-items/{measures,dimensions}/<id>.json (filename = id, kind → folder, drop createdAt/updatedAt); relationships CRUD → dm/relationships.json.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — CRUD both kinds, id↔filename round-trip",
+        "tests/ frontend: chart referencing {\"ref\": id} resolves against file-backed items",
+        "Karpathy: keep the serde_json::Value flow, no struct ceremony",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 3,
+      "status": "pending",
+      "mapsTo": "FR-3"
+    },
+    {
+      "id": "files-004",
+      "phase": "A — Files are canonical",
+      "title": "FR-4 Saved queries file store",
+      "description": "saved_queries.rs CRUD → dm/saved-queries/<slug>.sql; optional leading `-- dm: {json}` meta header (name/description/tags); body = SQL.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — header round-trip incl. SQL containing `--` lines and quotes; headerless file → name=slug, tags=[]",
+        "Karpathy: one parse fn + one serialize fn, no builder",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 4,
+      "status": "pending",
+      "mapsTo": "FR-4"
+    },
+    {
+      "id": "files-005",
+      "phase": "A — Files are canonical",
+      "title": "FR-5 Connections store + /connect saved-connections UI",
+      "description": "dm/connections.json CRUD (new commands/connections.rs); /connect page gains saved list (save form, load, delete). Optional plaintext password with warning text in UI.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — CRUD + unknown fields preserved; tests/ frontend — save/load round-trip via mocked invoke",
+        "Drawer form controls come from the shared controls kit (house rule)",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 5,
+      "status": "pending",
+      "mapsTo": "FR-5"
+    },
+    {
+      "id": "files-006",
+      "phase": "A — Files are canonical",
+      "title": "FR-6 One-time migration (tables → files, crash-safe, idempotent)",
+      "description": "On DuckDB init: content tables exist → export rows → write ALL files → verify read-back → drop tables. Files win when both exist. Labels/field-functions tables untouched.",
+      "acceptanceCriteria": [
+        "TDD: cargo tests RED first — full export; crash-point retry (files partial + tables full); idempotent second run; files-win case",
+        "Migration runs before frontend loads pages (init order verified)",
+        "Karpathy: single function migrate_content_tables(conn, ws_path), no migration framework",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 6,
+      "status": "pending",
+      "mapsTo": "FR-6"
+    },
+    {
+      "id": "live-007",
+      "phase": "B — Realtime both ways",
+      "title": "FR-7 File watcher (notify + debounce + echo suppression + events)",
+      "description": "notify watcher on dm/ recursive; debounce ~300ms; just-wrote echo window ≥500ms tied to dm_store::atomic_write; classify → dm:changed {kind,name} / dm:error {path,reason}; drafts/ and docs/ ignored.",
+      "acceptanceCriteria": [
+        "TDD: cargo integration tests RED first — external write → event after debounce; atomic_write → suppressed; unparseable → dm:error",
+        "Karpathy: no watch-abstraction trait; one struct Watcher with start/stop",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 7,
+      "status": "pending",
+      "mapsTo": "FR-7"
+    },
+    {
+      "id": "live-008",
+      "phase": "B — Realtime both ways",
+      "title": "FR-8 Frontend live-reload (dm:changed / dm:error handling)",
+      "description": "App store layer: listen for events, invalidate matching stores, reload open views; errors → toast + inline banner if doc open. Pure store logic in tests/.",
+      "acceptanceCriteria": [
+        "TDD: tests/ RED first — event→invalidation matrix (page open/closed × kinds; items; queries; connections)",
+        "Toast errors only, no modal blocking the agent's work",
+        "Manual CDP verify: edit dm/pages file externally → open editor updates live",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 8,
+      "status": "pending",
+      "mapsTo": "FR-8"
+    },
+    {
+      "id": "live-009",
+      "phase": "B — Realtime both ways",
+      "title": "FR-9 Pages editor write-through (save flow deleted)",
+      "description": "Delete save button, dirty tracking, 60s auto-save, saved-toast. Every doc change (Design + Code) → debounced 400ms atomic write. Conflict banner: on-disk change + local edits → Reload / Keep mine.",
+      "acceptanceCriteria": [
+        "TDD: tests/ RED first — N changes coalesce to 1 write; conflict decision matrix (clean+disk-change=auto reload; dirty+disk-change=banner)",
+        "grep confirms no save/dirty artifacts remain in pages/[slug]/+page.svelte",
+        "Manual CDP verify both directions incl. race → banner",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 9,
+      "status": "pending",
+      "mapsTo": "FR-9"
+    },
+    {
+      "id": "live-010",
+      "phase": "B — Realtime both ways",
+      "title": "FR-10 Write-through everywhere else (shared helper)",
+      "description": "Extract shared writeThrough helper (debounce + conflict check) from FR-9; wire /data Measures|Dimensions drawers, relationship editor, saved-queries UI, connections list; delete their explicit save affordances.",
+      "acceptanceCriteria": [
+        "TDD: tests/ RED first — helper unit tests (debounce, conflict, write)",
+        "All four surfaces wired; no per-surface copies of the debounce logic",
+        "Manual CDP verify one drawer end-to-end",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 10,
+      "status": "pending",
+      "mapsTo": "FR-10"
+    },
+    {
+      "id": "docs-011",
+      "phase": "C — Docs the agent reads",
+      "title": "FR-11 Agent docs layer with progressive disclosure",
+      "description": "src-tauri/agent-docs/ embedded via include_str!: README.md (L0 ≤60 lines), dm/docs/{.version, INDEX.md (L1 ≤100), concepts.md, formats/*.md, reference/page-doc-fields.md, recipes/}; written to workspace when missing or version-changed; `Read when:` headers; one annotated minimal-valid example per format doc.",
+      "acceptanceCriteria": [
+        "TDD: tests/ RED first — line budgets (README/INDEX/formats); every INDEX target exists; every format example parses (JSON/SQL parse-level); docs regenerate when .version ≠ app version",
+        "Progressive disclosure holds: no L2 doc requires reading another except via explicit links",
+        "cargo test for include_str! embedding",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 11,
+      "status": "pending",
+      "mapsTo": "FR-11"
+    },
+    {
+      "id": "docs-012",
+      "phase": "C — Prompts the user copies",
+      "title": "FR-12 /agent prompts page",
+      "description": "New /agent route + nav item; prompt cards from src/lib/agent-prompts/*.md (frontmatter: title/description/tags); rendered via marked + .prose-chat; copy-to-clipboard per card; prompts name the workspace, mandate README→INDEX-first reading, collaborative ones instruct interview-style questioning.",
+      "acceptanceCriteria": [
+        "TDD: tests/ RED first — frontmatter parse; component renders cards + copy writes clipboard",
+        "House rules: marked + .prose-chat rendering, no new deps; page capped by shared layout",
+        "6 starter prompts shipped (onboarding, dashboard-from-table interview, add-measure, ingest-csv, cleanup, explain-workspace)",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 12,
+      "status": "pending",
+      "mapsTo": "FR-12"
+    },
+    {
+      "id": "extra-013",
+      "phase": "D — Extras (cuttable)",
+      "title": "FR-13 data/incoming/ drop folder auto-ingest",
+      "description": "Watcher detects new file in data/incoming/ → auto-ingest via existing /connect detection with smart defaults (skip preview) → dm:changed {kind:\"table\"}; failures → dm:error, file kept.",
+      "acceptanceCriteria": [
+        "TDD: cargo integration test RED first — drop CSV → table exists + event; bad CSV → error event, file untouched",
+        "Ingest reuses the connect pipeline — no duplicate detection logic",
+        "Log completion to tasks-log.json"
+      ],
+      "priority": 13,
+      "status": "pending",
+      "mapsTo": "FR-13"
+    }
+  ]
+}

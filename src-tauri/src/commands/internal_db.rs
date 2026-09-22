@@ -245,6 +245,7 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(count, 4);
+        // metadata, labels, saved_queries, pages, items, relationships, field_functions
+        assert_eq!(count, 7);
     }
 }

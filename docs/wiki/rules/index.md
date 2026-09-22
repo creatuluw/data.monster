@@ -17,3 +17,5 @@
 - [Pick values flow through one codec — src/lib/charts/pickers.ts](./pick-values-flow-through-one-codec-src-lib-charts.md) - Guideline
 - [Pick display labels resolve through roleLabels() — never hand-roll chip labels](./pick-display-labels-resolve-through-rolelabels.md) - Guideline
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline
+- [Resize requests use the app's existing size classes — never ad-hoc multipliers](./resize-requests-use-the-app-s-existing-size-classes-never-ad.md) - The guideline
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](./restore-points-are-git-tags-restore-point-feature-start-on-p.md) - The rule

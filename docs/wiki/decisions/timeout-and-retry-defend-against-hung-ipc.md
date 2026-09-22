@@ -23,7 +23,7 @@ Frontend defense layer (2026-09-22):
 
 ## Alternatives considered
 
-- Fix the deadlock in Rust — the actual root cause, FIXED the same day via in-process recovery, see [[learnings/duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20]]. The frontend defense ships now because the deadlock may take its own investigation.
+- Fix the deadlock in Rust — the actual root cause, FIXED the same day via in-process recovery, see [[learnings/duckdb-app-hangs-poisoned-connection-windows]]. The frontend defense ships now because the deadlock may take its own investigation.
 - Optimistic UI with rollback — heavier, and rollback on a hung (not failed) invoke is meaningless.
 - Timeouts on every invoke — unnecessary; only writes and validation had user-visible hang symptoms.
 
@@ -31,4 +31,4 @@ Frontend defense layer (2026-09-22):
 
 - New write paths should route through `writeInvoke`, not raw `invoke` — see [[pages/entities/central-api-frontend-invoke-client]].
 - Users get honest errors instead of eternal spinners; silent write loss is gone.
-- The frontend **defends, doesn't cure**: the backend deadlock itself was the real bug; cured the same day by in-process connection recovery in `execute_query` (src-tauri/src/commands/queries.rs), see [[learnings/duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20]].
+- The frontend **defends, doesn't cure**: the backend deadlock itself was the real bug; cured the same day by in-process connection recovery in `execute_query` (src-tauri/src/commands/queries.rs), see [[learnings/duckdb-app-hangs-poisoned-connection-windows]].

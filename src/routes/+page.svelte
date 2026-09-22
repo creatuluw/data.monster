@@ -28,7 +28,7 @@
 				</a>
 				<a href="/analyst" class="action-btn">
 					<TrendingUp size={16} />
-					Data Analyst
+					Analyst
 				</a>
 				<a href="/pages" class="action-btn">
 					<FileText size={16} />

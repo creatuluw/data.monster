@@ -3,10 +3,12 @@ import {
 	shutdownDuckdb,
 	getWorkspacePath,
 	chooseWorkspaceFolder,
+	setWorkspacePath,
 	listTables,
 	isTauriAvailable,
 	extractErrorMessage
 } from '$lib/db-operations';
+import { resetTabs } from '$lib/tabs.svelte';
 
 class AppState {
 	dbReady = $state(false);
@@ -51,11 +53,27 @@ class AppState {
 	}
 
 	async selectWorkspace(): Promise<boolean> {
+		const path = await chooseWorkspaceFolder();
+		if (!path) return false;
+		return this.selectWorkspaceByPath(path);
+	}
+
+	/** Switch to a known workspace path: reload DB + tables, reset tabs. */
+	async selectWorkspaceByPath(path: string): Promise<boolean> {
 		try {
-			const path = await chooseWorkspaceFolder();
-			if (!path) return false;
+			if (this.dbReady && path === this.workspacePath) return true;
+
+			// Close the old workspace's DB first — initialize_duckdb no-ops while
+			// a connection is open, and the old file must be released before the
+			// new one can be locked.
+			if (this.dbReady) {
+				await shutdownDuckdb();
+				this.dbReady = false;
+			}
+			resetTabs();
 
 			await initializeDuckdb(path);
+			await setWorkspacePath(path);
 			this.workspacePath = path;
 			this.tables = await listTables();
 			this.dbReady = true;

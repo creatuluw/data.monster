@@ -17,7 +17,10 @@ export type Grain =
 export type FilterOp = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'in' | 'like';
 
 /** A dimension: table column (optional grain, optional linked-table binding) or a master-dimension reference. */
-export type DimensionSpec = { col: string; table?: string; grain?: Grain; label?: string } | { ref: string };
+/** A dimension: a column (optionally from a linked table) with optional time grain,
+ *  a resolved master-item expression (raw: true — authored in ExprEditor, not a column),
+ *  or a master-item reference pre-resolution. */
+export type DimensionSpec = { col: string; table?: string; grain?: Grain; label?: string; raw?: boolean } | { ref: string };
 
 /** A measure: DuckDB expression (aggregation included, optional linked-table binding) or a master-measure reference. */
 export type MeasureSpec = { expr: string; table?: string; label?: string; fmt?: string } | { ref: string };

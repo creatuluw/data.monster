@@ -47,6 +47,13 @@ export function activate(id: number) {
 	goto(t.path);
 }
 
+/** Drop all open tabs — used when switching workspaces so stale
+ *  old-workspace routes (e.g. /table/x) don't survive the switch. */
+export function resetTabs() {
+	state.list.length = 0;
+	state.activeId = null;
+}
+
 export function closeTab(id: number) {
 	const i = state.list.findIndex((x) => x.id === id);
 	if (i === -1) return;

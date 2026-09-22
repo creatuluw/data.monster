@@ -75,11 +75,15 @@
 		};
 	});
 
-	async function handleSelectWorkspace() {
+	/** First-run gate: pick a folder directly (the gate replaces the router, so
+	 *  navigating to /workspaces would render nothing). */
+	async function handleChooseFirstWorkspace() {
 		const success = await app.selectWorkspace();
-		if (success) {
-			showWorkspacePicker = false;
-		}
+		if (success) showWorkspacePicker = false;
+	}
+
+	function handleSelectWorkspace() {
+		goto('/workspaces');
 	}
 
 	function handleSelectTable(table: string) {
@@ -105,6 +109,7 @@
 		settings: 'Settings',
 		'internal-db': 'Internal DB',
 		labs: 'Labs',
+		workspaces: 'Workspaces',
 		'chart-lib': 'Chart Lib',
 		charts: 'Charts',
 		analyst: 'Analyst',
@@ -220,7 +225,7 @@
 				<img src="/monster-on-white.svg" alt="Data Monster logo" class="brand-logo brand-logo-lg" />
 				<h2 class="workspace-title">Welcome to Data Monster</h2>
 				<p class="workspace-desc">Choose a folder to store your data. Everything is saved to disk.</p>
-				<button class="btn btn-primary" onclick={handleSelectWorkspace}>
+				<button class="btn btn-primary" onclick={handleChooseFirstWorkspace}>
 					<FolderOpen size={16} />
 					Choose Workspace Folder
 				</button>

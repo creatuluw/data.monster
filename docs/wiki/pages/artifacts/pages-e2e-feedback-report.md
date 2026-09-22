@@ -13,7 +13,7 @@ E2E test report for the /pages report-page flow built on the semantic (master-it
 ## What it documents
 
 - The full end-to-end flow works once two P1 plumbing bugs were fixed: ingest via /query → master measures/dimensions via /data → page + blocks via /pages → persisted and reload-verified (bar chart "Sales by Order Year", 5 bars; table, 50 rows).
-- **Fixed during the first session** (see [tableName/table + raw-compile learning](../../learnings/ref-based-master-items-tablename-table-mismatch-broke-all-re.md)): (1) Rust `tableName` vs frontend `table` — mapped in [central-api (frontend invoke client)](../entities/central-api-frontend-invoke-client.md) `listMasterItems`; (2) expression master dimensions rejected by the query compiler — now compile raw in `query/compile.ts`.
+- **Fixed during the first session** (see [tableName/table + raw-compile learning](../../learnings/ref-based-master-items-tablename-mismatch-broke.md)): (1) Rust `tableName` vs frontend `table` — mapped in [central-api (frontend invoke client)](../entities/central-api-frontend-invoke-client.md) `listMasterItems`; (2) expression master dimensions rejected by the query compiler — now compile raw in `query/compile.ts`.
 - **The 7 open findings — all resolved 2026-09-22** (CDP-verified, `npm run check` clean):
   - #3 + #5 (P1/P2): hung invokes now time out and surface — ExprEditor validation 15s, writes 20s via `writeInvoke` with one 300ms retry. See [Timeout and retry defend against hung IPC](../../decisions/timeout-and-retry-defend-against-hung-ipc.md).
   - #7 (P2): closed as already-truthful — the Save button was outcome-driven; the 2s "Saved" flip is transient by design, polls just missed it.

@@ -96,6 +96,16 @@ export async function setWorkspacePath(path: string): Promise<void> {
 	return invoke<void>('set_workspace_path', { path });
 }
 
+export interface WorkspaceEntry {
+	path: string;
+	lastOpened: number;
+}
+
+export async function listWorkspaces(): Promise<WorkspaceEntry[]> {
+	const result = await invoke<{ workspaces: WorkspaceEntry[] }>('list_workspaces');
+	return result.workspaces;
+}
+
 /** Race an invoke against a timeout — hung IPC (backend wedge) must surface, not stall forever. */
 export function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
 	return new Promise<T>((resolve, reject) => {

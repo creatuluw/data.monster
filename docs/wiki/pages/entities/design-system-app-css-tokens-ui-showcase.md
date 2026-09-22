@@ -32,6 +32,7 @@ The app-wide styling layer: design tokens in `src/app.css`, the `src/lib/compone
 - [Professional-finance redesign decision](../../decisions/professional-finance-redesign-ledger.md) — the decision that defined this system
 - [Typography: Poppins / Inter / Geist Mono decision](../../decisions/typography-poppins-headings-figtree-dropped.md) — the font pairing now baked into the token layer (display face churned Squada One → Calluna → Figtree → Poppins on 2026-09-16)
 - [Design-system reference doc](../artifacts/design-system-reference-doc-docs-design.md) — the `docs/` HTML deliverable restating these tokens (re-themed 2026-09-17)
+- [Design-component reference set](../artifacts/design-component-reference-set.md) — 40 static per-component reference pages under `docs/design/components/` in their own token set (not the live theme)
 
 ## Lifecycle
 

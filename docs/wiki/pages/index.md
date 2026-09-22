@@ -34,3 +34,7 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [aisure.uk pricing research report](./artifacts/aisure-uk-pricing-research-report.md) — Fractal-research (te9-research skill, `recursive_research`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
 - [Design-system reference doc (docs/design-system-data-monster.html)](./artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 - [Pages E2E feedback report](./artifacts/pages-e2e-feedback-report.md) — E2E test report for the /pages report-page flow built on the semantic (master-item) layer: `reports/pages-e2e-feedback.md`, produced 2026-09-22 by driving the r
+- [Workspace command module (Rust)](./entities/workspace-command-module-rust.md) — What is it?
+- [Workspaces page (/workspaces)](./entities/workspaces-page-workspaces.md) — What is it?
+- [Design component reference (docs/design/components/)](./artifacts/design-component-reference-docs-design-components.md) — What is it?
+- [Workspace-file-first spec & tasks](./artifacts/workspace-file-first-spec-tasks.md) — The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (`dm_store` module, pages/maste

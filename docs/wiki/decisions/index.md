@@ -56,3 +56,9 @@
 - [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](./drawer-chrome-restyle-reverted-control-kit-stands.md) - Context
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](./all-drawers-adopt-the-data-tabledrawer-design.md) - Context
 - [Timeout and retry defend against hung IPC](./timeout-and-retry-defend-against-hung-ipc.md) - Context
+- [Workspaces are fully portable — switching reloads data, content, and settings](./workspaces-are-fully-portable-switching-reloads-data-content.md) - Context
+- [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](./workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) - Context
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](./agent-authors-app-content-by-editing-workspace-files-the-wor.md) - Context
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](./workspace-content-tree-dm-with-path-is-identity-native-forma.md) - Context
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](./live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) - Context
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](./workspace-files-are-canonical-agents-author-content-by-editi.md) - Context

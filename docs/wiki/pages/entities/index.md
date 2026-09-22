@@ -22,3 +22,5 @@ _Concrete named things will be listed here._
 - [ExprEditor component](./expreditor-component.md) - Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table.
 - [Create-in-/data round-trip](./create-in-data-round-trip.md) - Deep-link flow from a /pages chart pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached + focused drawer reopened.
 - [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
+- [Workspace command module (Rust)](./workspace-command-module-rust.md) - What is it?
+- [Workspaces page (/workspaces)](./workspaces-page-workspaces.md) - What is it?

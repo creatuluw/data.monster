@@ -57,13 +57,13 @@ function dimSelect(d: DimensionSpec, i: number, schema: TableSchemas, table: str
 	const dimTable = 'table' in d && d.table ? d.table : table;
 	const alias = ident(d.label ?? d.col);
 	let col: string;
-	try {
+	if (d.raw) {
+		// resolved master-item expression dim — authored in ExprEditor, same
+		// trust level as measures (which compile raw); not a column name
+		col = `(${d.col})`;
+	} else {
 		checkColumn(schema, dimTable, d.col, `dimensions[${i}]`);
 		col = dimTable !== table ? `${ident(dimTable)}.${ident(d.col)}` : ident(d.col);
-	} catch {
-		// ponytail: master dimensions carry user-authored expressions validated at creation
-		// (ExprEditor) — same trust level as measures, which compile raw; compile raw too
-		col = `(${d.col})`;
 	}
 	if (d.grain === undefined) return d.label ? `${col} AS ${alias}` : col;
 	const temporal = TEMPORAL_GRAINS[d.grain as keyof typeof TEMPORAL_GRAINS];

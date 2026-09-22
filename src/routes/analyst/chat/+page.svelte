@@ -240,7 +240,7 @@
 </script>
 
 <svelte:head>
-	<title>Data Analyst — Data Monster</title>
+	<title>Analyst — Data Monster</title>
 </svelte:head>
 
 <div class="chat-layout {resizing ? 'is-resizing' : ''}">
@@ -251,7 +251,7 @@
 					<MessagesSquare size={16} />
 				</div>
 				<div>
-					<h2 class="chat-header-title">Data Analyst</h2>
+					<h2 class="chat-header-title">Analyst</h2>
 					<p class="chat-header-meta">{analyst.selectedTables.length} table{analyst.selectedTables.length !== 1 ? 's' : ''} in context</p>
 				</div>
 			</div>

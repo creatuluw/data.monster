@@ -16,7 +16,7 @@ export type MasterItem = {
 	description?: string;
 };
 
-export type ResolvedDimension = { col: string; table?: string; label?: string; grain?: DimensionSpec extends never ? never : string };
+export type ResolvedDimension = { col: string; table?: string; label?: string; grain?: string; raw?: boolean };
 export type ResolvedMeasure = { expr: string; table?: string; label?: string; fmt?: string };
 
 export type ResolvedItems = {
@@ -46,7 +46,7 @@ export function resolveItems(chart: ChartBlockSpec, library: MasterItem[]): Reso
 			missing.push(d.ref);
 			continue;
 		}
-		dimensions.push({ col: item.expr, label: item.label });
+		dimensions.push({ col: item.expr, label: item.label, raw: true });
 		if (item.table !== chart.source.table) involved.add(item.table);
 	}
 

@@ -1,8 +1,20 @@
 use serde_json::Value;
 use std::fs;
+use std::path::PathBuf;
 use tauri::Manager;
 
-fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+use crate::state::DuckDbState;
+use tauri::State;
+
+/// Settings are workspace-scoped (portable with the workspace's data and
+/// content): the file lives inside the workspace folder when a workspace is
+/// open. Falls back to the global app-data settings before a workspace exists
+/// and when the workspace has no settings yet (pre-migration read).
+fn settings_path(app: &tauri::AppHandle, state: &State<'_, DuckDbState>) -> Result<PathBuf, String> {
+    if let Some(ws) = state.workspace_path.lock().clone() {
+        return Ok(PathBuf::from(ws).join("settings.json"));
+    }
+
     let app_data_dir = app
         .path()
         .app_data_dir()
@@ -17,12 +29,23 @@ fn settings_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
 }
 
 #[tauri::command]
-pub fn get_settings(app: tauri::AppHandle) -> Result<Value, String> {
-    let path = settings_path(&app)?;
+pub fn get_settings(app: tauri::AppHandle, state: State<'_, DuckDbState>) -> Result<Value, String> {
+    let path = settings_path(&app, &state)?;
 
-    let mut settings = if path.exists() {
-        let content =
-            fs::read_to_string(&path).map_err(|e| format!("Failed to read settings: {}", e))?;
+    // Workspace has no settings file yet → fall back to the global one so
+    // pre-workspace-settings (LLM keys etc.) carry over until first save.
+    let read_path = if path.exists() {
+        path
+    } else {
+        app.path()
+            .app_data_dir()
+            .map_err(|e| format!("Failed to get app data dir: {}", e))?
+            .join("settings.json")
+    };
+
+    let mut settings = if read_path.exists() {
+        let content = fs::read_to_string(&read_path)
+            .map_err(|e| format!("Failed to read settings: {}", e))?;
         serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings: {}", e))?
     } else {
         serde_json::json!({})
@@ -90,8 +113,12 @@ fn env_value(name: &str) -> Option<String> {
 }
 
 #[tauri::command]
-pub fn save_settings(app: tauri::AppHandle, settings: Value) -> Result<(), String> {
-    let path = settings_path(&app)?;
+pub fn save_settings(
+    app: tauri::AppHandle,
+    state: State<'_, DuckDbState>,
+    settings: Value,
+) -> Result<(), String> {
+    let path = settings_path(&app, &state)?;
 
     let content =
         serde_json::to_string_pretty(&settings).map_err(|e| format!("Failed to serialize settings: {}", e))?;

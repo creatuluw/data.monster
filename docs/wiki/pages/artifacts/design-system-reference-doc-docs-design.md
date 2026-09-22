@@ -26,7 +26,14 @@ The standalone design-system documentation deliverable: a single self-contained 
 
 Hand-maintained, **not generated** from `app.css` — it drifts silently when the app re-types or re-tokens (it sat on a dead theme for weeks). After any token/typography change, re-value this doc too — same family as [the tours' embedded-fonts gotcha](../../learnings/tour-html-captures-embed-google-fonts-import.md).
 
+## Per-component set (docs/design/components/)
+
+A sibling deliverable committed 2026-09-22 (`dd44774`): **39 standalone per-component HTML docs** in `docs/design/components/` — Button, Input, Select, Modal, Drawer, Tabs, Table, Tag, Tooltip, Toast, Pagination, Searchahead, etc., plus app-shaped composites (ConditionBuilder, NodeTree, InboxActionDrawer, StudentForm, RecordingFieldsDrawer, GenerateResultDrawer). Each file is fully self-contained (inline CSS, own `:root` tokens, Google Fonts link) and shows the component's variants in bordered demo blocks.
+
+**Theme caveat — still on the dead SYNAPSE palette**: these files render the old orange accent (`oklch(0.69 0.16 41)`, hue 41) with Source Serif 4 + Manrope — NOT the current ledger-green/Inter system. Same drift family as the maintenance gotcha above; re-theme before citing them as the current component reference.
+
 ## Source
 
-- `docs/design-system-data-monster.html` — the deliverable itself
+- `docs/design-system-data-monster.html` — the single-file deliverable
+- `docs/design/components/*.html` — the 39-file per-component set
 - `src/app.css` — source of truth for every token value

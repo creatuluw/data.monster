@@ -12491,6 +12491,9 @@ The chrome restyle is **reverted** (revert commit \`974d37e\`, PR #18). The user
 - [Tab bar shows only explicitly opened tabs — navigation never creates tabs](./tab-bar-shows-only-explicitly-opened-tabs.md) - Context
 - [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](./drawer-chrome-restyle-reverted-control-kit-stands.md) - Context
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](./all-drawers-adopt-the-data-tabledrawer-design.md) - Context
+- [Timeout and retry defend against hung IPC](./timeout-and-retry-defend-against-hung-ipc.md) - Context
+- [Workspaces are fully portable — switching reloads data, content, and settings](./workspaces-are-fully-portable-switching-reloads-data-content.md) - Context
+- [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](./workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) - Context
 `,
   "decisions/labs-catalog-placeholder-first.md": `---
 type: Decision
@@ -13889,6 +13892,41 @@ PR #16 shipped the virtual tab system with a bottom tab bar. As first built, eve
 - Tabs are now purely user-created; any future nav code must not auto-spawn tabs.
 - Amends (does not supersede) [[app-gets-virtual-multi-tab-navigation-bottom-bar]] — the tab system itself is unchanged, only its creation/retention semantics.
 `,
+  "decisions/timeout-and-retry-defend-against-hung-ipc.md": `---
+type: Decision
+title: Timeout and retry defend against hung IPC
+description: Context
+tags: [tauri, ipc, robustness, central-charts, error-handling]
+status: accepted
+timestamp: "2026-09-22T11:35:26.419Z"
+---
+
+# Timeout and retry defend against hung IPC
+
+## Context
+
+The /pages E2E session (reports/pages-e2e-feedback.md) surfaced a P1 "app hang": the known in-process DuckDB deadlock (see [[learnings/hard-reload-storms-deadlock-duckdb-in-process]]) leaves Tauri invokes hung **forever — they never reject**. Because hung invokes don't throw, every unprotected surface failed silently: ExprEditor validation spun "checking…" eternally; writes (\`save_page\`, \`save_master_item\`) never surfaced failure — silent 60s auto-save + hung invoke is how page blocks "vanished"; "Create page" aborted before its \`goto\` with no error.
+
+## Choice
+
+Frontend defense layer (2026-09-22):
+
+- \`withTimeout\` helper — ExprEditor validation races 15s, then shows "validation timed out" instead of eternal "checking…".
+- \`writeInvoke\` in \`central-api.ts\` — races every write command at 20s **and retries once after 300ms**, absorbing the observed first-invoke-after-load IPC failure that silently lost just-added blocks.
+- "Create page" (\`handleCreate\`) surfaces save errors instead of aborting silently; its \`goto\` is protected by writeInvoke.
+
+## Alternatives considered
+
+- Fix the deadlock in Rust — the actual root cause, FIXED the same day via in-process recovery, see [[learnings/duckdb-app-hangs-poisoned-connection-windows]]. The frontend defense ships now because the deadlock may take its own investigation.
+- Optimistic UI with rollback — heavier, and rollback on a hung (not failed) invoke is meaningless.
+- Timeouts on every invoke — unnecessary; only writes and validation had user-visible hang symptoms.
+
+## Consequences
+
+- New write paths should route through \`writeInvoke\`, not raw \`invoke\` — see [[pages/entities/central-api-frontend-invoke-client]].
+- Users get honest errors instead of eternal spinners; silent write loss is gone.
+- The frontend **defends, doesn't cure**: the backend deadlock itself was the real bug; cured the same day by in-process connection recovery in \`execute_query\` (src-tauri/src/commands/queries.rs), see [[learnings/duckdb-app-hangs-poisoned-connection-windows]].
+`,
   "decisions/two-surface-report-page-format.md": `---
 type: Decision
 title: "Two-surface report pages: code mode edits a declarative spec, not Svelte source"
@@ -14388,6 +14426,43 @@ User preference. Syne is on Google Fonts as a true variable font covering 400–
 - Tour HTML captures embed the Google-Fonts @import → tours need recapture after this swap (see [[tour-html-captures-embed-google-fonts-import]]).
 - Rule [[inter-for-ui-text-geist-mono-only-for-data-detail]] updated to Syne display / Inter body / Geist Mono data.
 `,
+  "decisions/workspaces-are-fully-portable-switch-reloads.md": `---
+type: Decision
+title: Workspaces are fully portable — switching reloads data, content, and settings
+description: Context
+tags: [workspace, settings, duckdb, portability, switch-flow]
+status: accepted
+timestamp: "2026-09-22T12:30:28.941Z"
+---
+
+# Workspaces are fully portable — switching reloads data, content, and settings
+
+## Context
+
+User definition (2026-09-22): *a workspace is a portable version of the app's data, definitions, settings, and content as it has been added/created.* Switching workspaces via the top-right folder picker must load ALL of it. Two things broke that contract:
+
+1. \`initialize_duckdb\` early-returns "DuckDB already initialized" while a connection exists — so a switch silently kept the old workspace's DuckDB (old tables, pages, master items, saved queries, labels, field functions).
+2. \`settings.json\` lived in the global app-data dir, so LLM config etc. never traveled with the workspace.
+
+Content already lived in the workspace's DuckDB — it just never got reloaded.
+
+## Choice
+
+- **Switch = close, then open**: the frontend switch flow (\`src/lib/stores/app.svelte.ts\`) calls \`shutdown_duckdb\` BEFORE \`initialize_duckdb(newPath)\`, then reloads content, resets virtual tabs (\`resetTabs()\`) and navigates home so no old-workspace detail route survives. Same-path picks are a no-op.
+- **Settings are workspace-scoped**: \`settings.json\` lives inside the workspace folder when a workspace is open (\`src-tauri/src/commands/settings.rs\`). The global app-data \`settings.json\` remains only as pre-workspace fallback and pre-migration read (its values carry over until first save). The \`.env\` override layer is unchanged and still wins for LLM_API_KEY/URL/MODEL in dev.
+
+## Alternatives considered
+
+- Keep settings global — rejected: the workspace then isn't portable, violating the definition.
+- Remove the \`initialize_duckdb\` idempotency guard — rejected: shutdown-then-init at the switch site is explicit and keeps the guard protecting other double-init paths.
+
+## Consequences
+
+- The workspace folder is the unit of backup/move/copy: \`d8a_monster.duckdb\` + \`data/main/\` + \`settings.json\` is the whole app state.
+- \`workspace.json\` (the pointer to the active workspace) deliberately stays global in app-data — it records WHICH folder is open, not workspace content.
+- Any new code path that changes the workspace must run \`shutdown_duckdb\` first; see [initialize_duckdb no-ops while initialized — switch must shutdown first](../learnings/initialize-duckdb-no-ops-while-initialized.md).
+- Known ceiling: sitting on \`/settings\` during a switch shows stale values until the next remount (the settings page reads on mount; analyst re-reads per message).
+`,
   "glossary.md": `---
 type: Glossary
 title: Glossary
@@ -14439,7 +14514,7 @@ okf_version: "0.1"
 <!-- wiki-nav:start -->
 ## Navigation map
 
-Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 184 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T07:27:48.594Z.
+Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 186 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T08:01:22.458Z.
 
 Each entry: [title](concept-id.md) — description. Links are clickable in /wiki; pass the concept-id (link target minus .md) to wiki_get.
 
@@ -14622,12 +14697,14 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal.
 - [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section).
 - [settings-tour and analyst-tour built — honest-beats-staged applied to the chat](learnings/settings-tour-and-analyst-tour-built.md) — Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in docs/tours/ (connect, preview, query, data-tables, pages, labs, settings, analyst).
+- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
 - [speed-highlight/core has no Svelte grammar](learnings/speed-highlight-core-has-no-svelte-grammar.md) — Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
 - [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](learnings/squada-one-is-single-weight-400.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
 - [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]].
 - [Stale vite module graph can survive reloads — only a full app restart clears it](learnings/stale-vite-module-graph-can-survive-reloads-only-a.md) — Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix 
 - [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES.
 - [Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash](learnings/stash-pop-silent-conflict-recovery.md) — Discovered 2026-09-14 while committing session work (PR #3).
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
 - [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-empty-aliases-crash.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
 - [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](learnings/svelteplot-barx-bar-y-orientation.md) — Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
 - [SveltePlot internals: match datums by position, not identity; guard empty data](learnings/svelteplot-datum-identity-empty-guard.md) — Two engine-level gotchas discovered while porting [[heatmap-component]] (2026-09-14), from the explanation of the SveltePlot 0.14.2 implementation. They apply t
@@ -14841,6 +14918,30 @@ CDP e2e of the right-click → "Open in new tab" flow: a synthetic \`contextmenu
 - **Before blaming event synthesis, verify the binding actually exists** — grep the file for the \`<svelte:window …>\` / \`on:…\` attribute. A "synthetic events don't work" conclusion on top of a missing binding sends you debugging the wrong layer.
 - Read probe results *after* the action completes, not before — a reordered \`before\` read made a working tab-switch look failed.
 `,
+  "learnings/cdp-e2e-failures-after-source-save-hmr-race.md": `---
+type: Learning
+title: CDP e2e failures right after a source save are often HMR races — re-run before debugging
+description: Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223).
+tags: [cdp, e2e, hmr, sveltekit, testing-gotcha]
+timestamp: "2026-09-22T08:03:33.049Z"
+---
+
+# CDP e2e failures right after a source save are often HMR races — re-run before debugging
+
+Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223).
+
+Symptom: a CDP e2e step fails right after an assistant source-file save — the transition that fails in one run passes reliably in a fresh one, and in-page instrumentation (\`window.__log\`) vanishes mid-test with double \`vite connecting\` entries plus benign \`[TAURI] Couldn't find callback id\` warnings (see [[couldn-t-find-callback-id-tauri-warning]]): the page reloaded itself mid-script as HMR applied the edit.
+
+Why it bites: HMR reload racing the verify script produces false negatives that look exactly like real bugs. This turn it cost three wrong theories (stale webview → hydration race → popstate reverts) before console instrumentation showed the actual root cause ([[sveltekit-page-url-stale-after-replacestate]]).
+
+Working method:
+
+- A step failing *immediately after* a file save is suspect by default — reload/settle the webview and re-run that step in isolation before theorizing about the code.
+- Instrumentation written onto \`window\` does not survive the HMR reload; inject it fresh in each run (or instrument via source through HMR, as ground truth).
+- Keep generous gaps between steps on a freshly reloaded webview; the settled-app re-run is the real signal.
+
+Family: extends [[apparent-ui-bug-stale-hmr-webview]] and [[stale-vite-module-graph-can-survive-reloads-only-a]] from "UI looks stale" to "test results are stale/raced".
+`,
   "learnings/cdp-form-probes-must-be-container-scoped-shared.md": `---
 type: Learning
 title: CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps
@@ -15015,6 +15116,32 @@ Non-obvious because the renderer gives no API surface for selection; the state s
 
 - \`src/routes/library/[id]/+page.svelte\` — holds \`{dimension, value}\` demo state; mirrors \`/pages\` behavior
 `,
+  "learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md": `---
+type: Learning
+title: "compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures"
+description: Symptom
+tags: [security, validation, query-compiler, sql, trust-boundary, central-charts]
+timestamp: "2026-09-22T12:47:26.521Z"
+---
+
+# compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures
+
+## Symptom
+
+Two vitest tests failed after the workspace session: the dimension schema guard no longer rejected unknown dimension columns — including a SQL-injection-shaped string (\`month; DROP TABLE x\`) — silently passing them through the query compiler.
+
+## Root cause
+
+\`compile.ts\` wrapped dimension \`checkColumn\` validation in a **blanket catch** that swallowed *all* schema-check failures. Reason: \`resolveItems\` inlines master-item **expression** dims into \`col\` as raw DuckDB SQL — indistinguishable from a plain column pick at validation time. To let expression dims through, the catch had to swallow everything, and unknown columns went with them. That made the compiler's dimension path a trust-boundary hole: anything not a real column was interpolated raw.
+
+## Fix
+
+The only expression-dim constructor is \`resolveItems\` — it now marks resolved dims \`raw: true\` (field added to \`ResolvedDimension\` in \`spec-types.ts\`, set in \`items.ts\`). \`compile.ts\` validates every dimension *not* marked raw; only explicit \`raw: true\` bypasses schema validation. All 119 vitest tests green.
+
+## Rule of thumb
+
+\`raw: true\` on a resolved dimension is the **only** sanctioned validation bypass in the query compiler. Never widen a validation catch to make a known-exceptional case pass — mark the exceptional case explicitly and keep the boundary strict. Any new dimension constructor must either produce schema-valid columns or carry \`raw: true\` deliberately.
+`,
   "learnings/component-spawn-grows-too-small-explicit-height.md": `---
 type: Learning
 title: Component spawn grows too-small explicit-height rows to 320px minimum
@@ -15116,6 +15243,25 @@ Can D2 (d2lang.com) render an interactive diagram — select elements, attach be
 
 - \`reports/2026-09-17-d2-interactive-diagrams/report.html\` — full report (audit trail: \`agents/\`, \`research.log\`, \`metrics.json\` alongside).
 `,
+  "learnings/data-tab-keys-labels-metadata-writes-definitions.md": `---
+type: Learning
+title: /data tab keys ≠ labels — "Metadata" writes ?tab=definitions
+description: "Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\` never matched — the"
+tags: [cdp, e2e, data-page, tabs, probes]
+timestamp: "2026-09-22T08:11:07.571Z"
+---
+
+# /data tab keys ≠ labels — "Metadata" writes ?tab=definitions
+
+Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\` never matched — the tab labeled **Metadata** writes \`?tab=definitions\`. The URL key is a legacy/storage key, not the display label.
+
+Consequences:
+
+- When hand-testing deep links, a URL like \`/data?tab=definitions\` opening "Metadata" is **correct**, not a bug.
+- When writing CDP/e2e probes against tabs, select by \`href\` (\`?tab=…\`) or the tab's key, never by label text — labels are user-facing and can drift from keys.
+
+Same session also hit the sibling trap: a nav probe matched the "Data Monster" brand link (\`href='/'\`) instead of the real nav item — scope link probes by unique href, not just text. (Same family as [[cdp-form-probes-must-be-container-scoped-shared]].)
+`,
   "learnings/drive-data-monster-s-real-ui-over-cdp.md": `---
 type: Learning
 title: Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging
@@ -15141,6 +15287,60 @@ The changelog-e2e skill's technique transfers from the changelog.monster app to 
 ## Why it matters
 
 Static code reading missed the bug class the user is reporting; driving the real UI reproduces it directly. This gives data.monster the same e2e debugging capability that changelog.monster already has, with zero new tooling.
+`,
+  "learnings/duckdb-app-hangs-poisoned-connection-windows.md": `---
+type: Learning
+title: "DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix"
+description: Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
+tags: [duckdb, deadlock, windows, backend, bug, tauri]
+timestamp: "2026-09-22T11:46:19.999Z"
+---
+
+# DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix
+
+Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
+
+**Root cause of the app wedges**: a poisoned DuckDB connection on Windows (matches [duckdb-rs issue #209](https://github.com/duckdb/duckdb-rs/issues/209) exactly — same error string, Windows label). After certain failed/interrupted statements, EVERY later operation on that Connection fails with \`resource deadlock would occur\` (Windows file-lock EDEADLK surfaced through DuckDB) until process restart. Trigger in-app: reload storms — webview unload invokes \`shutdownDuckdb\` while statements are in flight; also failed statements (binder errors) right before the wedge.
+
+Static-analysis map that found it: \`DuckDbState.conn: Arc<parking_lot::Mutex<Option<Connection>>>\`; \`run_query\` holds the lock for the whole statement; \`shutdown_duckdb\` runs CHECKPOINT+close under the same lock; \`open_with_retry\` already handled WAL/lock errors at open; \`spawn_blocking\` was a prior fix for the same EDEADLK class (comment in queries.rs).
+
+**Fix** (queries.rs \`execute_query\`): detect \`resource deadlock\` in the error → \`shutdown_duckdb\` + \`initialize_duckdb\` (workspace path from state, schema re-init) → retry the query once. In-process recovery replaces app restarts. Frontend unchanged (AppHandle is Tauri-injected, not an IPC arg).
+
+Ceiling: only \`execute_query\` auto-recovers; other conn-using commands surface the poisoning as an error instead of hanging. Also note: the Save button's 'Saved' flip is transient (2s) — poll timing can miss it, which mimicked a save failure during debugging.
+`,
+  "learnings/duckdb-bundled-lacks-static-json-extension.md": `---
+type: Learning
+title: duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows
+description: Symptom
+tags: [duckdb, windows, heap-corruption, extensions, cargo]
+timestamp: "2026-09-22T12:44:59.260Z"
+---
+
+# duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows
+
+## Symptom
+
+\`cargo test\` died mid-run with \`STATUS_HEAP_CORRUPTION (0xc0000374)\` on any test touching \`read_json_auto\` — even a bare \`execute_batch("CREATE TABLE t AS SELECT * FROM read_json_auto(...)")\` on an in-memory connection. Isolated to the JSON extension path; CSV/parquet tests were fine.
+
+## Root cause
+
+The dependency is \`duckdb = { version = "1.1", features = ["bundled"] }\` — **plain \`bundled\` does NOT statically link the JSON extension**. On first \`read_json_auto\` call DuckDB auto-installed \`json.duckdb_extension\` (a dynamic DLL, found in \`~/.duckdb/extensions/v1.5.2/windows_amd64/\`) and loaded it at runtime. A dynamically-loaded extension against statically-linked DuckDB on Windows frees memory across CRT heap boundaries → heap corruption, process death. This also silently affected the app's JSON ingest (\`load_json_file\`, \`get_file_columns\`, \`preview_file\` with .json), not just tests.
+
+## Fix
+
+Enable the crate's \`json\` feature — it statically compiles the JSON extension into the binary (same treatment as parquet):
+
+\`\`\`toml
+duckdb = { version = "1.1", features = ["bundled", "json"] }
+\`\`\`
+
+Also deleted the downloaded DLL (\`~/.duckdb/extensions/v1.5.2/windows_amd64/json.duckdb_extension*\`) so nothing can silently fall back to dynamic loading.
+
+## Generalization
+
+Any \`read_*\` table function from a non-core extension (json, postgres_scanner, httpfs…) will auto-download-and-dynamically-load on first use. Prefer the crate's static feature for extensions the app needs at its core. \`postgres.rs\` deliberately does \`INSTALL postgres; LOAD postgres\` (dynamic by design) — if Postgres ingest ever heap-corrupts the same way, this is why.
+
+Verified: DuckDB-rs 1.10502.0 = DuckDB v1.5.2 bundled. The version scheme \`1.MAJOR_MINOR_PATCH.x\` started at DuckDB v1.5.0.
 `,
   "learnings/evidence-chart-architecture.md": `---
 type: Learning
@@ -15176,6 +15376,24 @@ Evidence does **not** have one god chart component. It has one typed component *
 [[chart-fundament]] (buildBars + sameDatum), generic accessor props \`<T>\`, bindable positional selection, tooltip snippet, empty guard, \`heightVh\`, and the per-chart config drawer rule ([[each-labs-chart-owns-its-config-panel]], [[labs-charts-reusable-fundament]]) already cover roughly 60% of this taxonomy — it just isn't written down as one central design yet. The pending interview decides: shared \`ChartShell\` + shared \`AxisOptions\`/\`fmt\`/\`seriesColors\` vocabulary vs per-chart props; centralized \`aggregate()\` fundament API (opt-in for scatter/line); single-select as standard.
 
 Related: [[barchart-component]], [[heatmap-component]].
+`,
+  "learnings/expreditor-suggestions-are-computed-locally.md": `---
+type: Learning
+title: ExprEditor suggestions are computed locally
+description: "While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it aga"
+tags: [expreditor, performance, bug-hunt, central-charts]
+timestamp: "2026-09-22T11:35:26.420Z"
+---
+
+# ExprEditor suggestions are computed locally
+
+While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it again.**
+
+- ExprEditor's suggestion list is computed **locally**: a \`$derived\` over the function catalog + bound-table fields + master items. Zero invokes per keystroke.
+- The only async work per keystroke is the validation query — already debounced 500ms, serialized, and runId-guarded.
+- The /query editor is likewise a plain \`bind:textarea\` with no per-keystroke traffic.
+
+So an autocomplete-driven query storm is structurally impossible in this codebase. The report's #4 mechanism was wrong; the real app hang is the in-process DuckDB deadlock (see [[learnings/hard-reload-storms-deadlock-duckdb-in-process]]), now defended against in the frontend per [[decisions/timeout-and-retry-defend-against-hung-ipc]].
 `,
   "learnings/extending-docs-features-requires-add-evals.md": `---
 type: Learning
@@ -15318,6 +15536,52 @@ asure form).
 - [Pages editor auto-saves silently every 60s — no UI signal is deliberate](./pages-editor-auto-saves-silently-every-60s-no-ui.md) - User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t
 - [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](./shallow-url-state-sveltekit-replacestate.md) - Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
 - [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](./sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) - Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
+- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](./cdp-e2e-failures-right-after-a-source-save-are-often-hmr-rac.md) - Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223).
+- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](./data-tab-keys-labels-metadata-writes-tab-definitions.md) - Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\` never matched — the
+- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](./msys-path-conversion-mangles-f-style-windows-flags-use-msys-.md) - Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix).
+- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](./ref-based-master-items-tablename-table-mismatch-broke-all-re.md) - Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
+- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](./minimized-occluded-webview2-window-throttles-the-page-bringt.md) - Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md).
+- [ExprEditor suggestions are computed locally](./expreditor-suggestions-are-computed-locally.md) - While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it aga
+- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](./duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20.md) - Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
+- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](./local-checkout-is-the-running-dev-app-branch-switches-live-r.md) - Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #20, session artifacts
+- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](./initialize-duckdb-no-ops-while-initialized-workspace-switch-.md) - Fact
+- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](./duckdb-plain-bundled-lacks-static-json-extension-dynamic-aut.md) - Symptom
+- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](./compile-ts-dimension-guard-raw-flag-is-the-only-validation-b.md) - Symptom
+- [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](./welcome-gate-renders-instead-of-router.md) - In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — there is no router-rend
+`,
+  "learnings/initialize-duckdb-no-ops-while-initialized.md": `---
+type: Learning
+title: initialize_duckdb no-ops while initialized — workspace switch must shutdown first
+description: Fact
+tags: [duckdb, workspace, lifecycle, gotcha]
+timestamp: "2026-09-22T12:30:28.942Z"
+---
+
+# initialize_duckdb no-ops while initialized — workspace switch must shutdown first
+
+## Fact
+
+\`initialize_duckdb\` (\`src-tauri/src/commands/database.rs\`) early-returns \`"DuckDB already initialized"\` whenever \`DuckDbState\` already holds a connection. It never re-points the connection at a new workspace path.
+
+## Consequence
+
+A workspace switch that just calls \`initialize_duckdb\` again **silently keeps the old workspace's database** — no error, but every surface (tables, pages, master items, saved queries, labels, field functions) still shows the previous workspace's data.
+
+## Pattern
+
+The switch flow in \`src/lib/stores/app.svelte.ts\` closes first, with a code comment saying exactly this:
+
+\`\`\`ts
+// Close the old workspace's DB first — initialize_duckdb no-ops while initialized
+await shutdownDuckdb();
+await initializeDuckdb(newPath);
+\`\`\`
+
+Same shutdown → initialize sequence already used for the in-process hang-recovery path ([[duckdb-app-hangs-poisoned-connection-windows]]).
+
+## Rule of thumb
+
+Any code path that changes the workspace must run \`shutdown_duckdb\` before \`initialize_duckdb\` — never rely on \`initialize_duckdb\` to re-point at a new path.
 `,
   "learnings/kees-reference-ports-cleanly.md": `---
 type: Learning
@@ -15501,6 +15765,24 @@ Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together A
 
 Rule of thumb: **marketing FAQ ≠ terms of service** — always verify against the binding privacy policy/DPA. For Data Monster workspaces with sensitive data, local llama.cpp still beats every contract on this list.
 `,
+  "learnings/local-checkout-is-the-running-dev-app.md": `---
+type: Learning
+title: Local checkout is the running dev app — branch switches live-revert it until all PRs merge
+description: "Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #20, session artifacts"
+tags: [git, devops, dev-app, branches]
+timestamp: "2026-09-22T11:58:46.631Z"
+---
+
+# Local checkout is the running dev app — branch switches live-revert it until all PRs merge
+
+Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #20, session artifacts only).
+
+The local checkout **is** the running dev app's source tree (vite serves from the working tree), so \`git checkout master\` while the dev app runs live-reverts the app to master content — any fixes that exist only on the unmerged branch appear to vanish. This is the same trap as the earlier "/pages work is completely lost" report ([[central-charts-work-lives-on-feature-branch]]).
+
+Rule of thumb: keep the checkout on the feature branch until **all** its PRs (including artifacts/docs follow-ups) are merged; only then sync local master and switch. A commit pushed after the merge stays stranded on the branch — handle it with a follow-up PR (consistent with the PR-only shipping rule), never a direct push to master.
+
+Also useful: branch content can be identical except the artifacts PR — compare before assuming a switch is safe.
+`,
   "learnings/local-llm-blank-screen-delay-was-hidden.md": `---
 type: Learning
 title: "Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}"
@@ -15533,6 +15815,29 @@ Add \`"thinking": {"type": "disabled"}\` to the request body in \`local_llm.rs\`
 - One early test still returned reasoning despite the flag; repeat/stability checks showed 0 reasoning chunks — verify with more than one request before concluding the flag is ignored.
 - If thinking is ever wanted back (e.g. better answers on hard prompts), the parser needs to handle \`reasoning_content\` and the UI needs a collapsible "thinking" section — that was deliberately skipped.
 `,
+  "learnings/minimized-occluded-webview2-throttles-page.md": `---
+type: Learning
+title: Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation
+description: Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md).
+tags: [cdp, webview2, e2e, throttling, gotcha]
+timestamp: "2026-09-22T11:32:08.621Z"
+---
+
+# Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation
+
+Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md).
+
+When the data.monster window is **minimized or fully occluded**, WebView2 throttles the renderer: timers clamp, IntersectionObservers never fire, async UI flows stall mid-flight. Symptoms that mimic distinct bugs:
+
+- Svelte components "fail to mount" (e.g. the ItemEditor form never appearing after clicking Add measure).
+- Charts rendering empty / svelteplot SVGs with zero size (plot needs a layout/observer pass).
+- Validation stuck at "checking…" (invoke resolved but the state update flush was starved).
+- Intermittent CDP weirdness (evaluate slow, Page.navigate timing out).
+
+Fix at the automation layer: \`Page.bringToFront\` (CDP) before interacting, re-issuing it whenever a UI flow stalls, plus \`window.dispatchEvent(new Event('resize'))\` to force relayout of already-mounted charts.
+
+Rule: before diagnosing an "app bug" over CDP, confirm the window is fronted — at least half of one session's "failures" were throttling artifacts.
+`,
   "learnings/mock-tauri-browser-repro-harness-is-gone-verify.md": `---
 type: Learning
 title: Mock-Tauri browser repro harness is gone — verify visually via self-contained routes
@@ -15546,6 +15851,24 @@ timestamp: "2026-09-18T10:39:36.983Z"
 Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique documented in [[query-editor-blowup-was-app-column-min-height-auto]] - **the mocktauri harness has been removed from the repo**. That learning's repro recipe no longer works.
 
 Fallback that does work: open a **self-contained route** (one that needs no Tauri data, e.g. \`/labs/bar-chart\`) in the agent browser and verify visually there. Don't burn time hunting for the harness; it's gone.
+`,
+  "learnings/msys-path-conversion-mangles-f-style-flags.md": `---
+type: Learning
+title: MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell
+description: Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix).
+tags: [windows, msys, bash, cdp-restart-chain, gotcha]
+timestamp: "2026-09-22T08:25:12.889Z"
+---
+
+# MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell
+
+Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix).
+
+**Symptom**: \`taskkill /f /pid <n>\` and \`start\` quoting silently misbehaved — MSYS path conversion rewrote leading-slash arguments into Windows paths (\`/f\` → \`F:/\`), changing the command's meaning without erroring.
+
+**Fix**: prefix the command with \`MSYS_NO_PATHCONV=1\`, or run Windows-native commands (\`taskkill\`, \`start\`) through PowerShell instead of bash.
+
+**Related practice from the same session**: when restarting the app, kill the app + vite by **specific PID**, never \`taskkill /IM node.exe /f\` — the blanket image-name kill takes down unrelated node processes.
 `,
   "learnings/never-tree-scan-archive-or-src-tauri.md": `---
 type: Learning
@@ -15637,6 +15960,26 @@ Root cause: \`.app-shell\` (100vh flex column) → \`.app-column { flex: 1 }\` h
 Verified: vite build + \`vite preview\` on a spare port, Tauri mocked by injecting \`window.__TAURI_INTERNALS__\` (invoke returning fake workspace/tables/DESCRIBE/COUNT/SELECT results) in \`src/app.html\` guarded by \`?mocktauri=1\` — the full app boots in a plain browser and the click flow reproduces/verifies. GOTCHA: after rebuilding, RESTART \`vite preview\` — it resolves the asset manifest at startup and keeps serving the OLD hashed CSS to cache-busted navigations, which silently defeats re-verification.
 
 Static DOM repro of just the page's own CSS is not enough for layout bugs — the bug lived in the layout chain above the page, and only the full app build showed it.
+`,
+  "learnings/ref-based-master-items-tablename-mismatch-broke.md": `---
+type: Learning
+title: "Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile"
+description: Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
+tags: [central-charts, master-items, bug, tauri, ipc]
+timestamp: "2026-09-22T11:01:15.746Z"
+---
+
+# Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile
+
+Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
+
+Two plumbing bugs broke EVERY ref-based master-item chart, while raw-field charts (e.g. the existing Revenue page) worked fine:
+
+1. **\`tableName\` vs \`table\`**: Rust \`items.rs\` serializes \`d8a_monster_items.table_name\` as \`tableName\`, but the frontend \`MasterItem\` type declares \`table\` — the \`invoke<{ items: MasterItem[] }>\` type assertion hid the mismatch. \`resolveItems\` (items.ts) then did \`involved.add(item.table)\` with \`undefined\` → \`buildJoins\` threw \`no relationship path from "superstore" to "undefined"\`. Fixed at the single choke point: \`central-api.listMasterItems\` maps \`tableName → table\`.
+
+2. **Expression master dimensions don't survive \`checkColumn\`**: \`resolveItems\` resolves a ref dimension to \`{ col: item.expr, label }\` (e.g. col = \`year(order_date)\`), but \`dimSelect\` in \`query/compile.ts\` validated \`col\` as a bare column and \`ident()\` would quote the expression into a column name. Master measures already compile raw, so dimensions now do too: on column-lookup miss, \`dimSelect\` compiles \`(<expr>)\` raw (ponytail-commented trust ceiling — these expressions are user-authored and validated at creation in ExprEditor, same trust level as measures).
+
+Debugging technique that cracked it: the chart card's own error text (\`no relationship path…\`) was findable via targeted DOM dumps of the card region — the card rendered a silent error message instead of a plot, with no console error.
 `,
   "learnings/scale-standalone-html-docs-via-root-font-size-px.md": `---
 type: Learning
@@ -15897,7 +16240,7 @@ The pop conflicted: the background **wiki-recap agent** had written newer recap 
 ## Prevention
 After ANY stash pop in this repo, sanity-check that the expected number of modified files is actually present before editing further — concurrent wiki-recap writes make silent conflicts the norm, not the exception.
 `,
-  "learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md": `---
+  "learnings/sveltekit-page-url-stale-after-replacestate.md": `---
 type: Learning
 title: SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back
 description: Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
@@ -16144,6 +16487,22 @@ Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit whil
 
 Bonus technique: when no vision tool is available, verify UI restyling objectively via **computed styles** over CDP (\`getComputedStyle\` on headings/buttons/body) instead of screenshots — confirmed Spectral/Public Sans, ledger-green brand mark, and tabular-nums this way (fonts since superseded: [[typography-settles-inter-everywhere-geist-mono]]; brand mark later replaced by the monster logo asset).
 `,
+  "learnings/welcome-gate-renders-instead-of-router.md": `---
+type: Learning
+title: First-run welcome gate renders instead of the router — its actions must act directly, never navigate
+description: In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — there is no router-rend
+tags: [frontend, routing, workspace, sveltekit]
+timestamp: "2026-09-22T13:01:24.622Z"
+---
+
+# First-run welcome gate renders instead of the router — its actions must act directly, never navigate
+
+In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — there is no router-rendered page behind it.
+
+Consequence: navigation from the gate (e.g. \`goto('/workspaces')\`) renders nothing, because the thing you navigated *to* is rendered *by* the router the gate is replacing. When the header workspace button moved to the new /workspaces page (2026-09-22), the gate's button therefore kept its direct native folder dialog.
+
+Rule: any action surfaced in the welcome gate must invoke/act directly (dialog, command) — never navigate. Revisit if the gate ever becomes a real route.
+`,
   "learnings/wiki-note-page-wikilinks-resolve-relative.md": `---
 type: Learning
 title: wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths
@@ -16243,10 +16602,13 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T08:01:17.275Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13:01:40.062Z.
 
 ## Recent Decisions
 
+- [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](decisions/workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) — Context (2026-09-22)
+- [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switching-reloads-data-content.md) — Context (2026-09-22)
+- [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context (2026-09-22)
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
 - [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context (2026-09-17)
 - [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context (2026-09-17)
@@ -16259,12 +16621,10 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T08
 - [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
 - [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
 - [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
-- [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context (2026-09-17)
-- [Library demos render the real components fed dummy query-shaped data — no demo-only clones](decisions/library-demos-reuse-real-components.md) — Context (2026-09-17)
-- [Library Q4: component demos get dedicated views, split into tabs — Preview is the default tab](decisions/library-q4-dedicated-tabbed-views.md) — Context (2026-09-17)
 
 ## Active Rules
 
+- [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-the-app-s-existing-size-classes-never-ad.md) — The guideline (2026-09-22)
 - [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
 - [Pick display labels resolve through roleLabels() — never hand-roll chip labels](rules/pick-display-labels-resolve-through-rolelabels.md) — Guideline (2026-09-17)
@@ -16295,6 +16655,18 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T08
 
 ## Recent Learnings — development patterns
 
+- [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](learnings/welcome-gate-renders-instead-of-router.md) — In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — the… (2026-09-22)
+- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-is-the-only-validation-b.md) — Symptom (2026-09-22)
+- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-plain-bundled-lacks-static-json-extension-dynamic-aut.md) — Symptom (2026-09-22)
+- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](learnings/initialize-duckdb-no-ops-while-initialized-workspace-switch-.md) — Fact (2026-09-22)
+- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](learnings/local-checkout-is-the-running-dev-app-branch-switches-live-r.md) — Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #2… (2026-09-22)
+- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md). (2026-09-22)
+- [ExprEditor suggestions are computed locally](learnings/expreditor-suggestions-are-computed-locally.md) — While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists … (2026-09-22)
+- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](learnings/minimized-occluded-webview2-window-throttles-the-page-bringt.md) — Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md). (2026-09-22)
+- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-table-mismatch-broke-all-re.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
+- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-windows-flags-use-msys-.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
+- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-tab-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\`… (2026-09-22)
+- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-right-after-a-source-save-are-often-hmr-rac.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
 - [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app). (2026-09-22)
 - [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines). (2026-09-22)
 - [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(tru… (2026-09-21)
@@ -16303,18 +16675,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T08
 - [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%. (2026-09-18)
 - [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while check… (2026-09-17)
 - [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17). (2026-09-17)
-- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md) — Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplo… (2026-09-17)
-- [CDP probe \`$$\` is querySelector — indexing it silently kills clicks](learnings/cdp-probe-is-queryselector-indexing-it-silently.md) — Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7). (2026-09-17)
-- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal. (2026-09-17)
-- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](learnings/cdp-gate-assertions-need-settle-time-after-doc.md) — Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10): (2026-09-17)
-- [Component spawn grows too-small explicit-height rows to 320px minimum](learnings/component-spawn-grows-too-small-explicit-height.md) — Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8). (2026-09-17)
-- [CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps](learnings/cdp-form-probes-must-be-container-scoped-shared.md) — Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form). (2026-09-17)
-- [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](learnings/hard-reload-storms-deadlock-duckdb-in-process.md) — Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor. (2026-09-17)
-- [Stale vite module graph can survive reloads — only a full app restart clears it](learnings/stale-vite-module-graph-can-survive-reloads-only-a.md) — Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: … (2026-09-17)
-- [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](learnings/d2-diagrams-not-interactive.md) — Question (2026-09-17)
-- [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](learnings/normalizepagedoc-field-whitelist.md) — Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save… (2026-09-17)
-- [SveltePlot 0.14.2 has no tree mark — verified in the installed package](learnings/svelteplot-has-no-tree-mark.md) — Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart … (2026-09-17)
-- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fi… (2026-09-17)
 
 ## Architecture
 
@@ -16333,9 +16693,9 @@ timestamp: "2026-09-11T21:35:13.611Z"
 
 **Data Monster** is a desktop data-analysis application — "connect data, query, explore." It is built with **Tauri v2** (native desktop shell), a **SvelteKit + Svelte 5 + TypeScript + Tailwind CSS 4** frontend, and an embedded **DuckDB 1.1** engine living in a **Rust** backend. No server is required: the Rust process owns the DuckDB connection, and the webview frontend talks to it through Tauri \`invoke\` commands.
 
-The core workflow flows through routes: **Connect** (\`/connect\`) ingests CSV/Parquet/JSON from disk or URL and browses/ingests remote PostgreSQL tables; **Preview** (\`/preview\`) detects columns and types; **Query** (\`/query\`) runs SQL (SELECT/CTAS/SHOW/DESCRIBE) with an editor, pagination, and an ingest modal; **Data** (\`/data\`) and **Table detail** (\`/table/[name]\`) manage and browse tables with tags/groups; **Analyst** (\`/analyst\`) chats with an LLM about the data (including local llama.cpp models); **Pages** (\`/pages\`) lists and creates report pages, with \`/pages/<slug>\` hosting the dual-mode (Design ⇄ Code) page editor from the central-charts system; **Labs** (\`/labs\`) is a 32-type chart catalog — one card per chart type, scaffolded placeholder-first after theunspokenpitch.com and built one at a time on SveltePlot over a shared chart fundament (heatmap and horizontal bar chart done, 30 still placeholders); and **Settings** (\`/settings\`) configures the LLM and exposes an internal-DB browser for the \`d8a_monster_*\` metadata tables. Everything persists in a user-selected workspace folder as \`d8a_monster.duckdb\` plus copied source files under \`data/main/\`.
+The core workflow flows through routes: **Connect** (\`/connect\`) ingests CSV/Parquet/JSON from disk or URL and browses/ingests remote PostgreSQL tables; **Preview** (\`/preview\`) detects columns and types; **Query** (\`/query\`) runs SQL (SELECT/CTAS/SHOW/DESCRIBE) with an editor, pagination, and an ingest modal; **Data** (\`/data\`) and **Table detail** (\`/table/[name]\`) manage and browse tables with tags/groups; **Analyst** (\`/analyst\`) chats with an LLM about the data (including local llama.cpp models); **Pages** (\`/pages\`) lists and creates report pages, with \`/pages/<slug>\` hosting the dual-mode (Design ⇄ Code) page editor from the central-charts system; **Labs** (\`/labs\`) is a 32-type chart catalog — one card per chart type, scaffolded placeholder-first after theunspokenpitch.com and built one at a time on SveltePlot over a shared chart fundament (heatmap and horizontal bar chart done, 30 still placeholders); **Workspaces** (\`/workspaces\`) switches the active workspace folder — a workspace is a portable bundle (DuckDB + copied source data + settings.json) and a switch shuts down and fully reloads the DB; and **Settings** (\`/settings\`) configures the LLM and exposes an internal-DB browser for the \`d8a_monster_*\` metadata tables. Everything persists in a user-selected workspace folder as \`d8a_monster.duckdb\` plus copied source files under \`data/main/\`.
 
-Organization is split between product code and process artifacts. Product code lives in \`src/\` (frontend: routes, components, reusable chart canvases, Svelte 5 rune stores) and \`src-tauri/\` (Rust backend: per-domain command modules — files, queries, tables, labels, saved_queries, internal_db, postgres, local_llm, workspace, settings — plus state and utils). Process artifacts document how features are built: \`.specs/\` holds spec-driven feature specs with task logs (chart-lib, field-function-library, local-llm, tauri-migration), \`.prds/\` holds product requirement docs with interviews (reporting-dashboard-pages, table-relationships), \`docs/\` holds research notes, picasso.js chart examples, re-usable chart specs, the eight-feature interactive demo-tour set (\`docs/tours/\` — real-UI captures replayed as standalone HTML players), and this wiki, \`reports/\` holds generated deep-research run outputs, and \`prompts.md\`/\`opencode.json\`/\`.pi/\` configure the AI-agent tooling used in development.
+Organization is split between product code and process artifacts. Product code lives in \`src/\` (frontend: routes, components, reusable chart canvases, Svelte 5 rune stores) and \`src-tauri/\` (Rust backend: per-domain command modules — files, queries, tables, labels, saved_queries, internal_db, postgres, local_llm, workspace, settings — plus state and utils). Process artifacts document how features are built: \`.specs/\` holds spec-driven feature specs with task logs (chart-lib, field-function-library, local-llm, tauri-migration), \`.prds/\` holds product requirement docs with interviews (reporting-dashboard-pages, table-relationships), \`docs/\` holds research notes, picasso.js chart examples, re-usable chart specs, the eight-feature interactive demo-tour set (\`docs/tours/\` — real-UI captures replayed as standalone HTML players), static per-component design references (\`docs/design/\`), and this wiki, \`reports/\` holds generated deep-research run outputs, and \`prompts.md\`/\`opencode.json\`/\`.pi/\` configure the AI-agent tooling used in development.
 
 History and experimentation are deliberately quarantined. \`.archive/\` keeps superseded versions — including the original browser-only app (\`data-monster-old\`, DuckDB-WASM with a Node server) and chart-engine trials (echarts, svelteplot, observable) — while the nested \`data.monster/\` project generates the design-system documentation site, and \`build/\` is static-export output. \`global_superstore.csv\` at the root is the sample retail dataset used for demos and testing.
 `,
@@ -16504,6 +16864,35 @@ The executable spec + task list for phase 1 of the central chart system: 13 FRs 
 - \`.specs/central-charts/spec.md\` — the 13 FRs
 - \`.specs/central-charts/tasks.json\` — the 13 tasks with acceptance criteria
 `,
+  "pages/artifacts/design-component-reference-set.md": `---
+type: Artifact
+title: Design-component reference set (docs/design/components/)
+description: 40 standalone per-component design-reference HTML pages (Button, Modal, Table, Searchahead, …) — static explorations in their own token set, not app components.
+tags: [design-system, components, html, reference, static-docs]
+timestamp: "2026-09-22T13:14:51.753Z"
+---
+
+# Design-component reference set (docs/design/components/)
+
+## What is it?
+
+40 standalone, self-contained HTML pages under \`docs/design/components/\` — one per UI component (Button, ButtonGroup, Input, Select, Modal, Drawer, Tabs, Table, Pagination, Toast, Tooltip, Tag, TagInput, Searchahead, DatePicker, ColorPicker, ConditionBuilder, NodeTree, EllipsisMenu, Spinner, Card, List, Breadcrumb, Accordion, Badge, Label, Toggle, Header, FooterDock, ErrorPage, plus domain-drawer/form mockups like InboxActionDrawer, GenerateResultDrawer, TestResultDrawer, RecordingFieldsDrawer, StudentForm, GroupForm). \`ComponentRef.html\` is the per-component reference layout in the same format.
+
+## What it documents
+
+- [Design system (app.css tokens + /ui showcase)](../entities/design-system-app-css-tokens-ui-showcase.md) — the live token/component layer these static references sit apart from
+- [Central-charts design doc](central-chart-component-design.md) — the sibling design document in the same \`docs/design/\` folder
+
+## Details
+
+- **Format**: single-file HTML per component — inline CSS token block, demo sections with labeled variants; opens directly in a browser, no build
+- **Location**: \`docs/design/components/*.html\` (committed 2026-09-22 in \`dd44774\` as session artifacts)
+- **Visual language**: each file carries its own token set — Source Serif 4 (display) / Manrope (body) / Geist Mono, warm oklch accent around hue 41 — which is **not** the live app theme (Inter + Geist Mono, ledger green). Treat these as design references/explorations, not as the app's component specs.
+
+## Source
+
+- Committed as part of the 2026-09-22 session-artifacts commit (\`dd44774\`: "commit remaining session artifacts, design-system docs, research reports + wiki sync")
+`,
   "pages/artifacts/design-system-reference-doc-docs-design.md": `---
 type: Artifact
 title: Design-system reference doc (docs/design-system-data-monster.html)
@@ -16532,9 +16921,16 @@ The standalone design-system documentation deliverable: a single self-contained 
 
 Hand-maintained, **not generated** from \`app.css\` — it drifts silently when the app re-types or re-tokens (it sat on a dead theme for weeks). After any token/typography change, re-value this doc too — same family as [the tours' embedded-fonts gotcha](../../learnings/tour-html-captures-embed-google-fonts-import.md).
 
+## Per-component set (docs/design/components/)
+
+A sibling deliverable committed 2026-09-22 (\`dd44774\`): **39 standalone per-component HTML docs** in \`docs/design/components/\` — Button, Input, Select, Modal, Drawer, Tabs, Table, Tag, Tooltip, Toast, Pagination, Searchahead, etc., plus app-shaped composites (ConditionBuilder, NodeTree, InboxActionDrawer, StudentForm, RecordingFieldsDrawer, GenerateResultDrawer). Each file is fully self-contained (inline CSS, own \`:root\` tokens, Google Fonts link) and shows the component's variants in bordered demo blocks.
+
+**Theme caveat — still on the dead SYNAPSE palette**: these files render the old orange accent (\`oklch(0.69 0.16 41)\`, hue 41) with Source Serif 4 + Manrope — NOT the current ledger-green/Inter system. Same drift family as the maintenance gotcha above; re-theme before citing them as the current component reference.
+
 ## Source
 
-- \`docs/design-system-data-monster.html\` — the deliverable itself
+- \`docs/design-system-data-monster.html\` — the single-file deliverable
+- \`docs/design/components/*.html\` — the 39-file per-component set
 - \`src/app.css\` — source of truth for every token value
 `,
   "pages/artifacts/feature-skill-catalog-docs-features.md": `---
@@ -16591,6 +16987,7 @@ _Documents, diagrams, and deliverables will be listed here._
 - [OSS value driver trees research report](./oss-value-driver-trees-research-report.md) - What it documents
 - [aisure.uk pricing research report](./aisure-uk-pricing-research-report.md) - Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
 - [Design-system reference doc (docs/design-system-data-monster.html)](./design-system-reference-doc-docs-design-system-data-monster-.md) - The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
+- [Pages E2E feedback report](./pages-e2e-feedback-report.md) - E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r
 `,
   "pages/artifacts/llm-agent-connection-research-report.md": `---
 type: Artifact
@@ -16756,6 +17153,43 @@ Fractal-research (te9-research) report answering: *which open source apps implem
 
 - \`reports/2026-09-17-oss-value-driver-trees/\` — report + audit trail
 `,
+  "pages/artifacts/pages-e2e-feedback-report.md": `---
+type: Artifact
+title: Pages E2E feedback report
+description: "E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r"
+tags: [central-charts, e2e, cdp, report, bug-findings, resolved]
+timestamp: "2026-09-22T11:36:40.975Z"
+---
+
+# Pages E2E feedback report
+
+E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the real dev app over CDP. **Same-day follow-up session resolved all 7 open findings** — 5 fixed in code, 2 closed as non-bugs (report updated in place).
+
+## What it documents
+
+- The full end-to-end flow works once two P1 plumbing bugs were fixed: ingest via /query → master measures/dimensions via /data → page + blocks via /pages → persisted and reload-verified (bar chart "Sales by Order Year", 5 bars; table, 50 rows).
+- **Fixed during the first session** (see [tableName/table + raw-compile learning](../../learnings/ref-based-master-items-tablename-mismatch-broke.md)): (1) Rust \`tableName\` vs frontend \`table\` — mapped in [central-api (frontend invoke client)](../entities/central-api-frontend-invoke-client.md) \`listMasterItems\`; (2) expression master dimensions rejected by the query compiler — now compile raw in \`query/compile.ts\`.
+- **The 7 open findings — all resolved 2026-09-22** (CDP-verified, \`npm run check\` clean):
+  - #3 + #5 (P1/P2): hung invokes now time out and surface — ExprEditor validation 15s, writes 20s via \`writeInvoke\` with one 300ms retry. See [Timeout and retry defend against hung IPC](../../decisions/timeout-and-retry-defend-against-hung-ipc.md).
+  - #7 (P2): closed as already-truthful — the Save button was outcome-driven; the 2s "Saved" flip is transient by design, polls just missed it.
+  - #4 (P2): closed as non-bug — the per-keystroke autocomplete flood doesn't exist (see [ExprEditor suggestions are computed locally](../../learnings/expreditor-suggestions-are-computed-locally.md)); the real hang is the DuckDB in-process deadlock.
+  - #6 (P2): "Create page" now lands in the editor — the flow always tried; the #5 IPC race was aborting it before \`goto\`. Error surfacing added.
+  - #8 (P3): ExprEditor suggestions close on outside \`pointerdown\` — a Save click can no longer be swallowed and turned into a suggestion insert.
+  - #9 (P3): CTAS runs show "✓ Table created successfully." instead of a misleading empty result.
+  - **Top follow-up**: the backend DuckDB deadlock itself is still open — the frontend now defends (timeouts + retry), but the deadlock needs its own investigation.
+
+## Details
+
+- **Format**: Markdown report with tested-flow walkthrough, bug tables (fixed + open), what-worked-well, and priority ordering; now updated with per-bug resolution status.
+- **Location**: \`reports/pages-e2e-feedback.md\`
+- **Generated from**: a CDP-driven session against the real dev app (ingest → master items → page build → reload verification), with \`src/lib/central-api.ts\` + \`src/lib/charts/query/compile.ts\` patched mid-session; plus the follow-up fix session (7 CDP probe scripts \`reports/step-*.mjs\`).
+- Companion session files: \`reports/cdp-driver.mjs\`, \`reports/e2e-log.txt\`.
+
+## Source
+
+- \`reports/pages-e2e-feedback.md\` — the report itself
+- \`src/lib/central-api.ts\`, \`src/lib/components/charts/ExprEditor.svelte\`, \`src/lib/db-operations.ts\`, \`src/routes/query/+page.svelte\` — the fix sites
+`,
   "pages/concepts/index.md": `# Concepts
 
 _Abstract ideas and definitions will be listed here._
@@ -16841,8 +17275,8 @@ Second instance of the reusable-chart contract — proves the pattern generalize
 type: Entity
 title: central-api (frontend invoke client)
 description: What is it?
-tags: [central-charts, frontend, tauri, persistence]
-timestamp: "2026-09-16T17:13:20.930Z"
+tags: [central-charts, frontend, tauri, persistence, ipc-hardening]
+timestamp: "2026-09-22T11:36:40.977Z"
 ---
 
 # central-api (frontend invoke client)
@@ -16853,18 +17287,21 @@ The frontend client for the central-charts internal DB: a thin, typed set of Tau
 
 ## Why it matters
 
-It is the single import surface every central-charts UI route uses to reach persistence — no route invokes these Tauri commands directly. One place to change when a command signature moves.
+It is the single import surface every central-charts UI route uses to reach persistence — no route invokes these Tauri commands directly. One place to change when a command signature moves. Since 2026-09-22 it is also the choke point for **hung-invoke defense**: all writes go through \`writeInvoke\`.
 
 ## Details
 
 - **Location**: \`src/lib/central-api.ts\`
+- **Write hardening**: \`writeInvoke\` races every write command at 20s and retries once after 300ms — absorbing the first-invoke-after-load IPC failure and the hung-invoke/DuckDB-deadlock failure mode (see [Timeout and retry defend against hung IPC](../../decisions/timeout-and-retry-defend-against-hung-ipc.md)). New write paths should use it, not raw \`invoke\`.
 - **Consumers**: \`src/routes/pages/+page.svelte\` (list/create/delete), \`src/routes/pages/[slug]/+page.svelte\` (editor load/save), \`src/lib/components/charts/ItemEditor.svelte\`, \`src/lib/components/charts/RelationshipEditor.svelte\`
-- **Rust side**: \`src-tauri/src/commands/{pages,items,relationships}.rs\` — see [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) for the DuckDB tables behind these commands
-- **Types**: re-exports \`PageDoc\` from [chart-page-spec-spec-types-validator](./chart-page-spec-spec-types-validator.md), \`MasterItem\`, \`Relationship\` from \`$lib/charts/{items,relationships}\`
+- **Rust side**: \`src-tauri/src/commands/{pages,items,relationships}.rs\` — see [Pages & master-items storage (Rust)](./pages-master-items-storage-rust.md) for the DuckDB tables behind these commands
+- **Types**: re-exports \`PageDoc\` from [Chart page spec (spec-types + validator)](./chart-page-spec-spec-types-validator.md), \`MasterItem\`, \`Relationship\` from \`$lib/charts/{items,relationships}\`
 
 ## Lifecycle
 
 - First added: 2026-09-16 (central-charts FR-10/14/15 storage tasks) — replaced ad-hoc invokes scattered in routes
+- 2026-09-22: \`listMasterItems\` now normalizes Rust's \`tableName\` field to the frontend \`table\` at this boundary — the single choke point that un-broke every ref-based master-item chart (see [tableName/table mismatch learning](../../learnings/ref-based-master-items-tablename-mismatch-broke.md)). Boundary contract: callers only ever see corrected, typed objects — raw Rust serialization quirks are mapped here, never in consumers.
+- 2026-09-22: writes hardened with \`writeInvoke\` (20s timeout + one 300ms retry) — hung invokes used to fail silently (blocks "vanished" via silent auto-save); they now surface errors (see [Timeout and retry defend against hung IPC](../../decisions/timeout-and-retry-defend-against-hung-ipc.md)).
 `,
   "pages/entities/central-charts-component-system.md": `---
 type: Entity
@@ -17119,6 +17556,7 @@ The app-wide styling layer: design tokens in \`src/app.css\`, the \`src/lib/comp
 - [Professional-finance redesign decision](../../decisions/professional-finance-redesign-ledger.md) — the decision that defined this system
 - [Typography: Poppins / Inter / Geist Mono decision](../../decisions/typography-poppins-headings-figtree-dropped.md) — the font pairing now baked into the token layer (display face churned Squada One → Calluna → Figtree → Poppins on 2026-09-16)
 - [Design-system reference doc](../artifacts/design-system-reference-doc-docs-design.md) — the \`docs/\` HTML deliverable restating these tokens (re-themed 2026-09-17)
+- [Design-component reference set](../artifacts/design-component-reference-set.md) — 40 static per-component reference pages under \`docs/design/components/\` in their own token set (not the live theme)
 
 ## Lifecycle
 
@@ -17268,7 +17706,6 @@ _Concrete named things will be listed here._
 - [Chart page spec (spec-types + validator)](./chart-page-spec-spec-types-validator.md) - Central-charts FR-1: the TypeScript module holding the page document spec — \`PageDoc\` and all block/measure/dimension/filter/annotation/tooltip/axis types (\`src
 - [Pages & master-items storage (Rust)](./pages-master-items-storage-rust.md) - The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report \`PageD
 - [ChartConfigDrawer component](./chartconfigdrawer-component.md) - A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in \`/labs\`: a chart accepts an optional \`config\` snippet and togg
-- [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
 - [Library page (/library)](./library-page-library.md) - A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
 - [Library registry system (src/lib/library + /library routes)](./library-registry-system.md) - The shipped implementation of the library registry: a one-function registration point (\`registerLibraryComponent\`) that feeds both the \`/library\` views and the
 - [library-component-builder skill (.pi/skills)](./library-component-builder-skill-pi-skills.md) - A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview →
@@ -17281,6 +17718,9 @@ _Concrete named things will be listed here._
 - [RolePickerModal component](./rolepickermodal-component.md) - The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linke
 - [ExprEditor component](./expreditor-component.md) - Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table.
 - [Create-in-/data round-trip](./create-in-data-round-trip.md) - Deep-link flow from a /pages chart pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached + focused drawer reopened.
+- [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
+- [Workspace command module (Rust)](./workspace-command-module-rust.md) - What is it?
+- [Workspaces page (/workspaces)](./workspaces-page-workspaces.md) - What is it?
 `,
   "pages/entities/labsplaceholder-component.md": `---
 type: Entity
@@ -17709,6 +18149,80 @@ Without ignores, every build artifact and archived experiment (thousands of file
 - \`.wiki_ignore\` — the config itself
 - \`C:\\Users\\PTW\\.pi\\agent\\extensions\\wiki-context\\index.ts\` — BUILTIN_IGNORES merged inside \`loadIgnore()\`
 `,
+  "pages/entities/workspace-command-module-rust.md": `---
+type: Entity
+title: Workspace command module (Rust)
+description: The Rust command module owning workspace identity — picking, persisting (workspace.json + open history), and resolving the active workspace folder.
+tags: [workspace, rust, tauri-commands, portability]
+timestamp: "2026-09-22T12:30:28.942Z"
+---
+
+# Workspace command module (Rust)
+
+## What is it?
+
+The Tauri command module that owns workspace **identity** — picking, persisting, and resolving the active workspace folder — plus the app-store switch flow that makes a workspace a portable bundle of data, definitions, settings, and content ([Workspaces are fully portable — switching reloads data, content, and settings](../../decisions/workspaces-are-fully-portable-switch-reloads.md) decision).
+
+## Why it matters
+
+Every DuckDB command and the settings loader resolve paths from the active workspace. This module is the only writer of the workspace pointer, and the switch flow it feeds is what makes switching load the right database and settings.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/workspace.rs\`; switch flow in \`src/lib/stores/app.svelte.ts\`; invoke wrappers in \`src/lib/db-operations.ts\`
+- **Interface / commands**:
+  - \`choose_workspace_folder\` — native folder picker; writes the pointer and returns the chosen path (or \`None\` on cancel)
+  - \`get_workspace_path\` — resolves the pointer; returns \`None\` if no pointer or the folder no longer exists
+  - \`set_workspace_path\` — writes the pointer directly
+  - \`list_workspaces\` — returns the workspace history (\`{ path, lastOpened }\`) sorted newest first; silently drops folders that no longer exist
+- **Configuration**: pointer file \`<app-data>/workspace.json\` = \`{ "path": "..." }\` — global by design (records *which* folder is open, never workspace content). Workspace-local state lives in the workspace folder itself: \`d8a_monster.duckdb\`, \`data/main/\`, and (since 2026-09-22) \`settings.json\`. History file \`<app-data>/workspaces.json\` = \`[{ path, lastOpened }]\` — upserted on every pick (dialog or [/workspaces page](./workspaces-page-workspaces.md)); a list *of* workspaces, so it can never live inside one.
+
+## Relationships
+
+- [database-command-module](./database-command-module.md) — owns the DuckDB lifecycle the switch flow drives: \`shutdown_duckdb\` → \`initialize_duckdb(newPath)\` (initialize no-ops while initialized)
+- Settings module (\`settings.rs\`) — resolves \`settings.json\` inside the workspace folder when one is open, global app-data as fallback
+- Glossary "Workspace" — the folder concept this module points at
+
+## Lifecycle
+
+- First added: with the Tauri migration, as the folder picker + pointer store.
+- 2026-09-22 — switch reworked for full portability: shutdown-before-reinit, settings.json moved into the workspace, content reload + tab reset on switch; \`selectWorkspace()\` split into dialog + \`selectWorkspaceByPath(path)\` so the page and dialog share one switch path.
+- 2026-09-22 — added workspace history (\`workspaces.json\`, \`list_workspaces\`) backing the new [/workspaces switcher page](./workspaces-page-workspaces.md).
+`,
+  "pages/entities/workspaces-page-workspaces.md": `---
+type: Entity
+title: Workspaces page (/workspaces)
+description: Dedicated workspace-switcher page at /workspaces — header folder button lands here; every workspace ever opened shows as a chip, and a chip click runs the full portable-workspace reload.
+tags: [workspace, frontend, route, svelte]
+timestamp: "2026-09-22T13:01:24.620Z"
+---
+
+# Workspaces page (/workspaces)
+
+## What is it?
+
+The dedicated workspace-switcher page at the \`/workspaces\` route — the header folder button lands here instead of opening a dialog. Labs-inspired: section title + subtitle, auto-fill card grid, icon tile, same design tokens. Every workspace ever opened shows as a chip (folder name + path in mono, ellipsized), ordered by last opened (newest first); the current workspace is outlined with a check, switching shows a spinner, and a **+ Add** button (top right) opens the native folder dialog to add + switch in one step. Breadcrumb label comes from \`routeLabels\` like every route.
+
+## Why it matters
+
+Workspace switching becomes visible and reusable: the user sees their workspace history at a glance and jumps between recent workspaces instead of re-picking folders through a native dialog. It is the browsing surface over the portable-workspace switch flow — every chip click runs the same full switch (shutdown → reload DB → reload tables → home).
+
+## Details
+
+- **Location**: \`src/routes/workspaces/+page.svelte\` (page); history + \`list_workspaces\` in \`src-tauri/src/commands/workspace.rs\`; \`selectWorkspaceByPath(path)\` in \`src/lib/stores/app.svelte.ts\`; header button wired in \`src/routes/+layout.svelte\`
+- **Interface**: chips call \`selectWorkspaceByPath(path)\`; **+ Add** reuses the existing dialog flow — both upsert the history file on every pick
+- **Configuration**: none — history is auto-created in the app-data dir, not per-workspace
+- **Carve-out**: the first-run welcome gate keeps its direct folder dialog — it renders *instead of* the router, so navigating to \`/workspaces\` from it would render nothing
+
+## Relationships
+
+- [Workspace command module (Rust)](./workspace-command-module-rust.md) — owns the \`workspaces.json\` history, the \`list_workspaces\` command, and the switch a chip click triggers
+- [Workspaces are fully portable — switching reloads data, content, and settings](../../decisions/workspaces-are-fully-portable-switch-reloads.md) — the switch semantics each chip click executes
+
+## Lifecycle
+
+- First added: 2026-09-22 — replaced the header dialog per user request (labs-inspired page with + Add, chips ordered by last opened). \`list_workspaces\` is a new Rust command: the dev app needs one restart to pick it up.
+`,
   "pages/index.md": `# Pages
 
 Knowledge graph: concepts, entities, and artifacts that make up this project.
@@ -17744,6 +18258,9 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Shared controls kit (charts/controls)](./entities/shared-controls-kit-charts-controls.md) — The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
 - [aisure.uk pricing research report](./artifacts/aisure-uk-pricing-research-report.md) — Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
 - [Design-system reference doc (docs/design-system-data-monster.html)](./artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
+- [Pages E2E feedback report](./artifacts/pages-e2e-feedback-report.md) — E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r
+- [Workspace command module (Rust)](./entities/workspace-command-module-rust.md) — What is it?
+- [Workspaces page (/workspaces)](./entities/workspaces-page-workspaces.md) — What is it?
 `,
   "pages/TEMPLATES.md": `---
 type: Concept
@@ -18197,6 +18714,7 @@ Stated by the user as "hard rules — no exceptions" (2026-09-14 feature-loop ru
 - [Pick values flow through one codec — src/lib/charts/pickers.ts](./pick-values-flow-through-one-codec-src-lib-charts.md) - Guideline
 - [Pick display labels resolve through roleLabels() — never hand-roll chip labels](./pick-display-labels-resolve-through-rolelabels.md) - Guideline
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline
+- [Resize requests use the app's existing size classes — never ad-hoc multipliers](./resize-requests-use-the-app-s-existing-size-classes-never-ad.md) - The guideline
 `,
   "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md": `---
 type: Rule
@@ -18479,6 +18997,30 @@ Any UI surface that must display markdown as styled, design-system-consistent co
 
 \`marked\` + \`.prose-chat\` is the app's single markdown pipeline — reuse keeps typography and spacing consistent across surfaces and avoids duplicate prose stylesheets. Check for an existing rendering path before writing a new one.
 `,
+  "rules/resize-requests-use-existing-size-classes.md": `---
+type: Rule
+title: Resize requests use the app's existing size classes — never ad-hoc multipliers
+description: Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers.
+tags: [design-system, styling, ui]
+timestamp: "2026-09-22T13:01:40.028Z"
+---
+
+# Resize requests use the app's existing size classes — never ad-hoc multipliers
+
+## The guideline
+
+When asked to make a UI element bigger or smaller, **scale it via the app's existing size classes / design tokens** (e.g. \`.btn-lg\` in \`app.css\`), not by multiplying the current values (\`font-size: 3em\`, icon ×3, padding ×3).
+
+Literal multipliers produce caricature-scale UI — a 33px-text pill button — and get rejected. The design system's coarse step up (\`.btn-lg\`: normal \`text-sm\`, roomier padding, slightly larger icon) is usually what "bigger" actually means.
+
+## When it applies
+
+Any "make X bigger/smaller" style request in the app UI.
+
+## Rationale / evidence
+
+2026-09-22, \`/workspaces\` Add button: user asked for 3× bigger, the literal implementation shipped, and the immediate response was "thats way too big" — reverted to the existing \`.btn-lg\` class with zero custom sizing. Also aligns with the ponytail ladder: what's already in the codebase wins over new code.
+`,
   "rules/route-external-api-calls-through-rust.md": `---
 type: Rule
 title: Route external API calls through Rust commands, never webview fetch
@@ -18587,6 +19129,7 @@ var WIKI_PAGES = [
   { path: "decisions/skeleton-pick-create-moved-from-inline-dropdowns.md", label: "Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)", group: "Decisions" },
   { path: "decisions/svelteplot-sole-chart-engine.md", label: "SveltePlot is the sole chart engine — all legacy chart libraries removed", group: "Decisions" },
   { path: "decisions/tab-bar-shows-only-explicitly-opened-tabs.md", label: "Tab bar shows only explicitly opened tabs — navigation never creates tabs", group: "Decisions" },
+  { path: "decisions/timeout-and-retry-defend-against-hung-ipc.md", label: "Timeout and retry defend against hung IPC", group: "Decisions" },
   { path: "decisions/two-surface-report-page-format.md", label: "Two-surface report pages: code mode edits a declarative spec, not Svelte source", group: "Decisions" },
   { path: "decisions/typography-settles-inter-everywhere-geist-mono.md", label: "Typography settles: Inter everywhere (display + body), Geist Mono for data detail", group: "Decisions" },
   { path: "decisions/typography-bricolage-grotesque-display.md", label: "Typography: Bricolage Grotesque display — Poppins dropped", group: "Decisions" },
@@ -18601,6 +19144,8 @@ var WIKI_PAGES = [
   { path: "decisions/typography-squada-one-headings-libre-baskerville.md", label: "Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped", group: "Decisions" },
   { path: "decisions/typography-syne-display-space-grotesk-dropped.md", label: "Typography: Syne display — Space Grotesk dropped", group: "Decisions" },
   { path: "decisions/speed-highlight-over-prism.md", label: "Use speed-highlight/core for code highlighting instead of Prism", group: "Decisions" },
+  { path: "decisions/workspaces-are-fully-portable-switch-reloads.md", label: "Workspaces are fully portable — switching reloads data, content, and settings", group: "Decisions" },
+  { path: "learnings/data-tab-keys-labels-metadata-writes-definitions.md", label: "/data tab keys ≠ labels — \"Metadata\" writes ?tab=definitions", group: "Learnings" },
   { path: "learnings/apparent-ui-bug-stale-hmr-webview.md", label: "Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging", group: "Learnings" },
   { path: "learnings/auto-margins-app-main-disable-flex-stretch.md", label: "Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%", group: "Learnings" },
   { path: "learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md", label: "Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption", group: "Learnings" },
@@ -18608,6 +19153,7 @@ var WIKI_PAGES = [
   { path: "learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md", label: "CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot", group: "Learnings" },
   { path: "learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md", label: "CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events", group: "Learnings" },
   { path: "learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md", label: "CDP e2e cannot synthesize trusted clicks on svelteplot marks", group: "Learnings" },
+  { path: "learnings/cdp-e2e-failures-after-source-save-hmr-race.md", label: "CDP e2e failures right after a source save are often HMR races — re-run before debugging", group: "Learnings" },
   { path: "learnings/cdp-form-probes-must-be-container-scoped-shared.md", label: "CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps", group: "Learnings" },
   { path: "learnings/cdp-gate-assertions-need-settle-time-after-doc.md", label: "CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped", group: "Learnings" },
   { path: "learnings/cdp-probe-is-queryselector-indexing-it-silently.md", label: "CDP probe `$$` is querySelector — indexing it silently kills clicks", group: "Learnings" },
@@ -18615,28 +19161,38 @@ var WIKI_PAGES = [
   { path: "learnings/central-charts-work-lives-on-feature-branch.md", label: "Central-charts work lives on feature/central-charts — master is held at a restore point", group: "Learnings" },
   { path: "learnings/chart-authoring-two-surfaces-serializable-spec.md", label: "Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec", group: "Learnings" },
   { path: "learnings/chart-segment-selection-parent-held-state.md", label: "Chart segment selection is parent-held {dimension, value} transient state", group: "Learnings" },
+  { path: "learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md", label: "compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures", group: "Learnings" },
   { path: "learnings/component-spawn-grows-too-small-explicit-height.md", label: "Component spawn grows too-small explicit-height rows to 320px minimum", group: "Learnings" },
   { path: "learnings/couldn-t-find-callback-id-tauri-warning.md", label: "Couldn't find callback id\" Tauri warning is a benign reload artifact", group: "Learnings" },
   { path: "learnings/css-text-transform-changes-innertext-probes.md", label: "CSS text-transform changes innerText, not textContent — probe labels case-insensitively", group: "Learnings" },
   { path: "learnings/d2-diagrams-not-interactive.md", label: "D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook", group: "Learnings" },
   { path: "learnings/drive-data-monster-s-real-ui-over-cdp.md", label: "Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging", group: "Learnings" },
+  { path: "learnings/duckdb-app-hangs-poisoned-connection-windows.md", label: "DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix", group: "Learnings" },
+  { path: "learnings/duckdb-bundled-lacks-static-json-extension.md", label: "duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows", group: "Learnings" },
   { path: "learnings/evidence-chart-architecture.md", label: "Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy", group: "Learnings" },
+  { path: "learnings/expreditor-suggestions-are-computed-locally.md", label: "ExprEditor suggestions are computed locally", group: "Learnings" },
   { path: "learnings/extending-docs-features-requires-add-evals.md", label: "Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern", group: "Learnings" },
+  { path: "learnings/welcome-gate-renders-instead-of-router.md", label: "First-run welcome gate renders instead of the router — its actions must act directly, never navigate", group: "Learnings" },
   { path: "learnings/get-settings-merges-env-env-over.md", label: "get_settings merges env/.env over settings.json — env is source of truth", group: "Learnings" },
   { path: "learnings/hard-reload-storms-deadlock-duckdb-in-process.md", label: "Hard-reload storms deadlock DuckDB in-process — writes fail with \"resource deadlock would occur\" until full restart", group: "Learnings" },
+  { path: "learnings/initialize-duckdb-no-ops-while-initialized.md", label: "initialize_duckdb no-ops while initialized — workspace switch must shutdown first", group: "Learnings" },
   { path: "learnings/kees-reference-ports-cleanly.md", label: "kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4", group: "Learnings" },
   { path: "learnings/labs-hang-vite-reload-loop.md", label: "Labs bar-chart \"hang\" is an infinite vite reconnect/reload loop, not a component bug", group: "Learnings" },
   { path: "learnings/index.md", label: "Learnings", group: "Learnings" },
   { path: "learnings/library-code-entries-are-keyed-by-full-repo-paths.md", label: "Library code entries are keyed by full repo paths", group: "Learnings" },
   { path: "learnings/llm-api-data-retention-no-training-no.md", label: "LLM API data retention: \"no training\" ≠ \"no storage\"; local models are ZDR by construction", group: "Learnings" },
   { path: "learnings/llm-provider-retention-part-2-kimi-z-ai.md", label: "LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework", group: "Learnings" },
+  { path: "learnings/local-checkout-is-the-running-dev-app.md", label: "Local checkout is the running dev app — branch switches live-revert it until all PRs merge", group: "Learnings" },
   { path: "learnings/local-llm-blank-screen-delay-was-hidden.md", label: "Local LLM blank-screen delay was hidden thinking tokens — disable via \"thinking\": {\"type\": \"disabled\"}", group: "Learnings" },
+  { path: "learnings/minimized-occluded-webview2-throttles-page.md", label: "Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation", group: "Learnings" },
   { path: "learnings/mock-tauri-browser-repro-harness-is-gone-verify.md", label: "Mock-Tauri browser repro harness is gone — verify visually via self-contained routes", group: "Learnings" },
+  { path: "learnings/msys-path-conversion-mangles-f-style-flags.md", label: "MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell", group: "Learnings" },
   { path: "learnings/never-tree-scan-archive-or-src-tauri.md", label: "Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees", group: "Learnings" },
   { path: "learnings/normalizepagedoc-field-whitelist.md", label: "normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load", group: "Learnings" },
   { path: "learnings/pagedoc-block-title-and-chart-title-rendering.md", label: "PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there", group: "Learnings" },
   { path: "learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md", label: "Pages editor auto-saves silently every 60s — no UI signal is deliberate", group: "Learnings" },
   { path: "learnings/query-editor-blowup-was-app-column-min-height-auto.md", label: "Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique", group: "Learnings" },
+  { path: "learnings/ref-based-master-items-tablename-mismatch-broke.md", label: "Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile", group: "Learnings" },
   { path: "learnings/scale-standalone-html-docs-via-root-font-size-px.md", label: "Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays", group: "Learnings" },
   { path: "learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md", label: "SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads", group: "Learnings" },
   { path: "learnings/settings-swap-for-tours-must-cover-env-too.md", label: "Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin", group: "Learnings" },
@@ -18648,7 +19204,7 @@ var WIKI_PAGES = [
   { path: "learnings/stale-vite-module-graph-can-survive-reloads-only-a.md", label: "Stale vite module graph can survive reloads — only a full app restart clears it", group: "Learnings" },
   { path: "learnings/stale-wiki-file-floods-are-ignored.md", label: "Stale-wiki file floods — only noise if an ignore pattern actually matches the tree", group: "Learnings" },
   { path: "learnings/stash-pop-silent-conflict-recovery.md", label: "Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash", group: "Learnings" },
-  { path: "learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md", label: "SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back", group: "Learnings" },
+  { path: "learnings/sveltekit-page-url-stale-after-replacestate.md", label: "SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back", group: "Learnings" },
   { path: "learnings/svelteplot-has-no-tree-mark.md", label: "SveltePlot 0.14.2 has no tree mark — verified in the installed package", group: "Learnings" },
   { path: "learnings/svelteplot-band-axis-empty-aliases-crash.md", label: "svelteplot band axis crashes on empty aliases (duplicate key)", group: "Learnings" },
   { path: "learnings/svelteplot-barx-bar-y-orientation.md", label: "SveltePlot BarX vs BarY: BarX is the horizontal bar mark", group: "Learnings" },
@@ -18671,6 +19227,7 @@ var WIKI_PAGES = [
   { path: "pages/artifacts/central-chart-component-design.md", label: "Central chart component design", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-tasks.md", label: "Central charts spec & tasks", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-amp-task-list.md", label: "Central-charts spec &amp; task list", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/design-component-reference-set.md", label: "Design-component reference set (docs/design/components/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/design-system-reference-doc-docs-design.md", label: "Design-system reference doc (docs/design-system-data-monster.html)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/feature-skill-catalog-docs-features.md", label: "Feature skill catalog (docs/features/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-sensitive-data-white-paper.md", label: "LLM & Sensitive Data White Paper", group: "Pages / Artifacts" },
@@ -18678,6 +19235,7 @@ var WIKI_PAGES = [
   { path: "pages/artifacts/llm-sensitive-data-privacy-research.md", label: "LLM Sensitive Data Privacy Research", group: "Pages / Artifacts" },
   { path: "pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md", label: "LLM Sensitive-Data White Paper — Finance Edition", group: "Pages / Artifacts" },
   { path: "pages/artifacts/oss-value-driver-trees-research-report.md", label: "OSS value driver trees research report", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/pages-e2e-feedback-report.md", label: "Pages E2E feedback report", group: "Pages / Artifacts" },
   { path: "pages/concepts/index.md", label: "Concepts", group: "Pages / Concepts" },
   { path: "pages/entities/wiki-ignore-staleness-policy.md", label: ".wiki_ignore staleness policy", group: "Pages / Entities" },
   { path: "pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md", label: "App tab system (virtual tabs + bottom tab bar)", group: "Pages / Entities" },
@@ -18706,6 +19264,8 @@ var WIKI_PAGES = [
   { path: "pages/entities/rolepickermodal-component.md", label: "RolePickerModal component", group: "Pages / Entities" },
   { path: "pages/entities/shared-controls-kit-charts-controls.md", label: "Shared controls kit (charts/controls)", group: "Pages / Entities" },
   { path: "pages/entities/skeletonsetup-component.md", label: "SkeletonSetup component", group: "Pages / Entities" },
+  { path: "pages/entities/workspace-command-module-rust.md", label: "Workspace command module (Rust)", group: "Pages / Entities" },
+  { path: "pages/entities/workspaces-page-workspaces.md", label: "Workspaces page (/workspaces)", group: "Pages / Entities" },
   { path: "preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md", label: "Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself", group: "Preferences" },
   { path: "preferences/cdp-verify-the-dev-app-via-webview2-additional.md", label: "CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)", group: "Preferences" },
   { path: "preferences/never-start-npm-run-dev-tauri-dev.md", label: "Never start npm run dev / tauri dev — the user owns the dev app", group: "Preferences" },
@@ -18728,6 +19288,7 @@ var WIKI_PAGES = [
   { path: "rules/pin-tailwind-source-scanning.md", label: "Pin Tailwind @source scanning to src/ and app.html in app.css", group: "Rules" },
   { path: "rules/pointer-cursor-from-global-rule-app-css.md", label: "Pointer cursor comes from one global rule in app.css", group: "Rules" },
   { path: "rules/render-markdown-via-marked-prose-chat.md", label: "Render markdown via marked + .prose-chat, never a new pipeline", group: "Rules" },
+  { path: "rules/resize-requests-use-existing-size-classes.md", label: "Resize requests use the app's existing size classes — never ad-hoc multipliers", group: "Rules" },
   { path: "rules/route-external-api-calls-through-rust.md", label: "Route external API calls through Rust commands, never webview fetch", group: "Rules" },
   { path: "rules/index.md", label: "Rules", group: "Rules" },
   { path: "rules/spec-driven-features-tdd-karpathy-in-todos.md", label: "Spec-driven features: TDD + Karpathy skills referenced in every todo", group: "Rules" },

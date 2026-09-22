@@ -12,7 +12,7 @@ Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over 
 
 Symptom: a CDP e2e step fails right after an assistant source-file save — the transition that fails in one run passes reliably in a fresh one, and in-page instrumentation (`window.__log`) vanishes mid-test with double `vite connecting` entries plus benign `[TAURI] Couldn't find callback id` warnings (see [[couldn-t-find-callback-id-tauri-warning]]): the page reloaded itself mid-script as HMR applied the edit.
 
-Why it bites: HMR reload racing the verify script produces false negatives that look exactly like real bugs. This turn it cost three wrong theories (stale webview → hydration race → popstate reverts) before console instrumentation showed the actual root cause ([[sveltekit-page-url-is-stale-after-replacestate-never-guard-w]]).
+Why it bites: HMR reload racing the verify script produces false negatives that look exactly like real bugs. This turn it cost three wrong theories (stale webview → hydration race → popstate reverts) before console instrumentation showed the actual root cause ([[sveltekit-page-url-stale-after-replacestate]]).
 
 Working method:
 

@@ -77,12 +77,12 @@
 </script>
 
 <svelte:head>
-	<title>Data Analyst — Data Monster</title>
+	<title>Analyst — Data Monster</title>
 </svelte:head>
 
 <div class="overview">
 	<div class="overview-header">
-		<h2 class="page-title">Data Analyst</h2>
+		<h2 class="page-title">Analyst</h2>
 		<span class="tag tag-accent">{tables.length} table{tables.length !== 1 ? 's' : ''}</span>
 	</div>
 

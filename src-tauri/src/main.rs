@@ -29,6 +29,7 @@ fn main() {
             choose_workspace_folder,
             get_workspace_path,
             set_workspace_path,
+            list_workspaces,
             load_csv_file,
             load_parquet_file,
             load_json_file,

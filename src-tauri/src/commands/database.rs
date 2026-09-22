@@ -75,6 +75,11 @@ pub fn initialize_duckdb(
         eprintln!("[database] Warning: .gitignore bootstrap failed: {}", e);
     }
 
+    // agent docs: sync README + dm/docs/ (progressive disclosure) to the app version
+    if let Err(e) = crate::commands::agent_docs::sync_agent_docs(workspace) {
+        eprintln!("[database] Warning: agent docs sync failed: {}", e);
+    }
+
     // live dm/ watcher — a workspace switch replaces the previous one
     if let Err(e) = crate::commands::dm_watch::start(workspace.to_path_buf(), app.clone()) {
         eprintln!("[database] Warning: dm/ watcher failed to start: {}", e);

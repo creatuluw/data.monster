@@ -63,3 +63,4 @@
 - [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](./live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) - Context
 - [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](./workspace-files-are-canonical-agents-author-content-by-editi.md) - Context
 - [dm/ migration: write all, verify, then drop — files win](./dm-migration-write-all-verify-then-drop-files-win.md) - Context
+- [Creation saves explicitly, editing writes through live (files-010)](./creation-saves-explicitly-editing-writes-through-live-files-.md) - Context

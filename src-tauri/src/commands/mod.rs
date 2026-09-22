@@ -1,3 +1,4 @@
+pub mod agent_docs;
 pub mod connections;
 pub mod database;
 pub mod dm_store;

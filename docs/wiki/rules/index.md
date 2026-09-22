@@ -21,3 +21,4 @@
 - [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](./restore-points-are-git-tags-restore-point-feature-start-on-p.md) - The rule
 - [Secrets never live in workspace content files — env references only, gitignored .env at all times](./secrets-never-live-in-workspace-content-files-env-references.md) - The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace
 - [Rust backend tests live in-module via #[cfg(test)]](./rust-backend-tests-live-in-module-via-cfg-test.md) - The rule
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](./single-doc-stores-fail-loud-never-clobber-corrupt-file-list-.md) - **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail loud instead of clobber

@@ -25,3 +25,4 @@ _Concrete named things will be listed here._
 - [Workspace command module (Rust)](./workspace-command-module-rust.md) - What is it?
 - [Workspaces page (/workspaces)](./workspaces-page-workspaces.md) - What is it?
 - [dm_store command module](./dm-store-command-module.md) - `src-tauri/src/commands/dm_store.rs` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write
+- [Master items & relationships file store (items.rs + relationships.rs)](./master-items-relationships-file-store-items-rs-relationships.md) - The Rust content-command modules that back master items and the relationship graph as **files in the `dm/` workspace tree** — task `files-003` of the workspace-

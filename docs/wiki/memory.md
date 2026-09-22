@@ -8,7 +8,7 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13:57:08.236Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T14:17:14.806Z.
 
 ## Recent Decisions
 
@@ -30,6 +30,7 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 
 ## Active Rules
 
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber-corrupt-file-list-.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail lou… (2026-09-22)
 - [Rust backend tests live in-module via #[cfg(test)]](rules/rust-backend-tests-live-in-module-via-cfg-test.md) — The rule (2026-09-22)
 - [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files-env-references.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writ… (2026-09-22)
 - [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point-feature-start-on-p.md) — The rule (2026-09-22)
@@ -54,7 +55,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/ (2026-09-14)
 - [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament (2026-09-14)
 - [Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal](rules/feature-loop-hard-rules.md) — Guideline (2026-09-14)
-- [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline (2026-09-11)
 
 ## Preferences & Conventions
 

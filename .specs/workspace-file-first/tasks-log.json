@@ -13,5 +13,10 @@
     "task_id": "files-003",
     "title": "FR-3 Master items + relationships file store",
     "summary": "items.rs file-backed: dm/master-items/{measures,dimensions}/<id>.json (filename=id, folder=kind, no timestamps), get searches both folders, list filters/sorts deterministic + errors[] for invalid files, delete idempotent, save guards kind+id. relationships.rs: single dm/relationships.json doc, upsert-by-id (generated rel-<from>-<to> slug fallback), delete idempotent, and a clobber guard - corrupt existing doc makes list error loudly AND save refuse (never overwrite a hand-edited broken graph). dm_store item folders corrected to plural (measures/dimensions) per spec tree. 13 new tests; full suite 92/92."
+  },
+  {
+    "task_id": "files-004",
+    "title": "FR-4 Saved queries file store",
+    "summary": "saved_queries.rs rewritten file-backed: dm/saved-queries/<slug>.sql, slug=generate_slug(name) (same-name overwrite kept). Optional single-line '-- dm: {json}' header (name/description/tags) - app always writes it, headerless agent files default name=stem; malformed header = reported error (list errors[] + update refuses), never silently treated as SQL. tags = JSON array in file, comma-separated string at invoke boundary (frontend splits on ','). update = partial merge keeping unspecified fields, slug/filename unchanged on rename. No timestamps in files. 7 tests; full suite 95/95."
   }
 ]

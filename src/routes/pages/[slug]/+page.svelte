@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { page as pageState } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { getAllTableMeta, extractErrorMessage, type QueryResult } from '$lib/db-operations';
@@ -149,6 +150,31 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		]);
 		items = its;
 		relationships = rels;
+	}
+
+	// live reload: dm/ files changed (agent, other surface, or this editor's write-through) (FR-8)
+	$effect(() => {
+		const offPage = onDmChanged('page', (name, removed) => {
+			if (name === null || name === slug) void reloadDoc();
+		});
+		const offItems = onDmChanged('measure', () => void refreshItems());
+		const offDims = onDmChanged('dimension', () => void refreshItems());
+		const offRels = onDmChanged('relationships', () => void refreshItems());
+		return () => {
+			offPage();
+			offItems();
+			offDims();
+			offRels();
+		};
+	});
+
+	async function reloadDoc() {
+		try {
+			doc = normalizePageDoc(await getPage(slug));
+		} catch {
+			doc = { slug, title: slug.replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase()), rows: [{ columns: [{ span: 12, blocks: [] }] }] };
+		}
+		codeText = JSON.stringify(doc, null, '\t');
 	}
 
 	onMount(async () => {

@@ -8,6 +8,7 @@
 	 * that chart with the new item attached after saving.
 	 */
 	import { onMount } from 'svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { goto } from '$app/navigation';
 	import { listMasterItems, saveMasterItem, deleteMasterItem } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
@@ -63,6 +64,8 @@
 		if (preset.table && tables.includes(preset.table)) draft.table = preset.table;
 		adding = true;
 	});
+
+	$effect(() => onDmChanged(kind, () => void refresh()));
 
 	async function refresh() {
 		loading = true;

@@ -33,5 +33,10 @@
     "task_id": "files-007",
     "title": "FR-7 File watcher (notify + debounce + echo suppression + events)",
     "summary": "New commands/dm_watch.rs + notify = 8 dep. Pipeline: notify events on dm/ recursive -> mpsc -> debounced flusher thread (300ms window, removals win over modifies) -> echo check -> classify(ws, path, removed) PURE fn -> emit dm:changed {kind,name,removed} / dm:error {path,reason}. Echo suppression: registry keyed by destination path fed by dm_store::atomic_write (mark after successful rename), 600ms window >= write debounce 400ms. classify handles pages/master-items/relationships/saved-queries/connections with parse-level checks; drafts, docs, README, .env, settings, unknown files ignored (agent scratch safe). Watcher starts on initialize_duckdb, replaced on workspace switch (drop = stop). 5 classification/echo tests; full suite 115/115."
+  },
+  {
+    "task_id": "files-008",
+    "title": "FR-8 Frontend live-reload (dm:changed / dm:error handling)",
+    "summary": "New src/lib/dm-events.ts: onDmChanged(kind, cb) registry + onDmError + pure routeDmEvent routing core (malformed payloads ignored) + initDmEvents() wired once in +layout.svelte (errors -> console.warn + app.globalError banner). Views subscribe in $effect with off() cleanup: /pages list (page), /pages/[slug] editor (page -> reloadDoc when slug matches; measure/dimension/relationships -> refreshItems), /query (saved-query -> loadSavedQueries), ItemEditor (its kind), RelationshipEditor (relationships), /connect (connections -> loadSavedConnections). tests/dm-events.test.ts: routing matrix + registry off() semantics. vitest 125/125; svelte-check 0 errors."
   }
 ]

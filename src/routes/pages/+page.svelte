@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { listPages, savePage, deletePage, type PageMeta } from '$lib/central-api';
-	import { extractErrorMessage } from '$lib/db-operations';
+	import { onDmChanged } from '$lib/dm-events';
+import { extractErrorMessage } from '$lib/db-operations';
 	import { FileText, Plus, Trash2, LayoutTemplate, X } from 'lucide-svelte';
 
 	let pages = $state<PageMeta[]>([]);
@@ -36,6 +37,9 @@
 			loading = false;
 		}
 	}
+
+	// live reload: the agent (or another surface) changed a page file (FR-8)
+	$effect(() => onDmChanged('page', () => void refresh()));
 
 	function openModal() {
 		newTitle = '';

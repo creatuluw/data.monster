@@ -8,6 +8,7 @@
 		extractErrorMessage
 	} from '$lib/db-operations';
 	import { app } from '$lib/stores/app.svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { invoke } from '@tauri-apps/api/core';
 	import { goto } from '$app/navigation';
 	import { Upload, Link, Database, ChevronRight, Check, LoaderCircle } from 'lucide-svelte';
@@ -78,6 +79,7 @@
 	$effect(() => {
 		if (activeTab === 'database') void loadSavedConnections();
 	});
+	$effect(() => onDmChanged('connections', () => void loadSavedConnections()));
 
 	async function handleFilePick() {
 		loading = true;

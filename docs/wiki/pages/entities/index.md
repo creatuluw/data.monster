@@ -29,3 +29,4 @@ _Concrete named things will be listed here._
 - [Saved queries file store (saved_queries.rs)](./saved-queries-file-store-saved-queries-rs.md) - The Rust content-command module that backs saved queries as **plain `.sql` files in the `dm/saved-queries/` workspace tree** — task `files-004` of the workspace
 - [Connections file store (connections.rs)](./connections-file-store-connections-rs.md) - The Rust content-command module that backs **saved PostgreSQL connections** — task `files-005` of the workspace-file-first build (commit `fb2f6fb`, 2026-09-22).
 - [Connections command module (connections.rs)](./connections-command-module-connections-rs.md) - What is it?
+- [dm_watch command module](./dm-watch-command-module.md) - `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works

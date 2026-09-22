@@ -1,6 +1,7 @@
 <script lang="ts">
 	/** Relationship editor (FR-16): list/create/delete table relationships. */
 	import { onMount } from 'svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { listRelationships, saveRelationship, deleteRelationship, type RelationshipInput } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { TableSchemas } from '$lib/charts/query/compile';
@@ -19,6 +20,8 @@
 	let draft = $state<RelationshipInput>({ fromTable: '', fromColumn: '', toTable: '', toColumn: '' });
 
 	const tables = $derived(Object.keys(schemas));
+
+	$effect(() => onDmChanged('relationships', () => void refresh()));
 
 	async function refresh() {
 		loading = true;

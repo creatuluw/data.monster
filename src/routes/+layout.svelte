@@ -8,6 +8,7 @@
 	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { tabs, ensureActive, openInNewTab, activate, closeTab, pathLabel } from '$lib/tabs.svelte';
+import { initDmEvents } from '$lib/dm-events';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
@@ -48,6 +49,10 @@
 	onMount(() => {
 		let destroyed = false;
 		let unlistenFn: (() => void) | null = null;
+
+		void initDmEvents((path, reason) => {
+			app.globalError = `dm/ file problem — ${path}: ${reason}`;
+		});
 
 		listen<string>('db-init-progress', (event) => {
 			initStatus = event.payload;

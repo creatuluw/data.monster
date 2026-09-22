@@ -80,6 +80,8 @@ pub fn connections_path(ws: &Path) -> PathBuf {
     dm_dir(ws).join("connections.json")
 }
 
+/// Part of the dm/ conventions (used by README/docs generation, FR-11).
+#[allow(dead_code)]
 pub fn drafts_dir(ws: &Path) -> PathBuf {
     dm_dir(ws).join("drafts")
 }
@@ -154,6 +156,7 @@ pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
         let _ = fs::remove_file(&tmp); // best effort cleanup
         return Err(format!("atomic write to {} failed: {e}", path.display()));
     }
+    crate::commands::dm_watch::mark_self_write(path);
     Ok(())
 }
 

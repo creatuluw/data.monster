@@ -20,6 +20,7 @@ tauri-plugin-shell = "2.1.0"
 tauri-plugin-dialog = "2.1.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+notify = "8"
 # json feature = JSON extension statically linked into the binary. Without it
 # DuckDB auto-installs json.duckdb_extension from the network and dynamically
 # loads it, which heap-corrupts (STATUS_HEAP_CORRUPTION) against the statically

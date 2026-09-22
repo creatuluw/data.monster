@@ -89,6 +89,12 @@ fn parse(bytes: &[u8], slug: &str) -> Result<(String, String, Option<String>, Op
     Ok((name, body.to_string(), description, tags))
 }
 
+/// Parse-level check for the watcher: a saved-query file must carry a valid (or no)
+/// `-- dm:` header.
+pub(crate) fn check_query_file(bytes: &[u8], slug: &str) -> Result<(), String> {
+    parse(bytes, slug).map(|_| ())
+}
+
 fn mtime_iso(path: &Path) -> Option<String> {
     let t: SystemTime = fs::metadata(path).ok()?.modified().ok()?;
     Some(chrono::DateTime::<chrono::Utc>::from(t).to_rfc3339())

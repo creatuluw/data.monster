@@ -28,5 +28,10 @@
     "task_id": "files-006",
     "title": "FR-6 Migration + workspace git bootstrap",
     "summary": "New commands/migration.rs hooked into initialize_duckdb (after initialize_schema): migrate_content_tables exports the four d8a_monster_* content tables to dm/ files by REUSING the store functions (format consistency by construction; write_query_file added to saved_queries for exact-slug writes), write-ALL-then-verify-then-drop ordering, files-win skip-if-exists, idempotent no-op when tables absent, empty relationships graph still materializes its doc (test caught the edge). bootstrap_gitignore writes .env/*.duckdb/*.duckdb.wal when missing, never overwrites. Secret policy in settings.rs: save_settings moves llmApiKey to workspace .env (LLM_API_KEY) and strips it from settings.json when a workspace is open; get_settings env overrides now check workspace .env first. Migration failure = warning (tables intact, next launch retries). 8 new tests; full suite 110/110."
+  },
+  {
+    "task_id": "files-007",
+    "title": "FR-7 File watcher (notify + debounce + echo suppression + events)",
+    "summary": "New commands/dm_watch.rs + notify = 8 dep. Pipeline: notify events on dm/ recursive -> mpsc -> debounced flusher thread (300ms window, removals win over modifies) -> echo check -> classify(ws, path, removed) PURE fn -> emit dm:changed {kind,name,removed} / dm:error {path,reason}. Echo suppression: registry keyed by destination path fed by dm_store::atomic_write (mark after successful rename), 600ms window >= write debounce 400ms. classify handles pages/master-items/relationships/saved-queries/connections with parse-level checks; drafts, docs, README, .env, settings, unknown files ignored (agent scratch safe). Watcher starts on initialize_duckdb, replaced on workspace switch (drop = stop). 5 classification/echo tests; full suite 115/115."
   }
 ]

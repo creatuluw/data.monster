@@ -10,10 +10,9 @@
 //! (never overwrite), per the secrets rule.
 
 use duckdb::Connection;
-use std::fs;
 use std::path::Path;
 
-use crate::commands::{connections, dm_store, items, pages, relationships, saved_queries};
+use crate::commands::{dm_store, items, pages, relationships, saved_queries};
 
 fn table_exists(conn: &Connection, name: &str) -> Result<bool, String> {
     let n: i64 = conn
@@ -155,6 +154,7 @@ pub(crate) fn bootstrap_gitignore(ws: &Path) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use crate::commands::database::initialize_schema;
 
     fn tmp_ws(tag: &str) -> std::path::PathBuf {

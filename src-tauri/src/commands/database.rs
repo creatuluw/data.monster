@@ -75,6 +75,11 @@ pub fn initialize_duckdb(
         eprintln!("[database] Warning: .gitignore bootstrap failed: {}", e);
     }
 
+    // live dm/ watcher — a workspace switch replaces the previous one
+    if let Err(e) = crate::commands::dm_watch::start(workspace.to_path_buf(), app.clone()) {
+        eprintln!("[database] Warning: dm/ watcher failed to start: {}", e);
+    }
+
     let _ = app.emit("db-init-progress", "Cleaning up metadata...");
     let _ = cleanup_orphaned_metadata(&conn);
 

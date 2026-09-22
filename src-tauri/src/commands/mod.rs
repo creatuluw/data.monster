@@ -8,6 +8,7 @@ pub mod internal_db;
 pub mod items;
 pub mod labels;
 pub mod local_llm;
+pub mod migration;
 pub mod pages;
 pub mod postgres;
 pub mod queries;

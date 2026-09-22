@@ -35,7 +35,7 @@ fn load_in(ws: &Path) -> Result<Vec<serde_json::Value>, String> {
         .ok_or_else(|| "relationships must be an array".to_string())
 }
 
-fn store_in(ws: &Path, rels: &[serde_json::Value]) -> Result<(), String> {
+pub(crate) fn store_in(ws: &Path, rels: &[serde_json::Value]) -> Result<(), String> {
     let doc = json!({ "relationships": rels });
     let path = dm_store::relationships_path(ws);
     dm_store::atomic_write(&path, serde_json::to_string_pretty(&doc).unwrap().as_bytes())

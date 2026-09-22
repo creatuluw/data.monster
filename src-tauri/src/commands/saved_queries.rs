@@ -157,7 +157,19 @@ pub fn save_query_in(
     tags: Option<&str>,
 ) -> Result<(), String> {
     let slug = slugs::generate_slug(name);
-    let path = dm_store::saved_query_path(ws, &slug)?;
+    write_query_file(ws, &slug, name, sql, description, tags)
+}
+
+/// Write to an EXACT slug (migration: the DB slug may predate a rename).
+pub(crate) fn write_query_file(
+    ws: &Path,
+    slug: &str,
+    name: &str,
+    sql: &str,
+    description: Option<&str>,
+    tags: Option<&str>,
+) -> Result<(), String> {
+    let path = dm_store::saved_query_path(ws, slug)?;
     dm_store::atomic_write(&path, serialize(name, sql, description, tags).as_bytes())
 }
 

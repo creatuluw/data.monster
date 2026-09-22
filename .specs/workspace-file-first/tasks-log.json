@@ -23,5 +23,10 @@
     "task_id": "files-005",
     "title": "FR-5 Connections store + /connect saved-connections UI",
     "summary": "New commands/connections.rs: dm/connections.json = {connections:[{name, urlEnv}]} - NON-secret metadata only; the connection-string URL (contains password) lives in the workspace .env as DM_CONN_<SLUG>_URL (gitignored). ws_env_set appends/replaces the var preserving all other lines via atomic_write; ws_env_value resolves workspace .env then process env; resolve_connection returns the URL or an error naming the var + .env path. Clobber guard (corrupt doc refuses save). /connect database tab gains saved-connections select (Connect/Delete) + save-current-with-name row; $effect loads on tab activation. Invoke names new: list/save/delete/resolve_connection. 7 Rust tests + svelte-check 0 errors; full suite 102/102."
+  },
+  {
+    "task_id": "files-006",
+    "title": "FR-6 Migration + workspace git bootstrap",
+    "summary": "New commands/migration.rs hooked into initialize_duckdb (after initialize_schema): migrate_content_tables exports the four d8a_monster_* content tables to dm/ files by REUSING the store functions (format consistency by construction; write_query_file added to saved_queries for exact-slug writes), write-ALL-then-verify-then-drop ordering, files-win skip-if-exists, idempotent no-op when tables absent, empty relationships graph still materializes its doc (test caught the edge). bootstrap_gitignore writes .env/*.duckdb/*.duckdb.wal when missing, never overwrites. Secret policy in settings.rs: save_settings moves llmApiKey to workspace .env (LLM_API_KEY) and strips it from settings.json when a workspace is open; get_settings env overrides now check workspace .env first. Migration failure = warning (tables intact, next launch retries). 8 new tests; full suite 110/110."
   }
 ]

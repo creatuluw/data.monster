@@ -65,6 +65,16 @@ pub fn initialize_duckdb(
     let _ = app.emit("db-init-progress", "Creating schema...");
     initialize_schema(&conn)?;
 
+    // workspace-file-first: export content tables to dm/ files (one-time, crash-safe,
+    // idempotent) and bootstrap the git-safe workspace (.gitignore when missing).
+    let _ = app.emit("db-init-progress", "Migrating content to dm/ files...");
+    if let Err(e) = crate::commands::migration::migrate_content_tables(&conn, workspace) {
+        eprintln!("[database] Warning: dm/ migration failed: {}", e);
+    }
+    if let Err(e) = crate::commands::migration::bootstrap_gitignore(workspace) {
+        eprintln!("[database] Warning: .gitignore bootstrap failed: {}", e);
+    }
+
     let _ = app.emit("db-init-progress", "Cleaning up metadata...");
     let _ = cleanup_orphaned_metadata(&conn);
 

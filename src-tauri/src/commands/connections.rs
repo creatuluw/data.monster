@@ -49,7 +49,7 @@ fn store_in(ws: &Path, conns: &[serde_json::Value]) -> Result<(), String> {
 }
 
 /// Read `KEY=VALUE` from the workspace `.env` (gitignored), then process env.
-fn ws_env_value(ws: &Path, key: &str) -> Option<String> {
+pub(crate) fn ws_env_value(ws: &Path, key: &str) -> Option<String> {
     if let Ok(content) = fs::read_to_string(ws.join(".env")) {
         for line in content.lines() {
             let line = line.trim();
@@ -72,7 +72,7 @@ fn ws_env_value(ws: &Path, key: &str) -> Option<String> {
 
 /// Append or replace `KEY=VALUE` in the workspace `.env` (created if missing),
 /// preserving every other line. Atomic write — never a partial `.env`.
-fn ws_env_set(ws: &Path, key: &str, value: &str) -> Result<(), String> {
+pub(crate) fn ws_env_set(ws: &Path, key: &str, value: &str) -> Result<(), String> {
     let path = ws.join(".env");
     let mut lines: Vec<String> = fs::read_to_string(&path)
         .map(|c| c.lines().map(String::from).collect())

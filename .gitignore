@@ -13,3 +13,4 @@ src-tauri/gen/
 
 .vite-dev.log
 .pi/
+dev.log

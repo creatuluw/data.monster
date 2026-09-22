@@ -28,7 +28,11 @@ _Concrete named things will be listed here._
 - [Master items & relationships file store (items.rs + relationships.rs)](./master-items-relationships-file-store-items-rs-relationships.md) - The Rust content-command modules that back master items and the relationship graph as **files in the `dm/` workspace tree** — task `files-003` of the workspace-
 - [Saved queries file store (saved_queries.rs)](./saved-queries-file-store-saved-queries-rs.md) - The Rust content-command module that backs saved queries as **plain `.sql` files in the `dm/saved-queries/` workspace tree** — task `files-004` of the workspace
 - [Connections file store (connections.rs)](./connections-file-store-connections-rs.md) - The Rust content-command module that backs **saved PostgreSQL connections** — task `files-005` of the workspace-file-first build (commit `fb2f6fb`, 2026-09-22).
-- [Connections command module (connections.rs)](./connections-command-module-connections-rs.md) - What is it?
 - [dm_watch command module](./dm-watch-command-module.md) - `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works
 - [dm-events frontend module](./dm-events-frontend-module.md) - `src/lib/dm-events.ts` — the frontend half of the dm/ live-reload loop (workspace-file-first task `files-008`, commit `d7f0fc7`): one Tauri event bus for `dm:ch
 - [Write-through core (src/lib/write-through.ts)](./write-through-core-src-lib-write-through-ts.md) - A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task `files-009`, commit `05d6ea1`, 2026-09-22). All deboun
+- [Agent docs module (agent_docs.rs)](./agent-docs-module-agent-docs-rs.md) - Agent docs module (agent_docs.rs)
+der (incoming.rs)
+- [Agent docs system](./agent-docs-system.md) - The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at `src-tauri/agent-docs/`
+- [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
+- [Incoming drop folder](./incoming-drop-folder.md) - The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and 

@@ -8,7 +8,7 @@
 	import { FolderOpen, Settings, MoreVertical, Link, Check, BookOpen } from 'lucide-svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { tabs, ensureActive, openInNewTab, activate, closeTab, pathLabel } from '$lib/tabs.svelte';
-import { initDmEvents } from '$lib/dm-events';
+import { initDmEvents, onDmChanged } from '$lib/dm-events';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
@@ -53,6 +53,8 @@ import { initDmEvents } from '$lib/dm-events';
 		void initDmEvents((path, reason) => {
 			app.globalError = `dm/ file problem — ${path}: ${reason}`;
 		});
+		// incoming drop-folder ingest announces new tables (FR-13)
+		onDmChanged('table', () => void app.refreshTables());
 
 		listen<string>('db-init-progress', (event) => {
 			initStatus = event.payload;

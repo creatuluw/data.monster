@@ -1,18 +1,67 @@
 use serde_json::json;
-use std::sync::atomic::Ordering;
-use tauri::State;
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::async_runtime::spawn_blocking;
+use tauri::{AppHandle, State};
 
+use crate::commands::database::{initialize_duckdb, shutdown_duckdb};
 use crate::state::DuckDbState;
 use crate::utils::formatting::format_duckdb_value;
 
+/// Windows + duckdb: after certain failed/interrupted statements the connection
+/// is poisoned — every later operation fails with "resource deadlock would occur"
+/// (duckdb-rs #209) until process restart. Detect that and recover in-process:
+/// drop + reopen the connection (schema re-init) and retry the query once.
+fn is_poisoned(msg: &str) -> bool {
+    msg.contains("resource deadlock")
+}
+
+/// Runs on the blocking pool — blocking the main/UI thread with a long query
+/// while the webview IPC re-enters it made Windows fail the call with
+/// "resource deadlock would occur" (EDEADLK-class).
 #[tauri::command]
-pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde_json::Value, String> {
-    let state_conn = state.conn.lock();
+pub async fn execute_query(
+    sql: String,
+    state: State<'_, DuckDbState>,
+    app: AppHandle,
+) -> Result<serde_json::Value, String> {
+    let conn = state.conn.clone();
+    let cancelled = state.query_cancelled.clone();
+    let sql_first = sql.clone();
+    let sql_retry = sql.clone();
+    let cancelled_first = cancelled.clone();
+    let cancelled_retry = cancelled.clone();
+    let result = spawn_blocking(move || run_query(&conn, &sql_first, &cancelled_first))
+        .await
+        .map_err(|e| format!("Query task failed: {e}"))?;
+
+    if is_poisoned(result.as_ref().err().map(|e| e.as_str()).unwrap_or("")) {
+        eprintln!("[queries] poisoned connection detected — attempting in-process recovery");
+        let _ = shutdown_duckdb(state.clone());
+        let workspace_path = state
+            .workspace_path
+            .lock()
+            .clone()
+            .ok_or("Cannot recover: workspace path is unknown. Please reselect the workspace folder.")?;
+        initialize_duckdb(workspace_path, state.clone(), app.clone())?;
+        let conn = state.conn.clone();
+        return spawn_blocking(move || run_query(&conn, &sql_retry, &cancelled_retry))
+            .await
+            .map_err(|e| format!("Query task failed: {e}"))?;
+    }
+    result
+}
+
+fn run_query(
+    conn_mutex: &parking_lot::Mutex<Option<duckdb::Connection>>,
+    sql: &str,
+    query_cancelled: &AtomicBool,
+) -> Result<serde_json::Value, String> {
+    let state_conn = conn_mutex.lock();
     let conn = state_conn
         .as_ref()
         .ok_or("DuckDB not initialized. Please select a workspace folder.")?;
 
-    state.query_cancelled.store(false, Ordering::SeqCst);
+    query_cancelled.store(false, Ordering::SeqCst);
 
     let trimmed = sql.trim().to_uppercase();
 
@@ -23,7 +72,7 @@ pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde
         || trimmed.starts_with("EXPLAIN")
         || trimmed.starts_with("PRAGMA")
     {
-        let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare(sql).map_err(|e| e.to_string())?;
 
         let mut column_names: Vec<String> = Vec::new();
         let mut first_row = true;
@@ -60,7 +109,7 @@ pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde
 
         let mut data: Vec<Vec<serde_json::Value>> = Vec::new();
         for row_result in rows_result {
-            if state.query_cancelled.load(Ordering::SeqCst) {
+            if query_cancelled.load(Ordering::SeqCst) {
                 return Err("Query cancelled".to_string());
             }
 
@@ -71,8 +120,7 @@ pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde
                 first_row = false;
             }
 
-            let values: Vec<serde_json::Value> =
-                col_values.into_iter().map(|(_, v)| v).collect();
+            let values: Vec<serde_json::Value> = col_values.into_iter().map(|(_, v)| v).collect();
             data.push(values);
         }
 
@@ -82,8 +130,11 @@ pub fn execute_query(sql: String, state: State<'_, DuckDbState>) -> Result<serde
             "rowCount": data.len()
         }))
     } else {
-        eprintln!("[queries] DML start: {}", if sql.len() > 200 { &sql[..200] } else { &sql });
-        let affected = conn.execute(&sql, []).map_err(|e| {
+        eprintln!(
+            "[queries] DML start: {}",
+            if sql.len() > 200 { &sql[..200] } else { sql }
+        );
+        let affected = conn.execute(sql, []).map_err(|e| {
             eprintln!("[queries] DML error: {}", e);
             e.to_string()
         })?;
@@ -117,7 +168,9 @@ mod tests {
                 let col_count = row.as_ref().column_count();
                 let mut cols: Vec<(String, serde_json::Value)> = Vec::new();
                 for i in 0..col_count {
-                    let name = row.as_ref().column_name(i)
+                    let name = row
+                        .as_ref()
+                        .column_name(i)
                         .map_or(format!("col_{}", i), |v| v.to_string());
                     let value = match row.get_ref(i) {
                         Ok(val) => format_duckdb_value(val),
@@ -162,7 +215,9 @@ mod tests {
     #[test]
     fn test_dml_create() {
         let conn = Connection::open_in_memory().unwrap();
-        let affected = conn.execute("CREATE TABLE t1 AS SELECT 1 AS x", []).unwrap();
+        let affected = conn
+            .execute("CREATE TABLE t1 AS SELECT 1 AS x", [])
+            .unwrap();
         assert_eq!(affected, 0);
     }
 
@@ -170,14 +225,17 @@ mod tests {
     fn test_dml_insert() {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute("CREATE TABLE t1 (x INT)", []).unwrap();
-        let affected = conn.execute("INSERT INTO t1 VALUES (1), (2), (3)", []).unwrap();
+        let affected = conn
+            .execute("INSERT INTO t1 VALUES (1), (2), (3)", [])
+            .unwrap();
         assert_eq!(affected, 3);
     }
 
     #[test]
     fn test_dml_drop() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute("CREATE TABLE t1 AS SELECT 1 AS x", []).unwrap();
+        conn.execute("CREATE TABLE t1 AS SELECT 1 AS x", [])
+            .unwrap();
         let affected = conn.execute("DROP TABLE t1", []).unwrap();
         assert_eq!(affected, 0);
     }
@@ -185,7 +243,11 @@ mod tests {
     #[test]
     fn test_select_multiple_rows() {
         let conn = Connection::open_in_memory().unwrap();
-        conn.execute("CREATE TABLE nums AS SELECT * FROM generate_series(1, 5) AS t(n)", []).unwrap();
+        conn.execute(
+            "CREATE TABLE nums AS SELECT * FROM generate_series(1, 5) AS t(n)",
+            [],
+        )
+        .unwrap();
         let (_, rows) = exec_select(&conn, "SELECT * FROM nums ORDER BY n");
         assert_eq!(rows.len(), 5);
         assert_eq!(rows[0][0], json!(1));

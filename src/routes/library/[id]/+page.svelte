@@ -7,6 +7,11 @@
 	import { highlightHTML } from '@speed-highlight/core';
 	import '@speed-highlight/core/themes/github-light.css';
 	import { Bot, Copy, Check } from 'lucide-svelte';
+	import Section from '$lib/components/charts/controls/Section.svelte';
+	import Field from '$lib/components/charts/controls/Field.svelte';
+	import Select from '$lib/components/charts/controls/Select.svelte';
+	import Toggle from '$lib/components/charts/controls/Toggle.svelte';
+	import NumberInput from '$lib/components/charts/controls/NumberInput.svelte';
 
 	setupChartRegistry();
 
@@ -158,30 +163,29 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 					heightVh={0.35}
 				>
 					{#snippet config()}
-						<div class="space-y-3">
-							<div class="space-y-1">
-								<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Demo data</span>
-								<p class="text-xs text-zinc-400 font-mono">{entry.demo.dimensionAliases.join(', ') || '—'} × {entry.demo.measureAliases.join(', ') || '—'} · {entry.demo.rows.length} rows</p>
-							</div>
-							<div class="space-y-2">
-								<span class="text-xs font-medium text-zinc-500 uppercase tracking-wide">Demo options</span>
-							{#each entry.def.optionsSchema as field (field.name)}
-								<label class="grid grid-cols-2 gap-2 items-center">
-									<span class="text-xs text-zinc-500">{field.label}</span>
-									{#if field.kind === 'enum'}
-										<select class="border border-zinc-300 rounded px-2 py-1" value={String(demoOptions[field.name] ?? '')} onchange={(e) => (optOverrides = { ...optOverrides, [field.name]: (e.target as HTMLSelectElement).value })}>
-											{#each field.options ?? [] as o (o)}<option value={o}>{o}</option>{/each}
-										</select>
-									{:else if field.kind === 'boolean'}
-										<input type="checkbox" checked={Boolean(demoOptions[field.name])} onchange={(e) => (optOverrides = { ...optOverrides, [field.name]: (e.target as HTMLInputElement).checked })} />
-									{:else}
-										<input type={field.kind === 'number' ? 'number' : 'text'} class="border border-zinc-300 rounded px-2 py-1" value={String(demoOptions[field.name] ?? '')} onchange={(e) => { const raw = (e.target as HTMLInputElement).value; optOverrides = { ...optOverrides, [field.name]: field.kind === 'number' ? (raw === '' ? undefined : Number(raw)) : raw }; }} />
-									{/if}
-								</label>
-							{/each}
-							</div>
-						</div>
-					{/snippet}
+					<Section>
+						<Field label="Demo data">
+							<p class="demo-data">{entry.demo.dimensionAliases.join(', ') || '—'} × {entry.demo.measureAliases.join(', ') || '—'} · {entry.demo.rows.length} rows</p>
+						</Field>
+					</Section>
+					<Section title="Demo options">
+						{#each entry.def.optionsSchema as field (field.name)}
+							<Field inline label={field.label}>
+								{#if field.kind === 'enum'}
+									<Select small value={String(demoOptions[field.name] ?? '')} onchange={(v) => (optOverrides = { ...optOverrides, [field.name]: v })}>
+										{#each field.options ?? [] as o (o)}<option value={o}>{o}</option>{/each}
+									</Select>
+								{:else if field.kind === 'boolean'}
+									<Toggle checked={Boolean(demoOptions[field.name])} onchange={(v) => (optOverrides = { ...optOverrides, [field.name]: v })} />
+								{:else}
+									<div class="fixed-w">
+										<NumberInput value={demoOptions[field.name] as number | undefined} oncommit={(v) => (optOverrides = { ...optOverrides, [field.name]: v })} />
+									</div>
+								{/if}
+							</Field>
+						{/each}
+					</Section>
+				{/snippet}
 				</svelte:component>
 				{/if}
 			</div>
@@ -212,6 +216,15 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 </div>
 
 <style>
+	.demo-data {
+		font-family: var(--font-mono);
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+	}
+	.fixed-w {
+		width: 150px;
+	}
+
 	.page {
 		flex: 1;
 		overflow-y: auto;

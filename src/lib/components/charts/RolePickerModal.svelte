@@ -10,9 +10,10 @@
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import type { TableSchemas } from '$lib/charts/query/compile';
-	import { Plus, Search, X } from 'lucide-svelte';
+	import { Plus, Search, X, SquareArrowOutUpRight } from 'lucide-svelte';
 	import TextInput from './controls/TextInput.svelte';
 	import Btn from './controls/Btn.svelte';
+	import ExprEditor from './ExprEditor.svelte';
 
 	let {
 		kind,
@@ -21,6 +22,7 @@
 		items,
 		relationships,
 		onCreateMasterItem,
+		onExternalCreate,
 		onClose
 	}: {
 		kind: 'dimension' | 'measure';
@@ -29,6 +31,8 @@
 		items: MasterItem[];
 		relationships: Relationship[];
 		onCreateMasterItem?: (kind: 'dimension' | 'measure', table: string, label: string, expr: string) => Promise<string>;
+		/** open the /data master-item section for full-panel creation — host navigates + returns */
+		onExternalCreate?: (kind: 'dimension' | 'measure', table: string) => void;
 		onClose: () => void;
 	} = $props();
 
@@ -160,18 +164,30 @@
 					<p class="px-3 py-4 text-sm text-zinc-400 text-center">No matches.</p>
 				{/if}
 			</div>
-			<Btn variant="primary" onclick={() => { creating = true; formError = ''; }}>
-				<Plus size={14} /> New master {noun}
-			</Btn>
+			<div class="flex flex-wrap justify-end gap-2 pt-2">
+				{#if onExternalCreate}
+					<button
+						class="inline-flex items-center gap-1 text-xs px-2.5 rounded-md border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400"
+						style="height: 30px;"
+						title="Open the measures & dimensions editor in /data"
+						onclick={() => onExternalCreate?.(kind, table)}
+					>
+						<SquareArrowOutUpRight size={12} /> Create in /data
+					</button>
+				{/if}
+				<Btn variant="primary" onclick={() => { creating = true; formError = ''; }}>
+					<Plus size={14} /> New master {noun}
+				</Btn>
+			</div>
 		{:else}
 			<label class="block space-y-1">
 				<span class="text-xs" style="color: var(--color-text-secondary)">Label</span>
 				<div class="w-full"><TextInput placeholder={kind === 'dimension' ? 'e.g. Region' : 'e.g. Revenue'} bind:value={newLabel} /></div>
 			</label>
-			<label class="block space-y-1">
+			<div class="block space-y-1">
 				<span class="text-xs" style="color: var(--color-text-secondary)">Expression (DuckDB)</span>
-				<div class="w-full"><TextInput mono placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} bind:value={newExpr} /></div>
-			</label>
+				<ExprEditor bind:value={newExpr} {kind} table={table} columns={schemas[table] ?? []} masterItems={availableItems(table, items, relationships).filter((i) => i.kind === kind)} placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} />
+			</div>
 			{#if formError}<p class="text-sm" style="color: var(--color-danger)">{formError}</p>{/if}
 			<div class="flex justify-end gap-2 pt-2">
 				<Btn variant="ghost" onclick={() => (creating = false)}>Back</Btn>

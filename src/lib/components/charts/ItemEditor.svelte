@@ -1,18 +1,43 @@
 <script lang="ts">
-	/** Master-item editor (FR-17): one component, used by both the Measures and Dimensions tabs. */
+	/**
+	 * Master-item editor (FR-17): one component, used by both the Measures and
+	 * Dimensions tabs. Expressions are edited in the smart ExprEditor
+	 * (autocomplete + DuckDB validation/preview). A `preset` — derived from URL
+	 * params — opens the creation form with a preselected bound table and, when
+	 * the user came from a /pages chart ("returnTo"+"block"), redirects back to
+	 * that chart with the new item attached after saving.
+	 */
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { listMasterItems, saveMasterItem, deleteMasterItem } from '$lib/central-api';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { TableSchemas } from '$lib/charts/query/compile';
 	import type { MasterItem } from '$lib/charts/items';
+	import ExprEditor from './ExprEditor.svelte';
 	import { Plus, Trash2, Star } from 'lucide-svelte';
+
+	export type ItemEditorPreset = {
+		/** open the creation form on arrival */
+		open?: boolean;
+		/** preselect the bound table */
+		table?: string;
+		/** page slug to return to after saving (comes from a /pages chart) */
+		returnTo?: string;
+		/** block id (rX-cX-bY) the chart is configured under */
+		block?: string;
+	};
 
 	let {
 		kind,
-		schemas
+		schemas,
+		metas = {},
+		preset = undefined
 	}: {
 		kind: 'measure' | 'dimension';
 		schemas: TableSchemas;
+		/** table -> typed columns, for smarter suggestions */
+		metas?: Record<string, { name: string; type?: string }[]>;
+		preset?: ItemEditorPreset;
 	} = $props();
 
 	let items = $state<MasterItem[]>([]);
@@ -28,6 +53,16 @@
 	function newDraft() {
 		draft = { id: '', kind, table: tables[0] ?? '', label: '', expr: '' };
 	}
+
+	// deep link from the chart drawers: /data?tab=<kind>s&add=1&table=…&return=…&block=…
+	// waits for the table list so the preset bound table can be honored
+	$effect(() => {
+		if (!preset?.open || adding) return;
+		if (tables.length === 0) return;
+		newDraft();
+		if (preset.table && tables.includes(preset.table)) draft.table = preset.table;
+		adding = true;
+	});
 
 	async function refresh() {
 		loading = true;
@@ -48,6 +83,10 @@
 			await saveMasterItem({ ...draft, id });
 			adding = false;
 			await refresh();
+			// created from a chart on /pages — hand the new item back to that chart
+			if (preset?.returnTo && preset?.block) {
+				await goto(`/pages/${preset.returnTo}?configure=${encodeURIComponent(preset.block)}&attach=${encodeURIComponent(id)}`);
+			}
 		} catch (err) {
 			error = extractErrorMessage(err, `Failed to save ${noun}`);
 		}
@@ -114,11 +153,10 @@
 					</select>
 				</label>
 			</div>
-			<label class="block space-y-1">
+			<div class="space-y-1">
 				<span class="text-xs text-zinc-500">Expression (DuckDB SQL)</span>
-				<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm font-mono text-xs" placeholder={placeholder} bind:value={draft.expr} />
-				<span class="text-[11px] text-zinc-400">{schemas[draft.table]?.length ?? 0} columns available on {draft.table}</span>
-			</label>
+				<ExprEditor bind:value={draft.expr} {kind} table={draft.table} columns={metas[draft.table] ?? schemas[draft.table] ?? []} masterItems={items} {placeholder} />
+			</div>
 			{#if kind === 'measure'}
 				<label class="block space-y-1 w-40">
 					<span class="text-xs text-zinc-500">Format</span>

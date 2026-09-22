@@ -1,5 +1,9 @@
 <script lang="ts">
 	import BarChartRenderer from '$lib/components/charts/renderers/BarChartRenderer.svelte';
+import Section from '$lib/components/charts/controls/Section.svelte';
+import Field from '$lib/components/charts/controls/Field.svelte';
+import Select from '$lib/components/charts/controls/Select.svelte';
+import TextInput from '$lib/components/charts/controls/TextInput.svelte';
 	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 
 	setupChartRegistry();
@@ -69,26 +73,24 @@
 		{heightVh}
 	>
 		{#snippet config()}
-			<div class="field">
-				<label class="field-label" for="cfg-title">title — string</label>
-				<input class="input" id="cfg-title" type="text" bind:value={chartTitle} />
-			</div>
-			<div class="field">
-				<label class="field-label" for="cfg-subtitle">subtitle — string</label>
-				<input class="input" id="cfg-subtitle" type="text" bind:value={chartSubtitle} />
-			</div>
-			<div class="field">
-				<label class="field-label" for="cfg-orientation">orientation — enum</label>
-				<select class="input" id="cfg-orientation" bind:value={orientation}>
-					<option value="horizontal">horizontal</option>
-					<option value="vertical">vertical</option>
-				</select>
-			</div>
-			<div class="field">
-				<label class="field-label" for="cfg-height">heightVh — viewport fraction</label>
-				<input class="range-input" id="cfg-height" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
-				<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
-			</div>
+			<Section>
+				<Field label="Title">
+					<TextInput bind:value={chartTitle} />
+				</Field>
+				<Field label="Subtitle">
+					<TextInput bind:value={chartSubtitle} />
+				</Field>
+				<Field label="Orientation">
+					<Select bind:value={orientation}>
+						<option value="horizontal">horizontal</option>
+						<option value="vertical">vertical</option>
+					</Select>
+				</Field>
+				<Field label="Height" hint="viewport fraction">
+					<input class="range-input" type="range" min="0.1" max="0.6" step="0.05" bind:value={heightVh} />
+					<span class="field-hint">{Math.round(heightVh * 100)}vh</span>
+				</Field>
+			</Section>
 		{/snippet}
 	</BarChartRenderer>
 </div>

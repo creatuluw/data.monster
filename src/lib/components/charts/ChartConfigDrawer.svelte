@@ -8,6 +8,10 @@
 		title = 'Chart configuration',
 		width = '33vw',
 		overlay = true,
+		/** position within .app-body (below header/breadcrumb, above the tab bar)
+		    instead of viewport-fixed — requires a positioned ancestor spanning
+		    exactly that area; off for usages nested inside positioned cards */
+		contained = false,
 		onClosed,
 		children,
 	}: {
@@ -17,6 +21,7 @@
 		width?: string;
 		/** dim + click-away overlay; off in the focused config view (left chart stays live) */
 		overlay?: boolean;
+		contained?: boolean;
 		/** config fields — plain inputs, styled via .field/.input below */
 		children: Snippet;
 		/** fired on close (overlay click / X) — for non-bound usage */
@@ -34,10 +39,10 @@
      overlay=false drawer exist but invisible) -->
 {#if overlay}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="drawer-overlay" class:drawer-overlay-visible={open} onclick={close} onkeydown={() => {}}></div>
+	<div class="drawer-overlay" class:drawer-overlay-visible={open} class:drawer-overlay-contained={contained} onclick={close} onkeydown={() => {}}></div>
 {/if}
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<section class="drawer" class:drawer-open={open} style={`width: ${width};`} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
+<section class="drawer" class:drawer-open={open} class:drawer-contained={contained} style={`width: ${width};`} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}} data-drawer>
 	<div class="drawer-header">
 		<h2 class="drawer-title">{title}</h2>
 		<button class="drawer-close" onclick={close} title="Close">
@@ -63,6 +68,18 @@
 	.drawer-overlay-visible {
 		opacity: 1;
 		pointer-events: auto;
+	}
+
+	/* contained mode: fill the positioned ancestor (.app-body) instead of the
+	   viewport — its overflow:hidden also clips the closed off-slide state.
+	   Compound selectors so they beat the base fixed rules regardless of order */
+	.drawer.drawer-contained {
+		position: absolute;
+		max-width: 100%;
+	}
+
+	.drawer-overlay.drawer-overlay-contained {
+		position: absolute;
 	}
 
 	.drawer {

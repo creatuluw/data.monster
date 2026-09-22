@@ -16,7 +16,6 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import DangerZone from '$lib/components/charts/controls/DangerZone.svelte';
 	import RemoveBtn from '$lib/components/charts/controls/RemoveBtn.svelte';
 
-	import DrawerTabs from '$lib/components/charts/DrawerTabs.svelte';
 	import ChartConfigDrawer from '$lib/components/charts/ChartConfigDrawer.svelte';
 	import type { PageDoc } from '$lib/charts/spec-types';
 	import type { TableSchemas } from '$lib/charts/query/compile';
@@ -61,9 +60,6 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 
 	let configId = $state<string | null>(null);
 	let rowConfig = $state<number | null>(null);
-	let rowTab = $state<'settings' | 'danger'>('settings');
-	let colTab = $state<'settings' | 'danger'>('settings');
-	let blockTab = $state<'settings' | 'danger'>('settings');
 	let colConfig = $state<{ ri: number; ci: number } | null>(null);
 	/** + Component picker: which column a picked component lands in */
 	let pickerFor = $state<{ ri: number; ci: number } | null>(null);
@@ -109,6 +105,41 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		await saveMasterItem({ id, kind, table, label, expr });
 		await refreshItems();
 		return id;
+	}
+
+	/** focused config view: width the chart stage so the gap between the chart and
+	    the drawer's left edge mirrors the page gutter (--space-6) on the chart's
+	    left — re-measured when the drawer is drag-resized or the shell resizes */
+	function fitToDrawer(node: HTMLElement) {
+		let gutter = 0;
+		let observedDrawer: Element | null = null;
+		const ro = new ResizeObserver(update);
+		function update() {
+			const drawer = document.querySelector('[data-drawer]');
+			const shell = node.parentElement;
+			if (!drawer || !shell) return;
+			if (observedDrawer !== drawer) { ro.observe(drawer); observedDrawer = drawer; }
+			if (!gutter) {
+				// resolve --space-6 (rem) to px — probe can't live inside the node
+				const probe = document.createElement('div');
+				probe.style.cssText = 'position:absolute;visibility:hidden;width:var(--space-6)';
+				document.body.appendChild(probe);
+				gutter = probe.getBoundingClientRect().width || 24;
+				probe.remove();
+			}
+			const drawerLeft = drawer.getBoundingClientRect().left;
+			const left = shell.getBoundingClientRect().left + gutter;
+			node.style.width = `${Math.max(320, Math.round(drawerLeft - gutter - left))}px`;
+		}
+		if (node.parentElement) ro.observe(node.parentElement);
+		// the drawer mounts in the same flush as this action — catch it next frame
+		requestAnimationFrame(update);
+		return {
+			destroy() {
+				ro.disconnect();
+				node.style.width = '';
+			}
+		};
 	}
 
 	async function refreshItems() {
@@ -161,23 +192,33 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		mode = m;
 	}
 
-	async function handleSave() {
+	async function handleSave(silent = false) {
 		const errors = validatePageDoc(doc);
 		codeErrors = errors;
 		if (errors.length) return;
-		saving = true;
-		saveError = '';
-		saved = false;
+		if (!silent) {
+			saving = true;
+			saveError = '';
+			saved = false;
+		}
 		try {
 			await savePage(doc);
-			saved = true;
-			setTimeout(() => (saved = false), 2000);
+			if (!silent) {
+				saved = true;
+				setTimeout(() => (saved = false), 2000);
+			}
 		} catch (err) {
 			saveError = extractErrorMessage(err, 'Failed to save page');
 		} finally {
-			saving = false;
+			if (!silent) saving = false;
 		}
 	}
+
+	// auto-save every minute
+	$effect(() => {
+		const t = setInterval(() => handleSave(true), 60_000);
+		return () => clearInterval(t);
+	});
 
 	function addRow() {
 		doc.rows = [...(doc.rows ?? []), { columns: [{ span: 12, blocks: [] }], height: 180 }];
@@ -241,8 +282,43 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 
 	function configureBlock(id: string) {
 		configId = id;
-		blockTab = 'settings';
 	}
+
+	/** leave for the /data master-item editor; after saving there, the flow returns
+	    to ?configure=<block>&attach=<itemId> and the item is added + preselected */
+	async function openInData(kind: 'dimension' | 'measure', table: string, blockId?: string) {
+		const target = blockId ?? configId ?? undefined;
+		await handleSave(true); // persist in-place edits before navigating away
+		const p = new URLSearchParams({
+			tab: kind === 'measure' ? 'measures' : 'dimensions',
+			add: '1',
+			table,
+			return: slug
+		});
+		if (target) p.set('block', target);
+		await goto(`/data?${p.toString()}`);
+	}
+
+	// return leg of the /data flow: reopen the chart's config and attach the new master item
+	$effect(() => {
+		if (loading || !runtime) return;
+		const q = pageState.url.searchParams;
+		const configure = q.get('configure');
+		const attach = q.get('attach');
+		if (!configure || !attach) return;
+		const item = items.find((i) => i.id === attach);
+		const [ri, ci, bi] = configure.split('-').map((p) => Number(p.replace(/\D/g, '')));
+		const block = doc.rows?.[ri]?.columns?.[ci]?.blocks[bi];
+		if (item && block && block.type === 'chart') {
+			const roles = item.kind === 'dimension' ? block.chart.dimensions : block.chart.measures;
+			if (!roles.some((r) => 'ref' in r && r.ref === item.id)) {
+				roles.push({ ref: item.id });
+				handleSave(true);
+			}
+			configId = configure; // focused drawer with the new item preselected
+		}
+		goto(`/pages/${slug}`, { replaceState: true });
+	});
 
 
 	const configBlock = $derived.by(() => {
@@ -269,12 +345,14 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
 		</div>
 		<button
-			class="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2 disabled:opacity-50"
+			class="p-2 rounded-lg text-white inline-flex items-center disabled:opacity-50"
 			style="background: oklch(0.44 0.1 158)"
-			onclick={handleSave}
+			onclick={() => handleSave()}
 			disabled={saving || codeErrors.length > 0}
+			title={saved ? 'Saved' : saving ? 'Saving…' : 'Save'}
+			aria-label={saved ? 'Saved' : 'Save'}
 		>
-			<Save size={14} /> {saved ? 'Saved' : saving ? 'Saving…' : 'Save'}
+			<Save size={14} />
 		</button>
 	</div>
 
@@ -302,8 +380,9 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			{/if}
 		</div>
 	{:else if configBlock && runtime}
-		<!-- focused config view: configured chart left, 50vw drawer right, other blocks hidden -->
-		<div class="w-1/2 pr-8">
+		<!-- focused config view: configured chart left, drawer right, other blocks hidden —
+		     the stage keeps the same gutter to the drawer's edge as the page gutter on its left -->
+		<div use:fitToDrawer>
 			<PageGrid {doc} {runtime} configureId={configId} />
 		</div>
 		<ChartConfigDrawer
@@ -311,19 +390,16 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			title={configBlock.block.type === 'chart' ? (configBlock.block.chart.title ?? 'Chart configuration') : `${configBlock.block.type} configuration`}
 			width="45vw"
 			overlay={false}
+			contained
 			onClosed={() => (configId = null)}
 		>
-			<DrawerTabs active={blockTab} onchange={(t) => (blockTab = t)} />
-			{#if blockTab === 'settings'}
-				<BlockInspector {doc} ri={configBlock.ri} ci={configBlock.ci} bi={configBlock.bi} {schemas} {items} {relationships} onItemsChanged={refreshItems} />
-			{:else}
-				<DangerZone
-					heading="Delete this component"
-					description="Removes the block from the column. This cannot be undone (until you hit Save)."
-					confirmLabel="Delete component"
-					onconfirm={() => { doc.rows![configBlock.ri].columns![configBlock.ci].blocks.splice(configBlock.bi, 1); configId = null; }}
-				/>
-			{/if}
+			<BlockInspector {doc} ri={configBlock.ri} ci={configBlock.ci} bi={configBlock.bi} {schemas} {items} {relationships} onItemsChanged={refreshItems} onExternalCreate={(k, t) => openInData(k, t)} />
+			<DangerZone
+				heading="Delete this component"
+				description="Removes the block from the column. This cannot be undone (until you hit Save)."
+				confirmLabel="Delete component"
+				onconfirm={() => { doc.rows![configBlock.ri].columns![configBlock.ci].blocks.splice(configBlock.bi, 1); configId = null; }}
+			/>
 		</ChartConfigDrawer>
 	{:else if mode === 'page'}
 		<!-- page settings: only non-visual configuration lives here -->
@@ -359,9 +435,10 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					{items}
 					{relationships}
 					onConfigure={(id) => configureBlock(id)}
-					onConfigureRow={(ri) => { rowTab = 'settings'; rowConfig = ri; }}
-					onConfigureColumn={(ri, ci) => { colTab = 'settings'; colConfig = { ri, ci }; }}
+					onConfigureRow={(ri) => (rowConfig = ri)}
+					onConfigureColumn={(ri, ci) => (colConfig = { ri, ci })}
 					onCreateMasterItem={createMasterItem}
+					onExternalCreate={(k, t, id) => openInData(k, t, id)}
 
 					onAdd={(ri, ci) => { pickerQuery = ''; pickerFor = { ri, ci }; }}
 				onAddRow={addRow}
@@ -370,41 +447,38 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 
 		</div>
 
-		<!-- row settings drawer: tabbed — settings | danger zone (row delete lives only there) -->
+		<!-- row settings drawer: settings sections then danger zone (the /data pattern) -->
 		{#if rowConfig !== null && doc.rows?.[rowConfig]}
 			{@const row = doc.rows[rowConfig]}
-			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="45vw" onClosed={() => (rowConfig = null)}>
-				<DrawerTabs active={rowTab} onchange={(t) => (rowTab = t)} />
-
-				{#if rowTab === 'settings'}
-					<Section title="Columns">
-						{#each row.columns ?? [] as col, ci (ci)}
-							<div class="flex items-center gap-2">
-								<span class="text-xs w-14" style="color: var(--color-text-secondary)">Column {ci + 1}</span>
-								<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />
-								<span class="text-xs" style="color: var(--color-text-tertiary)">/ 12 width</span>
-								<RemoveBtn title="Remove column" disabled={(row.columns?.length ?? 0) <= 1} onclick={() => removeColumn(rowConfig!, ci)} />
-							</div>
-						{/each}
-						<button class="text-xs inline-flex items-center gap-1" style="color: var(--color-text-secondary)" onclick={() => addColumn(rowConfig!)}><Plus size={12} /> Split into another column</button>
-					</Section>
+			<ChartConfigDrawer open={true} title={`Row ${rowConfig + 1}`} width="45vw" contained onClosed={() => (rowConfig = null)}>
+				<Section title="Columns">
+					{#each row.columns ?? [] as col, ci (ci)}
+						<div class="flex items-center gap-2">
+							<span class="text-xs w-14" style="color: var(--color-text-secondary)">Column {ci + 1}</span>
+							<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />
+							<span class="text-xs" style="color: var(--color-text-tertiary)">/ 12 width</span>
+							<RemoveBtn title="Remove column" disabled={(row.columns?.length ?? 0) <= 1} onclick={() => removeColumn(rowConfig!, ci)} />
+						</div>
+					{/each}
+					<button class="text-xs inline-flex items-center gap-1" style="color: var(--color-text-secondary)" onclick={() => addColumn(rowConfig!)}><Plus size={12} /> Split into another column</button>
+				</Section>
+				<Section>
 					<Field label="Row height" hint="px, optional — components fill it unless they set their own">
 						<NumberInput min={40} placeholder="auto" value={row.height ?? undefined} oncommit={(v) => (row.height = v)} />
 					</Field>
-				{:else}
-					<DangerZone
-						heading="Delete this row"
-						description="Removes the row and every component inside its columns. This cannot be undone (until you hit Save)."
-						confirmLabel="Delete row"
-						onconfirm={() => { removeRow(rowConfig!); rowConfig = null; }}
-					/>
-				{/if}
+				</Section>
+				<DangerZone
+					heading="Delete this row"
+					description="Removes the row and every component inside its columns. This cannot be undone (until you hit Save)."
+					confirmLabel="Delete row"
+					onconfirm={() => { removeRow(rowConfig!); rowConfig = null; }}
+				/>
 			</ChartConfigDrawer>
 		{/if}
 
 		<!-- component picker drawer: search + cards, adds into the target column -->
 		{#if pickerFor}
-			<ChartConfigDrawer open={true} title="Add component" width="50vw" onClosed={() => (pickerFor = null)}>
+			<ChartConfigDrawer open={true} title="Add component" width="50vw" contained onClosed={() => (pickerFor = null)}>
 				<div class="picker-search">
 					<Search size={14} />
 					<input type="text" placeholder="Search components…" bind:value={pickerQuery} />
@@ -432,7 +506,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		<!-- column settings drawer: width + remove -->
 		{#if colConfig && doc.rows?.[colConfig.ri]?.columns?.[colConfig.ci]}
 			{@const col = doc.rows[colConfig.ri].columns![colConfig.ci]}
-			<ChartConfigDrawer open={true} title={`Column ${colConfig.ci + 1} settings`} width="45vw" onClosed={() => (colConfig = null)}>
+			<ChartConfigDrawer open={true} title={`Column ${colConfig.ci + 1} settings`} width="45vw" contained onClosed={() => (colConfig = null)}>
 				<Section>
 					<Field label="Width" hint="1–12 of the row">
 						<NumberInput min={1} max={12} value={col.span ?? 12} oncommit={(v) => (col.span = v ?? 12)} />

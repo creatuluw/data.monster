@@ -3,6 +3,7 @@
  * Rust side: src-tauri/src/commands/{pages,items,relationships}.rs
  */
 import { invoke } from '@tauri-apps/api/core';
+import { withTimeout } from '$lib/db-operations';
 import type { PageDoc } from '$lib/charts/spec-types';
 import type { MasterItem } from '$lib/charts/items';
 import type { Relationship } from '$lib/charts/relationships';
@@ -19,8 +20,19 @@ export async function getPage(slug: string): Promise<PageDoc> {
 	return JSON.parse(result.spec) as PageDoc;
 }
 
+/** Write invokes: time out so a wedged backend surfaces, and retry once — the first invoke
+ *  after page load can fail while Tauri falls back from the custom protocol to postMessage. */
+async function writeInvoke<T>(cmd: string, args: Record<string, unknown>, timeoutMs = 20000): Promise<T> {
+	try {
+		return await withTimeout(invoke<T>(cmd, args), timeoutMs, `${cmd} timed out — the database is not responding`);
+	} catch {
+		await new Promise((r) => setTimeout(r, 300));
+		return withTimeout(invoke<T>(cmd, args), timeoutMs, `${cmd} timed out — the database is not responding`);
+	}
+}
+
 export async function savePage(doc: PageDoc): Promise<void> {
-	return invoke<void>('save_page', { slug: doc.slug, title: doc.title, spec: JSON.stringify(doc, null, '\t') });
+	return writeInvoke<void>('save_page', { slug: doc.slug, title: doc.title, spec: JSON.stringify(doc, null, '\t') });
 }
 
 export async function deletePage(slug: string): Promise<void> {
@@ -28,12 +40,13 @@ export async function deletePage(slug: string): Promise<void> {
 }
 
 export async function listMasterItems(kind?: 'measure' | 'dimension'): Promise<MasterItem[]> {
-	const result = await invoke<{ items: MasterItem[] }>('list_master_items', { kind: kind ?? null });
-	return result.items;
+	// Rust serializes the DB column as `tableName`; MasterItem expects `table`
+	const result = await invoke<{ items: (MasterItem & { tableName: string })[] }>('list_master_items', { kind: kind ?? null });
+	return result.items.map(({ tableName, ...rest }) => ({ ...rest, table: tableName }));
 }
 
 export async function saveMasterItem(item: MasterItem): Promise<void> {
-	return invoke<void>('save_master_item', {
+	return writeInvoke<void>('save_master_item', {
 		id: item.id,
 		kind: item.kind,
 		tableName: item.table,

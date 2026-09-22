@@ -44,3 +44,4 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Connections file store (connections.rs)](./entities/connections-file-store-connections-rs.md) — The Rust content-command module that backs **saved PostgreSQL connections** — task `files-005` of the workspace-file-first build (commit `fb2f6fb`, 2026-09-22).
 - [Connections command module (connections.rs)](./entities/connections-command-module-connections-rs.md) — What is it?
 - [dm_watch command module](./entities/dm-watch-command-module.md) — `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works
+- [dm-events frontend module](./entities/dm-events-frontend-module.md) — `src/lib/dm-events.ts` — the frontend half of the dm/ live-reload loop (workspace-file-first task `files-008`, commit `d7f0fc7`): one Tauri event bus for `dm:ch

@@ -38,5 +38,10 @@
     "task_id": "files-008",
     "title": "FR-8 Frontend live-reload (dm:changed / dm:error handling)",
     "summary": "New src/lib/dm-events.ts: onDmChanged(kind, cb) registry + onDmError + pure routeDmEvent routing core (malformed payloads ignored) + initDmEvents() wired once in +layout.svelte (errors -> console.warn + app.globalError banner). Views subscribe in $effect with off() cleanup: /pages list (page), /pages/[slug] editor (page -> reloadDoc when slug matches; measure/dimension/relationships -> refreshItems), /query (saved-query -> loadSavedQueries), ItemEditor (its kind), RelationshipEditor (relationships), /connect (connections -> loadSavedConnections). tests/dm-events.test.ts: routing matrix + registry off() semantics. vitest 125/125; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-009",
+    "title": "FR-9 Pages editor write-through (save flow deleted)",
+    "summary": "New pure core src/lib/write-through.ts (createWriteThrough: markLocal/flush/decideExternal/ackLoad, 7 fake-timer tests - RED first). Editor surgery: save button, saving/saved state, 60s auto-save interval and all handleSave call sites DELETED; write-through via two $effects (Design/Page: deep doc JSON; Code: raw textarea text - invalid JSON written verbatim, watcher classifies dm:error). Conflict handling: dm:changed(own slug) + pendingWrite -> decideExternal -> amber 'Reload / Keep mine' banner (VS Code model; keep-mine = flush, reload = reloadDoc + ackLoad). openInData flushes before goto; /data return-leg attach flow persists via doc effect. central-api savePageSpec writes raw text. vitest 132/132; svelte-check 0 errors."
   }
 ]

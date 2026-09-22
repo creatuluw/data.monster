@@ -17,7 +17,7 @@ The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1
 - Design details not in the decision: saved-query metadata in an optional leading `-- dm: {json}` comment header (SQL body stays native); master-item filename = item `id`, `kind` picks the measures/dimensions subfolder; validator single-sourced in TS, Rust does parse-level shape checks only (enough to classify watcher events)
 - Per-task methodology follows [rules/spec-driven-features-tdd-karpathy-in-todos](../../rules/spec-driven-features-tdd-karpathy-in-todos.md) — TDD red-first, starting with task `files-001` (`dm_store` path mapping + atomic writes)
 
-- Progress (2026-09-22): Phase A shipped (`files-001`–`006`: dm_store + pages/master-items/saved-queries/connections file-backed + one-time migration); Phase B 1 of 4 — `files-007` shipped the notify watcher emitting `dm:changed`/`dm:error` ([dm_watch command module](../entities/dm-watch-command-module.md)); remaining: `files-008` (frontend listeners), `files-009` (write-through editor, save button dies)
+- Progress (2026-09-22): Phase A shipped (`files-001`–`006`: dm_store + pages/master-items/saved-queries/connections file-backed + one-time migration); Phase B 2 of 4 — `files-007` shipped the notify watcher ([dm_watch command module](../entities/dm-watch-command-module.md)), `files-008` shipped frontend live-reload ([dm-events frontend module](../entities/dm-events-frontend-module.md)); remaining: `files-009` (write-through editor, save button dies), `files-010` (write-through for all drawers)
 ## Details
 
 - **Format**: Spec-driven markdown + machine-readable tasks (`.specs/workspace-file-first/tasks.json` with acceptanceCriteria per task)

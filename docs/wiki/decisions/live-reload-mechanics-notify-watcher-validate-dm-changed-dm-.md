@@ -1,8 +1,8 @@
 ---
 type: Decision
 title: "Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events"
-description: Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners pending files-008.
-tags: [agents, workspace, live-reload, file-watcher, tauri-events, watcher-shipped]
+description: Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners shipped as files-008 (2026-09-22): dm-events bus + six views live-reload; clobber banner is files-009.
+tags: [agents, workspace, live-reload, file-watcher, tauri-events, watcher-shipped, live-reload-shipped]
 status: accepted
 timestamp: "2026-09-22T13:21:28.681Z"
 ---
@@ -36,7 +36,7 @@ agent writes dm/pages/revenue.json
 
 ## Shipped (2026-09-22, files-007)
 
-Approach A landed as `files-007` (commit `72bb92e`): notify recursive watch on `dm/` → 300ms debounced flusher (removals win over modifies in-window) → echo check → pure `classify` → `dm:changed {kind, name, removed}` / `dm:error {path, reason}`. Echo suppression shipped with the writer, not the watcher: `dm_store::atomic_write` marks destination paths (600ms registry window ≥ 400ms write debounce) — see [dm_watch command module](../pages/entities/dm-watch-command-module.md). Remaining: the frontend half — `dm:changed`/`dm:error` listeners, store invalidation, toasts and the clobber banner — is `files-008`.
+Approach A landed as `files-007` (commit `72bb92e`): notify recursive watch on `dm/` → 300ms debounced flusher (removals win over modifies in-window) → echo check → pure `classify` → `dm:changed {kind, name, removed}` / `dm:error {path, reason}`. Echo suppression shipped with the writer, not the watcher: `dm_store::atomic_write` marks destination paths (600ms registry window ≥ 400ms write debounce) — see [dm_watch command module](../pages/entities/dm-watch-command-module.md). The frontend half shipped as `files-008` (commit `d7f0fc7`): `src/lib/dm-events.ts` bus (per-kind `onDmChanged`/`onDmError`, pure `routeDmEvent` core, idempotent `initDmEvents` in the root layout) live-reloads six views through their existing refresh functions; `dm:error` surfaces via the global error banner + console. See [dm-events frontend module](../pages/entities/dm-events-frontend-module.md). Still pending: the `files-009` write-through editor with the Reload/Keep-mine clobber banner.
 ## Consequences
 
 - Whatever depth lands, echo suppression and the clobber banner are required either way.

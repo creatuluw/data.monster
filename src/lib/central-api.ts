@@ -34,6 +34,10 @@ async function writeInvoke<T>(cmd: string, args: Record<string, unknown>, timeou
 export async function savePage(doc: PageDoc): Promise<void> {
 	return writeInvoke<void>('save_page', { slug: doc.slug, title: doc.title, spec: JSON.stringify(doc, null, '\t') });
 }
+/** Write raw spec text (write-through: the file mirrors the editor, even mid-edit). */
+export function savePageSpec(slug: string, spec: string): Promise<void> {
+	return writeInvoke<void>('save_page', { slug, title: '', spec });
+}
 
 export async function deletePage(slug: string): Promise<void> {
 	return invoke<void>('delete_page', { slug });

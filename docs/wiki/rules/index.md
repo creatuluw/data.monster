@@ -19,3 +19,4 @@
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline
 - [Resize requests use the app's existing size classes — never ad-hoc multipliers](./resize-requests-use-the-app-s-existing-size-classes-never-ad.md) - The guideline
 - [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](./restore-points-are-git-tags-restore-point-feature-start-on-p.md) - The rule
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](./secrets-never-live-in-workspace-content-files-env-references.md) - The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace 

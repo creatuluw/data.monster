@@ -78,10 +78,12 @@
     {
       "id": "files-006",
       "phase": "A — Files are canonical",
-      "title": "FR-6 One-time migration (tables → files, crash-safe, idempotent)",
-      "description": "On DuckDB init: content tables exist → export rows → write ALL files → verify read-back → drop tables. Files win when both exist. Labels/field-functions tables untouched.",
+      "title": "FR-6 Migration + workspace git bootstrap",
+      "description": "On DuckDB init: content tables exist → export rows → write ALL files → verify read-back → drop tables (files-win, idempotent). Bootstrap on workspace open: generate .gitignore (.env, *.duckdb, *.duckdb.wal) when missing, never overwrite; llmApiKey stripped from settings.json on save.",
       "acceptanceCriteria": [
         "TDD: cargo tests RED first — full export; crash-point retry (files partial + tables full); idempotent second run; files-win case",
+        "Gitignore: written when missing, NEVER overwritten when present (test both)",
+        "settings save path strips llmApiKey (test); read path still resolves from env",
         "Migration runs before frontend loads pages (init order verified)",
         "Karpathy: single function migrate_content_tables(conn, ws_path), no migration framework",
         "Log completion to tasks-log.json"

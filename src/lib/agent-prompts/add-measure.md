@@ -1,5 +1,6 @@
 ---
 title: Add a reusable measure or dimension
+goal: insights
 description: Create a named, table-bound expression every chart can reference.
 tags: master-items
 ---

@@ -1,5 +1,6 @@
 ---
 title: Connect data & build my first page
+goal: data
 description: Full walkthrough - ingest a dataset, create reusable measures, and publish your first report page.
 tags: onboarding, dashboard
 ---

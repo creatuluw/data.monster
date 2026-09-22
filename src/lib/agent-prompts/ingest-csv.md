@@ -1,5 +1,6 @@
 ---
 title: Ingest a new CSV file
+goal: data
 description: Place a CSV, create the table, and get a quick look at its contents.
 tags: data, ingest
 ---

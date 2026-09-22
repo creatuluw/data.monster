@@ -1,5 +1,6 @@
 ---
 title: Audit & clean up my workspace
+goal: actions
 description: Find broken refs, duplicate content, stale files - propose before deleting.
 tags: maintenance, interview
 ---

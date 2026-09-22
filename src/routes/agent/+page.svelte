@@ -6,6 +6,13 @@
 	const prompts = loadPrompts();
 	let copied = $state('');
 
+	const GOALS: { key: string; label: string; blurb: string }[] = [
+		{ key: 'data', label: 'Create data', blurb: 'Get data into the workspace and shape it.' },
+		{ key: 'content', label: 'Create content', blurb: 'Build report pages and dashboards.' },
+		{ key: 'insights', label: 'Get insights', blurb: 'Reusable analysis building blocks.' },
+		{ key: 'actions', label: 'Take actions', blurb: 'Understand and keep the workspace healthy.' }
+	];
+
 	function render(body: string): string {
 		return marked.parse(body, { async: false }) as string;
 	}
@@ -37,8 +44,12 @@
 		</p>
 	</div>
 
-	<div class="grid gap-4 md:grid-cols-2">
-		{#each prompts as p (p.file)}
+	{#each GOALS as g (g.key)}
+		<section class="mt-6">
+			<h2 class="font-semibold text-zinc-900">{g.label}</h2>
+			<p class="text-xs text-zinc-500 mt-0.5">{g.blurb}</p>
+			<div class="grid gap-4 md:grid-cols-2 mt-3">
+			{#each prompts.filter((p) => p.goal === g.key) as p (p.file)}
 			<div class="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-2">
 				<div class="flex items-start justify-between gap-2">
 					<div>
@@ -64,6 +75,8 @@
 					{@html render(p.body)}
 				</div>
 			</div>
-		{/each}
-	</div>
+			{/each}
+			</div>
+		</section>
+	{/each}
 </div>

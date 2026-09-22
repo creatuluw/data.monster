@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/stores/app.svelte';
-	import { PlusCircle, Code, Database, TrendingUp, FileText } from 'lucide-svelte';
+	import { PlusCircle, Code, Database, TrendingUp, FileText, Sparkles } from 'lucide-svelte';
 </script>
 
 <svelte:head>
@@ -37,6 +37,10 @@
 			{:else}
 				<span class="home-locked">Connect data to unlock Query, Data & Analyst</span>
 			{/if}
+			<a href="/agent" class="action-btn action-btn-ai" title="Skills & commands for your coding agent">
+				<Sparkles size={16} />
+				LLM skills
+			</a>
 		</div>
 		<div class="labs-link">
 			<a href="/labs" class="labs-anchor">/labs →</a>
@@ -109,6 +113,15 @@
 	.action-btn:hover {
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
+	}
+
+	.action-btn-ai {
+		background: transparent;
+		border: 1.5px dashed var(--color-accent);
+	}
+
+	.action-btn-ai:hover {
+		background: var(--color-accent-muted);
 	}
 
 	.home-locked {

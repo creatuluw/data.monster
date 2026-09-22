@@ -10,13 +10,14 @@ export type Prompt = {
 	title: string;
 	description: string;
 	tags: string[];
+	goal: string;
 	body: string;
 };
 
 /** Parse `---\ntitle: ...\ndescription: ...\ntags: a, b\n---\n<body>`. */
 export function parsePrompt(file: string, raw: string): Prompt {
 	const m = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-	if (!m) return { file, title: file, description: '', tags: [], body: raw };
+	if (!m) return { file, title: file, description: '', tags: [], goal: '', body: raw };
 	const meta: Record<string, string> = {};
 	for (const line of m[1].split('\n')) {
 		const [k, ...rest] = line.split(':');
@@ -30,6 +31,7 @@ export function parsePrompt(file: string, raw: string): Prompt {
 			.split(',')
 			.map((t) => t.trim())
 			.filter(Boolean),
+		goal: meta.goal || '',
 		body: m[2].trim()
 	};
 }

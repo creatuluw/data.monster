@@ -1,5 +1,6 @@
 ---
 title: Build me a dashboard (interview first)
+goal: content
 description: The agent interviews you about goals and audience, then designs and builds the page.
 tags: dashboard, interview
 ---

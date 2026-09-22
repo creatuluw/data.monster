@@ -1,5 +1,6 @@
 ---
 title: Explain this workspace to me
+goal: insights
 description: A guided tour of your data, content, and how it all connects.
 tags: onboarding, explain
 ---

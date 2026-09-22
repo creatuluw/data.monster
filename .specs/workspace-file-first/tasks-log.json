@@ -8,5 +8,10 @@
     "task_id": "files-002",
     "title": "FR-2 Pages file store (commands remap)",
     "summary": "pages.rs rewritten file-backed: dm/pages/<slug>.json via dm_store, commands take AppHandle + ws_dir() (no DuckDbState), *_in(ws,...) cores for testability. save writes spec verbatim (invalid JSON included - file mirrors editor, watcher classifies); get_page extracts title best-effort + mtime as updatedAt; list_pages skips invalid files into errors[] array, sorts mtime desc, missing dir = empty; delete idempotent; slug guard rejects traversal. Invoke names/params unchanged (central-api.ts untouched, title param accepted-but-vestigial). 8 tests green, full suite 83/83."
+  },
+  {
+    "task_id": "files-003",
+    "title": "FR-3 Master items + relationships file store",
+    "summary": "items.rs file-backed: dm/master-items/{measures,dimensions}/<id>.json (filename=id, folder=kind, no timestamps), get searches both folders, list filters/sorts deterministic + errors[] for invalid files, delete idempotent, save guards kind+id. relationships.rs: single dm/relationships.json doc, upsert-by-id (generated rel-<from>-<to> slug fallback), delete idempotent, and a clobber guard - corrupt existing doc makes list error loudly AND save refuse (never overwrite a hand-edited broken graph). dm_store item folders corrected to plural (measures/dimensions) per spec tree. 13 new tests; full suite 92/92."
   }
 ]

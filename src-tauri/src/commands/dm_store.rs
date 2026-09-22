@@ -48,12 +48,14 @@ pub fn master_items_dir(ws: &Path) -> PathBuf {
     dm_dir(ws).join("master-items")
 }
 
-/// `kind` is `"measure"` or `"dimension"`.
+/// `kind` is `"measure"` or `"dimension"` — folders are the PLURAL spec names.
 pub fn item_dir(ws: &Path, kind: &str) -> Result<PathBuf, String> {
-    if kind != "measure" && kind != "dimension" {
-        return Err(format!("invalid master-item kind: {kind:?} (expected \"measure\" or \"dimension\")"));
-    }
-    Ok(master_items_dir(ws).join(kind))
+    let folder = match kind {
+        "measure" => "measures",
+        "dimension" => "dimensions",
+        other => return Err(format!("invalid master-item kind: {other:?} (expected \"measure\" or \"dimension\")")),
+    };
+    Ok(master_items_dir(ws).join(folder))
 }
 
 pub fn item_path(ws: &Path, kind: &str, id: &str) -> Result<PathBuf, String> {
@@ -90,10 +92,12 @@ pub fn page_slug_from_path(path: &Path) -> Option<String> {
 /// Inverse of [`item_path`]: `(kind, id)` from a file path, or None.
 pub fn item_from_path(path: &Path) -> Option<(String, String)> {
     let parent = path.parent()?;
-    let kind = parent.file_name()?.to_str()?;
-    if kind != "measure" && kind != "dimension" {
-        return None;
-    }
+    let folder = parent.file_name()?.to_str()?;
+    let kind = match folder {
+        "measures" => "measure",
+        "dimensions" => "dimension",
+        _ => return None,
+    };
     let id = leaf_stem_json(path)?;
     Some((kind.to_string(), id))
 }
@@ -202,7 +206,7 @@ mod tests {
             let p = item_path(&ws, kind, "total_revenue").unwrap();
             assert_eq!(
                 p,
-                PathBuf::from(format!("/ws/dm/master-items/{kind}/total_revenue.json"))
+                PathBuf::from(format!("/ws/dm/master-items/{kind}s/total_revenue.json"))
             );
             assert_eq!(
                 item_from_path(&p),
@@ -252,6 +256,7 @@ mod tests {
         let ws = PathBuf::from("/ws");
         assert_eq!(page_slug_from_path(&ws.join("dm/pages/readme.md")), None);
         assert_eq!(page_slug_from_path(&ws.join("dm/connections.json")).as_deref(), Some("connections"));
+        assert_eq!(item_from_path(&ws.join("dm/master-items/measures/revenue.json")), Some(("measure".to_string(), "revenue".to_string())));
         assert_eq!(item_from_path(&ws.join("dm/pages/revenue.json")), None);
         assert_eq!(saved_query_slug_from_path(&ws.join("dm/saved-queries/x.json")), None);
     }

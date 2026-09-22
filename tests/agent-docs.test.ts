@@ -68,10 +68,18 @@ describe('agent docs progressive disclosure', () => {
         expect(() => JSON.parse(header!)).not.toThrow();
     });
 
-    it('secret policy: no connection docs embed credentials', () => {
-        for (const rel of ['formats/connections.md', 'INDEX.md', 'README.md']) {
-            const body = readFileSync(byRel.get(rel)!, 'utf-8');
-            expect(body.includes('password@'), `${rel} plaintext password`).toBe(false);
+    it('secret policy: the connections.json example agents copy is secret-free', () => {
+        // the .env placeholder URL in the doc is intentional (it teaches where secrets go);
+        // the DOC FORMAT agents write must carry no credentials
+        const body = readFileSync(byRel.get('formats/connections.md')!, 'utf-8');
+        const example = body.match(/```json\n([\s\S]*?)```/)![1];
+        const doc = JSON.parse(example) as { connections: Record<string, unknown>[] };
+        for (const conn of doc.connections) {
+            expect(JSON.stringify(conn).toLowerCase()).not.toContain('password');
+            expect(JSON.stringify(conn)).not.toContain('://');
+        }
+        for (const rel of ['INDEX.md', 'README.md']) {
+            expect(readFileSync(byRel.get(rel)!, 'utf-8').includes('password@'), `${rel} plaintext password`).toBe(false);
         }
     });
 });

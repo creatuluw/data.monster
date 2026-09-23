@@ -3,12 +3,21 @@
 	import { loadPrompts, injectWorkspace } from '$lib/agent-prompts';
 	import { app } from '$lib/stores/app.svelte';
 	import { drawerResize } from '$lib/components/drawer-resize';
-	import { Copy, Check, BookOpen, X } from 'lucide-svelte';
+	import { Copy, Check, BookOpen, X, Rocket, Database, LayoutDashboard, Sigma, Eraser } from 'lucide-svelte';
 
 	const prompts = loadPrompts();
 	let open = $state<(typeof prompts)[number] | null>(null);
 	let drawerShown = $state(false);
 	let copied = $state(false);
+
+	const ICONS: Record<string, typeof Rocket> = {
+		onboarding: Rocket,
+		'ingest-csv': Database,
+		'dashboard-interview': LayoutDashboard,
+		'add-measure': Sigma,
+		explain: BookOpen,
+		cleanup: Eraser
+	};
 
 	const GOALS: { key: string; label: string; blurb: string }[] = [
 		{ key: 'data', label: 'Create data', blurb: 'Get data into the workspace and shape it.' },
@@ -50,44 +59,42 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && open && closeDrawer()} />
 
-<div class="page-shell" style="padding: var(--space-6);">
-	<div class="mb-6">
-		<h1 class="page-title">Skills</h1>
-		<p class="text-sm text-zinc-500 mt-1">
-			Pick a skill, copy its prompt into your coding agent (Claude Code, Cursor, Codex, …)
-			and it builds content for this app by writing files in your workspace. The agent
-			needs access to the workspace folder.
-		</p>
-		<p class="text-xs text-zinc-400 mt-2 inline-flex items-center gap-1">
-			<BookOpen size={12} />
-			The prompts teach the agent to read <code class="font-mono">README.md</code> and
-			<code class="font-mono">dm/docs/</code> in your workspace first — that's where the
-			app's agent documentation lives.
-		</p>
-		<p class="text-xs mt-1 {app.workspacePath ? 'text-green-700' : 'text-zinc-400'}">
-			{#if app.workspacePath}
-				✓ Your workspace path <code class="font-mono">{app.workspacePath}</code> is already filled into the prompts.
-			{:else}
-				No workspace open — the prompts contain a placeholder where you paste the folder path.
-			{/if}
-		</p>
+<div class="skills-page">
+	<div class="section-header">
+		<h1 class="section-title page-title">Skills</h1>
 	</div>
 
+	<p class="section-subtitle">
+		One card per skill: copy its prompt into your coding agent (Claude Code, Cursor, Codex, …)
+		and it builds content for this app by writing files in your workspace.
+		{#if app.workspacePath}
+			Your workspace path <code class="font-mono">{app.workspacePath}</code> is already filled into the prompts.
+		{:else}
+			No workspace open — the prompts contain a placeholder where you paste the folder path.
+		{/if}
+		The prompts teach the agent to read <code class="font-mono">README.md</code> and
+		<code class="font-mono">dm/docs/</code> in your workspace first.
+	</p>
+
 	{#each GOALS as g (g.key)}
-		<section class="mt-6">
-			<h2 class="font-semibold text-zinc-900">{g.label}</h2>
-			<p class="text-xs text-zinc-500 mt-0.5">{g.blurb}</p>
-			<div class="grid gap-4 md:grid-cols-2 mt-3">
+		<section>
+			<h2 class="goal-title">{g.label}</h2>
+			<p class="goal-blurb">{g.blurb}</p>
+			<div class="skills-grid">
 				{#each prompts.filter((p) => p.goal === g.key) as p (p.file)}
+					{@const Icon = ICONS[p.file] ?? BookOpen}
 					<button class="skill-card" onclick={() => showPrompt(p)} title="Open prompt">
-						<div>
-							<h2 class="font-semibold text-zinc-900 text-sm">{p.title}</h2>
-							<p class="text-xs text-zinc-500 mt-0.5">{p.description}</p>
+						<div class="skill-icon">
+							<Icon size={18} />
 						</div>
-						<div class="flex gap-1 flex-wrap">
-							{#each p.tags as tag (tag)}
-								<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">{tag}</span>
-							{/each}
+						<div class="skill-info">
+							<span class="skill-title">{p.title}</span>
+							<span class="skill-desc">{p.description}</span>
+							<div class="flex gap-1 flex-wrap">
+								{#each p.tags as tag (tag)}
+									<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">{tag}</span>
+								{/each}
+							</div>
 						</div>
 					</button>
 				{/each}
@@ -124,21 +131,103 @@
 {/if}
 
 <style>
+	.skills-page {
+		flex: 1;
+		overflow-y: auto;
+		padding: var(--space-6);
+	}
+
+	.section-header {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-4);
+	}
+
+	.section-title {
+		margin: 0;
+	}
+
+	.section-subtitle {
+		font-size: var(--text-sm);
+		color: var(--color-text-tertiary);
+		margin: var(--space-3) 0 0 0;
+		max-width: 64ch;
+		line-height: var(--leading-relaxed);
+	}
+
+	.goal-title {
+		font-family: var(--font-display);
+		font-size: var(--text-sm);
+		font-weight: 700;
+		margin: var(--space-6) 0 0 0;
+	}
+
+	.goal-blurb {
+		font-size: var(--text-xs);
+		color: var(--color-text-tertiary);
+		margin: 2px 0 0 0;
+	}
+
+	.skills-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+		gap: var(--space-3);
+		margin-top: var(--space-3);
+	}
+
 	.skill-card {
 		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-		text-align: left;
-		background: #fff;
-		border: 1px solid var(--color-border, #e4e4e7);
-		border-radius: var(--radius-lg, 0.75rem);
+		align-items: flex-start;
+		gap: var(--space-3);
 		padding: var(--space-4);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		text-align: left;
+		color: var(--color-text);
+		background: var(--color-surface);
 		transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+		box-sizing: border-box;
 	}
 
 	.skill-card:hover {
-		border-color: var(--color-accent);
-		box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.05));
+		border-color: var(--color-border-strong);
+		box-shadow: var(--shadow-md);
+	}
+
+	.skill-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+		border-radius: var(--radius-sm);
+		background: var(--color-accent-muted);
+		color: var(--color-accent);
+		flex-shrink: 0;
+	}
+
+	.skill-info {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		flex: 1;
+		min-width: 0;
+	}
+
+	.skill-title {
+		font-family: var(--font-display);
+		font-size: var(--text-sm);
+		font-weight: 700;
+	}
+
+	.skill-desc {
+		font-size: var(--text-xs);
+		color: var(--color-text-tertiary);
+		line-height: var(--leading-snug);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.drawer-overlay {

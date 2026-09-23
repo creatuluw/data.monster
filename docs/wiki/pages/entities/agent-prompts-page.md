@@ -2,15 +2,15 @@
 type: Entity
 title: Agent prompts page
 description: "The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor"
-tags: [agents, prompts, route, frontend, dm-tree, onboarding]
-timestamp: "2026-09-23T06:16:47.234Z"
+tags: [agents, prompts, route, frontend, dm-tree, onboarding, drawer]
+timestamp: "2026-09-23T06:24:20.069Z"
 ---
 
 # Agent prompts page
 
 The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the workspace `dm/` tree, grouped under four starter goals. Reached from two entry points: the homepage **✦ LLM skills** button (always visible, even pre-data — that's when onboarding matters) and the nav BookOpen button.
 
-Prompts live as markdown files with frontmatter (`title`, `description`, `tags`, `goal`) under `src/lib/agent-prompts/`, loaded with `import.meta.glob` (raw) and parsed by the pure, tested `parsePrompt()` in `src/lib/agent-prompts.ts`. Every prompt mandates README→INDEX-first reading of the [agent-docs-system](./agent-docs-system.md) docs and restates the secret rules. Rendering follows the house rule [render-markdown-via-marked-prose-chat rule](../../rules/render-markdown-via-marked-prose-chat.md) (marked + `.prose-chat`).
+Prompts live as markdown files with frontmatter (`title`, `description`, `tags`, `goal`) under `src/lib/agent-prompts/`, loaded with `import.meta.glob` (raw) and parsed by the pure, tested `parsePrompt()` in `src/lib/agent-prompts.ts`. Every prompt mandates README→INDEX-first reading of the [agent-docs-system](./agent-docs-system.md) docs, restates the secret rules, and ends with an interview-first section (see the [interview-first decision](../../decisions/agent-prompts-are-interview-first-the-llm-gathers-every-miss.md)). Rendering follows the house rule [render-markdown-via-marked-prose-chat](../../rules/render-markdown-via-marked-prose-chat.md) (marked + `.prose-chat`).
 
 ## Why it matters
 
@@ -23,18 +23,21 @@ Connecting a coding agent previously required knowing the file conventions; this
 - **Workspace-path injection**: applied at render time (what you read is the final prompt) and on copy (paste into Claude Code/Cursor and the path is already there). No workspace open → placeholder kept and the intro line says so; workspace open → green ✓ confirmation showing the path
 - **Goals** (`GOALS` in the page component): `data` = Create data (Get data into the workspace and shape it), `content` = Create content (Build report pages and dashboards), `insights` = Get insights (Reusable analysis building blocks), `actions` = Take actions (Understand and keep the workspace healthy)
 - **Prompts → goals**: `onboarding` (Connect data & build my first page) + `ingest-csv` → data · `dashboard-interview` → content · `add-measure` + `explain` (Explain this workspace) → insights · `cleanup` (Audit & clean up my workspace) → actions
-- **Layout**: one section per goal (label + one-line blurb + md:grid-cols-2 card grid); cards keep title, description, tag chips, rendered body, per-card copy-to-clipboard with 1.5s "Copied" state
-- **Tests** (`tests/agent-prompts.test.ts`): every prompt carries a valid `goal`; every goal has ≥1 prompt; every prompt contains the injectable placeholder; `injectWorkspace` replaces all occurrences and keeps the placeholder when the path is null
+- **Layout**: one section per goal (label + one-line blurb + md:grid-cols-2 card grid). Cards are **fully clickable** (title, description, tags — no inline copy button anymore); clicking opens a **50vw drawer** in the house drawer pattern (`drawerResize` action, overlay click + Escape to close) rendering the full prompt markdown via `.prose-chat` — with the workspace path injected — plus a **Copy** button that flips to "Copied ✓"
+- **Interview-first contract**: every prompt ends with a "Before you start — the only way to fill gaps" section: enumerate needed variables, ask ONE QUESTION AT A TIME with lettered options, never assume, start only after everything is confirmed
+- **Tests** (`tests/agent-prompts.test.ts`): every prompt carries a valid `goal`; every goal has ≥1 prompt; every prompt contains the injectable placeholder; every prompt body matches `ONE QUESTION AT A TIME` + `Never assume` (interview contract); `injectWorkspace` replaces all occurrences and keeps the placeholder when the path is null
 
 ## Relationships
 
 - [agent-docs-system](./agent-docs-system.md) — the embedded doc layer every prompt tells the agent to read first
 - [agent-docs-module-agent-docs-rs](./agent-docs-module-agent-docs-rs.md) — the Rust module serving those docs
-- [workspace-files-are-canonical decision](../../decisions/workspace-files-are-canonical-agents-author.md) — why prompts target files, not app UI
+- [Workspace files are canonical](../../decisions/workspace-files-are-canonical-agents-author.md) — why prompts target files, not app UI
+- [Agent prompts are interview-first](../../decisions/agent-prompts-are-interview-first-the-llm-gathers-every-miss.md) — the interview-first behavior contract shipped into every prompt
 - [incoming-drop-folder](./incoming-drop-folder.md) — the ingest prompt's zero-code alternative (just place the file)
 
 ## Lifecycle
 
-- First added: files-012, 2026-09-22 (commit `1e7709b`) — phase C of [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md)
+- First added: files-012, 2026-09-22 (commit `1e7709b`) — phase C of the workspace-file-first build (see [workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md))
 - 2026-09-22 (commit `0e1afed`): prompts grouped under four starter goals — `goal:` frontmatter field added, parser carries it, page renders goal sections; homepage gained the always-visible ✦ LLM skills button linking here
 - 2026-09-23 (commit `e6339f0`): workspace-path injection — all six prompts share the one `<PASTE WORKSPACE FOLDER PATH>` placeholder; `injectWorkspace` (pure, tested) replaces it live at render and copy, with placeholder-fallback + green ✓ confirmation states
+- 2026-09-23 (commit `b4ec93c`): interview-first contract added to all six prompts (test-enforced); page UX reworked — cards fully clickable, inline per-card copy removed, click opens a 50vw house-pattern drawer with rendered prompt markdown + Copy button

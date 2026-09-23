@@ -62,6 +62,8 @@
 	let textVal = $state('');
 	let numVal = $state<number | undefined>(42);
 	let toggleVal = $state(true);
+	let drawerOpen = $state(false);
+	let drawerToggle = $state(true);
 </script>
 
 {#if DS_SHOWCASE[name]}
@@ -241,7 +243,35 @@
 {:else if name === 'SearchAhead'}
 	<SearchAhead />
 {:else if name === 'Drawer'}
-	<Drawer />
+	{#snippet drawerBody()}
+		<div class="demo-col">
+			<p>
+				A side panel for detail views, settings, and multi-step flows that
+				need more room than a modal.
+			</p>
+			<Field label="Source name">
+				<TextInput value="PostgreSQL Production" mono />
+			</Field>
+			<Toggle bind:checked={drawerToggle} label="Refresh every 15 min" />
+		</div>
+	{/snippet}
+	{#snippet drawerFooter()}
+		<Btn variant="ghost" onclick={() => (drawerOpen = false)}>Close</Btn>
+		<Btn onclick={() => (drawerOpen = false)}>Save</Btn>
+	{/snippet}
+	<div class="demo-row">
+		<Btn onclick={() => (drawerOpen = true)}>Open Drawer</Btn>
+	</div>
+	<Drawer
+		bind:open={drawerOpen}
+		title="Structured Queries"
+		kicker="GL-001"
+		width="420px"
+		onClosed={() => (drawerOpen = false)}
+	>
+		{@render drawerBody()}
+		{@render drawerFooter()}
+	</Drawer>
 {:else}
 	<p class="no-live">
 		This component needs app data/props, so there is no standalone preview — see it

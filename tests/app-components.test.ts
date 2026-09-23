@@ -19,13 +19,15 @@ describe('parseComponent', () => {
 });
 
 describe('loadAppComponents', () => {
-	it('discovers the real component tree', () => {
+	it('discovers the real component tree, deduped to one active component per name', () => {
 		const all = loadAppComponents();
-		expect(all.length).toBeGreaterThan(70);
-		const names = new Set(all.map((c) => c.name));
+		expect(all.length).toBeGreaterThan(50);
+		const names = all.map((c) => c.name);
+		// one active variant per name (root twins of ds/ components are hidden)
+		expect(new Set(names).size, 'duplicate names').toBe(names.length);
 		// known residents of src/lib/components
 		for (const known of ['Modal', 'TableDrawer', 'Toast', 'ExprEditor']) {
-			expect(names.has(known), known).toBe(true);
+			expect(names.includes(known), known).toBe(true);
 		}
 		for (const c of all) {
 			expect(c.lines, c.path).toBeGreaterThan(0);

@@ -6,24 +6,12 @@
 
 	const all = loadAppComponents();
 	const slug = $derived(pageState.params.slug ?? '');
-	const component = $derived.by(() => {
-		const exact = all.find((c) => `${c.dir ? c.dir + '/' : ''}${c.name}` === slug);
-		if (exact) {
-			// 18 root components share a name with a ds/ one — prefer the showcase variant
-			if (exact.dir !== 'ds') {
-				const twin = all.find((c) => c.dir === 'ds' && c.name === exact.name);
-				if (twin) return twin;
-			}
-			return exact;
-		}
-		// bare name with only a ds/ match (e.g. /components/Accordion) -> showcase variant
-		if (!slug.includes('/')) {
-			const twin = all.find((c) => c.dir === 'ds' && c.name === slug);
-			if (twin) return twin;
-		}
-		return null;
-	});
-	const siblings = $derived(component ? all.filter((c) => c.name === component.name) : []);
+	// catalog is deduped to one active component per name; accept legacy bare-name URLs
+	const component = $derived(
+		all.find((c) => `${c.dir ? c.dir + '/' : ''}${c.name}` === slug) ??
+			(slug.includes('/') ? null : all.find((c) => c.name === slug)) ??
+			null
+	);
 </script>
 
 <div class="detail-page">
@@ -38,11 +26,6 @@
 			</div>
 			<h1 class="hero-title">{component.name}</h1>
 			<p class="hero-meta font-mono">{component.path} · {component.lines} lines</p>
-			{#if siblings.length > 1}
-				<p class="dup-note">
-					Also at: {siblings.filter((s) => s !== component).map((s) => s.path).join(', ')}
-				</p>
-			{/if}
 		</header>
 
 		<hr class="divider" />
@@ -114,12 +97,6 @@
 	}
 
 	.hero-meta {
-		font-size: var(--text-xs);
-		color: var(--color-text-tertiary);
-		margin: var(--space-2) 0 0 0;
-	}
-
-	.dup-note {
 		font-size: var(--text-xs);
 		color: var(--color-text-tertiary);
 		margin: var(--space-2) 0 0 0;

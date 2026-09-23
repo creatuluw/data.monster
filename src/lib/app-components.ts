@@ -31,9 +31,22 @@ const modules = import.meta.glob('/src/lib/components/**/*.svelte', {
 	eager: true
 }) as Record<string, string>;
 
-/** All app components, folder-then-name sorted. */
+/** All active app components, folder-then-name sorted.
+ *  Some folders contain superseded twins (root Accordion/Modal/… of ds/, root Toggle of
+ *  charts/controls/Toggle — imported nowhere). One active component per name is surfaced,
+ *  preferring ds/, then charts/controls, then charts, then root. */
+const PREFER = ['ds', 'charts/controls', 'charts', ''];
+
 export function loadAppComponents(): AppComponent[] {
-	return Object.entries(modules)
-		.map(([p, src]) => parseComponent(p, src))
-		.sort((a, b) => `${a.dir}/${a.name}`.localeCompare(`${b.dir}/${b.name}`));
+	const all = Object.entries(modules).map(([p, src]) => parseComponent(p, src));
+	const rank = (dir: string) => {
+		const i = PREFER.indexOf(dir);
+		return i === -1 ? PREFER.length : i;
+	};
+	const active = new Map<string, AppComponent>();
+	for (const c of all) {
+		const cur = active.get(c.name);
+		if (!cur || rank(c.dir) < rank(cur.dir)) active.set(c.name, c);
+	}
+	return [...active.values()].sort((a, b) => `${a.dir}/${a.name}`.localeCompare(`${b.dir}/${b.name}`));
 }

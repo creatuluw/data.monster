@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { X, Trash2, RefreshCw } from 'lucide-svelte';
-	import { drawerResize } from './drawer-resize';
+	import Drawer from './Drawer.svelte';
 	import {
 		getTableMeta,
 		type TableMeta,
@@ -93,7 +93,6 @@
 	});
 
 	function handleClose() {
-		drawerOpen = false;
 		setTimeout(() => onclose(), 200);
 	}
 
@@ -202,25 +201,13 @@
 </script>
 
 {#if tableName}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="drawer-overlay" class:drawer-overlay-visible={drawerOpen} onclick={handleClose} onkeydown={() => {}}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="drawer" class:drawer-open={drawerOpen} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-			<div class="drawer-header">
-				<h2 class="drawer-title">Table settings</h2>
-				<button class="drawer-close" onclick={handleClose} title="Close">
-					<X size={16} />
-				</button>
-			</div>
+	<Drawer bind:open={drawerOpen} title="Table settings" onClosed={handleClose}>
 
 			{#if loading}
-				<div class="drawer-body">
 					<div class="drawer-loading">
 						<span>Loading…</span>
 					</div>
-				</div>
 			{:else if meta}
-				<div class="drawer-body">
 					<section class="drawer-section">
 						<div class="drawer-field">
 							<label class="drawer-label">Name</label>
@@ -356,10 +343,8 @@
 							</button>
 						{/if}
 					</section>
-				</div>
 			{/if}
-		</div>
-	</div>
+	</Drawer>
 
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	{#if editColumn}

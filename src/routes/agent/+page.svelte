@@ -2,12 +2,12 @@
 	import { marked } from 'marked';
 	import { loadPrompts, injectWorkspace } from '$lib/agent-prompts';
 	import { app } from '$lib/stores/app.svelte';
-	import { drawerResize } from '$lib/components/drawer-resize';
-	import { Copy, Check, BookOpen, X, Rocket, Database, LayoutDashboard, Sigma, Eraser } from 'lucide-svelte';
+	import Drawer from '$lib/components/Drawer.svelte';
+	import { Copy, Check, BookOpen, Rocket, Database, LayoutDashboard, Sigma, Eraser } from 'lucide-svelte';
 
 	const prompts = loadPrompts();
-	let open = $state<(typeof prompts)[number] | null>(null);
-	let drawerShown = $state(false);
+	let drawerOpen = $state(false);
+	let prompt = $state<(typeof prompts)[number] | null>(null);
 	let copied = $state(false);
 
 	const ICONS: Record<string, typeof Rocket> = {
@@ -27,14 +27,13 @@
 	};
 
 	function showPrompt(p: (typeof prompts)[number]) {
-		open = p;
+		prompt = p;
 		copied = false;
-		requestAnimationFrame(() => (drawerShown = true));
+		drawerOpen = true;
 	}
 
 	function closeDrawer() {
-		drawerShown = false;
-		setTimeout(() => (open = null), 200);
+		drawerOpen = false;
 	}
 
 	function promptText(p: (typeof prompts)[number]): string {
@@ -46,9 +45,9 @@
 	}
 
 	async function copy() {
-		if (!open) return;
+		if (!prompt) return;
 		try {
-			await navigator.clipboard.writeText(promptText(open));
+			await navigator.clipboard.writeText(promptText(prompt));
 			copied = true;
 			setTimeout(() => (copied = false), 1500);
 		} catch {
@@ -57,7 +56,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && open && closeDrawer()} />
+
 
 <div class="skills-page">
 	<div class="section-header">
@@ -85,32 +84,27 @@
 	</div>
 </div>
 
-{#if open}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="drawer-overlay" class:drawer-overlay-visible={drawerShown} onclick={closeDrawer} onkeydown={() => {}}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<section class="drawer" class:drawer-open={drawerShown} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-			<div class="drawer-header">
-				<h2 class="drawer-title">{open.title}</h2>
-				<div class="flex items-center gap-1">
-					<button class="copy-btn" onclick={copy} title={copied ? 'Copied' : 'Copy prompt'}>
-						{#if copied}<Check size={14} class="text-green-600" /> Copied{:else}<Copy size={14} /> Copy{/if}
-					</button>
-					<button class="close-btn" onclick={closeDrawer} title="Close" aria-label="Close">
-						<X size={16} />
-					</button>
-				</div>
-			</div>
-			<div class="drawer-body">
-				<p class="text-xs text-zinc-500">{open.description}</p>
-				<div class="prose-chat text-xs">
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html render(promptText(open))}
-				</div>
-			</div>
-		</section>
-	</div>
-{/if}
+{#snippet drawerFooter()}
+	<button class="copy-btn" onclick={copy} title={copied ? 'Copied' : 'Copy prompt'}>
+		{#if copied}<Check size={14} class="text-green-600" /> Copied{:else}<Copy size={14} /> Copy{/if}
+	</button>
+{/snippet}
+
+<Drawer
+	bind:open={drawerOpen}
+	title={prompt?.title ?? ''}
+	width="50vw"
+	onClosed={closeDrawer}
+	footer={drawerFooter}
+>
+	{#if prompt}
+		<p class="prompt-desc">{prompt.description}</p>
+		<div class="prose-chat prompt-md">
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+			{@html render(promptText(prompt))}
+		</div>
+	{/if}
+</Drawer>
 
 <style>
 	.skills-page {
@@ -191,94 +185,50 @@
 		overflow: hidden;
 	}
 
-	.drawer-overlay {
-		position: fixed;
-		inset: 0;
-		background: oklch(0 0 0 / 0.3);
-		z-index: 200;
-		opacity: 0;
-		transition: opacity var(--duration-base) ease;
-		pointer-events: none;
-	}
-
-	.drawer-overlay-visible {
-		opacity: 1;
-		pointer-events: auto;
-	}
-
-	.drawer {
-		position: fixed;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		width: 50vw;
-		max-width: 100vw;
-		background: var(--color-surface);
-		border-left: 1px solid var(--color-border);
-		z-index: 201;
-		display: flex;
-		flex-direction: column;
-		transform: translateX(100%);
-		transition: transform var(--duration-base) var(--ease-out-expo);
-		box-shadow: var(--shadow-lg);
-	}
-
-	.drawer-open {
-		transform: translateX(0);
-	}
-
-	.drawer-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
-		padding: var(--space-4) var(--space-5);
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.drawer-title {
-		font-size: var(--text-sm);
-		font-weight: 600;
-		color: var(--color-text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
+	
+	
+	
+	
+	
+	
 	.copy-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
 		padding: 6px 10px;
-		border-radius: var(--radius-md, 6px);
+		border-radius: var(--radius-xs);
 		font-size: var(--text-xs);
 		font-weight: 600;
-		color: var(--color-accent-dark, #1e3a5f);
-		background: var(--color-accent-muted, #eef4fa);
+		color: var(--color-text);
+		background: transparent;
+		border: 1px solid var(--color-border-strong);
+		transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease, background var(--duration-fast) ease;
+	}
+
+	.copy-btn:hover {
+		color: var(--color-accent);
+		border-color: var(--color-accent);
+		background: var(--color-surface-sunken);
+	}
+
+	.prompt-desc {
+		font-size: var(--text-xs);
+		color: var(--color-text-secondary);
+		margin: 0 0 var(--space-4) 0;
+	}
+
+	.prompt-md {
+		font-size: var(--text-xs);
 	}
 
 	.copy-btn:hover {
 		background: var(--color-accent, #d7e6f5);
 	}
 
-	.close-btn {
-		display: inline-flex;
-		padding: 6px;
-		border-radius: var(--radius-md, 6px);
-		color: var(--color-text-muted, #71717a);
-	}
-
+	
 	.close-btn:hover {
 		background: var(--color-accent-muted, #eef4fa);
 		color: var(--color-text);
 	}
 
-	.drawer-body {
-		flex: 1;
-		overflow-y: auto;
-		padding: var(--space-5);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-3);
-	}
-</style>
+	</style>

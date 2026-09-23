@@ -51,3 +51,5 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Incoming drop folder](./entities/incoming-drop-folder.md) — The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and 
 - [E2E CDP driver](./entities/e2e-cdp-driver.md) — `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 - [Components page (/components)](./entities/components-page-components.md) — Companion page to [[pages/entities/library-page-library]]: a card grid over **every component the app itself uses** — one card per `.svelte` file under `src/lib
+- [Components catalog (/components + app-components.ts)](./entities/components-catalog-components-app-components-ts.md) — The `/components` route pair — a build-time inventory of every Svelte component in the app, next to [[library-page-library]] (which lists registered library com
+- [ComponentDemo](./entities/componentdemo.md) — What is it?

@@ -19,15 +19,20 @@ describe('parseComponent', () => {
 });
 
 describe('loadAppComponents', () => {
-	it('discovers the real component tree, deduped to one active component per name', () => {
+	it('returns only showcaseable components, one active variant per name', () => {
 		const all = loadAppComponents();
-		expect(all.length).toBeGreaterThan(50);
+		expect(all.length).toBeGreaterThan(30);
+		expect(all.length).toBeLessThan(50);
 		const names = all.map((c) => c.name);
 		// one active variant per name (root twins of ds/ components are hidden)
 		expect(new Set(names).size, 'duplicate names').toBe(names.length);
-		// known residents of src/lib/components
-		for (const known of ['Modal', 'TableDrawer', 'Toast', 'ExprEditor']) {
+		// known residents of the showcase catalog
+		for (const known of ['Accordion', 'Btn', 'Badge', 'BarChart', 'TableList']) {
 			expect(names.includes(known), known).toBe(true);
+		}
+		// app-wired components without a standalone demo are not surfaced
+		for (const gone of ['TableDrawer', 'ExprEditor', 'QueryEditor', 'PageGrid']) {
+			expect(names.includes(gone), gone).toBe(false);
 		}
 		for (const c of all) {
 			expect(c.lines, c.path).toBeGreaterThan(0);

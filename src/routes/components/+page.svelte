@@ -26,8 +26,8 @@
 	</div>
 
 	<p class="section-subtitle">
-		Every component the app's UI is built with, from <code>src/lib/components/</code>.
-		Click a card for its visuals and source.
+		Every component with a live showcase, from <code>src/lib/components/</code>.
+		Click a card to see it rendered.
 	</p>
 
 	<div class="grid">

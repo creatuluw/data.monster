@@ -37,3 +37,5 @@ _Concrete named things will be listed here._
 - [E2E CDP driver](./e2e-cdp-driver.md) - `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 - [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
 - [Components page (/components)](./components-page-components.md) - Companion page to [[pages/entities/library-page-library]]: a card grid over **every component the app itself uses** — one card per `.svelte` file under `src/lib
+- [Components catalog (/components + app-components.ts)](./components-catalog-components-app-components-ts.md) - The `/components` route pair — a build-time inventory of every Svelte component in the app, next to [[library-page-library]] (which lists registered library com
+- [ComponentDemo](./componentdemo.md) - What is it?

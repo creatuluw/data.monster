@@ -65,3 +65,4 @@
 - [dm/ migration: write all, verify, then drop — files win](./dm-migration-write-all-verify-then-drop-files-win.md) - Context
 - [Creation saves explicitly, editing writes through live (files-010)](./creation-saves-explicitly-editing-writes-through.md) - Context
 - [Agent prompts are interview-first — the LLM gathers every missing variable via one-at-a-time questions before starting](./agent-prompts-are-interview-first-the-llm-gathers-every-miss.md) - Context
+- [Component detail pages are Visual-only — Source sections and highlight machinery removed](./component-detail-pages-are-visual-only-source-sections-and-h.md) - Context

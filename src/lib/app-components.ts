@@ -31,13 +31,31 @@ const modules = import.meta.glob('/src/lib/components/**/*.svelte', {
 	eager: true
 }) as Record<string, string>;
 
-/** All active app components, folder-then-name sorted.
- *  Some folders contain superseded twins (root Accordion/Modal/… of ds/, root Toggle of
- *  charts/controls/Toggle — imported nowhere). One active component per name is surfaced,
- *  preferring ds/, then charts/controls, then charts, then root. */
-const PREFER = ['ds', 'charts/controls', 'charts', ''];
+/** Names that have a live visual demo in ComponentDemo.svelte — the /components
+ *  catalog surfaces only these; keep in sync with that component's if/else chain. */
+export const SHOWCASEABLE = new Set([
+	// ds/ self-showcasing components (same set /ui renders)
+	'Accordion', 'Buttons', 'Cards', 'ColorPalette', 'Footer', 'Hero', 'Icons', 'Inputs',
+	'Modal', 'Motion', 'Nav', 'Principles', 'SearchAhead', 'Spacing', 'Tags', 'Toast',
+	'Toggles', 'Typography',
+	// charts/controls form kit
+	'Btn', 'DangerZone', 'Field', 'NumberInput', 'RemoveBtn', 'Section', 'Select',
+	'TextInput', 'Toggle',
+	// root kit with hand-written demos
+	'Badge', 'Breadcrumb', 'LabsPlaceholder', 'Pagination', 'PreviewPane', 'Tag',
+	'TagInput', 'TableList', 'Tabs', 'Tooltip',
+	// charts
+	'BarChart'
+]);
 
+/** Active components with a live visual demo, folder-then-name sorted. */
 export function loadAppComponents(): AppComponent[] {
+	return loadActiveAppComponents().filter((c) => SHOWCASEABLE.has(c.name));
+}
+
+/** Active components (superseded twins removed: ds > charts/controls > charts > root),
+ *  folder-then-name sorted. */
+export function loadActiveAppComponents(): AppComponent[] {
 	const all = Object.entries(modules).map(([p, src]) => parseComponent(p, src));
 	const rank = (dir: string) => {
 		const i = PREFER.indexOf(dir);
@@ -50,3 +68,5 @@ export function loadAppComponents(): AppComponent[] {
 	}
 	return [...active.values()].sort((a, b) => `${a.dir}/${a.name}`.localeCompare(`${b.dir}/${b.name}`));
 }
+
+const PREFER = ['ds', 'charts/controls', 'charts', ''];

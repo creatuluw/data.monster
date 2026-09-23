@@ -8,10 +8,11 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T06:37:31.115Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T07:50:46.302Z.
 
 ## Recent Decisions
 
+- [Component detail pages are Visual-only — Source sections and highlight machinery removed](decisions/component-detail-pages-are-visual-only-source-sections-and-h.md) — Context (2026-09-23)
 - [Agent prompts are interview-first — the LLM gathers every missing variable via one-at-a-time questions before starting](decisions/agent-prompts-are-interview-first-the-llm-gathers-every-miss.md) — Context (2026-09-23)
 - [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through.md) — Context (2026-09-22)
 - [dm/ migration: write all, verify, then drop — files win](decisions/dm-migration-write-all-verify-then-drop-files-win.md) — Context (2026-09-22)
@@ -26,7 +27,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T06
 - [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context (2026-09-17)
 - [App gets virtual multi-tab navigation: bottom bar is the tab bar](decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md) — Context (2026-09-17)
 - [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New) (2026-09-17)
-- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context (2026-09-17)
 
 ## Active Rules
 
@@ -64,6 +64,9 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T06
 
 ## Recent Learnings — development patterns
 
+- [loadAppComponents dedupes by folder preference — 18 root twins are dead code](learnings/loadappcomponents-dedupes-by-folder-preference-18-root-twins.md) — Discovered 2026-09-23 while removing the "Also at:" dup note from /components detail pages (commit `e8e329a`). (2026-09-23)
+- [Svelte 5 snippets can't ride a name-keyed registry — snippet demos are inline markup; BarChart takes accessors](learnings/svelte-5-snippets-can-t-ride-a-name-keyed-registry-snippet-d.md) — Discovered 2026-09-23 building `ComponentDemo.svelte` (the /components visual-demo registry): (2026-09-23)
+- [18 root components duplicate the ds/ showcase set — slug resolution prefers the ds/ twin](learnings/ds-twins-win-slug-collisions.md) — Discovered 2026-09-23 fixing `/components/Accordion` showing no visual (commit `f19dd80`). (2026-09-23)
 - [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — Found by the workspace-file-first e2e pass (2026-09-22): the `data/incoming/` ingest correctly emitted `dm:changed {kind:"table"}` via the [… (2026-09-22)
 - [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into `dm/pages/` **before**… (2026-09-22)
 - [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged `password@` inside the `.env` sample URL (`DM_CONN_PRODUCT… (2026-09-22)
@@ -81,9 +84,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T06
 - [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-mismatch-broke.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
 - [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-flags.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
 - [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by `textContent.includes('Definitions')`… (2026-09-22)
-- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-after-source-save-hmr-race.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
-- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-stale-after-replacestate.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (`TableOverview.svelte`, verified over CDP against the live dev app). (2026-09-22)
-- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (`TableOverview.svelte`, +6 lines). (2026-09-22)
 
 ## Architecture
 

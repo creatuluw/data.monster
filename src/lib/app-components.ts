@@ -42,7 +42,7 @@ export const SHOWCASEABLE = new Set([
 	'Btn', 'DangerZone', 'Field', 'NumberInput', 'RemoveBtn', 'Section', 'Select',
 	'TextInput', 'Toggle',
 	// root kit with hand-written demos
-	'Badge', 'Breadcrumb', 'LabsPlaceholder', 'Pagination', 'PreviewPane', 'Tag',
+	'Badge', 'Breadcrumb', 'Drawer', 'LabsPlaceholder', 'Pagination', 'PreviewPane', 'Tag',
 	'TagInput', 'TableList', 'Tabs', 'Tooltip',
 	// charts
 	'BarChart'

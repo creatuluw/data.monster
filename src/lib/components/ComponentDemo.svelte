@@ -43,6 +43,7 @@
 	import TableList from './TableList.svelte';
 	import Badge from './Badge.svelte';
 	import Breadcrumb from './Breadcrumb.svelte';
+	import Drawer from './Drawer.svelte';
 	import LabsPlaceholder from './LabsPlaceholder.svelte';
 	import PreviewPane from './PreviewPane.svelte';
 
@@ -239,6 +240,8 @@
 	</div>
 {:else if name === 'SearchAhead'}
 	<SearchAhead />
+{:else if name === 'Drawer'}
+	<Drawer />
 {:else}
 	<p class="no-live">
 		This component needs app data/props, so there is no standalone preview — see it

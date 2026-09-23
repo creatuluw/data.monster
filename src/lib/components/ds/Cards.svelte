@@ -3,7 +3,7 @@
 	<h3 class="component-group-title">Cards</h3>
 	<div class="card-grid">
 		<article class="card">
-			<span class="card-id">GL-001</span>
+			<span class="card-id">01</span>
 			<h4 class="card-title">Structured Queries</h4>
 			<p class="card-body">
 				Every analysis starts with a well-defined query. Named templates
@@ -16,7 +16,7 @@
 			</div>
 		</article>
 		<article class="card">
-			<span class="card-id">GL-002</span>
+			<span class="card-id">02</span>
 			<h4 class="card-title">Live Refresh</h4>
 			<p class="card-body">
 				Data sources update in real time. When a pipeline finishes or
@@ -29,7 +29,7 @@
 			</div>
 		</article>
 		<article class="card">
-			<span class="card-id">GL-003</span>
+			<span class="card-id">03</span>
 			<h4 class="card-title">Perceptual Accuracy</h4>
 			<p class="card-body">
 				OKLCH ensures colors look equally distinct in charts and heatmaps.

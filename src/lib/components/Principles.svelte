@@ -6,7 +6,7 @@
 
 	<div class="principles-grid entrance entrance-d1">
 		<div class="principle">
-			<span class="principle-ref">GL-P01</span>
+			<span class="principle-ref">P1</span>
 			<h3 class="principle-title">Structure enables insight</h3>
 			<p class="principle-desc">
 				A consistent interface lets analysts focus on data, not the UI.
@@ -16,7 +16,7 @@
 			</p>
 		</div>
 		<div class="principle">
-			<span class="principle-ref">GL-P02</span>
+			<span class="principle-ref">P2</span>
 			<h3 class="principle-title">Clarity is trust</h3>
 			<p class="principle-desc">
 				Business decisions depend on data. Ambiguous labels, unclear
@@ -26,7 +26,7 @@
 			</p>
 		</div>
 		<div class="principle">
-			<span class="principle-ref">GL-P03</span>
+			<span class="principle-ref">P3</span>
 			<h3 class="principle-title">Motion conveys state</h3>
 			<p class="principle-desc">
 				Every transition answers a question: what just changed? When a
@@ -36,7 +36,7 @@
 			</p>
 		</div>
 		<div class="principle">
-			<span class="principle-ref">GL-P04</span>
+			<span class="principle-ref">P4</span>
 			<h3 class="principle-title">Tinted neutrality</h3>
 			<p class="principle-desc">
 				Pure gray is a missed opportunity. Neutrals tinted toward the

@@ -31,10 +31,6 @@
 		<hr class="divider" />
 
 		<section class="section">
-			<div class="section-header">
-				<span class="section-number">01</span>
-				<h2 class="section-title">Visual</h2>
-			</div>
 			<ComponentDemo name={component.name} />
 		</section>
 	{:else}
@@ -111,34 +107,6 @@
 	/* reference: numbered section header */
 	.section {
 		padding: var(--space-8) 0;
-	}
-
-	.section-header {
-		display: flex;
-		align-items: center;
-		gap: var(--space-4);
-		margin-bottom: var(--space-6);
-	}
-
-	.section-number {
-		font-family: var(--font-mono);
-		font-size: var(--text-xs);
-		letter-spacing: 0.1em;
-		color: var(--color-accent);
-		padding: var(--space-1) var(--space-2);
-		border: 1px solid var(--color-accent-muted);
-		border-radius: var(--radius-xs);
-		background: var(--color-accent-muted);
-		white-space: nowrap;
-	}
-
-	.section-title {
-		font-family: var(--font-display);
-		font-size: var(--text-xl);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-		color: var(--color-text);
-		margin: 0;
 	}
 
 	.no-live {

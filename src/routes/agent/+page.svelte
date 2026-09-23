@@ -19,12 +19,12 @@
 		cleanup: Eraser
 	};
 
-	const GOALS: { key: string; label: string; blurb: string }[] = [
-		{ key: 'data', label: 'Create data', blurb: 'Get data into the workspace and shape it.' },
-		{ key: 'content', label: 'Create content', blurb: 'Build report pages and dashboards.' },
-		{ key: 'insights', label: 'Get insights', blurb: 'Reusable analysis building blocks.' },
-		{ key: 'actions', label: 'Take actions', blurb: 'Understand and keep the workspace healthy.' }
-	];
+	const GOAL_LABELS: Record<string, string> = {
+		data: 'Data',
+		content: 'Content',
+		insights: 'Insights',
+		actions: 'Actions'
+	};
 
 	function showPrompt(p: (typeof prompts)[number]) {
 		open = p;
@@ -64,43 +64,25 @@
 		<h1 class="section-title page-title">Skills</h1>
 	</div>
 
-	<p class="section-subtitle">
-		One card per skill: copy its prompt into your coding agent (Claude Code, Cursor, Codex, …)
-		and it builds content for this app by writing files in your workspace.
-		{#if app.workspacePath}
-			Your workspace path <code class="font-mono">{app.workspacePath}</code> is already filled into the prompts.
-		{:else}
-			No workspace open — the prompts contain a placeholder where you paste the folder path.
-		{/if}
-		The prompts teach the agent to read <code class="font-mono">README.md</code> and
-		<code class="font-mono">dm/docs/</code> in your workspace first.
-	</p>
-
-	{#each GOALS as g (g.key)}
-		<section>
-			<h2 class="goal-title">{g.label}</h2>
-			<p class="goal-blurb">{g.blurb}</p>
-			<div class="skills-grid">
-				{#each prompts.filter((p) => p.goal === g.key) as p (p.file)}
-					{@const Icon = ICONS[p.file] ?? BookOpen}
-					<button class="skill-card" onclick={() => showPrompt(p)} title="Open prompt">
-						<div class="skill-icon">
-							<Icon size={18} />
-						</div>
-						<div class="skill-info">
-							<span class="skill-title">{p.title}</span>
-							<span class="skill-desc">{p.description}</span>
-							<div class="flex gap-1 flex-wrap">
-								{#each p.tags as tag (tag)}
-									<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">{tag}</span>
-								{/each}
-							</div>
-						</div>
-					</button>
-				{/each}
-			</div>
-		</section>
-	{/each}
+	<div class="skills-grid">
+		{#each prompts as p (p.file)}
+			{@const Icon = ICONS[p.file] ?? BookOpen}
+			<button class="skill-card" onclick={() => showPrompt(p)} title="Open prompt">
+				<div class="skill-icon">
+					<Icon size={18} />
+				</div>
+				<div class="skill-info">
+					<span class="skill-title">{p.title}</span>
+					<span class="skill-desc">{p.description}</span>
+					<div class="flex gap-1 flex-wrap">
+						{#each [GOAL_LABELS[p.goal], ...p.tags].filter(Boolean).slice(0, 3) as tag (tag)}
+							<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">{tag}</span>
+						{/each}
+					</div>
+				</div>
+			</button>
+		{/each}
+	</div>
 </div>
 
 {#if open}
@@ -147,32 +129,11 @@
 		margin: 0;
 	}
 
-	.section-subtitle {
-		font-size: var(--text-sm);
-		color: var(--color-text-tertiary);
-		margin: var(--space-3) 0 0 0;
-		max-width: 64ch;
-		line-height: var(--leading-relaxed);
-	}
-
-	.goal-title {
-		font-family: var(--font-display);
-		font-size: var(--text-sm);
-		font-weight: 700;
-		margin: var(--space-6) 0 0 0;
-	}
-
-	.goal-blurb {
-		font-size: var(--text-xs);
-		color: var(--color-text-tertiary);
-		margin: 2px 0 0 0;
-	}
-
 	.skills-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 		gap: var(--space-3);
-		margin-top: var(--space-3);
+		margin-top: var(--space-6);
 	}
 
 	.skill-card {

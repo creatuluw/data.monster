@@ -265,7 +265,6 @@
 	<Drawer
 		bind:open={drawerOpen}
 		title="Structured Queries"
-		kicker="settings"
 		width="420px"
 		onClosed={() => (drawerOpen = false)}
 	>

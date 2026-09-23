@@ -58,7 +58,7 @@
 </script>
 
 {#if columnName}
-	<Drawer bind:open={drawerOpen} title="Add function" kicker={columnName} onClosed={handleClose}>
+	<Drawer bind:open={drawerOpen} title={"Add function to " + columnName} onClosed={handleClose}>
 
 			<div class="drawer-body">
 				<div class="drawer-col-info">

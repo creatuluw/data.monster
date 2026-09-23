@@ -12,14 +12,12 @@
 	 * - `contained=true` positions inside the nearest positioned ancestor
 	 *   (.app-body) instead of the viewport — needs that ancestor to span
 	 *   exactly the drawer area; `data-drawer` lets parents measure geometry
-	 * - `kicker` is the small mono reference line above the title
 	 * - `footer` optional actions row (dashed top border)
 	 * - a11y: Escape closes, focus is trapped while open and returned on close
 	 */
 	let {
 		open = $bindable(false),
 		title = '',
-		kicker = '',
 		width = '33vw',
 		overlay = true,
 		contained = false,
@@ -29,7 +27,6 @@
 	}: {
 		open?: boolean;
 		title?: string;
-		kicker?: string;
 		/** drawer width, any CSS length */
 		width?: string;
 		/** dim + click-away overlay; off when the page must stay live beside the drawer */
@@ -110,7 +107,6 @@
 >
 	<div class="drawer-header">
 		<div class="drawer-heading">
-			{#if kicker}<span class="drawer-kicker">{kicker}</span>{/if}
 			<h2 class="drawer-title">{title}</h2>
 		</div>
 		<button class="drawer-close" onclick={close} title="Close" aria-label="Close drawer">
@@ -194,14 +190,6 @@
 		min-width: 0;
 	}
 
-	.drawer-kicker {
-		display: block;
-		font-family: var(--font-mono);
-		font-size: 9px;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--color-accent);
-	}
 
 	.drawer-title {
 		font-family: var(--font-display);

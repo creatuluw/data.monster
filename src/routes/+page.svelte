@@ -45,6 +45,7 @@
 		<div class="labs-link">
 			<a href="/labs" class="labs-anchor">/labs →</a>
 			<a href="/library" class="labs-anchor">/library →</a>
+			<a href="/components" class="labs-anchor">/components →</a>
 		</div>
 	</div>
 </div>

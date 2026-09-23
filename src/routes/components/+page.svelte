@@ -3,9 +3,12 @@
 	import { Box } from 'lucide-svelte';
 
 	const components = loadAppComponents();
+	// 18 root components share a name with a ds/ one — link to the ds/ (showcase) variant
+	const dsNames = new Set(components.filter((c) => c.dir === 'ds').map((c) => c.name));
 
 	function hrefFor(c: (typeof components)[number]): string {
-		return `/components/${c.dir ? c.dir + '/' : ''}${c.name}`;
+		const dir = c.dir === 'ds' || !dsNames.has(c.name) ? c.dir : 'ds';
+		return `/components/${dir ? dir + '/' : ''}${c.name}`;
 	}
 
 	function dirLabel(dir: string): string {

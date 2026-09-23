@@ -32,7 +32,23 @@
 
 	const all = loadAppComponents();
 	const slug = $derived(pageState.params.slug ?? '');
-	const component = $derived(all.find((c) => `${c.dir ? c.dir + '/' : ''}${c.name}` === slug) ?? null);
+	const component = $derived.by(() => {
+		const exact = all.find((c) => `${c.dir ? c.dir + '/' : ''}${c.name}` === slug);
+		if (exact) {
+			// 18 root components share a name with a ds/ one — prefer the showcase variant
+			if (exact.dir !== 'ds') {
+				const twin = all.find((c) => c.dir === 'ds' && c.name === exact.name);
+				if (twin) return twin;
+			}
+			return exact;
+		}
+		// bare name with only a ds/ match (e.g. /components/Accordion) -> showcase variant
+		if (!slug.includes('/')) {
+			const twin = all.find((c) => c.dir === 'ds' && c.name === slug);
+			if (twin) return twin;
+		}
+		return null;
+	});
 	const Demo = $derived(
 		component && component.dir === 'ds' ? (DS_SHOWCASE[component.name] ?? null) : null
 	);

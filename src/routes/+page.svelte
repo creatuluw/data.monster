@@ -39,7 +39,7 @@
 			{/if}
 			<a href="/agent" class="action-btn" title="Skills & commands for your coding agent">
 				<Sparkles size={16} />
-				LLM skills
+				Skills
 			</a>
 		</div>
 		<div class="labs-link">

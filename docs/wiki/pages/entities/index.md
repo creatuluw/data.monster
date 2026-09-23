@@ -36,3 +36,4 @@ _Concrete named things will be listed here._
 - [Incoming drop folder](./incoming-drop-folder.md) - The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and
 - [E2E CDP driver](./e2e-cdp-driver.md) - `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 - [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
+- [Components page (/components)](./components-page-components.md) - Companion page to [[pages/entities/library-page-library]]: a card grid over **every component the app itself uses** — one card per `.svelte` file under `src/lib

@@ -34,5 +34,5 @@ _Concrete named things will be listed here._
 - [Agent docs module (agent_docs.rs)](./agent-docs-module-agent-docs-rs.md) - `src-tauri/src/commands/agent_docs.rs` — embeds the agent-docs markdown and syncs it into the workspace as `dm/docs/` + `README.md` on version change (task `files-011`, 2026-09-22)
 - [Agent docs system](./agent-docs-system.md) - The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at `src-tauri/agent-docs/`
 - [Incoming drop folder](./incoming-drop-folder.md) - The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and
-- [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
 - [E2E CDP driver](./e2e-cdp-driver.md) - `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
+- [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor

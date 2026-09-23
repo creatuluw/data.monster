@@ -41,6 +41,9 @@ describe('loadPrompts', () => {
 			expect(p.body, p.file).toMatch(/README\.md/);
 			// every prompt names the workspace folder placeholder
 			expect(p.body, p.file).toContain('WORKSPACE FOLDER PATH');
+			// interview-first gate: missing variables are gathered by questioning, never assumed
+			expect(p.body, p.file).toMatch(/ONE QUESTION AT A TIME/);
+			expect(p.body, p.file).toMatch(/Never assume/);
 		}
 		const byFile = new Map(prompts.map((p) => [p.file, p]));
 		// collaborative prompts instruct interview-style questioning (one at a time)

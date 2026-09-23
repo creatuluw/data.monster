@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { marked } from 'marked';
-	import { loadPrompts } from '$lib/agent-prompts';
+	import { loadPrompts, injectWorkspace } from '$lib/agent-prompts';
+	import { app } from '$lib/stores/app.svelte';
 	import { Copy, Check, BookOpen } from 'lucide-svelte';
 
 	const prompts = loadPrompts();
@@ -14,12 +15,13 @@
 	];
 
 	function render(body: string): string {
-		return marked.parse(body, { async: false }) as string;
+		return marked.parse(injectWorkspace(body, app.workspacePath), { async: false }) as string;
 	}
 
 	async function copy(body: string) {
 		try {
-			await navigator.clipboard.writeText(body);
+			await navigator.clipboard.writeText(injectWorkspace(body, app.workspacePath));
+			copied = body;
 			copied = body;
 			setTimeout(() => (copied = ''), 1500);
 		} catch {
@@ -41,6 +43,13 @@
 			The prompts teach the agent to read <code class="font-mono">README.md</code> and
 			<code class="font-mono">dm/docs/</code> in your workspace first — that's where the
 			app's agent documentation lives.
+		</p>
+		<p class="text-xs mt-1 {app.workspacePath ? 'text-green-700' : 'text-zinc-400'}">
+			{#if app.workspacePath}
+				✓ Your workspace path <code class="font-mono">{app.workspacePath}</code> is already filled into the prompts.
+			{:else}
+				No workspace open — the prompts contain a placeholder where you paste the folder path.
+			{/if}
 		</p>
 	</div>
 

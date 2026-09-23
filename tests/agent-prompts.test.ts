@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parsePrompt, loadPrompts } from '../src/lib/agent-prompts';
+import { parsePrompt, loadPrompts, injectWorkspace } from '../src/lib/agent-prompts';
 
 describe('parsePrompt', () => {
 	it('parses frontmatter and body', () => {
@@ -55,6 +55,23 @@ describe('loadPrompts', () => {
 		const prompts = loadPrompts();
 		for (const goal of GOALS) {
 			expect(prompts.filter((p) => p.goal === goal).length, goal).toBeGreaterThan(0);
+		}
+	});
+});
+
+describe('injectWorkspace', () => {
+	it('replaces every placeholder with the live workspace path', () => {
+		const body = 'go to <PASTE WORKSPACE FOLDER PATH> then re-read <PASTE WORKSPACE FOLDER PATH>/dm/docs';
+		expect(injectWorkspace(body, 'E:\\workspace')).toBe('go to E:\\workspace then re-read E:\\workspace/dm/docs');
+	});
+
+	it('keeps the placeholder when no workspace is open', () => {
+		expect(injectWorkspace('path: <PASTE WORKSPACE FOLDER PATH>', null)).toContain('<PASTE WORKSPACE FOLDER PATH>');
+	});
+
+	it('every starter prompt contains the injectable placeholder', () => {
+		for (const p of loadPrompts()) {
+			expect(p.body, p.file).toContain('<PASTE WORKSPACE FOLDER PATH>');
 		}
 	});
 });

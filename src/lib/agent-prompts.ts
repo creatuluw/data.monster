@@ -50,3 +50,10 @@ export function loadPrompts(): Prompt[] {
 		)
 		.sort((a, b) => a.title.localeCompare(b.title));
 }
+
+export const WORKSPACE_PLACEHOLDER = '<PASTE WORKSPACE FOLDER PATH>';
+
+/** Swap the placeholder for the live workspace path; keeps it when none is open. */
+export function injectWorkspace(body: string, workspacePath: string | null): string {
+	return workspacePath ? body.split(WORKSPACE_PLACEHOLDER).join(workspacePath) : body;
+}

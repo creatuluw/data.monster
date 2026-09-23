@@ -28,7 +28,7 @@ A pure, Svelte-free write-through state machine — "the file IS the save" (work
 - The /data round-trip flushes pending edits before navigating away
 - Deleted with the old flow: Save button, `saving`/`saved` state, saved toast, the 60s auto-save interval, every explicit `handleSave` call (see the superseded [60s auto-save learning](../../learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md))
 
-**ItemEditor** (master-item drawer, files-010) — splits on `draft.id` per the [creation-saves-explicitly decision](../../decisions/creation-saves-explicitly-editing-writes-through-live-files-.md):
+**ItemEditor** (master-item drawer, files-010) — splits on `draft.id` per the [creation-saves-explicitly decision](../../decisions/creation-saves-explicitly-editing-writes-through.md):
 
 - **Editing an existing item → live write-through**: an `$effect` feeds every draft field change into `markLocal`; each change debounces 400ms into `dm/master-items/<id>.json`. The close button became **Done** (`flush()` + close)
 - **Creation keeps the explicit Save**: the stable id (`mi_<table>_<label>`) is minted at save time — live write-through during creation would write half-drafted files with empty/unstable ids into the agent-facing `dm/` tree
@@ -40,8 +40,8 @@ A pure, Svelte-free write-through state machine — "the file IS the save" (work
 
 - [dm-events-frontend-module](./dm-events-frontend-module.md) — supplies the external-change events; `decideExternal` classifies them against local pending state
 - [dm-watch-command-module](./dm-watch-command-module.md) — echo suppression in the watcher makes write-throughs not reload-loop (writer-fed)
-- [Workspace files are canonical](../../decisions/workspace-files-are-canonical-agents-author-content-by-editi.md) — the decision this implements
-- [Creation saves explicitly, editing writes through live](../../decisions/creation-saves-explicitly-editing-writes-through-live-files-.md) — the files-010 save-semantics convention
+- [Workspace files are canonical](../../decisions/workspace-files-are-canonical-agents-author.md) — the decision this implements
+- [Creation saves explicitly, editing writes through live](../../decisions/creation-saves-explicitly-editing-writes-through.md) — the files-010 save-semantics convention
 - [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-9 + FR-10
 
 ## Lifecycle

@@ -20,7 +20,7 @@ Saved queries become agent-native artifacts: a coding agent with only file tools
 - **File format**: `dm/saved-queries/<slug>.sql` — slug = `generate_slug(name)`; same-name overwrite semantics preserved; filename = identity
 - **Meta header**: optional single-line `-- dm: {json}` first line carrying `name`/`description`/`tags`. App-written files always carry it; agent-written *headerless* files default name = filename stem with the whole file as SQL body
 - **Tags duality**: JSON array in the file (agent-native), comma-separated string at the invoke boundary (frontend splits on `,`)
-- **Fail loud**: a malformed `-- dm:` header is a reported error (appears in list `errors[]`; update refuses) — never silently treated as SQL; applies the [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber-corrupt-file-list-.md) philosophy to a per-file store
+- **Fail loud**: a malformed `-- dm:` header is a reported error (appears in list `errors[]`; update refuses) — never silently treated as SQL; applies the [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber.md) philosophy to a per-file store
 - **Update semantics**: partial-merge keeps unspecified fields; rename keeps slug/filename stable; zero timestamps in files (git-clean diffs) — mtime is surfaced as ISO `updated`
 
 ## Lifecycle
@@ -31,5 +31,5 @@ Saved queries become agent-native artifacts: a coding agent with only file tools
 
 - [dm-store-command-module](./dm-store-command-module.md) — path conventions, atomic writes, shape checks underneath
 - [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — `files-004` of the executable spec
-- [workspace-files-are-canonical-agents-author-content-by-editi](../../decisions/workspace-files-are-canonical-agents-author-content-by-editi.md) — the architecture this implements
-- [master-items-relationships-file-store-items-rs-relationships](./master-items-relationships-file-store-items-rs-relationships.md) — sibling Phase A store (`files-003`)
+- [workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — the architecture this implements
+- [master-items-relationships-file-store-items-rs](./master-items-relationships-file-store-items-rs.md) — sibling Phase A store (`files-003`)

@@ -11,7 +11,7 @@ timestamp: "2026-09-22T13:21:28.681Z"
 
 ## Context
 
-Q3 of the agent-authored-workspace interview (2026-09-22), after conventions locked. With [[decisions/agent-authors-app-content-by-editing-workspace-files-the-wor]] the agent writes workspace files (e.g. `dm/pages/revenue.json`) and the app must react — this is what makes it feel alive ("watch the agent build the page") vs. batch import. All the pieces already exist: Tauri's event system, the `notify` crate in Rust, and the earlier `refresh_ui` idea from the MCP research — delivered here by filesystem instead of API.
+Q3 of the agent-authored-workspace interview (2026-09-22), after conventions locked. With [[decisions/agent-authors-app-content-by-editing-workspace]] the agent writes workspace files (e.g. `dm/pages/revenue.json`) and the app must react — this is what makes it feel alive ("watch the agent build the page") vs. batch import. All the pieces already exist: Tauri's event system, the `notify` crate in Rust, and the earlier `refresh_ui` idea from the MCP research — delivered here by filesystem instead of API.
 
 ## The flow (as shipped in files-007)
 
@@ -40,4 +40,4 @@ Approach A landed as `files-007` (commit `72bb92e`): notify recursive watch on `
 ## Consequences
 
 - Whatever depth lands, echo suppression and the clobber banner are required either way.
-- Status locks when the user answers Q3; parent interview decisions remain [[decisions/agent-authors-app-content-by-editing-workspace-files-the-wor]] (proposed).
+- Status locks when the user answers Q3; parent interview decisions remain [[decisions/agent-authors-app-content-by-editing-workspace]] (proposed).

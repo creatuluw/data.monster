@@ -29,6 +29,6 @@ One-shot migration in `src-tauri/src/commands/migration.rs`, hooked into `initia
 
 ## Consequences
 
-- After migration, the content tables in `d8a_monster.duckdb` are transitional/export-only — the `dm/` files are canonical (see [[workspace-files-are-canonical-agents-author-content-by-editi]]).
+- After migration, the content tables in `d8a_monster.duckdb` are transitional/export-only — the `dm/` files are canonical (see [[workspace-files-are-canonical-agents-author]]).
 - Single-doc stores must materialize their file **even when empty**, or verify fails on a fresh workspace (see the single-doc-stores rule).
 - Until the user restarts the dev app, the migration hasn't run — empty lists after a rebuild are the not-yet-migrated state, not data loss.

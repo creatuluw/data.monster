@@ -11,7 +11,7 @@ timestamp: "2026-09-22T13:19:50.603Z"
 
 ## Context
 
-Follow-up to [[decisions/agent-authors-app-content-by-editing-workspace-files-the-wor]]: the user answered Q1 with "A" — files canonical, DuckDB keeps only real data — and added "we need a smart file tree for this to work." A dumb folder dump won't do; the layout is the design (2026-09-22 planning session).
+Follow-up to [[decisions/agent-authors-app-content-by-editing-workspace]]: the user answered Q1 with "A" — files canonical, DuckDB keeps only real data — and added "we need a smart file tree for this to work." A dumb folder dump won't do; the layout is the design (2026-09-22 planning session).
 
 ## The choice (proposed)
 

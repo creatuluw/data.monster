@@ -29,7 +29,7 @@ Ingest previously ran only through the /connect page; the drop folder makes inge
 
 - [dm-watch-command-module](./dm-watch-command-module.md) — the watcher side that emits `dm:error` for failed ingests
 - [dm-store-command-module](./dm-store-command-module.md) — name validation (`valid_name`) shared
-- [workspace-file-first-spec-tasks](./workspace-file-first-spec-tasks.md) — FR-13 of the executable spec (the one "cuttable" piece — it shipped)
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-13 of the executable spec (the one "cuttable" piece — it shipped)
 
 ## Lifecycle
 

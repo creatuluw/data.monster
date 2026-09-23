@@ -14,7 +14,7 @@ timestamp: "2026-09-22T15:29:40.284Z"
 
 ## Why it matters
 
-It operationalizes [workspace-files-are-canonical-agents-author-content-by-editi](./workspace-files-are-canonical-agents-author-content-by-editi.md): agents author content by editing `dm/` files, and this module is what teaches them the file formats. Progressive disclosure (L0 README always-read → L1 INDEX routes intent → L2 self-contained format docs, one annotated example each → L3 exhaustive reference) mirrors this repo's own pi-skills/OKF tooling so token cost stays bounded; line budgets are enforced by `tests/agent-docs.test.ts`.
+It operationalizes [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md): agents author content by editing `dm/` files, and this module is what teaches them the file formats. Progressive disclosure (L0 README always-read → L1 INDEX routes intent → L2 self-contained format docs, one annotated example each → L3 exhaustive reference) mirrors this repo's own pi-skills/OKF tooling so token cost stays bounded; line budgets are enforced by `tests/agent-docs.test.ts`.
 
 ## Details
 
@@ -27,8 +27,8 @@ It operationalizes [workspace-files-are-canonical-agents-author-content-by-editi
 
 - [dm-store-command-module](./dm-store-command-module.md) — path conventions + atomic writes underneath
 - [dm-watch-command-module](./dm-watch-command-module.md) — ignores the docs tree so app-owned writes don't echo
-- [agent-prompts-page-agent](./agent-prompts-page-agent.md) — the /agent page that routes users' agents to these docs
-- [workspace-file-first-spec-tasks](./workspace-file-first-spec-tasks.md) — FR-11 of the executable spec
+- [agent-prompts-page](./agent-prompts-page.md) — the /agent page that routes users' agents to these docs
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-11 of the executable spec
 
 ## Lifecycle
 

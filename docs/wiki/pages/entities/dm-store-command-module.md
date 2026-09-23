@@ -28,7 +28,7 @@ It is the single choke point where "path is identity" becomes real: every read/w
 
 ## Relationships
 
-- [Workspace content tree decision](../../decisions/workspace-content-tree-dm-with-path-is-identity-native-forma.md) — implements its "path is identity, native formats" contract
+- [Workspace content tree decision](../../decisions/workspace-content-tree-dm-with-path-is-identity.md) — implements its "path is identity, native formats" contract
 - [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-1 of the executable spec; `files-002` (remapping pages commands) is its first consumer
 - [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) — the DuckDB-backed storage it will progressively replace for pages/master-items
 - [database-command-module](./database-command-module.md) — sibling DuckDB lifecycle module in the same commands registry

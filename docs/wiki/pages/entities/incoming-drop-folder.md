@@ -26,9 +26,10 @@ Behavior contract:
 ## Relationships
 
 - [pages/entities/dm-watch-command-module](./dm-watch-command-module.md) — hosts the incoming watcher + ingest flusher
-- [decisions/workspace-files-are-canonical-agents-author-content-by-editi](./decisions-workspace-files-are-canonical-agents-author-conten.md) — agents add data by placing files, no commands needed
+- [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md) — agents add data by placing files, no commands needed
 - [agent-docs-system](./agent-docs-system.md) / [agent-prompts-page](./agent-prompts-page.md) — the ingest prompt points agents here as the zero-code path
 
 ## Lifecycle
 
-- First added: files-013, 2026-09-22 — phase D of [pages/artifacts/workspace-file-first-spec-tasks](./workspace-file-first-spec-tasks.md); completed all 13 tasks of the branch
+- First added: files-013, 2026-09-22 — phase D of [pages/artifacts/workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md); completed all 13 tasks of the branch
+- 2026-09-22 (commit `58d713a`): the layout subscribes to this ingest's `dm:changed {kind:"table"}` and refreshes the header table count — its first frontend subscriber (see [the no-subscriber learning](../../learnings/dm-changed-with-no-subscriber-silently-no-ops.md))

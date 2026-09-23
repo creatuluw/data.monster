@@ -8,16 +8,16 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T15:47:07.821Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T05:34:31.539Z.
 
 ## Recent Decisions
 
-- [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through-live-files-.md) — Context (2026-09-22)
+- [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through.md) — Context (2026-09-22)
 - [dm/ migration: write all, verify, then drop — files win](decisions/dm-migration-write-all-verify-then-drop-files-win.md) — Context (2026-09-22)
-- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author-content-by-editi.md) — Context (2026-09-22)
-- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events](decisions/live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) — Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listene… (2026-09-22)
-- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity-native-forma.md) — Context (2026-09-22)
-- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace-files-the-wor.md) — Context (2026-09-22)
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author.md) — Context (2026-09-22)
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events](decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listene… (2026-09-22)
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity.md) — Context (2026-09-22)
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace.md) — Context (2026-09-22)
 - [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switch-reloads.md) — Context (2026-09-22)
 - [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context (2026-09-22)
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
@@ -30,11 +30,11 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T15
 
 ## Active Rules
 
-- [dm/ live-reload wires through dm-events — never a raw listen()](rules/dm-live-reload-wires-through-dm-events-never-a-raw-listen.md) — **The rule**: any view or component that renders `dm/`-managed content subscribes to live changes through `src/lib/dm-events.ts` — `onDmChan… (2026-09-22)
-- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber-corrupt-file-list-.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail lou… (2026-09-22)
+- [dm/ live-reload wires through dm-events — never a raw listen()](rules/dm-live-reload-wires-through-dm-events.md) — **The rule**: any view or component that renders `dm/`-managed content subscribes to live changes through `src/lib/dm-events.ts` — `onDmChan… (2026-09-22)
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail lou… (2026-09-22)
 - [Rust backend tests live in-module via #[cfg(test)]](rules/rust-backend-tests-live-in-module-via-cfg-test.md) — The rule (2026-09-22)
-- [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files-env-references.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writ… (2026-09-22)
-- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point-feature-start-on-p.md) — The rule (2026-09-22)
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writ… (2026-09-22)
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point.md) — The rule (2026-09-22)
 - [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-existing-size-classes.md) — Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers. (2026-09-22)
 - [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
@@ -64,12 +64,12 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T15
 
 ## Recent Learnings — development patterns
 
-- [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops-incoming-inges.md) — Found by the workspace-file-first e2e pass (2026-09-22): the `data/incoming/` ingest correctly emitted `dm:changed {kind:"table"}` via the [… (2026-09-22)
-- [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e-must-navigate-first-t.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into `dm/pages/` **before**… (2026-09-22)
-- [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json-example-the-.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged `password@` inside the `.env` sample URL (`DM_CONN_PRODUCT… (2026-09-22)
-- [A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer](learnings/a-dm-write-that-bypasses-dm-store-atomic-write-reload-loops-.md) — Shipped in `files-007` (2026-09-22): the `dm/` watcher skips any path recorded by `dm_watch::mark_self_write` — and the only caller is `dm_s… (2026-09-22)
-- [duckdb-rs lacks Value: FromSql — typed queries, no generic rows](learnings/duckdb-rs-lacks-value-fromsql-typed-queries-no-generic-rows.md) — Hit in `files-006` while building the `dm_store` export path (2026-09-22): a generic row-deserialization helper over `duckdb-rs` queries is … (2026-09-22)
-- [Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss](learnings/empty-pages-queries-lists-after-a-rust-rebuild-dm-not-yet-mi.md) — **Gotcha (mid-migration window, branch `feature/workspace-file-first`)**: once the Rust backend is rebuilt with the file-backed commands, pa… (2026-09-22)
+- [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — Found by the workspace-file-first e2e pass (2026-09-22): the `data/incoming/` ingest correctly emitted `dm:changed {kind:"table"}` via the [… (2026-09-22)
+- [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into `dm/pages/` **before**… (2026-09-22)
+- [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged `password@` inside the `.env` sample URL (`DM_CONN_PRODUCT… (2026-09-22)
+- [A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer](learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md) — Shipped in `files-007` (2026-09-22): the `dm/` watcher skips any path recorded by `dm_watch::mark_self_write` — and the only caller is `dm_s… (2026-09-22)
+- [duckdb-rs lacks Value: FromSql — typed queries, no generic rows](learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md) — Hit in `files-006` while building the `dm_store` export path (2026-09-22): a generic row-deserialization helper over `duckdb-rs` queries is … (2026-09-22)
+- [Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss](learnings/empty-pages-queries-lists-after-a-rust-rebuild.md) — **Gotcha (mid-migration window, branch `feature/workspace-file-first`)**: once the Rust backend is rebuilt with the file-backed commands, pa… (2026-09-22)
 - [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](learnings/welcome-gate-renders-instead-of-router.md) — In `src/routes/+layout.svelte`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — the… (2026-09-22)
 - [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md) — Symptom (2026-09-22)
 - [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-bundled-lacks-static-json-extension.md) — Symptom (2026-09-22)

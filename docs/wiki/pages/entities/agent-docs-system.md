@@ -17,7 +17,7 @@ Structure is skill-style progressive disclosure, budgets enforced by tests:
 - **L2** `formats/*.md` (≤150 lines each) — one per content format (`page-doc`, `master-items`, `relationships`, `saved-queries`, `connections`), each with a `Read when:` header and one annotated example
 - **L3** `reference/` (exhaustive, e.g. `page-doc-fields.md`) plus `recipes/common-tasks.md` and `concepts.md`
 
-The secret policy is asserted by tests: the `connections` example shows env-var references only, while the `.env` sample intentionally shows a placeholder URL (see [the secret-policy learning](../../learnings/secret-policy-test-targets-the-connections-json-example-the-.md)).
+The secret policy is asserted by tests: the `connections` example shows env-var references only, while the `.env` sample intentionally shows a placeholder URL (see [the secret-policy learning](../../learnings/secret-policy-test-targets-the-connections-json.md)).
 
 ## Details
 
@@ -27,11 +27,11 @@ The secret policy is asserted by tests: the `connections` example shows env-var 
 
 ## Relationships
 
-- [decisions/workspace-files-are-canonical-agents-author-content-by-editi](./decisions-workspace-files-are-canonical-agents-author-conten.md) — the decision this docs layer serves: files are the interface agents author through
+- [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md) — the decision this docs layer serves: files are the interface agents author through
 - [agent-prompts-page](./agent-prompts-page.md) — the human-facing copy-paste prompts that route agents into these docs
 - [incoming-drop-folder](./incoming-drop-folder.md) — the no-docs-needed path: dropping a data file needs no reading at all
-- [rules/secrets-never-live-in-workspace-content-files-env-references](./rules-secrets-never-live-in-workspace-content-files-env-refe.md) — the policy the docs teach and the tests assert
+- [rules/secrets-never-live-in-workspace-content-files](../../rules/secrets-never-live-in-workspace-content-files.md) — the policy the docs teach and the tests assert
 
 ## Lifecycle
 
-- First added: files-011, 2026-09-22 (commit `c122569`) — phase C of [pages/artifacts/workspace-file-first-spec-tasks](./workspace-file-first-spec-tasks.md)
+- First added: files-011, 2026-09-22 (commit `c122569`) — phase C of [pages/artifacts/workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md)

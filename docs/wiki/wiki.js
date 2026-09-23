@@ -12077,6 +12077,47 @@ timestamp: "2026-09-11T21:35:13.611Z"
 ├── tsconfig.json []
 └── vite.config.ts []
 `,
+  "decisions/agent-authors-app-content-by-editing-workspace.md": `---
+type: Decision
+title: Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)
+description: Context
+tags: [agents, workspace, storage, files-as-interface, proposed]
+status: proposed
+supersedes: "[]"
+timestamp: "2026-09-22T13:18:37.993Z"
+---
+
+# Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)
+
+## Context
+
+User steer (2026-09-22 planning session): "I mainly want to use the LLM by creating/editing files in the workspace that will create content, settings, data, connections etc in the frontend/desktop app as a user could do." The agent's native interface is already the filesystem — instead of teaching it an API, **the workspace folder itself becomes the interface**.
+
+This redirects the content-authoring slice of [[agent-surfaces-rust-backend-mcp-and-rest]] (MCP + loopback REST + dm skill/CLI, 2026-09-15, still unshipped/proposed).
+
+Why files beat an API for content authoring:
+
+- **DuckDB's single-writer lock**: no second process can touch the DB while the app runs. Files sidestep that entirely — the agent uses its native read/write/glob tools. No API, no MCP, no token, nothing to install.
+- **The workspace is already half file-based** ([[workspace-portable-bundle-switch-fully-reloads-the-db-and-se]]): settings.json is a file, source data is files under \`data/main/\`. What's left in DuckDB (\`d8a_monster_*\` content tables — pages, master items, relationships, saved queries) is tiny JSON docs nobody ever JOINs — in DuckDB by historical accident, not need ([[pages-master-items-storage-rust]]).
+- **PageDoc is proven agent-authorable**: the Code tab edits exactly the JSON an agent would write, and \`validatePageDoc\` never throws (returns error paths) — a ready-made load-time validation gate ([[chart-page-spec-spec-types-validator]]).
+
+## The choice (proposed — Q1 of the source-of-truth interview pending)
+
+**Option A (recommended): files are canonical.** Move the \`d8a_monster_*\` content tables to JSON files in the workspace; DuckDB keeps only real data (source tables, query results). UI edits → file writes; agent edits → live reload (file watcher + Tauri event). No sync layer exists because there's nothing to sync. New machinery is one watcher + one reload event + **echo suppression** — the app's own writes (including the silent 60s pages auto-save) must not re-trigger the watcher.
+
+## Alternatives considered
+
+- **B — DB canonical, two-way file mirror**: works, but you own a sync engine with conflict rules — the exact complexity the file-world deletes. Rejected.
+- **C — files import-only**: simplest, but agents round-trip on stale state — bad for exactly this use case. Rejected.
+- **D — hybrid**: open; e.g. pages-as-files but master items stay in DB because stable ids are referenced everywhere. Q1 answer will settle this.
+
+## Consequences
+
+- If A lands, the [[pages-master-items-storage-rust]] persistence layer moves from DuckDB tables to files; bad JSON shows in a problems panel at load — nothing bricks.
+- Ops that genuinely need the process (run a query, ingest a dropped CSV, create a Postgres connection) stay a much smaller, later surface — maybe a \`dm\` CLI on a loopback endpoint, maybe nothing at all if a watched \`data/incoming/\` folder covers it.
+- [[agent-surfaces-rust-backend-mcp-and-rest]] stays proposed but **narrowed to ops** — not superseded yet.
+- Status locks when the user answers Q1 (source of truth).
+`,
   "decisions/agent-connection-mcp-embedded-in-rust-backend.md": `---
 type: Decision
 title: "Agent connection: MCP server embedded in the Rust backend"
@@ -12394,6 +12435,74 @@ Deleted entirely: \`echarts-charts/\`, \`observable-charts/\`, \`svelteplot-char
 - \`docs/src/lib/charts/svelteplot/\` reference components also deleted.
 - Future chart-type work goes into both engines in parallel so the comparison stays fair.
 `,
+  "decisions/creation-saves-explicitly-editing-writes-through.md": `---
+type: Decision
+title: Creation saves explicitly, editing writes through live (files-010)
+description: Context
+tags: [workspace-file-first, files-010, write-through, save-semantics, itemeditor]
+status: accepted
+timestamp: "2026-09-22T15:09:28.910Z"
+---
+
+# Creation saves explicitly, editing writes through live (files-010)
+
+## Context
+
+Phase B of workspace-file-first (\`files-010\`) set out to remove every per-document Save button — "nobody presses Save". Scoping first showed only ONE true per-document editor exists: the master-item **ItemEditor** drawer. \`RelationshipEditor\` and the saved-queries/connections UIs were verified **already mutation-immediate** — every add/update/delete backend command writes the \`dm/\` file directly, so there was nothing to convert there.
+
+## The choice
+
+ItemEditor splits on \`draft.id\`:
+
+- **Editing an existing item → live write-through**: a \`$effect\` feeds \`markLocal\` into the shared \`createWriteThrough\` core; every field change debounces (400ms) into \`dm/master-items/<id>.json\`. The close button became **Done** (\`flush()\` + close).
+- **Creation keeps the explicit Save button**: the stable id (\`mi_<table>_<label>\`) is minted at save time. Live write-through during creation would write half-drafted files with empty/unstable ids into the agent-facing \`dm/\` tree.
+
+## Alternatives considered
+
+- Make creation live too — rejected: half-drafted files pollute \`dm/\` and the id isn't stable until table+label settle.
+- Add explicit save buttons to relationships/saved-queries/connections — rejected: they are already file-immediate; a Save button would be a regression.
+
+## Consequences
+
+- Drawer conflicts are **last-write-wins** (documented ceiling): the Reload/Keep-mine banner stays reserved for the pages editor, whose documents are long-lived.
+- This is the convention for any future per-document editor on \`dm/\` files: create = explicit save (id minting), edit = write-through.
+- Shipped at commit \`b9bb4b9\`; vitest 132/132, cargo 115/115, svelte-check clean. Phase B complete (10 of 13 tasks).
+`,
+  "decisions/dm-migration-write-all-verify-then-drop-files-win.md": `---
+type: Decision
+title: "dm/ migration: write all, verify, then drop — files win"
+description: Context
+tags: [workspace-file-first, migration, data-safety, rust]
+status: accepted
+timestamp: "2026-09-22T14:41:49.628Z"
+---
+
+# dm/ migration: write all, verify, then drop — files win
+
+## Context
+
+Phase A of the workspace-file-first feature (\`files-006\`, branch \`feature/workspace-file-first\`) needed to move the four content DuckDB tables (pages, master items, relationships, saved queries — plus connections) out of the internal DB and into \`dm/\` files, without any data-loss window.
+
+## Choice
+
+One-shot migration in \`src-tauri/src/commands/migration.rs\`, hooked into \`initialize_duckdb\`:
+
+- **Export reuses the store functions themselves** (\`dm_store\` / per-domain store_in) — format consistency by construction, no parallel serializer to drift.
+- **Crash-safe ordering**: write ALL files → verify each exists → only then drop the tables. A crash mid-run leaves tables intact; retry is idempotent with **files-win** semantics.
+- **Failure is a warning, not an error** — tables intact means next launch finishes the job.
+- Migration writes the **exact DB slug**, which may differ from \`generate_slug(name)\` after renames.
+
+## Alternatives considered
+
+- Per-table write+drop loop — smaller code but opens a data-loss window if the process dies mid-run.
+- A separate export serializer — risks format drift from what the live stores write.
+
+## Consequences
+
+- After migration, the content tables in \`d8a_monster.duckdb\` are transitional/export-only — the \`dm/\` files are canonical (see [[workspace-files-are-canonical-agents-author]]).
+- Single-doc stores must materialize their file **even when empty**, or verify fails on a fresh workspace (see the single-doc-stores rule).
+- Until the user restarts the dev app, the migration hasn't run — empty lists after a rebuild are the not-yet-migrated state, not data loss.
+`,
   "decisions/drawer-chrome-restyle-reverted-control-kit-stands.md": `---
 type: Decision
 title: Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected
@@ -12494,6 +12603,12 @@ The chrome restyle is **reverted** (revert commit \`974d37e\`, PR #18). The user
 - [Timeout and retry defend against hung IPC](./timeout-and-retry-defend-against-hung-ipc.md) - Context
 - [Workspaces are fully portable — switching reloads data, content, and settings](./workspaces-are-fully-portable-switching-reloads-data-content.md) - Context
 - [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](./workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) - Context
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](./agent-authors-app-content-by-editing-workspace.md) - Context
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](./workspace-content-tree-dm-with-path-is-identity.md) - Context
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](./live-reload-mechanics-notify-watcher-validate-dm.md) - Context
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](./workspace-files-are-canonical-agents-author.md) - Context
+- [dm/ migration: write all, verify, then drop — files win](./dm-migration-write-all-verify-then-drop-files-win.md) - Context
+- [Creation saves explicitly, editing writes through live (files-010)](./creation-saves-explicitly-editing-writes-through.md) - Context
 `,
   "decisions/labs-catalog-placeholder-first.md": `---
 type: Decision
@@ -12996,6 +13111,50 @@ Open fork: when a user picks a **raw field from a linked table** (not the source
 ## Rationale
 
 The auto-JOIN machinery already handled master items from linked tables; extending \`involvedTables\` to raw entries was a smaller diff than inspector-enforced creation, and keeps the library curated rather than a dump of every picked field.
+`,
+  "decisions/live-reload-mechanics-notify-watcher-validate-dm.md": `---
+type: Decision
+title: "Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events"
+description: Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners shipped as files-008 (2026-09-22): dm-events bus + six views live-reload; clobber banner shipped as files-009 (write-through core).
+tags: [agents, workspace, live-reload, file-watcher, tauri-events, watcher-shipped, live-reload-shipped]
+status: accepted
+timestamp: "2026-09-22T13:21:28.681Z"
+---
+
+# Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events
+
+## Context
+
+Q3 of the agent-authored-workspace interview (2026-09-22), after conventions locked. With [[decisions/agent-authors-app-content-by-editing-workspace]] the agent writes workspace files (e.g. \`dm/pages/revenue.json\`) and the app must react — this is what makes it feel alive ("watch the agent build the page") vs. batch import. All the pieces already exist: Tauri's event system, the \`notify\` crate in Rust, and the earlier \`refresh_ui\` idea from the MCP research — delivered here by filesystem instead of API.
+
+## The flow (as shipped in files-007)
+
+\`\`\`
+agent writes dm/pages/revenue.json
+  → notify watcher fires (debounced ~300ms — files settle across multiple writes)
+  → Rust validates: parse + validatePageDoc (validator never throws)
+  → valid:   emit Tauri event "dm:changed" {kind, slug} → open views reload that content live
+  → invalid: emit Tauri event "dm:error" {path, errors} → problems surface in-app, nothing breaks
+\`\`\`
+
+## Two traps designed around (apply regardless of watcher depth)
+
+- **Echo suppression** — the app writes the same files (pages editor auto-saves every 60s, silently — see [[learnings/pages-editor-auto-saves-silently-every-60s-no-ui]]). The watcher must ignore the app's own writes or every save triggers a reload loop. Standard fix: Rust tracks "paths I just wrote" with a timestamp window.
+- **The clobber** — agent rewrites a file the user has open with unsaved edits. Silent last-write-wins would eat someone's work. VS Code's answer: a "file changed on disk — Reload / Keep mine" banner on the affected editor. Explicit, cheap, no merge machinery.
+
+## Alternatives (Q3 — A chosen, shipped)
+
+- **A. Full watcher** (lean) — \`notify\` crate, live reload of open views, error events for bad files. ~80 lines of Rust + one small dep; the difference between "the agent did stuff" and "watch the agent do stuff".
+- **B. Reload on focus** — no watcher; content re-reads on window focus/refresh. Zero deps, but no live view. The ponytail fallback if the dep is deferred.
+- **C. Hybrid** — watcher for pages only (where live-building matters), focus-reload for master items/saved queries.
+
+## Shipped (2026-09-22, files-007)
+
+Approach A landed as \`files-007\` (commit \`72bb92e\`): notify recursive watch on \`dm/\` → 300ms debounced flusher (removals win over modifies in-window) → echo check → pure \`classify\` → \`dm:changed {kind, name, removed}\` / \`dm:error {path, reason}\`. Echo suppression shipped with the writer, not the watcher: \`dm_store::atomic_write\` marks destination paths (600ms registry window ≥ 400ms write debounce) — see [dm_watch command module](../pages/entities/dm-watch-command-module.md). The frontend half shipped as \`files-008\` (commit \`d7f0fc7\`): \`src/lib/dm-events.ts\` bus (per-kind \`onDmChanged\`/\`onDmError\`, pure \`routeDmEvent\` core, idempotent \`initDmEvents\` in the root layout) live-reloads six views through their existing refresh functions; \`dm:error\` surfaces via the global error banner + console. See [dm-events frontend module](../pages/entities/dm-events-frontend-module.md). Still pending: the \`files-009\` write-through editor with the Reload/Keep-mine clobber banner.
+## Consequences
+
+- Whatever depth lands, echo suppression and the clobber banner are required either way.
+- Status locks when the user answers Q3; parent interview decisions remain [[decisions/agent-authors-app-content-by-editing-workspace]] (proposed).
 `,
   "decisions/master-item-library-table-binding-q6.md": `---
 type: Decision
@@ -14426,6 +14585,106 @@ User preference. Syne is on Google Fonts as a true variable font covering 400–
 - Tour HTML captures embed the Google-Fonts @import → tours need recapture after this swap (see [[tour-html-captures-embed-google-fonts-import]]).
 - Rule [[inter-for-ui-text-geist-mono-only-for-data-detail]] updated to Syne display / Inter body / Geist Mono data.
 `,
+  "decisions/workspace-content-tree-dm-with-path-is-identity.md": `---
+type: Decision
+title: "Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)"
+description: Context
+tags: [agents, workspace, file-tree, storage, path-is-identity, proposed]
+status: proposed
+timestamp: "2026-09-22T13:19:50.603Z"
+---
+
+# Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)
+
+## Context
+
+Follow-up to [[decisions/agent-authors-app-content-by-editing-workspace]]: the user answered Q1 with "A" — files canonical, DuckDB keeps only real data — and added "we need a smart file tree for this to work." A dumb folder dump won't do; the layout is the design (2026-09-22 planning session).
+
+## The choice (proposed)
+
+The workspace gains a \`dm/\` content tree the app reads by convention, and agents author directly:
+
+\`\`\`
+my-workspace/
+├── d8a_monster.duckdb          # source tables + query results ONLY
+├── settings.json               # existing — LLM config, connections
+├── README.md                   # auto-generated: documents this tree for humans AND agents
+├── data/main/                  # existing — ingested source files
+└── dm/
+    ├── pages/revenue.json      # filename = slug → route /pages/revenue
+    ├── master-items/measures/total_revenue.json   # filename = stable ref id
+    ├── master-items/dimensions/region.json
+    ├── relationships.json      # whole graph as one doc
+    ├── saved-queries/top_customers.sql  # native .sql, not JSON-escaped
+    └── drafts/                 # agent scratch space — app ignores everything here
+\`\`\`
+
+Three principles that make it "smart":
+
+- **Path is identity.** Slug = filename, master-item ref = filename, query name = filename. Kills the whole id-drift bug class from the E2E report (\`tableName\`/\`table\` mismatches — see [[pages/learnings/ref-based-master-items-tablename-mismatch-broke]]); rename = file rename. \`/pages/revenue\` and \`dm/pages/revenue.json\` are the same thing — an agent that can \`ls\` already knows the app's content map.
+- **Native formats.** SQL lives in \`.sql\` files — agents write brilliant SQL and terrible JSON-escaped SQL. Other files stay JSON matching existing \`PageDoc\`/master-item shapes, so \`validatePageDoc\` validates them unchanged ([[pages/entities/chart-page-spec-spec-types-validator]]).
+- **Self-describing.** The generated \`README.md\` is the agent's onboarding — agents read READMEs unprompted, so conventions transfer with zero install/config. This replaces most of what the MCP/\`dm\` skill ([[decisions/agent-surfaces-rust-backend-mcp-and-rest]]) was going to do.
+
+Cheap by construction: the app reads only its convention paths; unknown files (agent notes, scratch, datasets) are ignored, so agents can drop anything without breaking the app.
+
+## Alternatives considered (Q2: what does "smart file tree" mean?)
+
+- **A — layout conventions** (path-is-identity, README-for-agents, native formats): what is proposed above.
+- **B — in-app file-tree UI**: a VS Code-style workspace explorer so the user watches files appear live as the agent works, and clicks one to open it in the app.
+- **C — both**: conventions now, explorer as the visible half of the same feature.
+- **D — something else**: the user's answer settles this. Status locks when Q2 is answered.
+
+## Consequences
+
+- One-time migration: Rust exports the \`d8a_monster_*\` tables ([[pages/entities/pages-master-items-storage-rust]]) to files, then drops them — write-all-first, drop-only-if-all-succeeded, so a crash leaves tables intact.
+- Labels and field-functions follow the same files pattern later.
+- Live reload still needs the file watcher + Tauri event + echo suppression from the parent decision (the app's own writes, including the silent 60s pages auto-save, must not re-trigger the watcher).
+`,
+  "decisions/workspace-files-are-canonical-agents-author.md": `---
+type: Decision
+title: Workspace files are canonical — agents author content by editing the dm/ tree in realtime
+description: Context
+tags: [agents, workspace, file-first, architecture, dm-tree, watcher]
+status: accepted
+supersedes: agent-connection-mcp-embedded-in-rust-backend
+timestamp: "2026-09-22T13:22:24.193Z"
+---
+
+# Workspace files are canonical — agents author content by editing the dm/ tree in realtime
+
+## Context
+
+User steer (2026-09-22, session interview): "I mainly want to use the LLM by creating/editing files in the workspace that will create content, settings, data, connections etc. in the app." This changes the 2026-09-15 direction ([[agent-connection-mcp-embedded-in-rust-backend]], [[agent-surfaces-rust-backend-mcp-and-rest]], both still \`proposed\`, never built): instead of teaching agents to call APIs, the workspace folder itself becomes the agent interface — coding agents already have native file tools.
+
+## The choice (user-locked)
+
+**Workspace files are canonical for app content; DuckDB keeps only real data.** Four sub-decisions from the interview:
+
+1. **Files are the source of truth** (option A) — \`d8a_monster_pages/items/relationships\` (+ saved queries) move from DuckDB tables to JSON/SQL files under \`dm/\`. Path is identity: slug = filename, master-item ref = filename, query name = filename. README.md in the workspace documents the tree for humans AND agents (self-describing, replaces most of the planned MCP/dm-skill onboarding).
+2. **Layout conventions** — \`dm/pages/<slug>.json\`, \`dm/master-items/{measures,dimensions}/<ref>.json\`, \`dm/relationships.json\`, \`dm/saved-queries/<name>.sql\` (native .sql, not JSON-escaped), \`dm/drafts/\` ignored by the app. App only reads convention paths → agent can scribble anywhere safely.
+3. **Full watcher** — \`notify\` crate, debounced, validate (validatePageDoc etc., never throws) → \`dm:changed\` / \`dm:error\` Tauri events → open views hot-reload, problems panel maps errors to file paths.
+4. **Realtime both ways** — editor changes write through to files (debounced ~400ms, atomic temp+rename); save button and the 60s auto-save are DELETED (file IS the save; no unsaved-changes state exists). Echo suppression: Rust just-wrote set with window ≥ write debounce. Conflicts: VS Code model — on-disk change + local dirty → "Reload / Keep mine" banner; no merge machinery.
+5. **All content types in one build** (user: "no, do all" — no content-type phasing): pages, master items, relationships, saved queries, AND new \`dm/connections.json\` persistence (connections were never persisted before).
+6. **Agent docs are part of the system**: curated agent-facing docs ship in the workspace — \`README.md\` (L0 entry, ≤60 lines) + \`dm/docs/\` with skill-style PROGRESSIVE DISCLOSURE: \`INDEX.md\` (L1 wayfinding: intent → file → format doc, ≤100 lines) → \`formats/*.md\` (L2, \`Read when:\` header + one annotated minimal example, ≤150 lines) → \`reference/\` (L3 exhaustive). App-owned, embedded via \`include_str!\`, regenerated when \`dm/docs/.version\` ≠ app version. Line budgets enforced by test.
+7. **\`/agent\` prompts page**: new route where users copy-paste starter prompts into their coding agent; every prompt mandates README→INDEX-first reading; collaborative prompts instruct interview-style work (one question at a time). Rendered via \`marked\` + \`.prose-chat\`.
+8. **Workspaces are git-version-controlled-able — secrets never in content files** (user correction 2026-09-22, wiki rule \`secrets-never-live-in-workspace-content-files\`): my plaintext-password call was overruled. \`.env\` (workspace root, gitignored, app-generated when missing) is the ONLY secret home (\`LLM_API_KEY\`, \`DM_CONN_<NAME>_PASSWORD\`); \`connections.json\` carries \`passwordEnv\` refs; \`settings.json\` stops persisting \`llmApiKey\`; app generates \`.gitignore\` (\`.env\`, \`*.duckdb\`, \`*.duckdb.wal\`) without overwriting; \`dm/\` serialization is deterministic with no volatile timestamps (clean diffs). Agents are told to write env REFERENCES and let the user place secrets.
+
+## Alternatives considered
+
+- **MCP server + REST in Rust** (prior proposal) — deferred, not dead: DuckDB's single-writer lock means OPS (run query, ingest a dropped CSV) still need the app process; a tiny loopback REST + \`dm\` CLI remains the future answer for those. But content authoring needs none of it.
+- **DB canonical + two-way file sync** — rejected: you own a sync engine with conflict rules; the file-world deletes the problem.
+- **Import-only files** — rejected: agents round-trip on stale state.
+- **Reload-on-focus instead of watcher** — fallback if the notify dep is unwanted; loses the live-building experience.
+
+## Consequences
+
+- One-time migration: export tables → files (write-all-first, drop-only-if-all-succeeded, crash-safe), then drop the content tables.
+- Editor becomes a live view over the file — enables human↔agent pair-editing of the same document.
+- Atomic writes required in BOTH app directions so agents never read partial files.
+- Single build, no content-type phasing (user-locked). Executable spec: \`.specs/workspace-file-first/spec.md\` (FR-1..13; FR-13 \`data/incoming/\` drop folder is the one cuttable piece).
+- Master-item filename = item \`id\` (charts reference \`{ref: id}\`); \`kind\` picks the measures/dimensions subfolder; \`createdAt/updatedAt\` dropped (file mtime replaces).
+- Validator stays single-sourced in TS (\`validatePageDoc\`); Rust does parse-level shape checks only (enough to classify watcher events).
+`,
   "decisions/workspaces-are-fully-portable-switch-reloads.md": `---
 type: Decision
 title: Workspaces are fully portable — switching reloads data, content, and settings
@@ -14514,7 +14773,7 @@ okf_version: "0.1"
 <!-- wiki-nav:start -->
 ## Navigation map
 
-Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 186 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T08:01:22.458Z.
+Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 205 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T13:16:35.397Z.
 
 Each entry: [title](concept-id.md) — description. Links are clickable in /wiki; pass the concept-id (link target minus .md) to wiki_get.
 
@@ -14534,6 +14793,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Central chart component design](pages/artifacts/central-chart-component-design.md) — What it documents
 - [Central-charts spec &amp; task list](pages/artifacts/central-charts-spec-amp-task-list.md) — The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
 - [Central charts spec & tasks](pages/artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [Design-component reference set (docs/design/components/)](pages/artifacts/design-component-reference-set.md) — 40 standalone per-component design-reference HTML pages (Button, Modal, Table, Searchahead, …) — static explorations in their own token set, not app components.
 - [Design-system reference doc (docs/design-system-data-monster.html)](pages/artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 - [Feature skill catalog (docs/features/)](pages/artifacts/feature-skill-catalog-docs-features.md) — What it is
 - [LLM agent connection research report](pages/artifacts/llm-agent-connection-research-report.md) — Fractal-research report on how to connect any LLM / coding agent / harness to data.monster and let it operate the app — add data & content, run analysis. Produc
@@ -14541,6 +14801,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [LLM & Sensitive Data White Paper](pages/artifacts/llm-sensitive-data-white-paper.md) — Dutch-language white paper ("LLM's & Gevoelige Data") condensing the LLM privacy research into a single self-contained HTML file designed for mobile reading.
 - [LLM Sensitive-Data White Paper — Finance Edition](pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md) — Non-technical (finance-audience) edition of the LLM sensitive-data white paper, in Dutch. Fully rewritten 2026-09-12 around one spine: *"wie traint er mee, en w
 - [OSS value driver trees research report](pages/artifacts/oss-value-driver-trees-research-report.md) — What it documents
+- [Pages E2E feedback report](pages/artifacts/pages-e2e-feedback-report.md) — E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r
 - [App tab system (virtual tabs + bottom tab bar)](pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md) — The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra
 - [BarChart component](pages/entities/barchart-component.md) — What is it?
 - [central-api (frontend invoke client)](pages/entities/central-api-frontend-invoke-client.md) — What is it?
@@ -14567,6 +14828,8 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Shared controls kit (charts/controls)](pages/entities/shared-controls-kit-charts-controls.md) — The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
 - [SkeletonSetup component](pages/entities/skeletonsetup-component.md) — The in-chart setup card rendered inside a \`ChartCard\` when \`needsSetup(chart)\` is true: a card button per unmet role opens the RolePickerModal (searchable picks over ⭐ master items | source-table fields | linked-table fields, + New) — the common configuration path never opens the config drawer.
 - [.wiki_ignore staleness policy](pages/entities/wiki-ignore-staleness-policy.md) — Project-level additive ignore config layered on the wiki-context extension's built-in ignores.
+- [Workspace command module (Rust)](pages/entities/workspace-command-module-rust.md) — The Rust command module owning workspace identity — picking, persisting (workspace.json + open history), and resolving the active workspace folder.
+- [Workspaces page (/workspaces)](pages/entities/workspaces-page-workspaces.md) — Dedicated workspace-switcher page at /workspaces — header folder button lands here; every workspace ever opened shows as a chip, and a chip click runs the full portable-workspace reload.
 - [Page Templates](pages/TEMPLATES.md) — Reference templates for Concept, Entity, and Artifact pages. Follow these when using wiki_note_page.
 
 ### Decisions
@@ -14617,6 +14880,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context
 - [SveltePlot is the sole chart engine — all legacy chart libraries removed](decisions/svelteplot-sole-chart-engine.md) — Context
 - [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context
+- [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context
 - [Two-surface report pages: code mode edits a declarative spec, not Svelte source](decisions/two-surface-report-page-format.md) — Q3 LOCKED (A): the report page is one declarative spec document edited by both surfaces — parity by construction. C (registry escape hatch) stays a future growth path.
 - [Typography: Bricolage Grotesque display — Poppins dropped](decisions/typography-bricolage-grotesque-display.md) — Context
 - [Typography: Calluna headings, Inter body, Geist Mono data — Squada One/Libre Baskerville dropped](decisions/typography-calluna-headings-inter-body.md) — Context
@@ -14630,6 +14894,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Typography: Space Grotesk display, Bricolage dropped](decisions/typography-space-grotesk-display-bricolage-dropped.md) — Context
 - [Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped](decisions/typography-squada-one-headings-libre-baskerville.md) — Context (superseded by [[typography-calluna-headings-inter-body]])
 - [Typography: Syne display — Space Grotesk dropped](decisions/typography-syne-display-space-grotesk-dropped.md) — Typography: Syne display — Space Grotesk dropped
+- [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switch-reloads.md) — Context
 
 ### Rules
 
@@ -14652,6 +14917,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css
 - [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-from-global-rule-app-css.md) — Guideline
 - [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with \`marked\` (already a dependency) and wrap the output in the \`.prose-chat\` cl
+- [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-existing-size-classes.md) — Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers.
 - [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-in-todos.md) — Guideline
 
@@ -14664,6 +14930,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via 
 - [CDP e2e cannot synthesize trusted clicks on svelteplot marks](learnings/cdp-cannot-synthesize-clicks-on-svelteplot-marks.md) — Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs
 - [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](learnings/cdp-context-menu-e2e-real-right-click-dispatch-and.md) — Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmous
+- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-after-source-save-hmr-race.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223).
 - [CDP form probes must be container-scoped — shared placeholders between list rows and create forms cause silent wrong-input traps](learnings/cdp-form-probes-must-be-container-scoped-shared.md) — Discovered 2026-09-17 while CDP-testing master-item creation (page editor measure form).
 - [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](learnings/cdp-gate-assertions-need-settle-time-after-doc.md) — Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):
 - [CDP probe \`$\` is querySelector — indexing it silently kills clicks](learnings/cdp-probe-is-queryselector-indexing-it-silently.md) — Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7).
@@ -14671,28 +14938,38 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Central-charts work lives on feature/central-charts — master is held at a restore point](learnings/central-charts-work-lives-on-feature-branch.md) — Discovered 2026-09-16 when the user reported the \`/pages\` work as "completely lost."
 - [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](learnings/chart-authoring-two-surfaces-serializable-spec.md) — Requirement (user-stated, 2026-09-15 interview)
 - [Chart segment selection is parent-held {dimension, value} transient state](learnings/chart-segment-selection-parent-held-state.md) — Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
+- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md) — Symptom
 - [Component spawn grows too-small explicit-height rows to 320px minimum](learnings/component-spawn-grows-too-small-explicit-height.md) — Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8).
 - ["Couldn't find callback id" Tauri warning is a benign reload artifact](learnings/couldn-t-find-callback-id-tauri-warning.md) — \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is benign. It appears when 
 - [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-probes.md) — Symptom: a CDP DOM probe checking for the label \`"Rows"\` failed on the Page
 - [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](learnings/d2-diagrams-not-interactive.md) — Question
+- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\` never matched — the
 - [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with \`--remote-debugging-port\` and drive 
+- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-windows.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
+- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-bundled-lacks-static-json-extension.md) — Symptom
 - [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
+- [ExprEditor suggestions are computed locally](learnings/expreditor-suggestions-are-computed-locally.md) — While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it aga
 - [Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern](learnings/extending-docs-features-requires-add-evals.md) — Constraints of add-evals-to-skill (hit while building [[feature-skill-catalog-docs-features]])
 - [get_settings merges env/.env over settings.json — env is source of truth](learnings/get-settings-merges-env-env-over.md) — Discovered while wiring \`.env\` into the app (2026-09-11).
 - [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](learnings/hard-reload-storms-deadlock-duckdb-in-process.md) — Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
+- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](learnings/initialize-duckdb-no-ops-while-initialized.md) — Fact
 - [kees.pippeloi.nl reference ports cleanly — same svelteplot 0.14.2 + Tailwind 4](learnings/kees-reference-ports-cleanly.md) — \`E:\\kees.pippeloi.nl\` (esp. \`src/routes/work/high-level\`) is the reference project for chart-type components being ported into Labs.
 - [Labs bar-chart "hang" is an infinite vite reconnect/reload loop, not a component bug](learnings/labs-hang-vite-reload-loop.md) — Reported 2026-09-14: clicking the bar chart card in /labs hung the page (heatmap fine). Root cause found same day: vitest import reachable from src via $lib/charts tripped vite's dep-optimizer, amplified by tailwind re-emitting app.css on any file churn. Fixed in PR #3 (commit 9f18749).
 - [Library code entries are keyed by full repo paths](learnings/library-code-entries-are-keyed-by-full-repo-paths.md) — What
 - [The /library vs /pages config-drawer difference is scope, not components](learnings/library-vs-pages-config-drawer-scope.md) — Symptom
 - [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](learnings/llm-api-data-retention-no-training-no.md) — Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directly relevant to Data M
 - [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](learnings/llm-provider-retention-part-2-kimi-z-ai.md) — Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary docs. Extends [[llm
+- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](learnings/local-checkout-is-the-running-dev-app.md) — Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #20, session artifacts
 - [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](learnings/local-llm-blank-screen-delay-was-hidden.md) — Symptom
+- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](learnings/minimized-occluded-webview2-throttles-page.md) — Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md).
 - [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique docu
+- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-flags.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix).
 - [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: \`.archive/\` (entire superseded old app + chart-engine trials) and \`src-tauri/target/\` (Rust build artif
 - [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](learnings/normalizepagedoc-field-whitelist.md) — Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr
 - [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a block carries a **block-level \`title\`** *and* (for chart blocks) **\`chart.title\` / \`
 - [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t
 - [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
+- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-mismatch-broke.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
 - [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
 - [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal.
 - [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section).
@@ -14704,7 +14981,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Stale vite module graph can survive reloads — only a full app restart clears it](learnings/stale-vite-module-graph-can-survive-reloads-only-a.md) — Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix 
 - [Stale-wiki file floods — only noise if an ignore pattern actually matches the tree](learnings/stale-wiki-file-floods-are-ignored.md) — Symptom and root cause — src-tauri/target leaked through, fixed via .wiki_ignore plus extension BUILTIN_IGNORES.
 - [Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash](learnings/stash-pop-silent-conflict-recovery.md) — Discovered 2026-09-14 while committing session work (PR #3).
-- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-stale-after-replacestate.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
 - [svelteplot band axis crashes on empty aliases (duplicate key)](learnings/svelteplot-band-axis-empty-aliases-crash.md) — Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
 - [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](learnings/svelteplot-barx-bar-y-orientation.md) — Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
 - [SveltePlot internals: match datums by position, not identity; guard empty data](learnings/svelteplot-datum-identity-empty-guard.md) — Two engine-level gotchas discovered while porting [[heatmap-component]] (2026-09-14), from the explanation of the SveltePlot 0.14.2 implementation. They apply t
@@ -14715,6 +14992,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Tour HTML captures embed the Google-Fonts @import — font changes require recapturing tours](learnings/tour-html-captures-embed-google-fonts-import.md) — Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
 - [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](learnings/visibility-probes-walk-ancestor-opacity-chain.md) — CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15):
 - [WebView2 CDP gotchas: env-var flag, stale browser process, dual-stack vite](learnings/webview2-cdp-gotchas-env-var-flag-stale.md) — Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] — four gotchas hit while verifying the 2026-09-12 redesign:
+- [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](learnings/welcome-gate-renders-instead-of-router.md) — In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — there is no router-rend
 - [wiki_note_page wikilinks resolve ./-relative to the page's own folder — cross-folder links need explicit paths](learnings/wiki-note-page-wikilinks-resolve-relative.md) — Discovered 2026-09-16 while writing the [[feature-skill-catalog-docs-features]] artifact page.
 - [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](learnings/z-ai-401-code-1000-authentication.md) — Symptom
 - [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-c
@@ -14732,6 +15010,22 @@ An [OKF](https://github.com/earendil-works/okf) bundle documenting this project.
 - [File tree](./architecture/file-tree.md) — Complete project file listing
 - [Glossary](./glossary.md) — Key terms for this project
 - [Pages](./pages/) — Concepts, entities, and artifacts of this project
+`,
+  "learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md": `---
+type: Learning
+title: "A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer"
+description: "Shipped in \`files-007\` (2026-09-22): the \`dm/\` watcher skips any path recorded by \`dm_watch::mark_self_write\` — and the only caller is \`dm_store::atomic_write\`,"
+tags: [workspace-file-first, dm-watch, echo-suppression, gotcha, rust]
+timestamp: "2026-09-22T14:53:30.985Z"
+---
+
+# A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer
+
+Shipped in \`files-007\` (2026-09-22): the \`dm/\` watcher skips any path recorded by \`dm_watch::mark_self_write\` — and the only caller is \`dm_store::atomic_write\`, which marks the destination right after a successful rename. Registry window 600ms ≥ the pages editor's 400ms write debounce, so self-writes can never echo back.
+
+**Consequence**: any new code path that writes files under \`dm/\` MUST go through \`dm_store::atomic_write\`. A bare \`std::fs::write\` bypasses the registry, and the watcher classifies the app's own write as an external change — a spurious \`dm:changed\` reload loop or \`dm:error\`.
+
+Debounce semantics worth knowing when touching the flusher: within one 300ms window, a removal beats a modify for the same path (\`pending.entry().and_modify(e.1 = e.1 || removed)\`); paths still inside the window are carried to the next tick, not dropped.
 `,
   "learnings/apparent-ui-bug-stale-hmr-webview.md": `---
 type: Learning
@@ -14816,10 +15110,16 @@ Writing large Svelte files via a bash heredoc left literal \`U+FFFD\` replacemen
 
 Later, a file that looked like it contained \`U+FFFD\` actually contained a **proper em-dash** — the terminal just can't render it. "Fixing" it would have corrupted a good file.
 
+## Symptom 3 - backslashes eaten through heredoc chains (2026-09-22, files-009)
+
+Editing a tab-indented Svelte file via bash replace chains: anchors written with \`	\` never matched (the file uses tab indentation), and \`\\t\` sent through the heredoc chain arrived as a *real* tab - a backslash gets eaten somewhere in the chain.
+
 ## Rules
 
 - When a file's content contains non-ASCII (en/em-dashes, arrows), don't write it through an inline heredoc — write the script to a file first, or use python.
 - To patch existing mojibake, use python with explicit escapes (\`\\ufffd\`) so the match can't be mangled by the shell.
+- Patching tab-indented files? Tabs never survive typing into a heredoc - match with explicit \`	\` escapes and assert each replacement's count (expect 1) so a silent miss cannot pass.
+- Never send literal backslash escapes through a heredoc chain (\`\\t\` can arrive as a real tab). Build the replacement from placeholders in the script itself (e.g. \`TAB = chr(9)\`) so the shell never sees a backslash.
 - Before "fixing" a suspected bad character, check the actual bytes (e.g. python \`open(..., encoding='utf-8').read()\` + \`ord()\`) — terminal rendering is not evidence of corruption.
 `,
   "learnings/calluna-not-on-google-fonts-css2-drops-silently.md": `---
@@ -15262,6 +15562,34 @@ Consequences:
 
 Same session also hit the sibling trap: a nav probe matched the "Data Monster" brand link (\`href='/'\`) instead of the real nav item — scope link probes by unique href, not just text. (Same family as [[cdp-form-probes-must-be-container-scoped-shared]].)
 `,
+  "learnings/dm-changed-with-no-subscriber-silently-no-ops.md": `---
+type: Learning
+title: "dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners"
+description: "Found by the workspace-file-first e2e pass (2026-09-22): the \`data/incoming/\` ingest correctly emitted \`dm:changed {kind:"table"}\` via the [[dm-watch-command-mo"
+tags: [dm-events, live-reload, tauri-events, e2e]
+timestamp: "2026-09-22T15:47:07.718Z"
+---
+
+# dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners
+
+Found by the workspace-file-first e2e pass (2026-09-22): the \`data/incoming/\` ingest correctly emitted \`dm:changed {kind:"table"}\` via the [[dm-watch-command-module]] watcher, but **no frontend view subscribed to that kind** — the header table count stayed stale until a manual reload. Fixed in commit \`58d713a\`: the layout now refreshes \`app.tables\` on that event (6→7→8 live across two drops).
+
+**The invariant**: a \`dm:changed\` kind with zero subscribers is a silent no-op — no error, no warning, the event just evaporates. Emitting a new kind (or adding a UI surface that displays dm-derived state) must include wiring its frontend listener through [[dm-events-frontend-module]] in the same change. This is the mirror of the emit-side rule ("dm/ live-reload wires through dm-events — never a raw listen()"): the bus is only as complete as its subscribers.
+`,
+  "learnings/dm-live-reload-events-don-t-replay-e2e.md": `---
+type: Learning
+title: dm live-reload events don't replay — e2e must navigate first, then write the file
+description: "Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into \`dm/pages/\` **before** navigating to /page"
+tags: [e2e, cdp, dm-events, testing-patterns]
+timestamp: "2026-09-22T15:47:07.718Z"
+---
+
+# dm live-reload events don't replay — e2e must navigate first, then write the file
+
+Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into \`dm/pages/\` **before** navigating to /pages produced no problem banner — the \`dm:error\` event fired and was gone before any view subscribed. Navigating to the page **first**, then writing the broken file, made the banner appear.
+
+\`dm:changed\` / \`dm:error\` are fire-and-forget Tauri events: they are delivered only to currently-subscribed listeners, never replayed. When e2e-testing any event-driven surface (error banners, live-reload flashes), the ordering is always **navigate/subscribe → then mutate the file**. A missed banner in this test shape means a test-ordering bug, not a broken feature — re-check the sequence before debugging the app.
+`,
   "learnings/drive-data-monster-s-real-ui-over-cdp.md": `---
 type: Learning
 title: Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging
@@ -15341,6 +15669,38 @@ Also deleted the downloaded DLL (\`~/.duckdb/extensions/v1.5.2/windows_amd64/jso
 Any \`read_*\` table function from a non-core extension (json, postgres_scanner, httpfs…) will auto-download-and-dynamically-load on first use. Prefer the crate's static feature for extensions the app needs at its core. \`postgres.rs\` deliberately does \`INSTALL postgres; LOAD postgres\` (dynamic by design) — if Postgres ingest ever heap-corrupts the same way, this is why.
 
 Verified: DuckDB-rs 1.10502.0 = DuckDB v1.5.2 bundled. The version scheme \`1.MAJOR_MINOR_PATCH.x\` started at DuckDB v1.5.0.
+`,
+  "learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md": `---
+type: Learning
+title: "duckdb-rs lacks Value: FromSql — typed queries, no generic rows"
+description: "Hit in \`files-006\` while building the \`dm_store\` export path (2026-09-22): a generic row-deserialization helper over \`duckdb-rs\` queries is impossible because t"
+tags: [rust, duckdb, backend, gotcha]
+timestamp: "2026-09-22T14:41:49.629Z"
+---
+
+# duckdb-rs lacks Value: FromSql — typed queries, no generic rows
+
+Hit in \`files-006\` while building the \`dm_store\` export path (2026-09-22): a generic row-deserialization helper over \`duckdb-rs\` queries is impossible because the crate does not implement \`FromSql\` for its \`Value\` type — so "map any row generically" won't compile.
+
+**Consequence**: write boring, explicitly-typed queries per table (query → read typed columns off the row) instead of reaching for a generic row→struct mapper. The deleted generic helper was the second attempt; per-table typed queries passed the suite first try.
+
+**Applies to**: all Rust backend code reading DuckDB rows (\`src-tauri/src/commands/*\`).
+`,
+  "learnings/empty-pages-queries-lists-after-a-rust-rebuild.md": `---
+type: Learning
+title: Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss
+description: "**Gotcha (mid-migration window, branch \`feature/workspace-file-first\`)**: once the Rust backend is rebuilt with the file-backed commands, pages/saved-queries li"
+tags: [workspace-file-first, migration, gotcha, rust, dm-store]
+timestamp: "2026-09-22T14:32:21.838Z"
+---
+
+# Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss
+
+**Gotcha (mid-migration window, branch \`feature/workspace-file-first\`)**: once the Rust backend is rebuilt with the file-backed commands, pages/saved-queries lists read from \`<workspace>\\dm\\\` — which is **empty until the \`files-006\` migration runs** (one-time export of pages/items/relationships/queries out of \`d8a_monster.duckdb\` into the \`dm/\` tree on first launch of the new backend).
+
+So if the dev app auto-rebuilds before that migration lands, lists show **empty** and it looks like data loss. It is not: the content is still in the workspace DuckDB file (\`E:\\workspace\\d8a_monster.duckdb\`). The fix is running \`files-006\` — not hunting for lost data or restoring anything.
+
+**Rule of thumb**: during this feature branch, empty content lists after a Rust rebuild → check whether \`dm/\` has files and whether \`files-006\` has run, before assuming a bug.
 `,
   "learnings/evidence-chart-architecture.md": `---
 type: Learning
@@ -15486,68 +15846,7 @@ The same "resource deadlock would occur" error has a **second, distinct cause**:
 `,
   "learnings/index.md": `# Learnings
 
-- ["Couldn't find callback id" Tauri warning is a benign reload artifact](./couldn-t-find-callback-id-tauri-warning-is-a-benign-reload-a.md) - \`[TAURI] Couldn't find callback id <n>. This might happen when the app is reloaded while Rust is running an asynchronous operation.\` is benign. It appears when
-- [LLM API data retention: "no training" ≠ "no storage"; local models are ZDR by construction](./llm-api-data-retention-no-training-no-storage-local-models-a.md) - Research verified against primary docs (2026-09-11) on how the 6–8 major LLM API endpoints handle data retention and sensitive data. Directly relevant to Data M
-- [LLM provider retention, part 2: Kimi, Z.ai, Together, Qwen — Kimi policy contradiction, Z.ai DPA strength, tier framework](./llm-provider-retention-part-2-kimi-z-ai-together-qwen-kimi-p.md) - Follow-up research (2026-09-11) on Kimi (Moonshot), Z.ai (Zhipu/GLM), Together AI, and Qwen (Alibaba Model Studio), verified against primary docs. Extends [[llm
-- [z.ai 401 "code 1000 Authentication Failed" means the key itself is bad — verify with curl, not app code](./z-ai-401-code-1000-authentication-failed-means-the-key-itsel.md) - Symptom
-- [get_settings merges env/.env over settings.json — env is source of truth](./get-settings-merges-env-env-over-settings-json-env-is-source.md) - Discovered while wiring \`.env\` into the app (2026-09-11).
-- [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](./drive-data-monster-s-real-ui-over-cdp-with-remote-debugging-.md) - The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with \`--remote-debugging-port\` and drive
-- [Local LLM blank-screen delay was hidden thinking tokens — disable via "thinking": {"type": "disabled"}](./local-llm-blank-screen-delay-was-hidden-thinking-tokens-disa.md) - Symptom
-- [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](./never-tree-scan-archive-or-src-tauri-target-du-find-stall-on.md) - The repo contains very large generated/historical trees: \`.archive/\` (entire superseded old app + chart-engine trials) and \`src-tauri/target/\` (Rust build artif
-- [Stale-wiki file floods are ignored build artifacts — .wiki_ignore already covers them](./stale-wiki-file-floods-are-ignored-build-artifacts-wiki-igno.md) - Symptom
-- [Stash pop can silently fail when wiki-recap writes conflict — verify and restore from the stash](./stash-pop-silent-conflict-recovery.md) - Discovered 2026-09-14 while committing session work (PR #3).
-- [CDP repro traps: DuckDB workspace lock pins a second instance at /; headless needs a mocked Tauri surface](./cdp-repro-traps-duckdb-lock.md) - Follow-up to [[drive-data-monster-s-real-ui-over-cdp]] and [[webview2-cdp-gotchas-env-var-flag-stale]] — two more repro-environment traps hit while chasing the
-- [SveltePlot BarX vs BarY: BarX is the horizontal bar mark](./svelteplot-barx-bar-y-orientation.md) - Discovered while flipping \`charts/BarChart.svelte\` to horizontal (2026-09-14), confirmed against https://svelteplot.dev/examples ("Simple Bars"):
-- [SveltePlot ordinal domains sort alphabetically by default — set explicit domain or reverse](./svelteplot-ordinal-domain-sorts-alphabetically.md) - Discovered 2026-09-14 while making the /labs bar chart sort desc: page-side data sorting had **no visible effect** because svelteplot's ordinal scales **sort th
-- [SveltePlot scale bypass needs scale: null — scale: false still routes values through the scale](./svelteplot-scale-null-not-false.md) - Symptom
-- [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](./evidence-chart-architecture.md) - Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
-- [Chart authoring needs two surfaces (code + UI) — design must converge on a serializable chart spec](./chart-authoring-two-surfaces-serializable-spec.md) - Requirement (user-stated, 2026-09-15 interview)
-- [svelteplot band axis crashes on empty aliases (duplicate key)](./svelteplot-band-axis-empty-aliases-crash.md) - Symptom: charts crashed with a duplicate-key error in svelteplot's band axis when the central-charts page mounted.
-- [CDP e2e cannot synthesize trusted clicks on svelteplot marks](./cdp-cannot-synthesize-clicks-on-svelteplot-marks.md) - Symptom: chart **click-through (cross-filter selection) is untestable via CDP e2e** — synthesized clicks on svelteplot marks do nothing, even on known-good labs
-- [CDP CAN click svelteplot marks — Input.dispatchMouseEvent with fresh coordinates; element.click() cannot](./cdp-can-click-svelteplot-marks-dispatchmouseevent.md) - Correction to [[cdp-cannot-synthesize-clicks-on-svelteplot-marks]] — CDP \`Input.dispatchMouseEvent\` DOES click svelteplot marks (BarX \`onclick\` via
-- [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](./pagedoc-block-title-and-chart-title-rendering.md) - In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a block carries a **block-level \`title\`** *and* (for chart blocks) **\`chart.title\` / \`
-- [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](./apparent-ui-bug-stale-hmr-webview.md) - Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel).
-- [Visibility probes must walk the ancestor opacity/display/visibility chain — an opacity:0 parent hides everything](./visibility-probes-walk-ancestor-opacity-chain.md) - CDP "visibility" checks lied twice on the page-editor config drawer (2026-09-15):
-- [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](./css-text-transform-changes-innertext-probes.md) - Symptom: a CDP DOM probe checking for the label \`"Rows"\` failed on the Page
-- [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](./auto-margins-app-main-disable-flex-stretch.md) - Symptom
-- [Squada One is single-weight (400) — heading font-weight 600/700 gets browser-synthesized bold](./squada-one-is-single-weight-400.md) - Discovered 2026-09-16 while re-typing the app ([[typography-squada-one-headings-libre-baskerville]]).
-- [Calluna is not on Google Fonts — css2 returns 200 but silently drops it](./calluna-not-on-google-fonts-css2-drops-silently.md) - Discovered 2026-09-16 while recording the Calluna/Inter retype ([[typography-calluna-headings-inter-body]]).
-- [Chart segment selection is parent-held {dimension, value} transient state](./chart-segment-selection-parent-held-state.md) - Chart components (as used in \`/pages\` and the library detail page demo) manage their own click/deselect handlers once selection state exists. The wiring only ne
-- [The /library vs /pages config-drawer difference is scope, not components](./library-vs-pages-config-drawer-scope.md) - Symptom
-- [Library code entries are keyed by full repo paths](./library-code-entries-are-keyed-by-full-repo-paths.md) - What
-- [speed-highlight/core has no Svelte grammar](./speed-highlight-core-has-no-svelte-grammar.md) - Gotchas discovered wiring \`@speed-highlight/core\` into the library Code tab
-- [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](./query-editor-blowup-was-app-column-min-height-auto.md) - Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
-- [SveltePlot 0.14.2 has no tree mark — verified in the installed package](./svelteplot-0-14-2-has-no-tree-mark-verified-in-the-installed.md) - Verified 2026-09-17 by a te9-research leaf against the **installed** package (not just docs): svelteplot 0.14.2 — data.monster's sole chart engine — ships no tr
-- [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](./normalizepagedoc-field-whitelist.md) - Discovered 2026-09-17 fixing the \`/pages\` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr
-- [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](./d2-diagrams-not-interactive.md) - Question
-- [Stale vite module graph can survive reloads — only a full app restart clears it](./stale-vite-module-graph-can-survive-reloads-only-a.md) - Discovered 2026-09-17 while wiring the skeleton's "Add dimension" button in the page editor. Extends [[apparent-ui-bug-stale-hmr-webview]]: that learning's fix
-- [Hard-reload storms deadlock DuckDB in-process — writes fail with "resource deadlock would occur" until full restart](./hard-reload-storms-deadlock-duckdb-in-process.md) - Discovered 2026-09-17 while CDP-testing the master-items create flow in the page editor.
-asure form).
-- [Component spawn grows too-small explicit-height rows to 320px minimum](./component-spawn-grows-too-small-explicit-height.md) - Discovered 2026-09-17 while verifying the page-editor skeleton-clip bug (fixed in PR #9, 1 file +8).
-- [CDP gate assertions need settle time after doc mutations, and svg counts must be chart-scoped](./cdp-gate-assertions-need-settle-time-after-doc.md) - Two CDP-e2e traps hit while testing the needsSetup gate (2026-09-17, PR #10):
-- [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](./searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) - Discovered 2026-09-17 building the skeleton pick/create modal.
-- [CDP probe \`$$\` is querySelector — indexing it silently kills clicks](./cdp-probe-is-queryselector-indexing-it-silently.md) - Discovered 2026-09-17 shipping PR #12 (skeleton pick/create modal, CDP e2e steps 1–7).
-- [CDP context-menu e2e: real right-click dispatch, and check the binding before blaming synthetic events](./cdp-context-menu-e2e-real-right-click-dispatch-and.md) - Discovered 2026-09-17 shipping PR #16 (virtual tab system, CDP e2e steps 1–7). Extends the synthetic-event family: [[cdp-can-click-svelteplot-marks-dispatchmous
-- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](./bash-heredoc-writes-mangle-non-ascii-patch-with.md) - Hit twice while rewiring the drawers (PR #18, 2026-09-17).
-- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](./z-ai-glm-coding-plan-keys-use-the-anthropic.md) - Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while checking whether little-c
-- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](./scale-standalone-html-docs-via-root-font-size-px.md) - Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%.
-- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](./mock-tauri-browser-repro-harness-is-gone-verify.md) - Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser repro technique docu
-- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](./stale-component-css-after-an-edit-can-be-fixed.md) - Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]].
-- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](./pages-editor-auto-saves-silently-every-60s-no-ui.md) - User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t
-- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](./shallow-url-state-sveltekit-replacestate.md) - Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines).
-- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](./sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) - Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app).
-- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](./cdp-e2e-failures-right-after-a-source-save-are-often-hmr-rac.md) - Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223).
-- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](./data-tab-keys-labels-metadata-writes-tab-definitions.md) - Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\` never matched — the
-- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](./msys-path-conversion-mangles-f-style-windows-flags-use-msys-.md) - Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix).
-- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](./ref-based-master-items-tablename-table-mismatch-broke-all-re.md) - Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
-- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](./minimized-occluded-webview2-window-throttles-the-page-bringt.md) - Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md).
-- [ExprEditor suggestions are computed locally](./expreditor-suggestions-are-computed-locally.md) - While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it aga
-- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](./duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20.md) - Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
-- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](./local-checkout-is-the-running-dev-app-branch-switches-live-r.md) - Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #20, session artifacts
-- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](./initialize-duckdb-no-ops-while-initialized-workspace-switch-.md) - Fact
-- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](./duckdb-plain-bundled-lacks-static-json-extension-dynamic-aut.md) - Symptom
-- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](./compile-ts-dimension-guard-raw-flag-is-the-only-validation-b.md) - Symptom
-- [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](./welcome-gate-renders-instead-of-router.md) - In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — there is no router-rend
+- [dm live-reload events don't replay — e2e must navigate first, then write the file](./dm-live-reload-events-don-t-replay-e2e.md) - Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into \`dm/pages/\` **before** navigating to /page
 `,
   "learnings/initialize-duckdb-no-ops-while-initialized.md": `---
 type: Learning
@@ -15928,12 +16227,14 @@ In the central-charts [[chart-page-spec-spec-types-validator]] \`PageDoc\`, a bl
   "learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md": `---
 type: Learning
 title: Pages editor auto-saves silently every 60s — no UI signal is deliberate
-description: "User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t"
+description: "SUPERSEDED 2026-09-22 by the write-through core (files-009). Historical: user-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips t"
 tags: [pages-editor, auto-save, ux]
 timestamp: "2026-09-21T07:28:17.171Z"
 ---
 
 # Pages editor auto-saves silently every 60s — no UI signal is deliberate
+
+> **SUPERSEDED (2026-09-22)**: \`files-009\` deleted the 60s auto-save, the Save button, and the saving/saved states. The editor now runs the [write-through core](../pages/entities/write-through-core-src-lib-write-through-ts.md) - every edit is debounced 400ms into the dm/ file, which IS the save. Kept for history; the deliberate-silence rule below no longer applies (failed writes stay pending and surface through the conflict/error surfaces).
 
 User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(true)\`, which **skips the \`saving\`/\`saved\` state flips** — the save button never changes while auto-saving. Failures still surface via the existing red error line; silently swallowing a failed save would lose work unnoticed.
 
@@ -16026,6 +16327,20 @@ Discovered 2026-09-17 building the skeleton pick/create modal.
 **Consequence:** Don't reach for it when you need a searchahead elsewhere; you'll waste a read and then have to build anyway. Build the (small) inline version where you need it, and only extract a real prop-driven \`SearchAhead\` when a second consumer exists.
 
 Used-in: [[skeleton-pick-create-moved-from-inline-dropdowns]] — the pick modal's searchahead is inline, reusing the new-page modal overlay pattern instead.
+`,
+  "learnings/secret-policy-test-targets-the-connections-json.md": `---
+type: Learning
+title: Secret-policy test targets the connections.json example — the .env placeholder password is intentional
+description: "Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged \`password@\` inside the \`.env\` sample URL (\`DM_CONN_PRODUCTION_URL=postgresql:/"
+tags: [secrets, testing, agent-docs, dm-tree]
+timestamp: "2026-09-22T15:30:43.295Z"
+---
+
+# Secret-policy test targets the connections.json example — the .env placeholder password is intentional
+
+Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged \`password@\` inside the \`.env\` sample URL (\`DM_CONN_PRODUCTION_URL=postgresql://user:password@db.example.com:...\` in \`src-tauri/agent-docs/formats/connections.md\`). That placeholder is **intentional** — it shows the user/agent where a full connection URL goes, and \`.env\` is gitignored by design.
+
+The real invariant the test must assert: the **\`connections.json\` example agents copy** is secret-free (\`{name, urlEnv}\` env-var references only). Don't "fix" the \`.env\` placeholder, and don't loosen the policy — point the assertion at the connections example.
 `,
   "learnings/settings-swap-for-tours-must-cover-env-too.md": `---
 type: Learning
@@ -16602,12 +16917,17 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13:01:40.062Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T16:45:59.976Z.
 
 ## Recent Decisions
 
-- [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](decisions/workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) — Context (2026-09-22)
-- [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switching-reloads-data-content.md) — Context (2026-09-22)
+- [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through.md) — Context (2026-09-22)
+- [dm/ migration: write all, verify, then drop — files win](decisions/dm-migration-write-all-verify-then-drop-files-win.md) — Context (2026-09-22)
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author.md) — Context (2026-09-22)
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events](decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listene… (2026-09-22)
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity.md) — Context (2026-09-22)
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace.md) — Context (2026-09-22)
+- [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switch-reloads.md) — Context (2026-09-22)
 - [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context (2026-09-22)
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
 - [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context (2026-09-17)
@@ -16616,15 +16936,15 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New) (2026-09-17)
 - [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context (2026-09-17)
 - [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context (2026-09-17)
-- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context (2026-09-17)
-- [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context (2026-09-17)
-- [Library packages carry blockKind — table/text are built-in blocks, not chart types](decisions/library-packages-carry-blockkind.md) — Context (2026-09-17)
-- [library-component-builder skill is the canonical path for new library components](decisions/library-component-builder-canonical-path.md) — Context (2026-09-17)
-- [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context (2026-09-17)
 
 ## Active Rules
 
-- [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-the-app-s-existing-size-classes-never-ad.md) — The guideline (2026-09-22)
+- [dm/ live-reload wires through dm-events — never a raw listen()](rules/dm-live-reload-wires-through-dm-events.md) — **The rule**: any view or component that renders \`dm/\`-managed content subscribes to live changes through \`src/lib/dm-events.ts\` — \`onDmChan… (2026-09-22)
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. \`dm/relationships.json\`, later the connections store) must fail lou… (2026-09-22)
+- [Rust backend tests live in-module via #[cfg(test)]](rules/rust-backend-tests-live-in-module-via-cfg-test.md) — The rule (2026-09-22)
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writ… (2026-09-22)
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point.md) — The rule (2026-09-22)
+- [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-existing-size-classes.md) — Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers. (2026-09-22)
 - [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
 - [Pick display labels resolve through roleLabels() — never hand-roll chip labels](rules/pick-display-labels-resolve-through-rolelabels.md) — Guideline (2026-09-17)
@@ -16644,8 +16964,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css (2026-09-14)
 - [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/ (2026-09-14)
 - [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament (2026-09-14)
-- [Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal](rules/feature-loop-hard-rules.md) — Guideline (2026-09-14)
-- [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline (2026-09-11)
 
 ## Preferences & Conventions
 
@@ -16655,26 +16973,26 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 
 ## Recent Learnings — development patterns
 
+- [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — Found by the workspace-file-first e2e pass (2026-09-22): the \`data/incoming/\` ingest correctly emitted \`dm:changed {kind:"table"}\` via the [… (2026-09-22)
+- [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into \`dm/pages/\` **before**… (2026-09-22)
+- [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged \`password@\` inside the \`.env\` sample URL (\`DM_CONN_PRODUCT… (2026-09-22)
+- [A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer](learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md) — Shipped in \`files-007\` (2026-09-22): the \`dm/\` watcher skips any path recorded by \`dm_watch::mark_self_write\` — and the only caller is \`dm_s… (2026-09-22)
+- [duckdb-rs lacks Value: FromSql — typed queries, no generic rows](learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md) — Hit in \`files-006\` while building the \`dm_store\` export path (2026-09-22): a generic row-deserialization helper over \`duckdb-rs\` queries is … (2026-09-22)
+- [Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss](learnings/empty-pages-queries-lists-after-a-rust-rebuild.md) — **Gotcha (mid-migration window, branch \`feature/workspace-file-first\`)**: once the Rust backend is rebuilt with the file-backed commands, pa… (2026-09-22)
 - [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](learnings/welcome-gate-renders-instead-of-router.md) — In \`src/routes/+layout.svelte\`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — the… (2026-09-22)
-- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-is-the-only-validation-b.md) — Symptom (2026-09-22)
-- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-plain-bundled-lacks-static-json-extension-dynamic-aut.md) — Symptom (2026-09-22)
-- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](learnings/initialize-duckdb-no-ops-while-initialized-workspace-switch-.md) — Fact (2026-09-22)
-- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](learnings/local-checkout-is-the-running-dev-app-branch-switches-live-r.md) — Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #2… (2026-09-22)
-- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-on-windows-duckdb-rs-20.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md). (2026-09-22)
+- [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md) — Symptom (2026-09-22)
+- [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-bundled-lacks-static-json-extension.md) — Symptom (2026-09-22)
+- [initialize_duckdb no-ops while initialized — workspace switch must shutdown first](learnings/initialize-duckdb-no-ops-while-initialized.md) — Fact (2026-09-22)
+- [Local checkout is the running dev app — branch switches live-revert it until all PRs merge](learnings/local-checkout-is-the-running-dev-app.md) — Discovered 2026-09-22 while handling the post-merge state of PR #19 (bug fixes) and its stranded follow-up commit \`dd44774\` (opened as PR #2… (2026-09-22)
+- [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-windows.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md). (2026-09-22)
 - [ExprEditor suggestions are computed locally](learnings/expreditor-suggestions-are-computed-locally.md) — While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists … (2026-09-22)
-- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](learnings/minimized-occluded-webview2-window-throttles-the-page-bringt.md) — Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md). (2026-09-22)
-- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-table-mismatch-broke-all-re.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
-- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-windows-flags-use-msys-.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
-- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-tab-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\`… (2026-09-22)
-- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-right-after-a-source-save-are-often-hmr-rac.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
-- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-is-stale-after-replacestate-never-guard-w.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app). (2026-09-22)
+- [Minimized/occluded WebView2 window throttles the page — bringToFront before CDP UI automation](learnings/minimized-occluded-webview2-throttles-page.md) — Discovered 2026-09-22 while CDP-testing bug fixes on the dev app (reports/pages-e2e-feedback.md). (2026-09-22)
+- [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-mismatch-broke.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
+- [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-flags.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
+- [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by \`textContent.includes('Definitions')\`… (2026-09-22)
+- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-after-source-save-hmr-race.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
+- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-stale-after-replacestate.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (\`TableOverview.svelte\`, verified over CDP against the live dev app). (2026-09-22)
 - [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (\`TableOverview.svelte\`, +6 lines). (2026-09-22)
-- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on \`src/routes/pages/[slug]/+page.svelte\` (2026-09-18, /pages/revenue): auto-save runs every 60s via \`handleSave(tru… (2026-09-21)
-- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]]. (2026-09-18)
-- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser … (2026-09-18)
-- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling \`docs/design-system-data-monster.html\` to 80%. (2026-09-18)
-- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while check… (2026-09-17)
-- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17). (2026-09-17)
 
 ## Architecture
 
@@ -16686,16 +17004,16 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 type: System Overview
 title: Overview
 description: What this project contains and its structure.
-timestamp: "2026-09-11T21:35:13.611Z"
+timestamp: "2026-09-22T15:29:55.176Z"
 ---
 
 # Overview
 
 **Data Monster** is a desktop data-analysis application — "connect data, query, explore." It is built with **Tauri v2** (native desktop shell), a **SvelteKit + Svelte 5 + TypeScript + Tailwind CSS 4** frontend, and an embedded **DuckDB 1.1** engine living in a **Rust** backend. No server is required: the Rust process owns the DuckDB connection, and the webview frontend talks to it through Tauri \`invoke\` commands.
 
-The core workflow flows through routes: **Connect** (\`/connect\`) ingests CSV/Parquet/JSON from disk or URL and browses/ingests remote PostgreSQL tables; **Preview** (\`/preview\`) detects columns and types; **Query** (\`/query\`) runs SQL (SELECT/CTAS/SHOW/DESCRIBE) with an editor, pagination, and an ingest modal; **Data** (\`/data\`) and **Table detail** (\`/table/[name]\`) manage and browse tables with tags/groups; **Analyst** (\`/analyst\`) chats with an LLM about the data (including local llama.cpp models); **Pages** (\`/pages\`) lists and creates report pages, with \`/pages/<slug>\` hosting the dual-mode (Design ⇄ Code) page editor from the central-charts system; **Labs** (\`/labs\`) is a 32-type chart catalog — one card per chart type, scaffolded placeholder-first after theunspokenpitch.com and built one at a time on SveltePlot over a shared chart fundament (heatmap and horizontal bar chart done, 30 still placeholders); **Workspaces** (\`/workspaces\`) switches the active workspace folder — a workspace is a portable bundle (DuckDB + copied source data + settings.json) and a switch shuts down and fully reloads the DB; and **Settings** (\`/settings\`) configures the LLM and exposes an internal-DB browser for the \`d8a_monster_*\` metadata tables. Everything persists in a user-selected workspace folder as \`d8a_monster.duckdb\` plus copied source files under \`data/main/\`.
+The core workflow flows through routes: **Connect** (\`/connect\`) ingests CSV/Parquet/JSON from disk or URL and browses/ingests remote PostgreSQL tables; **Preview** (\`/preview\`) detects columns and types; **Query** (\`/query\`) runs SQL (SELECT/CTAS/SHOW/DESCRIBE) with an editor, pagination, and an ingest modal; **Data** (\`/data\`) and **Table detail** (\`/table/[name]\`) manage and browse tables with tags/groups; **Analyst** (\`/analyst\`) chats with an LLM about the data (including local llama.cpp models); **Pages** (\`/pages\`) lists and creates report pages, with \`/pages/<slug>\` hosting the dual-mode (Design ⇄ Code) page editor from the central-charts system; **Labs** (\`/labs\`) is a 32-type chart catalog — one card per chart type, scaffolded placeholder-first after theunspokenpitch.com and built one at a time on SveltePlot over a shared chart fundament (heatmap and horizontal bar chart done, 30 still placeholders); **Agent** (\`/agent\`) serves copy-paste starter prompts that hand a coding agent the workspace path so it authors pages, measures, and saved queries by writing \`dm/\` files; **Workspaces** (\`/workspaces\`) switches the active workspace folder — a workspace is a portable bundle (DuckDB + copied source data + settings.json + the \`dm/\` content tree) and a switch shuts down and fully reloads the DB; and **Settings** (\`/settings\`) configures the LLM and exposes an internal-DB browser. Content persists in a user-selected workspace folder: source tables and query results in \`d8a_monster.duckdb\`, ingested source files under \`data/main/\`, and every piece of app content (report pages, master items, relationships, saved queries, connections) as plain files under \`dm/\` - the files are canonical, written by both the app (write-through editing) and coding agents, with a file watcher hot-reloading the open app within ~300ms. Secrets live only in the workspace \`.env\`; a generated \`README.md\` and \`dm/docs/\` onboard coding agents with zero config.
 
-Organization is split between product code and process artifacts. Product code lives in \`src/\` (frontend: routes, components, reusable chart canvases, Svelte 5 rune stores) and \`src-tauri/\` (Rust backend: per-domain command modules — files, queries, tables, labels, saved_queries, internal_db, postgres, local_llm, workspace, settings — plus state and utils). Process artifacts document how features are built: \`.specs/\` holds spec-driven feature specs with task logs (chart-lib, field-function-library, local-llm, tauri-migration), \`.prds/\` holds product requirement docs with interviews (reporting-dashboard-pages, table-relationships), \`docs/\` holds research notes, picasso.js chart examples, re-usable chart specs, the eight-feature interactive demo-tour set (\`docs/tours/\` — real-UI captures replayed as standalone HTML players), static per-component design references (\`docs/design/\`), and this wiki, \`reports/\` holds generated deep-research run outputs, and \`prompts.md\`/\`opencode.json\`/\`.pi/\` configure the AI-agent tooling used in development.
+Organization is split between product code and process artifacts. Product code lives in \`src/\` (frontend: routes, components, reusable chart canvases, Svelte 5 rune stores) and \`src-tauri/\` (Rust backend: per-domain command modules — files, queries, tables, labels, saved_queries, internal_db, postgres, local_llm, workspace, settings, dm_store, dm_watch, items, pages, relationships, migration, connections, incoming, agent_docs — plus state and utils). Process artifacts document how features are built: \`.specs/\` holds spec-driven feature specs with task logs (chart-lib, field-function-library, local-llm, tauri-migration, workspace-file-first), \`.prds/\` holds product requirement docs with interviews (reporting-dashboard-pages, table-relationships), \`docs/\` holds research notes, picasso.js chart examples, re-usable chart specs, the eight-feature interactive demo-tour set (\`docs/tours/\` — real-UI captures replayed as standalone HTML players), static per-component design references (\`docs/design/\`), and this wiki, \`reports/\` holds generated deep-research run outputs, \`e2e/\` holds the dependency-free CDP driver (\`cdp.mjs\` + \`steps/\`) used to e2e-verify the running app over the Chrome DevTools Protocol, and \`prompts.md\`/\`opencode.json\`/\`.pi/\` configure the AI-agent tooling used in development.
 
 History and experimentation are deliberately quarantined. \`.archive/\` keeps superseded versions — including the original browser-only app (\`data-monster-old\`, DuckDB-WASM with a Node server) and chart-engine trials (echarts, svelteplot, observable) — while the nested \`data.monster/\` project generates the design-system documentation site, and \`build/\` is static-export output. \`global_superstore.csv\` at the root is the sample retail dataset used for demos and testing.
 `,
@@ -16864,6 +17182,41 @@ The executable spec + task list for phase 1 of the central chart system: 13 FRs 
 - \`.specs/central-charts/spec.md\` — the 13 FRs
 - \`.specs/central-charts/tasks.json\` — the 13 tasks with acceptance criteria
 `,
+  "pages/artifacts/design-component-reference-docs-design-components.md": `---
+type: Artifact
+title: Design component reference (docs/design/components/)
+description: What is it?
+tags: [design-system, documentation, html, components]
+timestamp: "2026-09-22T13:18:37.993Z"
+---
+
+# Design component reference (docs/design/components/)
+
+## What is it?
+
+A set of 39 standalone, self-contained HTML reference documents in \`docs/design/components/\` — one per UI component (Accordion, Badge, Button, ButtonGroup, Card, ColorPicker, DatePicker, Drawer, Modal, Searchahead, Select, Table, Tabs, Tag, Toast, Tooltip, etc.). Each file documents that component's variants, states, and behavior with live rendered examples, in its own inline-CSS theme (Source Serif 4 display / Manrope body / Geist Mono), loadable directly in a browser with no build step.
+
+## What it documents
+
+- [design-system-app-css-tokens-ui-showcase](../entities/design-system-app-css-tokens-ui-showcase.md) — the app's actual styling layer and component library these references describe
+- [design-system-reference-doc-docs-design](./design-system-reference-doc-docs-design.md) — the sibling single-file design-system doc (\`docs/design-system-data-monster.html\`); this set is the per-component expansion of that idea
+- [central-chart-component-design](./central-chart-component-design.md) — sits alongside it in \`docs/design/\`
+
+## Details
+
+- **Location**: \`docs/design/components/*.html\` (39 files)
+- **Format**: static HTML, self-contained (inline CSS + Google Fonts link), one component per file
+- Distinct from the \`/ui\` showcase route (live in-app components) — these are offline reference docs
+
+## Lifecycle
+
+- First added: committed 2026-09-22 (dd44774, "design-system docs") from a design-docs session
+- Documented in wiki: 2026-09-22 — first wiki coverage; previously invisible to the knowledge graph
+
+## Source
+
+- \`docs/design/components/\` — the artifact itself
+`,
   "pages/artifacts/design-component-reference-set.md": `---
 type: Artifact
 title: Design-component reference set (docs/design/components/)
@@ -16988,6 +17341,8 @@ _Documents, diagrams, and deliverables will be listed here._
 - [aisure.uk pricing research report](./aisure-uk-pricing-research-report.md) - Fractal-research (te9-research skill, \`recursive_research\`, depth 1, 3 leaves) answering a standalone question — not app-internal research: *why is https://aisu
 - [Design-system reference doc (docs/design-system-data-monster.html)](./design-system-reference-doc-docs-design-system-data-monster-.md) - The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 - [Pages E2E feedback report](./pages-e2e-feedback-report.md) - E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r
+- [Design component reference (docs/design/components/)](./design-component-reference-docs-design-components.md) - What is it?
+- [Workspace-file-first spec & tasks](./workspace-file-first-spec-tasks.md) - The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (\`dm_store\` module, pages/maste
 `,
   "pages/artifacts/llm-agent-connection-research-report.md": `---
 type: Artifact
@@ -17190,9 +17545,160 @@ E2E test report for the /pages report-page flow built on the semantic (master-it
 - \`reports/pages-e2e-feedback.md\` — the report itself
 - \`src/lib/central-api.ts\`, \`src/lib/components/charts/ExprEditor.svelte\`, \`src/lib/db-operations.ts\`, \`src/routes/query/+page.svelte\` — the fix sites
 `,
+  "pages/artifacts/workspace-file-first-spec-tasks.md": `---
+type: Artifact
+title: Workspace-file-first spec & tasks
+description: "The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (\`dm_store\` module, pages/maste"
+tags: [workspace, file-first, spec, tasks, agents, dm-tree, planning]
+timestamp: "2026-09-22T13:34:25.812Z"
+---
+
+# Workspace-file-first spec & tasks
+
+The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (\`dm_store\` module, pages/master-items/relationships/saved-queries/connections remapped to \`dm/\` files, one-time migration), B Realtime both ways (notify watcher → \`dm:changed\`/\`dm:error\`, live-reload, editor write-through, save button + 60s auto-save deleted), C Docs + prompts (agent docs layer with progressive disclosure, \`/agent\` prompts page), D Extras (FR-13 \`data/incoming/\` drop folder — the one cuttable piece).
+
+## What it documents
+
+- The locked scope of [decisions/workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — user-locked: all content types in one build, no phasing
+- New persistence surface: \`dm/connections.json\` (Postgres connections were never persisted before — this is new persistence, not a migration)
+- Design details not in the decision: saved-query metadata in an optional leading \`-- dm: {json}\` comment header (SQL body stays native); master-item filename = item \`id\`, \`kind\` picks the measures/dimensions subfolder; validator single-sourced in TS, Rust does parse-level shape checks only (enough to classify watcher events)
+- Per-task methodology follows [rules/spec-driven-features-tdd-karpathy-in-todos](../../rules/spec-driven-features-tdd-karpathy-in-todos.md) — TDD red-first, starting with task \`files-001\` (\`dm_store\` path mapping + atomic writes)
+
+- Progress (2026-09-22): Phase A shipped (\`files-001\`–\`006\`: dm_store + pages/master-items/saved-queries/connections file-backed + one-time migration); Phase B 3 of 4 — \`files-007\` shipped the notify watcher ([dm_watch command module](../entities/dm-watch-command-module.md)), \`files-008\` shipped frontend live-reload ([dm-events frontend module](../entities/dm-events-frontend-module.md)); \`files-009\` shipped the write-through editor ([write-through core](../entities/write-through-core-src-lib-write-through-ts.md) - Save button, saved toast, and 60s auto-save deleted; Reload/Keep-mine conflict banner added); \`files-010\` shipped the ItemEditor write-through (edit = live write-through, create = explicit Save; RelationshipEditor + saved-queries/connections verified already mutation-immediate — see [decisions/creation-saves-explicitly-editing-writes-through](../../decisions/creation-saves-explicitly-editing-writes-through.md)). **All 13 tasks done (2026-09-22)** — Phase C: \`files-011\` agent docs tree ([agent docs system](../entities/agent-docs-system.md)) + \`files-012\` /agent prompts page ([agent prompts page](../entities/agent-prompts-page.md)); Phase D: \`files-013\` \`data/incoming/\` drop folder ([incoming drop folder](../entities/incoming-drop-folder.md)). Branch \`feature/workspace-file-first\`: 15 commits \`b8d23b4\`…\`93ab24c\`, cargo 121/121, vitest 140/140, svelte-check clean.
+## Details
+
+- **Format**: Spec-driven markdown + machine-readable tasks (\`.specs/workspace-file-first/tasks.json\` with acceptanceCriteria per task)
+- **Location**: \`.specs/workspace-file-first/spec.md\`
+- **Docs layer contract (FR-11)**: repo-authored \`dm/docs/\` embedded via \`include_str!\`, regenerated when \`dm/docs/.version\` ≠ app version; L0 workspace README ≤60 lines → L1 \`INDEX.md\` ≤100 → L2 \`formats/*.md\` ≤150 with \`Read when:\` header + one annotated example → L3 \`reference/\` exhaustive; line budgets enforced by test
+
+## Relationships
+
+- [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md) — the decision this spec encodes; supersedes the MCP-embedded proposals
+- [Pages & master-items storage (Rust)](../entities/pages-master-items-storage-rust.md) — the DuckDB content tables this build migrates out of and drops
+- [Workspace command module (Rust)](../entities/workspace-command-module-rust.md) — sibling backend module; \`dm_store\` joins it for path mapping + atomic writes
+
+## Source
+
+- \`.specs/workspace-file-first/spec.md\` — the 13 FRs
+- \`.specs/workspace-file-first/tasks.json\` — the TDD task list
+`,
   "pages/concepts/index.md": `# Concepts
 
 _Abstract ideas and definitions will be listed here._
+`,
+  "pages/entities/agent-docs-module-agent-docs-rs.md": `---
+type: Entity
+title: Agent docs module (agent_docs.rs)
+description: Agent docs module (agent_docs.rs)
+tags: [rust, backend, workspace-file-first, agent-docs, agents]
+timestamp: "2026-09-22T15:29:40.284Z"
+---
+
+# Agent docs module (agent_docs.rs)
+
+# Agent docs module (agent_docs.rs)
+
+\`src-tauri/src/commands/agent_docs.rs\` plus its doc sources under \`src-tauri/agent-docs/\` — the app's documentation **for coding agents**, compiled into the binary with \`include_str!\` and synced into the workspace as a root \`README.md\` plus \`dm/docs/\` (workspace-file-first FR-11, 2026-09-22). This is the zero-config onboarding surface: an agent holding only file tools reads the docs that ship inside the workspace and can author valid content with no MCP, tokens, or install.
+
+## Why it matters
+
+It operationalizes [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md): agents author content by editing \`dm/\` files, and this module is what teaches them the file formats. Progressive disclosure (L0 README always-read → L1 INDEX routes intent → L2 self-contained format docs, one annotated example each → L3 exhaustive reference) mirrors this repo's own pi-skills/OKF tooling so token cost stays bounded; line budgets are enforced by \`tests/agent-docs.test.ts\`.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/agent_docs.rs\` (sync logic); docs sources in \`src-tauri/agent-docs/\` (\`README.md\`, \`INDEX.md\`, \`concepts.md\`, \`formats/{page-doc,master-items,saved-queries,connections,relationships}.md\`, \`recipes/common-tasks.md\`, \`reference/page-doc-fields.md\`)
+- **Sync**: \`sync_agent_docs(ws)\` writes everything when \`dm/docs/.version\` is missing or ≠ the app version, otherwise no-ops; writes via [dm-store-command-module](./dm-store-command-module.md) \`atomic_write\`
+- **README at workspace root is seed-only** — never overwritten once it exists (user customizations win between versions); the canonical copy always lives in \`dm/docs/\`
+- The [dm-watch-command-module](./dm-watch-command-module.md) watcher deliberately ignores \`dm/docs/\`, \`dm/drafts/\`, and the root \`README.md\` — app-owned docs never trigger reload events
+
+## Relationships
+
+- [dm-store-command-module](./dm-store-command-module.md) — path conventions + atomic writes underneath
+- [dm-watch-command-module](./dm-watch-command-module.md) — ignores the docs tree so app-owned writes don't echo
+- [agent-prompts-page](./agent-prompts-page.md) — the /agent page that routes users' agents to these docs
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-11 of the executable spec
+
+## Lifecycle
+
+- First added: 2026-09-22, FR-11 of the workspace-file-first build
+- Docs regenerate automatically whenever the app version changes and \`dm/docs/.version\` differs
+`,
+  "pages/entities/agent-docs-system.md": `---
+type: Entity
+title: Agent docs system
+description: The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at \`src-tauri/agent-docs/\`
+tags: [agents, docs, dm-tree, workspace, progressive-disclosure]
+timestamp: "2026-09-22T15:30:09.094Z"
+---
+
+# Agent docs system
+
+The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at \`src-tauri/agent-docs/\`, are embedded into the Rust binary via \`include_str!\`, and are synced into the workspace as \`dm/docs/\` (plus the workspace-root \`README.md\`) when the app version changes (version marker: \`dm/docs/.version\`).
+
+Structure is skill-style progressive disclosure, budgets enforced by tests:
+
+- **L0** \`README.md\` (workspace root, ≤60 lines) — "this folder IS the app's state": the tree, the rules (INDEX-first, filename-is-identity, no secrets, atomic writes, invalid JSON is safe), version note
+- **L1** \`dm/docs/INDEX.md\` (≤100 lines) — intent → file → doc routing
+- **L2** \`formats/*.md\` (≤150 lines each) — one per content format (\`page-doc\`, \`master-items\`, \`relationships\`, \`saved-queries\`, \`connections\`), each with a \`Read when:\` header and one annotated example
+- **L3** \`reference/\` (exhaustive, e.g. \`page-doc-fields.md\`) plus \`recipes/common-tasks.md\` and \`concepts.md\`
+
+The secret policy is asserted by tests: the \`connections\` example shows env-var references only, while the \`.env\` sample intentionally shows a placeholder URL (see [the secret-policy learning](../../learnings/secret-policy-test-targets-the-connections-json.md)).
+
+## Details
+
+- **Location**: \`src-tauri/agent-docs/\` (markdown sources) · \`src-tauri/src/commands/agent_docs.rs\` (embed + version-checked sync, 127 lines)
+- **Interface**: sync runs on workspace open / version change → writes \`dm/docs/**\` + \`README.md\` into the active workspace
+- **Configuration**: line budgets (60/100/150) and secret policy enforced by \`#[cfg(test)]\` tests in \`agent_docs.rs\`
+
+## Relationships
+
+- [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md) — the decision this docs layer serves: files are the interface agents author through
+- [agent-prompts-page](./agent-prompts-page.md) — the human-facing copy-paste prompts that route agents into these docs
+- [incoming-drop-folder](./incoming-drop-folder.md) — the no-docs-needed path: dropping a data file needs no reading at all
+- [rules/secrets-never-live-in-workspace-content-files](../../rules/secrets-never-live-in-workspace-content-files.md) — the policy the docs teach and the tests assert
+
+## Lifecycle
+
+- First added: files-011, 2026-09-22 (commit \`c122569\`) — phase C of [pages/artifacts/workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md)
+`,
+  "pages/entities/agent-prompts-page.md": `---
+type: Entity
+title: Agent prompts page
+description: "The SvelteKit route \`/agent\` (\`src/routes/agent/+page.svelte\`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor"
+tags: [agents, prompts, route, frontend, dm-tree, onboarding]
+timestamp: "2026-09-22T16:45:59.945Z"
+---
+
+# Agent prompts page
+
+The SvelteKit route \`/agent\` (\`src/routes/agent/+page.svelte\`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the workspace \`dm/\` tree, grouped under four starter goals. Reached from two entry points: the homepage **✦ LLM skills** button (always visible, even pre-data — that's when onboarding matters) and the nav BookOpen button.
+
+Prompts live as markdown files with frontmatter (\`title\`, \`description\`, \`tags\`, \`goal\`) under \`src/lib/agent-prompts/\`, loaded with \`import.meta.glob\` (raw) and parsed by the pure, tested \`parsePrompt()\` in \`src/lib/agent-prompts.ts\`. Every prompt mandates README→INDEX-first reading of the [agent-docs-system](./agent-docs-system.md) docs and restates the secret rules. Rendering follows the house rule [render-markdown-via-marked-prose-chat rule](../../rules/render-markdown-via-marked-prose-chat.md) (marked + \`.prose-chat\`).
+
+## Why it matters
+
+Connecting a coding agent previously required knowing the file conventions; this page makes it a copy-paste, and the goal grouping turns six prompts into a guided onboarding path: a new user picks what they want to do first (data → content → insights → actions).
+
+## Details
+
+- **Location**: \`src/routes/agent/+page.svelte\` · \`src/lib/agent-prompts.ts\` (loader/parser) · \`src/lib/agent-prompts/*.md\` (6 prompt files)
+- **Interface**: \`type Prompt = { file, title, description, tags, goal, body }\` · \`parsePrompt(file, raw)\` — tolerant frontmatter parser (missing frontmatter → filename as title, empty goal)
+- **Goals** (\`GOALS\` in the page component): \`data\` = Create data (Get data into the workspace and shape it), \`content\` = Create content (Build report pages and dashboards), \`insights\` = Get insights (Reusable analysis building blocks), \`actions\` = Take actions (Understand and keep the workspace healthy)
+- **Prompts → goals**: \`onboarding\` (Connect data & build my first page) + \`ingest-csv\` → data · \`dashboard-interview\` → content · \`add-measure\` + \`explain\` (Explain this workspace) → insights · \`cleanup\` (Audit & clean up my workspace) → actions
+- **Layout**: one section per goal (label + one-line blurb + md:grid-cols-2 card grid); cards keep title, description, tag chips, rendered body, per-card copy-to-clipboard with 1.5s "Copied" state
+- **Tests** (\`tests/agent-prompts.test.ts\`): every prompt carries a valid \`goal\`; every goal has ≥1 prompt — the grouping can't silently break
+
+## Relationships
+
+- [agent-docs-system](./agent-docs-system.md) — the embedded doc layer every prompt tells the agent to read first
+- [agent-docs-module-agent-docs-rs](./agent-docs-module-agent-docs-rs.md) — the Rust module serving those docs
+- [workspace-files-are-canonical decision](../../decisions/workspace-files-are-canonical-agents-author.md) — why prompts target files, not app UI
+- [incoming-drop-folder](./incoming-drop-folder.md) — the ingest prompt's zero-code alternative (just place the file)
+
+## Lifecycle
+
+- First added: files-012, 2026-09-22 (commit \`1e7709b\`) — phase C of [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md)
+- 2026-09-22 (commit \`0e1afed\`): prompts grouped under four starter goals — \`goal:\` frontmatter field added, parser carries it, page renders goal sections; homepage gained the always-visible ✦ LLM skills button linking here
 `,
   "pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md": `---
 type: Entity
@@ -17461,6 +17967,45 @@ Props like \`category\`, \`value\`, \`tooltip\`, \`labelFor\`, \`selected\` are 
 - 2026-09-17: reached \`/library\` detail-page previews — the demo passes a \`config\` snippet to the real renderer (bar and heatmap both forward it to \`ChartCard\`), with schema-driven option fields using the same markup as \`BlockInspector\` (Orientation / Top N / Other label live-update the chart).
 - 2026-09-21: \`contained\` prop — page-editor drawers anchor to \`.app-body\` (below header, above tab bar) instead of the viewport; focused-config width 50vw → 45vw; DrawerTabs chrome removed per [all-drawers-adopt-the-data-tabledrawer-design](../../decisions/all-drawers-adopt-the-data-tabledrawer-design.md).
 `,
+  "pages/entities/connections-file-store-connections-rs.md": `---
+type: Entity
+title: Connections file store (connections.rs)
+description: The Rust content-command module that backs **saved PostgreSQL connections** — task \`files-005\` of the workspace-file-first build (commit \`fb2f6fb\`, 2026-09-22).
+tags: [rust, backend, workspace-file-first, connections, secrets, dm-store]
+timestamp: "2026-09-22T14:31:08.584Z"
+---
+
+# Connections file store (connections.rs)
+
+The Rust content-command module that backs **saved PostgreSQL connections** — task \`files-005\` of the workspace-file-first build (commit \`fb2f6fb\`, 2026-09-22). Fifth of six Phase A content-type migrations. Unlike its siblings it is a **new invoke surface** (there was no saved-connections feature before) and the only one whose secret halves live *outside* the \`dm/\` tree.
+
+## Why it matters
+
+Lets a user save a PostgreSQL connection by name and reconnect with one click, while keeping the password-bearing connection-string URL out of the workspace's version-controllable files — the end-to-end enforcement of [rules/secrets-never-live-in-workspace-content-files](../../rules/secrets-never-live-in-workspace-content-files.md): an agent can read every \`dm/\` file and still never see a credential.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/connections.rs\` (built on [dm-store-command-module](./dm-store-command-module.md))
+- **Doc format**: \`dm/connections.json\` holds \`{connections: [{name, urlEnv}]}\` — non-secret metadata only. A test asserts the doc never contains anything secret-shaped
+- **Secret store**: the full connection URL (password inside) lives in the workspace \`.env\` (gitignored) as \`DM_CONN_<SLUG>_URL\` — slug of the connection name, uppercased, \`-\`→\`_\` (\`env_var_for("Prod DB")\` → \`DM_CONN_PROD_DB_URL\`)
+- **\`.env\` writer** (\`ws_env_set\`): append-or-replace of exactly its own var, preserving every other line and comment; atomic write — never a partial \`.env\`. The \`.env\` is user-owned: delete removes only the \`dm/connections.json\` entry, never \`.env\` lines
+- **Resolver** (\`ws_env_value\`): workspace \`.env\` first, then process env; a missing var errors naming the exact var + \`.env\` path ("DM_CONN_PROD_URL is not set — add it to …\\.env (gitignored)")
+- **Fail loud**: corrupt doc → \`check_json_object\` error, save refuses — [rules/single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber.md); save is read-modify-write upsert-by-name
+- **Invoke surface** (all new): \`list_connections\`, \`save_connection(name, url)\`, \`delete_connection(name)\` (idempotent), \`resolve_connection(name) → {url}\`
+- **Frontend**: \`/connect\` Postgres tab gains a saved-connections select (Connect / Delete) + a "Save this connection as…" row; loads on tab activation; resolve fills the URL field and connects
+
+## Lifecycle
+
+- First added: 2026-09-22, task \`files-005\` (commit \`fb2f6fb\` on the workspace-file-first branch; suite 102/102, svelte-check clean)
+
+## Relationships
+
+- [dm-store-command-module](./dm-store-command-module.md) — path conventions, atomic writes, shape checks underneath
+- [rules/secrets-never-live-in-workspace-content-files](../../rules/secrets-never-live-in-workspace-content-files.md) — the rule this module enforces end to end
+- [saved-queries-file-store-saved-queries-rs](./saved-queries-file-store-saved-queries-rs.md) and [master-items-relationships-file-store-items-rs](./master-items-relationships-file-store-items-rs.md) — sibling Phase A stores; connections differs by storing secrets via \`.env\` indirection
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — \`files-005\` of the executable spec
+- [decisions/workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — the architecture this implements
+`,
   "pages/entities/create-in-data-round-trip.md": `---
 type: Entity
 title: Create-in-/data round-trip
@@ -17491,6 +18036,43 @@ Deep-link flow from a \`/pages\` chart's pick surfaces to the **full master-item
 ## Lifecycle
 
 - First added: 2026-09-21 — "Create in /data" buttons + preset deep-link + attach-on-return, one pass.
+`,
+  "pages/entities/data-incoming-drop-folder-incoming-rs.md": `---
+type: Entity
+title: data/incoming drop folder (incoming.rs)
+description: data/incoming drop folder (incoming.rs)
+tags: [rust, backend, workspace-file-first, ingest, duckdb]
+timestamp: "2026-09-22T15:29:40.287Z"
+---
+
+# data/incoming drop folder (incoming.rs)
+
+# data/incoming drop folder (incoming.rs)
+
+\`src-tauri/src/commands/incoming.rs\` — the workspace \`data/incoming/\` drop zone (workspace-file-first FR-13, 2026-09-22): drop a CSV/Parquet/JSON file there and it is ingested into the workspace DuckDB automatically, with zero app interaction.
+
+## Why it matters
+
+Ingest previously ran only through the /connect page; the drop folder makes ingest ambient. A user drags a file into the workspace folder — or a coding agent copies one in — and the table exists. It is the file-first analog of Connect: the filesystem gesture replaces the UI flow.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/incoming.rs\`; entry point \`ingest_incoming_file(conn, ws, path) -> table name\`
+- **Readers**: reuses the Connect pipeline's DuckDB readers — \`read_csv_auto('…', ignore_errors=true)\`, \`read_parquet\`, \`read_json_auto\`; other extensions error ("unsupported file type")
+- **Table naming**: filename stem, lowercased, spaces/dashes → \`_\`; a table with that name already existing is an error that names the fix ("rename the file to ingest as a new table")
+- **Success**: \`CREATE TABLE … AS SELECT\`, then the file is moved to \`data/main/\` (the canonical source-file home)
+- **Failure**: unsupported type / bad name / SQL error / duplicate table → \`dm:error\` event, file left untouched in \`data/incoming/\`
+- **Tests**: in-module \`#[cfg(test)]\` — csv round-trip + both error paths (per [rules/rust-backend-tests-live-in-module-via-cfg-test](../../rules/rust-backend-tests-live-in-module-via-cfg-test.md))
+
+## Relationships
+
+- [dm-watch-command-module](./dm-watch-command-module.md) — the watcher side that emits \`dm:error\` for failed ingests
+- [dm-store-command-module](./dm-store-command-module.md) — name validation (\`valid_name\`) shared
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-13 of the executable spec (the one "cuttable" piece — it shipped)
+
+## Lifecycle
+
+- First added: 2026-09-22, FR-13 of the workspace-file-first build
 `,
   "pages/entities/database-command-module.md": `---
 type: Entity
@@ -17599,6 +18181,160 @@ One double-click instead of remembering the 3-step PowerShell chain:
 
 - First added: 2026-09-17, shipped in PR #12 alongside the skeleton pick/create modal flow.
 `,
+  "pages/entities/dm-events-frontend-module.md": `---
+type: Entity
+title: dm-events frontend module
+description: "\`src/lib/dm-events.ts\` — the frontend half of the dm/ live-reload loop (workspace-file-first task \`files-008\`, commit \`d7f0fc7\`): one Tauri event bus for \`dm:ch"
+tags: [dm, live-reload, tauri-events, svelte, workspace-file-first]
+timestamp: "2026-09-22T14:56:22.952Z"
+---
+
+# dm-events frontend module
+
+\`src/lib/dm-events.ts\` — the frontend half of the dm/ live-reload loop (workspace-file-first task \`files-008\`, commit \`d7f0fc7\`): one Tauri event bus for \`dm:changed\` / \`dm:error\`, a pure routing core, and per-kind subscriptions that views use to re-fetch. This is what closes the realtime agent→app loop: an agent writes \`dm/pages/revenue.json\` → the Rust watcher validates → this bus re-fetches every open view touching that content within ~300ms; parse errors surface in the global error banner + console instead of silently stale views.
+
+## Why it matters
+
+Without it, agent-authored workspace file changes only appear after a manual reload, and a broken JSON file fails invisibly. It makes "watch the agent build the page" possible and keeps the app honest about file-level validation errors.
+
+## Details
+
+- **Location**: \`src/lib/dm-events.ts\`; tests: \`tests/dm-events.test.ts\` (6 tests: routing matrix, malformed-payload defense, registry \`off()\` semantics)
+- **Interface**:
+  - Types: \`DmChanged {kind, name, removed}\`, \`DmError {path, reason}\`
+  - \`onDmChanged(kind, cb)\` → returns \`off()\` (use as \`$effect\` cleanup)
+  - \`onDmError(cb)\` → returns \`off()\`
+  - \`dispatchChanged(e)\` / \`dispatchError(e)\` — internal dispatch
+  - \`routeDmEvent(handlers, event, payload)\` — pure routing core; ignores malformed payloads (defensive; the watcher never sends them)
+  - \`initDmEvents(onError?)\` — idempotent; called once from the root layout, wires the two \`listen()\` calls, \`console.warn\`s errors, and forwards them to the global error banner
+- **Configuration**: none
+
+## Relationships
+
+- [dm-watch-command-module](./dm-watch-command-module.md) — the Rust producer: notify watcher → validate → emits \`dm:changed\`/\`dm:error\` that this bus consumes
+- [dm-store-command-module](./dm-store-command-module.md) — writer-side echo suppression lives in its \`atomic_write\`; views re-fetch through dm_store-backed commands
+- [workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — the spec artifact; this module is task \`files-008\`
+
+## Lifecycle
+
+- First added: 2026-09-22 — \`files-008\` (commit \`d7f0fc7\`, branch \`feature/workspace-file-first\`)
+- Wired views at birth: \`/pages\` list (\`page\`), \`/pages/[slug]\` editor (\`page\` + \`measure\` + \`dimension\` + \`relationships\`), \`/query\` saved queries (\`saved-query\`), \`ItemEditor\` (per-kind), \`RelationshipEditor\` (\`relationships\`), \`/connect\` connections (\`connections\`) — each one line: its existing refresh fn inside \`$effect(() => onDmChanged(...))\`
+- \`files-009\` shipped (2026-09-22, commit \`05d6ea1\`): write-through editor with the Reload/Keep-mine clobber banner - see [write-through core](write-through-core-src-lib-write-through-ts.md). Still pending in the phase: \`files-010\` write-through for all drawers
+
+## Source
+
+- \`src/lib/dm-events.ts\` — the module
+- \`tests/dm-events.test.ts\` — routing-core tests
+`,
+  "pages/entities/dm-store-command-module.md": `---
+type: Entity
+title: dm_store command module
+description: "\`src-tauri/src/commands/dm_store.rs\` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write"
+tags: [rust, backend, workspace-file-first, storage, dm-store]
+timestamp: "2026-09-22T13:57:08.173Z"
+---
+
+# dm_store command module
+
+\`src-tauri/src/commands/dm_store.rs\` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic writes, and parse-level shape checks. Not an invoke-command module itself; it exposes plain functions that the content command modules (pages, master-items, saved-queries, connections, drafts) build on. Shipped 2026-09-22 as task \`files-001\` (commit \`4b722d9\` on \`feature/workspace-file-first\`), 11 in-module cargo tests green.
+
+## Why it matters
+
+It is the single choke point where "path is identity" becomes real: every read/write of agent-authored workspace content routes through these helpers, so agents editing files and the frontend writing via commands land on identical paths and never observe a partial file.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/dm_store.rs\` (declared in \`src-tauri/src/commands/mod.rs\`)
+- **Interface**:
+  - Path mapping — \`dm_dir\`, \`page_path\` (\`dm/pages/<slug>.json\`), \`item_path\` (\`dm/master-items/{measure,dimension}/<id>.json\`), \`relationships_path\`, \`saved_query_path\` (\`dm/saved-queries/<slug>.sql\`), \`connections_path\`, \`drafts_dir\`
+  - Path→name inverses consumed by the dm_watch watcher (\`files-007\`) — \`page_slug_from_path\`, \`item_from_path\`, \`saved_query_slug_from_path\`
+  - \`valid_name\` — rejects traversal, separators, leading dots, padded whitespace; allows interior spaces (\`Q1 Sales\`)
+  - \`atomic_write\` — temp file + rename, temp cleanup on failure, parents auto-created
+  - \`check_json_object\` — parse-level shape check the dm_watch watcher uses to classify \`dm:changed\` vs \`dm:error\`
+- **Configuration**: none — paths derive from the active workspace root
+- **Documented ceiling**: crash *between* temp-write and rename is not unit-testable without fault-injection seams; the atomicity guarantee is stated in the module doc-comment instead of theater-tested.
+
+## Relationships
+
+- [Workspace content tree decision](../../decisions/workspace-content-tree-dm-with-path-is-identity.md) — implements its "path is identity, native formats" contract
+- [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-1 of the executable spec; \`files-002\` (remapping pages commands) is its first consumer
+- [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) — the DuckDB-backed storage it will progressively replace for pages/master-items
+- [database-command-module](./database-command-module.md) — sibling DuckDB lifecycle module in the same commands registry
+- [dm_watch command module](./dm-watch-command-module.md) — consumes the path inverses and shape checks; \`atomic_write\` marks self-writes into its echo registry
+
+## Lifecycle
+
+- First added: 2026-09-22, task \`files-001\` — TDD (RED run caught two real bugs: \`.sql\` files fell through the JSON-only stem helper; \`valid_name\` self-contradicted on interior spaces)
+- 2026-09-22: \`files-002\`–\`006\` shipped — pages, master items, saved queries, connections, and the one-time migration are all file-backed; \`files-007\` (dm_watch) consumes the path→name inverses, and \`atomic_write\` now feeds the watcher’s echo registry
+- Next: \`files-008\` — frontend \`dm:changed\`/\`dm:error\` listeners
+`,
+  "pages/entities/dm-watch-command-module.md": `---
+type: Entity
+title: dm_watch command module
+description: \`src-tauri/src/commands/dm_watch.rs\` — the Rust file watcher for the workspace \`dm/\` tree (task \`files-007\`, commit \`72bb92e\`, 2026-09-22, branch \`feature/works
+tags: [rust, backend, workspace-file-first, file-watcher, live-reload, dm-watch]
+timestamp: "2026-09-22T14:52:22.837Z"
+---
+
+# dm_watch command module
+
+\`src-tauri/src/commands/dm_watch.rs\` — the Rust file watcher for the workspace \`dm/\` tree (task \`files-007\`, commit \`72bb92e\`, 2026-09-22, branch \`feature/workspace-file-first\`). Turns agent file edits into Tauri events the frontend hot-reloads on — the "watch the agent build the page" half of the live-reload design. Shipped backend-side; the frontend listeners land in \`files-008\`.
+
+## Why it matters
+
+Agents author app content by editing workspace files; without the watcher the app only sees changes on the next command invocation. The watcher + echo suppression is what makes live co-editing safe — including no reload loops from the app's own write-throughs.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/dm_watch.rs\` (declared in \`commands/mod.rs\`; \`notify = "8"\` added to Cargo.toml)
+- **Pipeline**: notify recursive watch on \`<workspace>/dm/\` → mpsc → debounced flusher thread (300ms window; a removal beats a modify of the same path in-window) → echo check → \`classify\` → emit \`dm:changed {kind, name, removed}\` / \`dm:error {path, reason}\`
+- **Echo suppression lives with the writer**: \`dm_store::atomic_write\` calls \`dm_watch::mark_self_write(dest)\` after a successful rename; registry window 600ms ≥ write debounce 400ms — the app's own writes never loop back as events
+- **Classification matrix** (\`classify\` is a pure fn, unit-tested without Tauri): \`dm/pages/*.json\` → requires \`{"rows"}\`; \`dm/master-items/{measures,dimensions}/*.json\` → \`{"tableName","expr"}\`; \`dm/relationships.json\` → \`{"relationships"}\`; \`dm/saved-queries/*.sql\` → header check via \`saved_queries::check_query_file\`; \`dm/connections.json\` → \`{"connections"}\`; drafts, docs, README, \`.env\`, settings, unknown files → ignored (agent scratch space is safe)
+- **Lifecycle**: starts on \`initialize_duckdb\`; a workspace switch replaces it (dropping the watcher stops its thread)
+
+## Relationships
+
+- [dm-store-command-module](./dm-store-command-module.md) — supplies the path→name inverses (\`page_slug_from_path\`, \`item_from_path\`, \`saved_query_slug_from_path\`) and \`check_json_object\` shape checks that \`classify\` builds on; \`atomic_write\` feeds the echo registry
+- [database-command-module](./database-command-module.md) — starts the watcher during DuckDB init (\`database.rs\`)
+- [saved-queries-file-store-saved-queries-rs](./saved-queries-file-store-saved-queries-rs.md) — owns \`check_query_file\`, the saved-query header check classify reuses
+- [Live-reload mechanics decision](../../decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — the design this implements (approach A: full watcher)
+- [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-7 / \`files-007\` of the executable spec
+
+## Lifecycle
+
+- First added: 2026-09-22, \`files-007\` — 5 classification/echo tests; full suite 115/115
+- Next: \`files-008\` — \`dm:changed\`/\`dm:error\` listeners, store invalidation, toast/inline problems surfacing
+`,
+  "pages/entities/e2e-cdp-driver.md": `---
+type: Entity
+title: E2E CDP driver
+description: "\`e2e/cdp.mjs\` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies."
+tags: [e2e, cdp, testing, devtools, tooling]
+timestamp: "2026-09-23T05:31:38.552Z"
+---
+
+# E2E CDP driver
+
+\`e2e/cdp.mjs\` — the committed CLI driver for e2e-verifying data.monster's real UI over CDP. It packages the ad-hoc probe pattern used across the CDP learnings (see [driving the real UI over CDP](../../learnings/drive-data-monster-s-real-ui-over-cdp.md)) into one reusable script: node >= 21 native WebSocket, zero dependencies, ~65 lines.
+
+It connects to the app's \`/json\` target list on port **9223** (pick the page target matching \`6123|tauri|localhost\`), opens the WebSocket, and returns four primitives: \`send(method, params)\` (raw CDP), \`evalJs(expression)\` (Runtime.evaluate with \`awaitPromise\`, throws on page exceptions), \`nav(path)\` (navigate to \`http://localhost:6123<path>\` + 1.5s settle), and \`text()\` (body innerText). It enables \`Page\` + \`Runtime\` domains and calls \`Page.bringToFront\` on connect — the [minimized-window throttling guard](../../learnings/minimized-occluded-webview2-throttles-page.md).
+
+## Details
+
+- **Location**: \`e2e/cdp.mjs\` · step scripts in \`e2e/steps/*.mjs\` (loaded by \`run\` via dynamic import)
+- **CLI**: \`node e2e/cdp.mjs nav <path>\` · \`text\` (dump body text) · \`eval <expr>\` · \`run <step>\` (named step from \`steps/\`)
+- **Requires**: the dev app running CDP-drivable — \`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223\` (exact restart procedure in [the CDP-verify preference](../../preferences/cdp-verify-the-dev-app-via-webview2-additional.md))
+
+## Relationships
+
+- [dm live-reload events don't replay](../../learnings/dm-live-reload-events-don-t-replay-e2e.md) — event-driven surfaces need navigate-first test ordering when driven through this script
+- [CDP CAN click svelteplot marks](../../learnings/cdp-can-click-svelteplot-marks-dispatchmouseevent.md) — \`Input.dispatchMouseEvent\` via \`send()\` is the click primitive
+- [dm-changed with no subscriber](../../learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — the header-table-count fix was found and verified through this driver
+
+## Lifecycle
+
+- First added: 2026-09-22 (\`feature/workspace-file-first\`, used to e2e-verify the incoming-drop ingest and the /data tab URL sync)
+`,
   "pages/entities/expreditor-component.md": `---
 type: Entity
 title: ExprEditor component
@@ -17695,6 +18431,42 @@ Reusable SveltePlot-based heatmap component (generic \`<T>\`, cell grid with thr
 
 - Ported from \`E:\\kees.pippeloi.nl\\src\\routes\\work\\high-level\`
 `,
+  "pages/entities/incoming-drop-folder.md": `---
+type: Entity
+title: Incoming drop folder
+description: "The \`data/incoming/\` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and "
+tags: [ingest, watcher, dm-tree, workspace, backend]
+timestamp: "2026-09-22T15:30:37.206Z"
+---
+
+# Incoming drop folder
+
+The \`data/incoming/\` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and it is auto-ingested — no connect step, no UI. Core function \`ingest_incoming_file(conn, ws, path)\` picks the reader by extension (\`read_csv_auto\` / \`read_parquet\` / \`read_json_auto\`), creates a table named after the filename stem, and moves the file to \`data/main/\` on success.
+
+Behavior contract:
+
+- **Success** → table exists, file relocated to \`data/main/\`, \`dm:changed\` fires so table lists hot-reload
+- **Failure** (unsupported extension, duplicate table name, parse error) → file left **untouched**, named error returned
+- Watched by a second notify watcher inside [pages/entities/dm-watch-command-module](./dm-watch-command-module.md); because \`load_file\` is State-coupled, the watcher thread reaches the DB via \`app.state::<DuckDbState>()\`
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/incoming.rs\` (132 lines) · watcher wiring in \`src-tauri/src/commands/dm_watch.rs\`
+- **Interface**: \`fn ingest_incoming_file(conn: &Connection, ws: &Path, path: &Path) -> Result<String, String>\` (returns the created table name)
+- **Configuration**: none — folder path is fixed at \`<workspace>/data/incoming/\`
+- **Tests**: \`#[cfg(test)]\` in-module — ingest+move, unsupported-type and duplicate-table error without touching the file
+
+## Relationships
+
+- [pages/entities/dm-watch-command-module](./dm-watch-command-module.md) — hosts the incoming watcher + ingest flusher
+- [Workspace files are canonical (decision)](../../decisions/workspace-files-are-canonical-agents-author.md) — agents add data by placing files, no commands needed
+- [agent-docs-system](./agent-docs-system.md) / [agent-prompts-page](./agent-prompts-page.md) — the ingest prompt points agents here as the zero-code path
+
+## Lifecycle
+
+- First added: files-013, 2026-09-22 — phase D of [pages/artifacts/workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md); completed all 13 tasks of the branch
+- 2026-09-22 (commit \`58d713a\`): the layout subscribes to this ingest's \`dm:changed {kind:"table"}\` and refreshes the header table count — its first frontend subscriber (see [the no-subscriber learning](../../learnings/dm-changed-with-no-subscriber-silently-no-ops.md))
+`,
   "pages/entities/index.md": `# Entities
 
 _Concrete named things will be listed here._
@@ -17721,6 +18493,18 @@ _Concrete named things will be listed here._
 - [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
 - [Workspace command module (Rust)](./workspace-command-module-rust.md) - What is it?
 - [Workspaces page (/workspaces)](./workspaces-page-workspaces.md) - What is it?
+- [dm_store command module](./dm-store-command-module.md) - \`src-tauri/src/commands/dm_store.rs\` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write
+- [Master items & relationships file store (items.rs + relationships.rs)](./master-items-relationships-file-store-items-rs.md) - The Rust content-command modules that back master items and the relationship graph as **files in the \`dm/\` workspace tree** — task \`files-003\` of the workspace-
+- [Saved queries file store (saved_queries.rs)](./saved-queries-file-store-saved-queries-rs.md) - The Rust content-command module that backs saved queries as **plain \`.sql\` files in the \`dm/saved-queries/\` workspace tree** — task \`files-004\` of the workspace
+- [Connections file store (connections.rs)](./connections-file-store-connections-rs.md) - The Rust content-command module that backs **saved PostgreSQL connections** — task \`files-005\` of the workspace-file-first build (commit \`fb2f6fb\`, 2026-09-22).
+- [dm_watch command module](./dm-watch-command-module.md) - \`src-tauri/src/commands/dm_watch.rs\` — the Rust file watcher for the workspace \`dm/\` tree (task \`files-007\`, commit \`72bb92e\`, 2026-09-22, branch \`feature/works
+- [dm-events frontend module](./dm-events-frontend-module.md) - \`src/lib/dm-events.ts\` — the frontend half of the dm/ live-reload loop (workspace-file-first task \`files-008\`, commit \`d7f0fc7\`): one Tauri event bus for \`dm:ch
+- [Write-through core (src/lib/write-through.ts)](./write-through-core-src-lib-write-through-ts.md) - A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task \`files-009\`, commit \`05d6ea1\`, 2026-09-22). All deboun
+- [Agent docs module (agent_docs.rs)](./agent-docs-module-agent-docs-rs.md) - \`src-tauri/src/commands/agent_docs.rs\` — embeds the agent-docs markdown and syncs it into the workspace as \`dm/docs/\` + \`README.md\` on version change (task \`files-011\`, 2026-09-22)
+- [Agent docs system](./agent-docs-system.md) - The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at \`src-tauri/agent-docs/\`
+- [Incoming drop folder](./incoming-drop-folder.md) - The \`data/incoming/\` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and
+- [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route \`/agent\` (\`src/routes/agent/+page.svelte\`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
+- [E2E CDP driver](./e2e-cdp-driver.md) - \`e2e/cdp.mjs\` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 `,
   "pages/entities/labsplaceholder-component.md": `---
 type: Entity
@@ -17905,6 +18689,42 @@ It turns the library detail page into the handshake surface between the human br
 - First added: 2026-09 — code-tab polish pass (Prism highlighting, path headers, copy buttons)
 - 2026-09-17 — \`Task: <placeholder>\` replaced with the interview-first \`Task: OPEN\` block; the agent now asks the questions instead of the human writing the brief (1-line change to \`llmPrompt\`)
 `,
+  "pages/entities/master-items-relationships-file-store-items-rs.md": `---
+type: Entity
+title: Master items & relationships file store (items.rs + relationships.rs)
+description: The Rust content-command modules that back master items and the relationship graph as **files in the \`dm/\` workspace tree** — task \`files-003\` of the workspace-
+tags: [rust, backend, workspace-file-first, master-items, relationships, dm-store]
+timestamp: "2026-09-22T14:17:07.308Z"
+---
+
+# Master items & relationships file store (items.rs + relationships.rs)
+
+The Rust content-command modules that back master items and the relationship graph as **files in the \`dm/\` workspace tree** — task \`files-003\` of the workspace-file-first build (commit \`55fbea3\`, 2026-09-22). Replaces the DuckDB-backed storage in [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) for these two content types; \`/pages\` content was already file-backed by \`files-002\`.
+
+## Why it matters
+
+Charts reference master items by stable id (\`{"ref": id}\`) and the relationship graph drives item availability — both must survive agent hand-edits and git versioning. Files make the workspace folder the interface: agents author content by editing the tree directly, with zero timestamps so diffs stay clean.
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/items.rs\`, \`src-tauri/src/commands/relationships.rs\` (built on [dm-store-command-module](./dm-store-command-module.md))
+- **Master items**: \`dm/master-items/{measures,dimensions}/<id>.json\` — filename = the stable id; \`get\` searches both folders; \`delete\` is idempotent; invalid agent-written files land in \`errors[]\` without breaking the list
+- **Relationships**: one \`relationships.json\` doc, read-modify-write, upsert-by-id keeps the generated \`rel-<from>-<to>\` slug
+- **Clobber guard**: if the doc is corrupt (agent mid-edit), \`list\` errors loudly and \`save\` **refuses** rather than overwriting the hand-edited graph with an empty one — see [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber.md)
+- **Tests**: 13 new in-module tests (full suite 92/92)
+
+## Lifecycle
+
+- First added: 2026-09-22, task \`files-003\` (commit \`55fbea3\` on \`feature/workspace-file-first\`)
+- Caught during the task: \`dm_store::item_dir\` initially created singular \`measure/\`/\`dimension/\` folders — corrected to the spec's plural \`measures/\`/\`dimensions/\`, because the README tree agents will see comes from the spec, and **the spec wins over the implementation** when they disagree
+
+## Relationships
+
+- [dm-store-command-module](./dm-store-command-module.md) — path conventions, atomic writes, shape checks underneath
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — \`files-003\` of the executable spec
+- [workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — the architecture this implements
+- [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) — the DuckDB storage being replaced
+`,
   "pages/entities/pagegrid-component.md": `---
 type: Entity
 title: PageGrid component
@@ -18029,6 +18849,42 @@ The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal
 
 - First added: 2026-09-17 (PR #12), replacing SkeletonSetup's inline dropdowns + ✚ Create… mini form; in-chart summary added in PR #13; rewired onto the shared controls kit in PR #18.
 - 2026-09-21: create form's expression input → ExprEditor; "Create in /data" button added beside "New master item".
+`,
+  "pages/entities/saved-queries-file-store-saved-queries-rs.md": `---
+type: Entity
+title: Saved queries file store (saved_queries.rs)
+description: The Rust content-command module that backs saved queries as **plain \`.sql\` files in the \`dm/saved-queries/\` workspace tree** — task \`files-004\` of the workspace
+tags: [rust, backend, workspace-file-first, saved-queries, dm-store]
+timestamp: "2026-09-22T14:22:33.104Z"
+---
+
+# Saved queries file store (saved_queries.rs)
+
+The Rust content-command module that backs saved queries as **plain \`.sql\` files in the \`dm/saved-queries/\` workspace tree** — task \`files-004\` of the workspace-file-first build (commit \`fd5a5fc\`, 2026-09-22). Fourth of six Phase A content-type migrations, after pages (\`files-002\`) and master items + relationships (\`files-003\`); connections store (\`files-005\`) and migration + git bootstrap (\`files-006\`) remain.
+
+## Why it matters
+
+Saved queries become agent-native artifacts: a coding agent with only file tools reads/writes SQL directly — comments, quotes, newlines intact — while the app's invoke contract stays unchanged (same command names/params; the frontend still splits tags on \`','\`).
+
+## Details
+
+- **Location**: \`src-tauri/src/commands/saved_queries.rs\` (built on [dm-store-command-module](./dm-store-command-module.md))
+- **File format**: \`dm/saved-queries/<slug>.sql\` — slug = \`generate_slug(name)\`; same-name overwrite semantics preserved; filename = identity
+- **Meta header**: optional single-line \`-- dm: {json}\` first line carrying \`name\`/\`description\`/\`tags\`. App-written files always carry it; agent-written *headerless* files default name = filename stem with the whole file as SQL body
+- **Tags duality**: JSON array in the file (agent-native), comma-separated string at the invoke boundary (frontend splits on \`,\`)
+- **Fail loud**: a malformed \`-- dm:\` header is a reported error (appears in list \`errors[]\`; update refuses) — never silently treated as SQL; applies the [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber.md) philosophy to a per-file store
+- **Update semantics**: partial-merge keeps unspecified fields; rename keeps slug/filename stable; zero timestamps in files (git-clean diffs) — mtime is surfaced as ISO \`updated\`
+
+## Lifecycle
+
+- First added: 2026-09-22, task \`files-004\` (commit \`fd5a5fc\` on the workspace-file-first branch; 7 new tests, full suite 95/95)
+
+## Relationships
+
+- [dm-store-command-module](./dm-store-command-module.md) — path conventions, atomic writes, shape checks underneath
+- [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — \`files-004\` of the executable spec
+- [workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — the architecture this implements
+- [master-items-relationships-file-store-items-rs](./master-items-relationships-file-store-items-rs.md) — sibling Phase A store (\`files-003\`)
 `,
   "pages/entities/shared-controls-kit-charts-controls.md": `---
 type: Entity
@@ -18223,6 +19079,57 @@ Workspace switching becomes visible and reusable: the user sees their workspace 
 
 - First added: 2026-09-22 — replaced the header dialog per user request (labs-inspired page with + Add, chips ordered by last opened). \`list_workspaces\` is a new Rust command: the dev app needs one restart to pick it up.
 `,
+  "pages/entities/write-through-core-src-lib-write-through-ts.md": `---
+type: Entity
+title: Write-through core (src/lib/write-through.ts)
+description: A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task \`files-009\`, commit \`05d6ea1\`, 2026-09-22). All deboun
+tags: [write-through, autosave, workspace-file-first, pages-editor, itemeditor, files-009, files-010]
+timestamp: "2026-09-22T15:10:55.895Z"
+---
+
+# Write-through core (src/lib/write-through.ts)
+
+A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task \`files-009\`, commit \`05d6ea1\`, 2026-09-22). All debouncing, coalescing, conflict classification, and rebaselining live here; editors are thin binders. Reused by the pages editor (FR-9) and the ItemEditor (FR-10, commit \`b9bb4b9\`).
+
+## Details
+
+- **Location**: \`src/lib/write-through.ts\` — unit-tested in \`tests/write-through.test.ts\` (7 tests, written RED-first)
+- **Factory**: \`createWriteThrough({ read, write, debounceMs = 400 })\` — \`read\` returns current editor text (Design JSON, raw Code-mode text, or item-draft JSON), \`write\` persists atomically to the document's \`dm/\` file
+- **Interface** (\`WriteThrough\`):
+  - \`markLocal(text)\` — a local edit; no-op when text is identical to \`lastWritten\` (baseline touch ≠ edit), else schedules the debounced flush
+  - \`flush()\` — write pending edits now ("Keep mine"); failed writes keep \`pending\` set and log, never lose the edit
+  - \`decideExternal()\` — an external \`dm:changed\` arrived: returns \`'reload'\` (clean → silently re-fetch) or \`'conflict'\` (unwritten local edits → amber Reload / Keep-mine banner, VS Code model)
+  - \`ackLoad(text)\` — rebaseline after a load/reload; \`pending\`/\`conflict\`/\`lastWritten\` readonly state
+
+## Editor wiring
+
+**Pages editor** (\`/pages/[slug]\`, files-009):
+
+- Two \`$effect\`s feed \`markLocal\`: Design/Page mutations (deep doc JSON) and Code-mode raw textarea text — **invalid JSON is written verbatim**, so the file mirrors the editor and the watcher flags it \`dm:error\`
+- The /data round-trip flushes pending edits before navigating away
+- Deleted with the old flow: Save button, \`saving\`/\`saved\` state, saved toast, the 60s auto-save interval, every explicit \`handleSave\` call (see the superseded [60s auto-save learning](../../learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md))
+
+**ItemEditor** (master-item drawer, files-010) — splits on \`draft.id\` per the [creation-saves-explicitly decision](../../decisions/creation-saves-explicitly-editing-writes-through.md):
+
+- **Editing an existing item → live write-through**: an \`$effect\` feeds every draft field change into \`markLocal\`; each change debounces 400ms into \`dm/master-items/<id>.json\`. The close button became **Done** (\`flush()\` + close)
+- **Creation keeps the explicit Save**: the stable id (\`mi_<table>_<label>\`) is minted at save time — live write-through during creation would write half-drafted files with empty/unstable ids into the agent-facing \`dm/\` tree
+- **Ceiling**: drawer conflicts are last-write-wins — the Reload/Keep-mine banner stays reserved for the pages editor, whose documents are long-lived
+
+**RelationshipEditor + saved-queries/connections UIs**: verified already mutation-immediate (every add/update/delete command writes files) — zero wiring needed.
+
+## Relationships
+
+- [dm-events-frontend-module](./dm-events-frontend-module.md) — supplies the external-change events; \`decideExternal\` classifies them against local pending state
+- [dm-watch-command-module](./dm-watch-command-module.md) — echo suppression in the watcher makes write-throughs not reload-loop (writer-fed)
+- [Workspace files are canonical](../../decisions/workspace-files-are-canonical-agents-author.md) — the decision this implements
+- [Creation saves explicitly, editing writes through live](../../decisions/creation-saves-explicitly-editing-writes-through.md) — the files-010 save-semantics convention
+- [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-9 + FR-10
+
+## Lifecycle
+
+- First added: 2026-09-22 — \`files-009\` (commit \`05d6ea1\`, branch \`feature/workspace-file-first\`), pages editor
+- Extended: 2026-09-22 — \`files-010\` (commit \`b9bb4b9\`): ItemEditor live write-through for existing items, Done button; RelationshipEditor/saved-queries/connections confirmed already file-immediate. Phase B complete (10 of 13)
+`,
   "pages/index.md": `# Pages
 
 Knowledge graph: concepts, entities, and artifacts that make up this project.
@@ -18261,6 +19168,20 @@ Knowledge graph: concepts, entities, and artifacts that make up this project.
 - [Pages E2E feedback report](./artifacts/pages-e2e-feedback-report.md) — E2E test report for the /pages report-page flow built on the semantic (master-item) layer: \`reports/pages-e2e-feedback.md\`, produced 2026-09-22 by driving the r
 - [Workspace command module (Rust)](./entities/workspace-command-module-rust.md) — What is it?
 - [Workspaces page (/workspaces)](./entities/workspaces-page-workspaces.md) — What is it?
+- [Design component reference (docs/design/components/)](./artifacts/design-component-reference-docs-design-components.md) — What is it?
+- [Workspace-file-first spec & tasks](./artifacts/workspace-file-first-spec-tasks.md) — The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (\`dm_store\` module, pages/maste
+- [dm_store command module](./entities/dm-store-command-module.md) — \`src-tauri/src/commands/dm_store.rs\` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write
+- [Master items & relationships file store (items.rs + relationships.rs)](./entities/master-items-relationships-file-store-items-rs.md) — The Rust content-command modules that back master items and the relationship graph as **files in the \`dm/\` workspace tree** — task \`files-003\` of the workspace-
+- [Saved queries file store (saved_queries.rs)](./entities/saved-queries-file-store-saved-queries-rs.md) — The Rust content-command module that backs saved queries as **plain \`.sql\` files in the \`dm/saved-queries/\` workspace tree** — task \`files-004\` of the workspace
+- [Connections file store (connections.rs)](./entities/connections-file-store-connections-rs.md) — The Rust content-command module that backs **saved PostgreSQL connections** — task \`files-005\` of the workspace-file-first build (commit \`fb2f6fb\`, 2026-09-22).
+- [dm_watch command module](./entities/dm-watch-command-module.md) — \`src-tauri/src/commands/dm_watch.rs\` — the Rust file watcher for the workspace \`dm/\` tree (task \`files-007\`, commit \`72bb92e\`, 2026-09-22, branch \`feature/works
+- [dm-events frontend module](./entities/dm-events-frontend-module.md) — \`src/lib/dm-events.ts\` — the frontend half of the dm/ live-reload loop (workspace-file-first task \`files-008\`, commit \`d7f0fc7\`): one Tauri event bus for \`dm:ch
+- [Write-through core (src/lib/write-through.ts)](./entities/write-through-core-src-lib-write-through-ts.md) — A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task \`files-009\`, commit \`05d6ea1\`, 2026-09-22). All deboun
+- [Agent docs module (agent_docs.rs)](./entities/agent-docs-module-agent-docs-rs.md) — Agent docs module (agent_docs.rs)
+- [Agent docs system](./entities/agent-docs-system.md) — The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at \`src-tauri/agent-docs/\`
+- [Agent prompts page](./entities/agent-prompts-page.md) — The SvelteKit route \`/agent\` (\`src/routes/agent/+page.svelte\`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
+- [Incoming drop folder](./entities/incoming-drop-folder.md) — The \`data/incoming/\` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and 
+- [E2E CDP driver](./entities/e2e-cdp-driver.md) — \`e2e/cdp.mjs\` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 `,
   "pages/TEMPLATES.md": `---
 type: Concept
@@ -18583,6 +19504,22 @@ tours) are nothing alike, and kees.pippeloi.nl is this repo's reference
 project — the signal was available before shipping. Discovered when the user
 rejected the eval-suite deliverables.
 `,
+  "rules/dm-live-reload-wires-through-dm-events.md": `---
+type: Rule
+title: dm/ live-reload wires through dm-events — never a raw listen()
+description: "**The rule**: any view or component that renders \`dm/\`-managed content subscribes to live changes through \`src/lib/dm-events.ts\` — \`onDmChanged(kind, () => void"
+tags: [dm, live-reload, tauri-events, svelte, workspace-file-first]
+timestamp: "2026-09-22T14:56:22.952Z"
+---
+
+# dm/ live-reload wires through dm-events — never a raw listen()
+
+**The rule**: any view or component that renders \`dm/\`-managed content subscribes to live changes through \`src/lib/dm-events.ts\` — \`onDmChanged(kind, () => void refresh())\` inside \`$effect\` (the returned \`off()\` is the effect's automatic cleanup), and errors flow through \`initDmEvents(onError)\` wired once in the root layout. Never import \`listen\` from \`@tauri-apps/api/event\` for dm events.
+
+**When it applies**: every present and future dm/-backed surface — the six views wired in \`files-008\` (/pages list, /pages/[slug] editor, /query saved queries, ItemEditor, RelationshipEditor, /connect) and everything \`files-009\`/\`files-010\` (write-through) will touch.
+
+**Rationale**: files-008 (2026-09-22, commit \`d7f0fc7\`) established one bus with a pure, unit-tested routing core (\`tests/dm-events.test.ts\`: routing matrix, malformed-payload defense, \`off()\` semantics). Hand-rolled listeners would bypass the malformed-payload defense, duplicate per-view unlisten bookkeeping, and fragment the single global error-banner surface. Views keep only their existing refresh functions — wiring is one line each.
+`,
   "rules/drawer-form-controls-come-from-the-shared-controls.md": `---
 type: Rule
 title: Drawer form controls come from the shared controls kit — never hand-roll input chrome
@@ -18715,6 +19652,11 @@ Stated by the user as "hard rules — no exceptions" (2026-09-14 feature-loop ru
 - [Pick display labels resolve through roleLabels() — never hand-roll chip labels](./pick-display-labels-resolve-through-rolelabels.md) - Guideline
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](./drawer-form-controls-come-from-the-shared-controls.md) - Guideline
 - [Resize requests use the app's existing size classes — never ad-hoc multipliers](./resize-requests-use-the-app-s-existing-size-classes-never-ad.md) - The guideline
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](./restore-points-are-git-tags-restore-point.md) - The rule
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](./secrets-never-live-in-workspace-content-files.md) - The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace
+- [Rust backend tests live in-module via #[cfg(test)]](./rust-backend-tests-live-in-module-via-cfg-test.md) - The rule
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](./single-doc-stores-fail-loud-never-clobber.md) - **The rule**: any store backed by a single agent-editable doc file (e.g. \`dm/relationships.json\`, later the connections store) must fail loud instead of clobber
+- [dm/ live-reload wires through dm-events — never a raw listen()](./dm-live-reload-wires-through-dm-events.md) - **The rule**: any view or component that renders \`dm/\`-managed content subscribes to live changes through \`src/lib/dm-events.ts\` — \`onDmChanged(kind, () => void
 `,
   "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md": `---
 type: Rule
@@ -19021,6 +19963,32 @@ Any "make X bigger/smaller" style request in the app UI.
 
 2026-09-22, \`/workspaces\` Add button: user asked for 3× bigger, the literal implementation shipped, and the immediate response was "thats way too big" — reverted to the existing \`.btn-lg\` class with zero custom sizing. Also aligns with the ponytail ladder: what's already in the codebase wins over new code.
 `,
+  "rules/restore-points-are-git-tags-restore-point.md": `---
+type: Rule
+title: Restore points are git tags restore-point/<feature>-start on pushed master HEAD
+description: The rule
+tags: [git, restore-point, workflow, feature-loop]
+timestamp: "2026-09-22T13:41:24.698Z"
+---
+
+# Restore points are git tags restore-point/<feature>-start on pushed master HEAD
+
+## The rule
+
+Before starting a feature initiative, create a restore point as a **git tag**: \`restore-point/<feature>-start\`, cut on the pushed \`master\` HEAD and pushed to origin.
+
+- Naming precedent: \`restore-point/central-charts-start\` (pre central-charts build) → \`restore-point/workspace-file-first-start\` (2026-09-22, commit \`9445c50\`, pre files-001 workspace-file work).
+- The tag must point at **pushed** master HEAD — it is a rollback anchor, not a local bookmark.
+- Caveat: a tag captures only committed work. Uncommitted drift (e.g. the DuckDB \`["bundled","json"]\` fix in \`Cargo.toml\`, \`settings.rs\`, \`internal_db.rs\` at files-001 start) is **not** in the restore point — commit it separately first, or accept it sits outside the anchor.
+
+## When it applies
+
+Any "before we do anything, create a restore point" request and any new multi-session feature start in this repo.
+
+## Rationale
+
+Master is the current line of development (see [[central-charts-work-lives-on-feature-branch]] — the old restore-point-as-master-HEAD pattern evolved into tags once PRs merged back to master). A named tag per feature start gives an unambiguous rollback point without holding master hostage.
+`,
   "rules/route-external-api-calls-through-rust.md": `---
 type: Rule
 title: Route external API calls through Rust commands, never webview fetch
@@ -19046,6 +20014,72 @@ The Analyst page's remote LLM chat was completely broken because \`fetch\` to \`
 ## Note
 
 Fetching user-supplied data URLs during Connect/ingest is already handled on the Rust side for the same reason.
+`,
+  "rules/rust-backend-tests-live-in-module-via-cfg-test.md": `---
+type: Rule
+title: "Rust backend tests live in-module via #[cfg(test)]"
+description: The rule
+tags: [rust, testing, tdd, backend, convention]
+timestamp: "2026-09-22T13:57:08.172Z"
+---
+
+# Rust backend tests live in-module via #[cfg(test)]
+
+## The rule
+
+Tests for Rust backend code are written **in the same file**, inside a \`#[cfg(test)] mod tests\` block at the bottom — no separate test files, no test crate. This is the mirror of the frontend rule ("keep test files and vitest imports out of src/"): the frontend keeps tests out of \`src/\`, the Rust backend keeps them in-module.
+
+## When it applies
+
+Any new or modified module under \`src-tauri/src/\` that gets unit tests.
+
+## Rationale
+
+- \`cargo test\` compiles \`#[cfg(test)]\` blocks together with the module, so a test run also proves the module itself compiles into the suite — a separate-file layout doesn't give you that for free.
+- House pattern already in place: \`commands/database.rs\` (line ~354) and \`commands/dm_store.rs\` (line ~174, shipped 2026-09-22 with 11 tests as task \`files-001\`) both use it.
+- TDD fits naturally: write RED tests in the in-module block first, watch them fail, then implement.
+
+## Gotcha
+
+Guarantees that need fault-injection seams (e.g. crash *between* temp-write and rename in an atomic write) are **not** unit-testable under this pattern — state the guarantee in the module doc-comment instead of writing theater tests. Documented ceilings beat fake coverage.
+`,
+  "rules/secrets-never-live-in-workspace-content-files.md": `---
+type: Rule
+title: Secrets never live in workspace content files — env references only, gitignored .env at all times
+description: "The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace "
+tags: [security, secrets, git, workspace, env, dm-tree]
+timestamp: "2026-09-22T13:45:56.738Z"
+---
+
+# Secrets never live in workspace content files — env references only, gitignored .env at all times
+
+The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace must be commit-safe.
+
+- **Secrets (API keys, connection passwords) live ONLY in the workspace \`.env\`** — gitignored, generated by the app if missing. Never in \`dm/\` files, never in \`settings.json\`.
+- **Content files carry env-var references, not values**: \`dm/connections.json\` holds \`passwordEnv: "DM_CONN_<NAME>_PASSWORD"\`; the LLM key is \`LLM_API_KEY\` (existing env-over-settings merge in \`settings.rs\` is the pattern — extend it, don't duplicate it).
+- **\`settings.json\` must not persist \`llmApiKey\`** — save strips it; reads resolve from env.
+- **App maintains the workspace \`.gitignore\`** (generate when missing): \`.env\`, \`*.duckdb\`, \`*.duckdb.wal\`. Whether \`data/main/\` is committed is the user's call.
+- **Git-safe serialization**: deterministic key order, no volatile timestamps in \`dm/\` files → clean diffs.
+
+Applies to: workspace-file-first build (\`.specs/workspace-file-first/spec.md\` FR-5/6/11/12) and any future file-backed feature.
+`,
+  "rules/single-doc-stores-fail-loud-never-clobber.md": `---
+type: Rule
+title: "Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses"
+description: "**The rule**: any store backed by a single agent-editable doc file (e.g. \`dm/relationships.json\`, later the connections store) must fail loud instead of clobber"
+tags: [workspace-file-first, data-safety, rust, backend]
+timestamp: "2026-09-22T14:17:14.745Z"
+---
+
+# Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses
+
+**The rule**: any store backed by a single agent-editable doc file (e.g. \`dm/relationships.json\`, later the connections store) must fail loud instead of clobbering: if the file is corrupt or unparseable, \`list\`/\`get\` surfaces the error to the caller, and \`save\` **refuses to write** rather than overwriting the hand-edited doc with an empty or default one.
+
+**When it applies**: read-modify-write stores over single docs in the \`dm/\` tree, where an agent or user may be mid-edit while the app reads.
+
+**Rationale**: shipped in \`files-003\` (\`src-tauri/src/commands/relationships.rs\`, 2026-09-22). Without the guard, a save triggered during a half-written agent edit silently destroys the relationship graph — the exact "the clobber" failure mode the workspace-file-first design was built to avoid. Per-item JSON stores (master items) don't need it: a broken item lands in \`errors[]\` and the rest of the list survives.
+
+**Always materialize, even empty** (added \`files-006\`, 2026-09-22): a single-doc store must write its file **even when the collection is empty** — an empty relationships graph still produces \`dm/relationships.json\`. The migration test caught the edge: an empty table produced no file, and \`verify\` then failed on the missing doc. \`store_in\` is exposed so migration and other writers share the exact same write path.
 `,
   "rules/spec-driven-features-tdd-karpathy-in-todos.md": `---
 type: Rule
@@ -19084,6 +20118,7 @@ var WIKI_PAGES = [
   { path: "overview.md", label: "Overview", group: "" },
   { path: "architecture/file-tree.md", label: "File tree", group: "Architecture" },
   { path: "decisions/library-central-component-library.md", label: "/library becomes the central component library (proposed — spec interview in progress)", group: "Decisions" },
+  { path: "decisions/agent-authors-app-content-by-editing-workspace.md", label: "Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)", group: "Decisions" },
   { path: "decisions/agent-connection-mcp-embedded-in-rust-backend.md", label: "Agent connection: MCP server embedded in the Rust backend", group: "Decisions" },
   { path: "decisions/agent-surfaces-rust-backend-mcp-and-rest.md", label: "Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside", group: "Decisions" },
   { path: "decisions/all-drawers-adopt-the-data-tabledrawer-design.md", label: "All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed", group: "Decisions" },
@@ -19092,7 +20127,9 @@ var WIKI_PAGES = [
   { path: "decisions/central-charts-v1-scope-bar-heatmap-table.md", label: "Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred", group: "Decisions" },
   { path: "decisions/chart-blocks-start-empty-needssetup-gate.md", label: "Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)", group: "Decisions" },
   { path: "decisions/consolidate-chart-engines-to-picasso-js.md", label: "Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot", group: "Decisions" },
+  { path: "decisions/creation-saves-explicitly-editing-writes-through.md", label: "Creation saves explicitly, editing writes through live (files-010)", group: "Decisions" },
   { path: "decisions/index.md", label: "Decisions", group: "Decisions" },
+  { path: "decisions/dm-migration-write-all-verify-then-drop-files-win.md", label: "dm/ migration: write all, verify, then drop — files win", group: "Decisions" },
   { path: "decisions/drawer-chrome-restyle-reverted-control-kit-stands.md", label: "Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected", group: "Decisions" },
   { path: "decisions/labs-catalog-placeholder-first.md", label: "Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first", group: "Decisions" },
   { path: "decisions/labs-per-chart-type.md", label: "Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component", group: "Decisions" },
@@ -19106,6 +20143,7 @@ var WIKI_PAGES = [
   { path: "decisions/library-registry-ts-module.md", label: "Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders", group: "Decisions" },
   { path: "decisions/library-component-builder-canonical-path.md", label: "library-component-builder skill is the canonical path for new library components", group: "Decisions" },
   { path: "decisions/linked-table-raw-fields-transient-autojoin.md", label: "Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional", group: "Decisions" },
+  { path: "decisions/live-reload-mechanics-notify-watcher-validate-dm.md", label: "Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events", group: "Decisions" },
   { path: "decisions/master-items-amendment-semantic-layer-moves-early.md", label: "Master-items amendment: semantic layer moves early into central-charts v1", group: "Decisions" },
   { path: "decisions/measures-dimensions-are-duckdb-expressions.md", label: "Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)", group: "Decisions" },
   { path: "decisions/page-editor-block-config-focused-two-panel.md", label: "Page editor block config: focused two-panel mode via cog icon (no selection ring)", group: "Decisions" },
@@ -19144,8 +20182,11 @@ var WIKI_PAGES = [
   { path: "decisions/typography-squada-one-headings-libre-baskerville.md", label: "Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped", group: "Decisions" },
   { path: "decisions/typography-syne-display-space-grotesk-dropped.md", label: "Typography: Syne display — Space Grotesk dropped", group: "Decisions" },
   { path: "decisions/speed-highlight-over-prism.md", label: "Use speed-highlight/core for code highlighting instead of Prism", group: "Decisions" },
+  { path: "decisions/workspace-content-tree-dm-with-path-is-identity.md", label: "Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)", group: "Decisions" },
+  { path: "decisions/workspace-files-are-canonical-agents-author.md", label: "Workspace files are canonical — agents author content by editing the dm/ tree in realtime", group: "Decisions" },
   { path: "decisions/workspaces-are-fully-portable-switch-reloads.md", label: "Workspaces are fully portable — switching reloads data, content, and settings", group: "Decisions" },
   { path: "learnings/data-tab-keys-labels-metadata-writes-definitions.md", label: "/data tab keys ≠ labels — \"Metadata\" writes ?tab=definitions", group: "Learnings" },
+  { path: "learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md", label: "A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer", group: "Learnings" },
   { path: "learnings/apparent-ui-bug-stale-hmr-webview.md", label: "Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging", group: "Learnings" },
   { path: "learnings/auto-margins-app-main-disable-flex-stretch.md", label: "Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%", group: "Learnings" },
   { path: "learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md", label: "Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption", group: "Learnings" },
@@ -19166,9 +20207,13 @@ var WIKI_PAGES = [
   { path: "learnings/couldn-t-find-callback-id-tauri-warning.md", label: "Couldn't find callback id\" Tauri warning is a benign reload artifact", group: "Learnings" },
   { path: "learnings/css-text-transform-changes-innertext-probes.md", label: "CSS text-transform changes innerText, not textContent — probe labels case-insensitively", group: "Learnings" },
   { path: "learnings/d2-diagrams-not-interactive.md", label: "D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook", group: "Learnings" },
+  { path: "learnings/dm-live-reload-events-don-t-replay-e2e.md", label: "dm live-reload events don't replay — e2e must navigate first, then write the file", group: "Learnings" },
+  { path: "learnings/dm-changed-with-no-subscriber-silently-no-ops.md", label: "dm:changed with no subscriber silently no-ops — incoming ingest's kind:\"table\" had zero listeners", group: "Learnings" },
   { path: "learnings/drive-data-monster-s-real-ui-over-cdp.md", label: "Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging", group: "Learnings" },
   { path: "learnings/duckdb-app-hangs-poisoned-connection-windows.md", label: "DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix", group: "Learnings" },
   { path: "learnings/duckdb-bundled-lacks-static-json-extension.md", label: "duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows", group: "Learnings" },
+  { path: "learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md", label: "duckdb-rs lacks Value: FromSql — typed queries, no generic rows", group: "Learnings" },
+  { path: "learnings/empty-pages-queries-lists-after-a-rust-rebuild.md", label: "Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss", group: "Learnings" },
   { path: "learnings/evidence-chart-architecture.md", label: "Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy", group: "Learnings" },
   { path: "learnings/expreditor-suggestions-are-computed-locally.md", label: "ExprEditor suggestions are computed locally", group: "Learnings" },
   { path: "learnings/extending-docs-features-requires-add-evals.md", label: "Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern", group: "Learnings" },
@@ -19195,6 +20240,7 @@ var WIKI_PAGES = [
   { path: "learnings/ref-based-master-items-tablename-mismatch-broke.md", label: "Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile", group: "Learnings" },
   { path: "learnings/scale-standalone-html-docs-via-root-font-size-px.md", label: "Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays", group: "Learnings" },
   { path: "learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md", label: "SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads", group: "Learnings" },
+  { path: "learnings/secret-policy-test-targets-the-connections-json.md", label: "Secret-policy test targets the connections.json example — the .env placeholder password is intentional", group: "Learnings" },
   { path: "learnings/settings-swap-for-tours-must-cover-env-too.md", label: "Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin", group: "Learnings" },
   { path: "learnings/settings-tour-and-analyst-tour-built.md", label: "settings-tour and analyst-tour built — honest-beats-staged applied to the chat", group: "Learnings" },
   { path: "learnings/shallow-url-state-sveltekit-replacestate.md", label: "Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history", group: "Learnings" },
@@ -19227,6 +20273,7 @@ var WIKI_PAGES = [
   { path: "pages/artifacts/central-chart-component-design.md", label: "Central chart component design", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-tasks.md", label: "Central charts spec & tasks", group: "Pages / Artifacts" },
   { path: "pages/artifacts/central-charts-spec-amp-task-list.md", label: "Central-charts spec &amp; task list", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/design-component-reference-docs-design-components.md", label: "Design component reference (docs/design/components/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/design-component-reference-set.md", label: "Design-component reference set (docs/design/components/)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/design-system-reference-doc-docs-design.md", label: "Design-system reference doc (docs/design-system-data-monster.html)", group: "Pages / Artifacts" },
   { path: "pages/artifacts/feature-skill-catalog-docs-features.md", label: "Feature skill catalog (docs/features/)", group: "Pages / Artifacts" },
@@ -19236,8 +20283,12 @@ var WIKI_PAGES = [
   { path: "pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md", label: "LLM Sensitive-Data White Paper — Finance Edition", group: "Pages / Artifacts" },
   { path: "pages/artifacts/oss-value-driver-trees-research-report.md", label: "OSS value driver trees research report", group: "Pages / Artifacts" },
   { path: "pages/artifacts/pages-e2e-feedback-report.md", label: "Pages E2E feedback report", group: "Pages / Artifacts" },
+  { path: "pages/artifacts/workspace-file-first-spec-tasks.md", label: "Workspace-file-first spec & tasks", group: "Pages / Artifacts" },
   { path: "pages/concepts/index.md", label: "Concepts", group: "Pages / Concepts" },
   { path: "pages/entities/wiki-ignore-staleness-policy.md", label: ".wiki_ignore staleness policy", group: "Pages / Entities" },
+  { path: "pages/entities/agent-docs-module-agent-docs-rs.md", label: "Agent docs module (agent_docs.rs)", group: "Pages / Entities" },
+  { path: "pages/entities/agent-docs-system.md", label: "Agent docs system", group: "Pages / Entities" },
+  { path: "pages/entities/agent-prompts-page.md", label: "Agent prompts page", group: "Pages / Entities" },
   { path: "pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md", label: "App tab system (virtual tabs + bottom tab bar)", group: "Pages / Entities" },
   { path: "pages/entities/barchart-component.md", label: "BarChart component", group: "Pages / Entities" },
   { path: "pages/entities/central-api-frontend-invoke-client.md", label: "central-api (frontend invoke client)", group: "Pages / Entities" },
@@ -19245,27 +20296,37 @@ var WIKI_PAGES = [
   { path: "pages/entities/chart-fundament.md", label: "Chart fundament", group: "Pages / Entities" },
   { path: "pages/entities/chart-page-spec-spec-types-validator.md", label: "Chart page spec (spec-types + validator)", group: "Pages / Entities" },
   { path: "pages/entities/chartconfigdrawer-component.md", label: "ChartConfigDrawer component", group: "Pages / Entities" },
+  { path: "pages/entities/connections-file-store-connections-rs.md", label: "Connections file store (connections.rs)", group: "Pages / Entities" },
   { path: "pages/entities/create-in-data-round-trip.md", label: "Create-in-/data round-trip", group: "Pages / Entities" },
+  { path: "pages/entities/data-incoming-drop-folder-incoming-rs.md", label: "data/incoming drop folder (incoming.rs)", group: "Pages / Entities" },
   { path: "pages/entities/database-command-module.md", label: "database command module", group: "Pages / Entities" },
   { path: "pages/entities/design-system-app-css-tokens-ui-showcase.md", label: "Design system (app.css tokens + /ui showcase)", group: "Pages / Entities" },
   { path: "pages/entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md", label: "dev-cdp.cmd (repo-root double-click CDP restart)", group: "Pages / Entities" },
+  { path: "pages/entities/dm-store-command-module.md", label: "dm_store command module", group: "Pages / Entities" },
+  { path: "pages/entities/dm-watch-command-module.md", label: "dm_watch command module", group: "Pages / Entities" },
+  { path: "pages/entities/dm-events-frontend-module.md", label: "dm-events frontend module", group: "Pages / Entities" },
+  { path: "pages/entities/e2e-cdp-driver.md", label: "E2E CDP driver", group: "Pages / Entities" },
   { path: "pages/entities/index.md", label: "Entities", group: "Pages / Entities" },
   { path: "pages/entities/expreditor-component.md", label: "ExprEditor component", group: "Pages / Entities" },
   { path: "pages/entities/field-functions-library.md", label: "Field Functions library", group: "Pages / Entities" },
   { path: "pages/entities/heatmap-component.md", label: "Heatmap component", group: "Pages / Entities" },
+  { path: "pages/entities/incoming-drop-folder.md", label: "Incoming drop folder", group: "Pages / Entities" },
   { path: "pages/entities/labsplaceholder-component.md", label: "LabsPlaceholder component", group: "Pages / Entities" },
   { path: "pages/entities/library-page-library.md", label: "Library page (/library)", group: "Pages / Entities" },
   { path: "pages/entities/library-registry-system.md", label: "Library registry system (src/lib/library + /library routes)", group: "Pages / Entities" },
   { path: "pages/entities/library-component-builder-skill-pi-skills.md", label: "library-component-builder skill (.pi/skills)", group: "Pages / Entities" },
   { path: "pages/entities/llm-prompt-button-library-detail.md", label: "LLM prompt button (/library detail)", group: "Pages / Entities" },
+  { path: "pages/entities/master-items-relationships-file-store-items-rs.md", label: "Master items & relationships file store (items.rs + relationships.rs)", group: "Pages / Entities" },
   { path: "pages/entities/pagegrid-component.md", label: "PageGrid component", group: "Pages / Entities" },
   { path: "pages/entities/pages-master-items-storage-rust.md", label: "Pages & master-items storage (Rust)", group: "Pages / Entities" },
   { path: "pages/entities/remote-chat-command.md", label: "remote_chat command", group: "Pages / Entities" },
   { path: "pages/entities/rolepickermodal-component.md", label: "RolePickerModal component", group: "Pages / Entities" },
+  { path: "pages/entities/saved-queries-file-store-saved-queries-rs.md", label: "Saved queries file store (saved_queries.rs)", group: "Pages / Entities" },
   { path: "pages/entities/shared-controls-kit-charts-controls.md", label: "Shared controls kit (charts/controls)", group: "Pages / Entities" },
   { path: "pages/entities/skeletonsetup-component.md", label: "SkeletonSetup component", group: "Pages / Entities" },
   { path: "pages/entities/workspace-command-module-rust.md", label: "Workspace command module (Rust)", group: "Pages / Entities" },
   { path: "pages/entities/workspaces-page-workspaces.md", label: "Workspaces page (/workspaces)", group: "Pages / Entities" },
+  { path: "pages/entities/write-through-core-src-lib-write-through-ts.md", label: "Write-through core (src/lib/write-through.ts)", group: "Pages / Entities" },
   { path: "preferences/agent-may-run-the-cdp-restart-chain-kill-webviews.md", label: "Agent may run the CDP restart chain (kill webviews + env flag + npm run dev) itself", group: "Preferences" },
   { path: "preferences/cdp-verify-the-dev-app-via-webview2-additional.md", label: "CDP-verify the dev app via WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS (exact restart procedure)", group: "Preferences" },
   { path: "preferences/never-start-npm-run-dev-tauri-dev.md", label: "Never start npm run dev / tauri dev — the user owns the dev app", group: "Preferences" },
@@ -19276,6 +20337,7 @@ var WIKI_PAGES = [
   { path: "rules/card-spacing-from-grid-gap-not-margins.md", label: "Card spacing comes from the grid gap, never per-card margins", group: "Rules" },
   { path: "rules/config-drawers-one-scrolling-column.md", label: "Config drawers are one scrolling column — settings sections, Danger zone last", group: "Rules" },
   { path: "rules/demo-means-app-tour-demo-not-eval-suites.md", label: "Demo\" means an app-tour-demo UI tour, not eval suites", group: "Rules" },
+  { path: "rules/dm-live-reload-wires-through-dm-events.md", label: "dm/ live-reload wires through dm-events — never a raw listen()", group: "Rules" },
   { path: "rules/drawer-form-controls-come-from-the-shared-controls.md", label: "Drawer form controls come from the shared controls kit — never hand-roll input chrome", group: "Rules" },
   { path: "rules/drawers-reuse-the-shared-drawerresize-action.md", label: "Drawers reuse the shared drawerResize action", group: "Rules" },
   { path: "rules/each-labs-chart-owns-its-config-panel.md", label: "Each /labs chart owns its config panel", group: "Rules" },
@@ -19289,8 +20351,12 @@ var WIKI_PAGES = [
   { path: "rules/pointer-cursor-from-global-rule-app-css.md", label: "Pointer cursor comes from one global rule in app.css", group: "Rules" },
   { path: "rules/render-markdown-via-marked-prose-chat.md", label: "Render markdown via marked + .prose-chat, never a new pipeline", group: "Rules" },
   { path: "rules/resize-requests-use-existing-size-classes.md", label: "Resize requests use the app's existing size classes — never ad-hoc multipliers", group: "Rules" },
+  { path: "rules/restore-points-are-git-tags-restore-point.md", label: "Restore points are git tags restore-point/<feature>-start on pushed master HEAD", group: "Rules" },
   { path: "rules/route-external-api-calls-through-rust.md", label: "Route external API calls through Rust commands, never webview fetch", group: "Rules" },
   { path: "rules/index.md", label: "Rules", group: "Rules" },
+  { path: "rules/rust-backend-tests-live-in-module-via-cfg-test.md", label: "Rust backend tests live in-module via #[cfg(test)]", group: "Rules" },
+  { path: "rules/secrets-never-live-in-workspace-content-files.md", label: "Secrets never live in workspace content files — env references only, gitignored .env at all times", group: "Rules" },
+  { path: "rules/single-doc-stores-fail-loud-never-clobber.md", label: "Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses", group: "Rules" },
   { path: "rules/spec-driven-features-tdd-karpathy-in-todos.md", label: "Spec-driven features: TDD + Karpathy skills referenced in every todo", group: "Rules" },
   { path: "rules/inter-for-ui-text-geist-mono-only-for-data-detail.md", label: "Two-font rule: Inter for all UI (display + body), Geist Mono for data detail", group: "Rules" }
 ];

@@ -19,7 +19,7 @@ Charts reference master items by stable id (`{"ref": id}`) and the relationship 
 - **Location**: `src-tauri/src/commands/items.rs`, `src-tauri/src/commands/relationships.rs` (built on [dm-store-command-module](./dm-store-command-module.md))
 - **Master items**: `dm/master-items/{measures,dimensions}/<id>.json` — filename = the stable id; `get` searches both folders; `delete` is idempotent; invalid agent-written files land in `errors[]` without breaking the list
 - **Relationships**: one `relationships.json` doc, read-modify-write, upsert-by-id keeps the generated `rel-<from>-<to>` slug
-- **Clobber guard**: if the doc is corrupt (agent mid-edit), `list` errors loudly and `save` **refuses** rather than overwriting the hand-edited graph with an empty one — see [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber-corrupt-file-list-.md)
+- **Clobber guard**: if the doc is corrupt (agent mid-edit), `list` errors loudly and `save` **refuses** rather than overwriting the hand-edited graph with an empty one — see [single-doc-stores-fail-loud-never-clobber](../../rules/single-doc-stores-fail-loud-never-clobber.md)
 - **Tests**: 13 new in-module tests (full suite 92/92)
 
 ## Lifecycle
@@ -31,5 +31,5 @@ Charts reference master items by stable id (`{"ref": id}`) and the relationship 
 
 - [dm-store-command-module](./dm-store-command-module.md) — path conventions, atomic writes, shape checks underneath
 - [workspace-file-first-spec-tasks](../artifacts/workspace-file-first-spec-tasks.md) — `files-003` of the executable spec
-- [workspace-files-are-canonical-agents-author-content-by-editi](../../decisions/workspace-files-are-canonical-agents-author-content-by-editi.md) — the architecture this implements
+- [workspace-files-are-canonical-agents-author](../../decisions/workspace-files-are-canonical-agents-author.md) — the architecture this implements
 - [pages-master-items-storage-rust](./pages-master-items-storage-rust.md) — the DuckDB storage being replaced

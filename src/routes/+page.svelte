@@ -37,7 +37,7 @@
 			{:else}
 				<span class="home-locked">Connect data to unlock Query, Data & Analyst</span>
 			{/if}
-			<a href="/agent" class="action-btn action-btn-ai" title="Skills & commands for your coding agent">
+			<a href="/agent" class="action-btn" title="Skills & commands for your coding agent">
 				<Sparkles size={16} />
 				LLM skills
 			</a>
@@ -113,15 +113,6 @@
 	.action-btn:hover {
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
-	}
-
-	.action-btn-ai {
-		background: transparent;
-		border: 1.5px dashed var(--color-accent);
-	}
-
-	.action-btn-ai:hover {
-		background: var(--color-accent-muted);
 	}
 
 	.home-locked {

@@ -27,7 +27,7 @@ Agents author app content by editing workspace files; without the watcher the ap
 - [dm-store-command-module](./dm-store-command-module.md) — supplies the path→name inverses (`page_slug_from_path`, `item_from_path`, `saved_query_slug_from_path`) and `check_json_object` shape checks that `classify` builds on; `atomic_write` feeds the echo registry
 - [database-command-module](./database-command-module.md) — starts the watcher during DuckDB init (`database.rs`)
 - [saved-queries-file-store-saved-queries-rs](./saved-queries-file-store-saved-queries-rs.md) — owns `check_query_file`, the saved-query header check classify reuses
-- [Live-reload mechanics decision](../../decisions/live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) — the design this implements (approach A: full watcher)
+- [Live-reload mechanics decision](../../decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — the design this implements (approach A: full watcher)
 - [Workspace-file-first spec & tasks](../artifacts/workspace-file-first-spec-tasks.md) — FR-7 / `files-007` of the executable spec
 
 ## Lifecycle

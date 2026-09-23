@@ -41,6 +41,10 @@
 	import Pagination from './Pagination.svelte';
 	import TagInput from './TagInput.svelte';
 	import TableList from './TableList.svelte';
+	import Badge from './Badge.svelte';
+	import Breadcrumb from './Breadcrumb.svelte';
+	import LabsPlaceholder from './LabsPlaceholder.svelte';
+	import PreviewPane from './PreviewPane.svelte';
 
 	const DS_SHOWCASE: Record<string, any> = {
 		Accordion, Buttons, Cards, ColorPalette, Footer, Hero, Icons, Inputs, Modal,
@@ -196,6 +200,45 @@
 			labelFor={(d) => d.region}
 		/>
 	</div>
+{:else if name === 'Badge'}
+	<div class="demo-row">
+		<Badge />
+		<Badge count={3} />
+		<Badge count={12} variant="accent" />
+		<Badge count={99} variant="danger" />
+	</div>
+{:else if name === 'Breadcrumb'}
+	<div class="demo-col">
+		<Breadcrumb items={[{ href: '/', label: 'Home' }, { href: '/pages', label: 'Pages' }, { href: '/pages/revenue', label: 'Revenue' }]} />
+	</div>
+{:else if name === 'LabsPlaceholder'}
+	<div class="demo-col">
+		<LabsPlaceholder title="Sankey diagram" />
+	</div>
+{:else if name === 'PreviewPane'}
+	<div class="demo-col">
+		<PreviewPane
+			data={{
+				columns: ['order_id', 'city', 'sales'],
+				rows: [
+					{ order_id: 1001, city: 'Berlin', sales: 120 },
+					{ order_id: 1002, city: 'Tokyo', sales: 340 },
+					{ order_id: 1003, city: 'Oslo', sales: 90 }
+				],
+				detectedTypes: [
+					{ name: 'order_id', type: 'int' },
+					{ name: 'city', type: 'str' },
+					{ name: 'sales', type: 'float' }
+				],
+				totalRows: 3,
+				sourceName: 'sample.csv'
+			}}
+			columnOverrides={[]}
+			onnext={noop}
+		/>
+	</div>
+{:else if name === 'SearchAhead'}
+	<SearchAhead />
 {:else}
 	<p class="no-live">
 		This component needs app data/props, so there is no standalone preview — see it

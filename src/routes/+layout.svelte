@@ -153,6 +153,17 @@ import { initDmEvents, onDmChanged } from '$lib/dm-events';
 		e.preventDefault();
 		ctx = { x: e.clientX, y: e.clientY, href: a.getAttribute('href') ?? '' };
 	}
+	// window-level Escape: nothing in the menu is auto-focused, so the overlay
+	// never sees the keydown (kept hand-rolled — bits ContextMenu is area-based
+	// and would swallow the browser's native right-click on non-links)
+	$effect(() => {
+		if (!ctx) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') ctx = null;
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	});
 </script>
 
 <svelte:window oncontextmenu={handleContext} />
@@ -285,7 +296,7 @@ import { initDmEvents, onDmChanged } from '$lib/dm-events';
 </div>
 {#if ctx}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="ctx-overlay" onclick={() => (ctx = null)} onkeydown={() => (ctx = null)} role="presentation">
+	<div class="ctx-overlay" onclick={() => (ctx = null)} role="presentation">
 		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 		<div class="ctx-menu" style="left: {ctx.x}px; top: {ctx.y}px" role="menu">
 			<button class="ctx-item" role="menuitem" onclick={() => { const h = ctx?.href ?? '/'; ctx = null; openInNewTab(h); }}>

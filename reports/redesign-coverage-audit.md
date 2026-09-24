@@ -8,56 +8,69 @@ positioning, `<select>`) → per-file evidence extraction → classification.
 Target: bits-ui owns interactive behavior; utility-first over the app token layer;
 no `zinc-*`/hex outside chart palettes.
 
+> **Status: ALL 6 BEHAVIOR GAPS RESOLVED** (2026-09-24, commits `fd7fac4`..`e80ae6c` on PR #21).
+> Every finding below was re-verified against the working tree. What remains is styling
+> convergence debt only. See [Disposition](#disposition-2026-09-24-commits-b0c21ce0b74f7c-on-pr-21)
+> and the refreshed [styling table](#styling-convergence-debt-no-behavior-change-needed).
+
 ---
 
-## Already migrated this branch (8 commits, PR #21)
+## Already migrated this branch (17 commits, PR #21)
 
 | Surface | Primitive | Real consumers |
 |---|---|---|
 | RolePickerModal | Dialog + Combobox | SkeletonSetup (page editor) |
 | Drawer (modal path) | Dialog | 10+ surfaces |
-| Tabs | Tabs | TableOverview (/data) |
+| Tabs | Tabs | TableOverview (/data), connect, library/[id] |
 | Pagination | Pagination | PreviewPane |
-| Accordion (root) | Accordion | ⚠️ see gap #6 — dead twin |
+| Accordion | Accordion | /components demo (single source of truth) |
 | Tooltip | Tooltip | /components demo |
+| pages/+page "New page" modal | Dialog | /pages (`fd7fac4`) |
+| TableDrawer nested confirm modal | Dialog | /data settings drawer (`8632555`) |
+| TagInput | listbox semantics + token colors | TableDrawer, query (`0b74f7c`) |
 
-Plus: PageGrid row min-height fix, context-menu Escape fix.
+Plus: PageGrid row min-height fix, context-menu Escape fix, single source of truth
+(`b0c21ce` — ds/ demos moved to `lib/demos/`, 20 dead root twins deleted), truthful
+/components catalog (`cdb0b4a`), breadcrumb-only navigation (`e92762d`, `e80ae6c`).
 
 ---
 
-## Gaps found — real behavior still hand-rolled
+## Gaps found — ALL RESOLVED ✅
 
-### 1. `routes/pages/+page.svelte` — hand-rolled "New page" modal
+### 1. `routes/pages/+page.svelte` — hand-rolled "New page" modal ✅ RESOLVED
 Full backdrop + panel + manual Escape (`svelte:window` + `handleModalKeydown`),
 zinc-900 styling — the exact pre-bits shape RolePickerModal had.
-**→ MIGRATE to Dialog** (small; one consumer).
+**→ MIGRATED to Dialog** (`fd7fac4`). Verified: zero `handleModalKeydown` hits, `Dialog.Root` in place.
 
-### 2. `TableDrawer.svelte` — nested hand-rolled modal inside the drawer
+### 2. `TableDrawer.svelte` — nested hand-rolled modal inside the drawer ✅ RESOLVED
 `drawer-modal-overlay` + `role="dialog"` + `handleModalKeydown` (lines ~351+), a
 type-change confirm modal living inside the Drawer-based settings drawer.
-**→ MIGRATE to Dialog** (nested Dialog in Drawer is a supported bits pattern).
+**→ MIGRATED to Dialog** (`8632555` — Escape closes the modal, drawer stays open). Verified clean.
 
-### 3. `routes/connect/+page.svelte` — duplicate hand-rolled tab bar
+### 3. `routes/connect/+page.svelte` — duplicate hand-rolled tab bar ✅ RESOLVED
 `role="tablist"` + tab buttons (lines 218–233) instead of the shared (now bits-backed)
 Tabs component. No keyboard nav.
-**→ MIGRATE to shared Tabs.**
+**→ MIGRATED to shared Tabs** (`f13f103`). Verified: no `role="tablist"`, imports `Tabs.svelte`.
 
-### 4. `routes/library/[id]/+page.svelte` — second duplicate tab bar
+### 4. `routes/library/[id]/+page.svelte` — second duplicate tab bar ✅ RESOLVED
 Inline `role="tablist"` (line 132) + 11 hardcoded colors.
-**→ MIGRATE to shared Tabs + CONVERGE styling.**
+**→ MIGRATED to shared Tabs** (`f13f103`, underline variant). Verified: no `role="tablist"`.
+Styling note: the 11 hardcoded colors were zinc-palette hex equivalents — 10 remain
+(converge opportunistically; see styling table).
 
-### 5. `TagInput.svelte` — real component, hand-rolled suggestion dropdown
+### 5. `TagInput.svelte` — real component, hand-rolled suggestion dropdown ✅ RESOLVED
 Consumers: TableDrawer + query route. Keydown combobox-ish behavior + suggestion
 list + **hardcoded hex colors** (`#111827`, `#1d4ed8`, `#3b82f6`…).
-**→ MIGRATE to Combobox (multiple) or at minimum CONVERGE colors.**
+**→ CONVERGED** (`0b74f7c`): token colors only (verified 0 hex/zinc hits) + listbox
+semantics. Full Combobox rewrite rejected — free-text tag creation is core UX and
+bits Combobox is select-only (see rule: bits-ui Combobox is select-only).
 
-### 6. `/components` catalog renders the WRONG (pre-bits) twins
-`ComponentDemo.svelte` imports `ds/Accordion`, `ds/Modal`, `ds/SearchAhead`,
-`ds/Toast` — all still hand-rolled. My Accordion migration updated the root twin,
-which is dead code. Tabs/Tooltip/Pagination imports are correct (no ds twins).
-**→ Repoint ComponentDemo to the migrated root components (or migrate ds twins),
-then delete dead duplicates** (root Modal/SearchAhead/Toast/Toggle/Toggles have
-zero consumers).
+### 6. `/components` catalog renders the WRONG (pre-bits) twins ✅ RESOLVED
+`ComponentDemo.svelte` imported `ds/Accordion`, `ds/Modal`, `ds/SearchAhead`,
+`ds/Toast` — all still hand-rolled. The Accordion migration updated the root twin,
+which was dead code.
+**→ RESOLVED** (`b0c21ce` + `cdb0b4a`): ds/ deleted, demos live in `lib/demos/`,
+20 dead root twins deleted, ComponentDemo imports only real lib components (verified).
 
 ---
 
@@ -66,8 +79,9 @@ zero consumers).
 - **`ExprEditor.svelte` autocomplete** — real hand-rolled listbox (`role="listbox"`,
   focus management, hover-highlight) embedded in a textarea; bits Combobox is
   input-based and doesn't fit an editor-embedded completion popup without
-  rework. Also the worst styling offender: **31 zinc/hex hits**. Deferred per plan;
-  revisit if a pattern emerges (Popover + customAnchor at caret is the likely path).
+  rework. Also the worst styling offender: **31 zinc/hex hits** (unchanged in re-scan).
+  Deferred per plan; revisit if a pattern emerges (Popover + customAnchor at caret
+  is the likely path).
 
 ---
 
@@ -86,35 +100,42 @@ zero consumers).
 
 ## Styling convergence debt (no behavior change needed)
 
-`zinc-*`/hex counts per file (target: 0 outside chart palettes):
+Re-scanned 2026-09-24 after the gap fixes (`zinc-[0-9]+` + 6-digit hex per file,
+91 non-demo `.svelte` files; demo files in `lib/demos/` excluded). Delta vs. original audit:
 
-| File | Hits | | File | Hits |
-|---|---|---|---|---|
-| charts/ExprEditor | 31 | | pages/[slug] | 15 |
-| ItemEditor | 25 | | SkeletonSetup | 14 |
-| RelationshipEditor | 25 | | library/[id] | 11 |
-| pages/+page | 17 | | ChartCard | 10 |
-| TagInput | 6 hex | | agent, library/dev, internal-db | 2–4 |
+| File | Audit | Now | Note |
+|---|---|---|---|
+| charts/ExprEditor | 31 | 31 | deferred with the autocomplete |
+| charts/PageGrid | *(missed in audit)* | **30** | largest unconverged surface |
+| ItemEditor | 25 | 25 | |
+| RelationshipEditor | 25 | 25 | |
+| pages/[slug] | 15 | 15 | |
+| SkeletonSetup | 14 | 14 | |
+| renderers/TableRenderer | — | 10 | all `zinc-*` classes, not hex |
+| library/[id] | 11 | 10 | hex are zinc equivalents (`#e4e4e7`…) |
+| ChartCard | 10 | 10 | |
+| pages/+page | 17 | **8** | halved by the Dialog migration |
+| TagInput | 6 hex | **0** | fully converged |
+| agent, library/dev, internal-db, +layout | 2–4 | 2–4 | `+layout`: welcome-gate grays |
 
-Renderers carry 2 hex each — chart palette colors, likely legitimate.
+Chart-renderer hex (`#888888`, `#3f3f46`) and labs-page hex are palette colors — legitimate.
 
-Scoped `<style>` blocks remain in ~all showcase demos and BlockInspector/ChartCard —
+Scoped `<style>` blocks remain in showcase demos and BlockInspector/ChartCard —
 converge opportunistically per component as each is touched (Path B policy).
 
 Labs placeholders (30 routes), /ui showcase, settings pages: clean or trivial.
 
 ---
 
-## Recommended order
+## Remaining work (updated order)
 
-1. Repoint ComponentDemo imports + delete dead root twins (#6 — prevents future confusion)
-2. pages/+page modal → Dialog (#1)
-3. TableDrawer nested modal → Dialog (#2)
-4. connect + library/[id] → shared Tabs (#3, #4)
-5. TagInput → Combobox multiple + token colors (#5)
-6. ExprEditor autocomplete — stays deferred until a caret-anchored pattern is chosen
-7. Styling convergence rides along with each touch (per Path B)
+1. **Styling convergence only** — PageGrid (30) is now the biggest surface, then
+   ItemEditor/RelationshipEditor (25 each). Rides along per touched component (Path B).
+2. **ExprEditor autocomplete** — stays deferred until a caret-anchored pattern
+   (Popover + customAnchor) is chosen; its 31 zinc/hex converge then.
 
+No behavioral migration work remains — bits-ui owns every interactive surface the
+audit flagged.
 
 ---
 
@@ -129,7 +150,10 @@ Labs placeholders (30 routes), /ui showcase, settings pages: clean or trivial.
 | #4 library/[id] duplicate tab bar | ✅ MIGRATED to shared Tabs (underline variant) |
 | #5 TagInput | ✅ CONVERGED (token colors, listbox semantics); Combobox rewrite rejected — free-text tag creation is core UX |
 | ExprEditor autocomplete | ⏳ deferred as planned |
-| Styling convergence | ♻️ rides along per touched component; remaining counts in table above |
+| Styling convergence | ♻️ rides along per touched component; refreshed counts in table above |
+
+Post-disposition follow-ons (same day): `cdb0b4a` /components = truthful showcase of
+the real lib; `e92762d` + `e80ae6c` back links removed — the breadcrumb is the navigation.
 
 Single source of truth now enforced: every reusable component lives exactly once in
 `src/lib/components/`; design-system showcase demos live in `src/lib/demos/` (not

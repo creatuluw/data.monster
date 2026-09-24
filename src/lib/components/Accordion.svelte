@@ -1,74 +1,75 @@
 <script lang="ts">
-	let panels = $state([
-		{ id: '1', open: false },
-		{ id: '2', open: false },
-		{ id: '3', open: false }
-	]);
+	import { Accordion } from 'bits-ui';
 
-	function toggle(id: string) {
-		panels = panels.map(p => p.id === id ? { ...p, open: !p.open } : p);
-	}
+	const items = [
+		{
+			value: 'query-params',
+			title: 'Query Parameters',
+			body: {
+				lead: 'Configuration options for query execution. All parameters must be validated before the analysis pipeline runs.',
+				points: [
+					'Time range: configurable per data source',
+					'Minimum: 1 active connection per query',
+					'Aggregation: configurable per metric type',
+					'Precision: two decimal places for currency'
+				]
+			}
+		},
+		{
+			value: 'pipeline',
+			title: 'Analysis Pipeline',
+			body: {
+				lead: 'Standard procedure for running data analysis. Start with raw ingestion, apply transforms, then generate output.',
+				points: [
+					'Step 1: Select data sources and time range',
+					'Step 2: Configure transforms and filters',
+					'Step 3: Review sample output for accuracy',
+					'Step 4: Execute and schedule delivery'
+				]
+			}
+		},
+		{
+			value: 'classification',
+			title: 'Data Classification',
+			body: {
+				lead: 'Classification taxonomy for data quality states. Every dataset maps to exactly one quality level per pipeline run.',
+				points: [
+					'Fresh: Ingested within last 24 hours',
+					'Stale: Last refresh older than threshold',
+					'Validated: Passed all quality checks',
+					'Failed: Schema mismatch or missing fields'
+				]
+			}
+		}
+	];
 </script>
 
 <div class="component-group">
 	<span class="component-group-label">Collapsible Content</span>
 	<h3 class="component-group-title">Accordion</h3>
 
-	{#each panels as panel, i}
-		<div class="accordion">
-			<button
-				class="accordion-trigger"
-				aria-expanded={panel.open}
-				aria-controls="acc-panel-{panel.id}"
-				id="acc-trigger-{panel.id}"
-				onclick={() => toggle(panel.id)}
-			>
-				<span class="accordion-trigger-left">
-				{#if i === 0}Query Parameters{:else if i === 1}Analysis Pipeline{:else}Data Classification{/if}
-			</span>
-				<span class="accordion-icon" style="transform: rotate({panel.open ? 180 : 0}deg)">▾</span>
-			</button>
-			<div
-				class="accordion-panel"
-				id="acc-panel-{panel.id}"
-				role="region"
-				aria-labelledby="acc-trigger-{panel.id}"
-				aria-hidden={!panel.open}
-				style="max-height: {panel.open ? '500px' : '0'}"
-			>
-				<div class="accordion-content">
-					{#if i === 0}
-						Configuration options for query execution. All parameters
-						must be validated before the analysis pipeline runs.
+	<Accordion.Root type="multiple">
+		{#each items as item (item.value)}
+			<Accordion.Item value={item.value} class="accordion">
+				<Accordion.Header>
+					<Accordion.Trigger class="accordion-trigger">
+						<span class="accordion-trigger-left">{item.title}</span>
+						<span class="accordion-icon">▾</span>
+					</Accordion.Trigger>
+				</Accordion.Header>
+				<Accordion.Content forceMount class="accordion-panel">
+					<div class="accordion-content">
+						{item.body.lead}
 						<ul>
-							<li>Time range: configurable per data source</li>
-							<li>Minimum: 1 active connection per query</li>
-							<li>Aggregation: configurable per metric type</li>
-							<li>Precision: two decimal places for currency</li>
+							{#each item.body.points as point (point)}
+								<li>{point}</li>
+							{/each}
 						</ul>
-					{:else if i === 1}
-						Standard procedure for running data analysis. Start with
-						raw ingestion, apply transforms, then generate output.
-						<ul>
-							<li>Step 1: Select data sources and time range</li>
-							<li>Step 2: Configure transforms and filters</li>
-							<li>Step 3: Review sample output for accuracy</li>
-							<li>Step 4: Execute and schedule delivery</li>
-						</ul>
-					{:else}
-						Classification taxonomy for data quality states. Every
-						dataset maps to exactly one quality level per pipeline run.
-						<ul>
-							<li>Fresh: Ingested within last 24 hours</li>
-							<li>Stale: Last refresh older than threshold</li>
-							<li>Validated: Passed all quality checks</li>
-							<li>Failed: Schema mismatch or missing fields</li>
-						</ul>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{/each}
+					</div>
+				</Accordion.Content>
+			</Accordion.Item>
+		{/each}
+	</Accordion.Root>
 </div>
 
 <style>
@@ -89,7 +90,7 @@
 	}
 
 	.component-group-label::before {
-		content: "\25A0";
+		content: '\25A0';
 		color: var(--color-accent);
 		font-size: 7px;
 	}
@@ -103,16 +104,18 @@
 		margin-bottom: var(--space-6);
 	}
 
-	.accordion {
+	/* bits-ui renders item/header/trigger/content — chrome hangs off
+	   :global() selectors under our .component-group wrapper */
+	.component-group :global(.accordion) {
 		border: 1px solid var(--color-surface-sunken);
 		background: var(--color-surface);
 	}
 
-	.accordion + .accordion {
+	.component-group :global(.accordion + .accordion) {
 		border-top: none;
 	}
 
-	.accordion-trigger {
+	.component-group :global(.accordion-trigger) {
 		width: 100%;
 		display: flex;
 		align-items: center;
@@ -131,36 +134,28 @@
 			color var(--duration-fast) ease;
 	}
 
-	.accordion-trigger:hover {
+	.component-group :global(.accordion-trigger:hover) {
 		background: var(--color-surface-raised);
 	}
 
-	.accordion-trigger:focus-visible {
+	.component-group :global(.accordion-trigger:focus-visible) {
 		outline: 2px solid var(--color-accent);
 		outline-offset: -2px;
 		z-index: 1;
 	}
 
-	.accordion-trigger[aria-expanded="true"] {
+	.component-group :global(.accordion-trigger[aria-expanded='true']) {
 		background: var(--color-surface-raised);
 		border-bottom: 1px solid var(--color-border);
 	}
 
-	.accordion-trigger-left {
+	.component-group :global(.accordion-trigger-left) {
 		display: flex;
 		align-items: center;
 		gap: var(--space-3);
 	}
 
-	.accordion-ref {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		letter-spacing: 0.08em;
-		color: var(--color-accent);
-		min-width: 48px;
-	}
-
-	.accordion-icon {
+	.component-group :global(.accordion-icon) {
 		width: 16px;
 		height: 16px;
 		display: flex;
@@ -171,12 +166,28 @@
 		flex-shrink: 0;
 	}
 
-	.accordion-panel {
+	.component-group :global(.accordion-trigger[aria-expanded='true'] .accordion-icon) {
+		transform: rotate(180deg);
+	}
+
+	/* height animation driven by the bits CSS var; forceMount keeps the panel
+	   mounted so the close transition plays (bits sets hidden — we hide via
+	   max-height instead, as the pre-bits demo did) */
+	.component-group :global(.accordion-panel[hidden]) {
+		display: block;
+	}
+
+	.component-group :global(.accordion-panel) {
 		overflow: hidden;
+		max-height: 0;
 		transition: max-height var(--duration-slow) var(--ease-out-expo);
 	}
 
-	.accordion-content {
+	.component-group :global(.accordion-panel[data-state='open']) {
+		max-height: var(--bits-accordion-content-height);
+	}
+
+	.component-group :global(.accordion-content) {
 		padding: var(--space-6);
 		font-size: var(--text-sm);
 		line-height: var(--leading-relaxed);
@@ -184,7 +195,7 @@
 		max-width: 60ch;
 	}
 
-	.accordion-content ul {
+	.component-group :global(.accordion-content ul) {
 		margin-top: var(--space-3);
 		display: flex;
 		flex-direction: column;
@@ -192,7 +203,7 @@
 		list-style: none;
 	}
 
-	.accordion-content li {
+	.component-group :global(.accordion-content li) {
 		display: flex;
 		align-items: baseline;
 		gap: var(--space-2);
@@ -201,8 +212,8 @@
 		color: var(--color-text-tertiary);
 	}
 
-	.accordion-content li::before {
-		content: "\2014";
+	.component-group :global(.accordion-content li::before) {
+		content: '\2014';
 		color: var(--color-border-strong);
 		flex-shrink: 0;
 	}

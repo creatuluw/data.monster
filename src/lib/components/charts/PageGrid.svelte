@@ -241,7 +241,7 @@
 				<div class="grid grid-cols-12 gap-3">
 					{#each rowColumns(row) as col, ci}
 						{@const colH = col.height ?? row.height}
-						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` height: ${colH}px;` : ''}`}>
+						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` min-height: ${colH}px;` : ''}`}>
 							<button
 							class="edge-btn edge-btn-col"
 							onclick={() => {
@@ -263,7 +263,7 @@
 							>
 								<GripVertical size={13} />
 							</div>
-							<div class="col-inner" class:col-empty={col.blocks.length === 0} style={colH !== undefined ? 'height: 100%; overflow: auto;' : ''}>
+							<div class="col-inner" class:col-empty={col.blocks.length === 0} style={colH !== undefined ? 'min-height: 100%;' : ''}>
 								<div class="space-y-3">
 									{#each col.blocks as block, bi}
 										{@const id = `r${ri}-c${ci}-b${bi}`}

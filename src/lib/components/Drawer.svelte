@@ -1,19 +1,25 @@
 <script lang="ts">
 	import { X } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
+	import { expoOut } from 'svelte/easing';
+	import { Dialog } from 'bits-ui';
 	import { drawerResize } from './drawer-resize';
 
 	/**
 	 * THE app drawer primitive. Right-anchored slide-in panel used by every
 	 * drawer in the app (table settings, column functions, chart config, …).
 	 *
-	 * - `open` bindable; `onClosed` fires after close (overlay click / X / Escape)
-	 * - `overlay=false` keeps the page live beside the drawer (focused config view)
+	 * - `open` bindable; `onClosed` fires on every close path (X / Escape /
+	 *   click-away / consumer-driven)
+	 * - `overlay=true` (modal, the default): bits-ui Dialog owns the focus
+	 *   trap, Escape, scroll lock, aria wiring, and focus return
+	 * - `overlay=false`: non-modal focused panel — the page stays live beside
+	 *   it; no focus trap (correct for non-modal), Escape still closes
 	 * - `contained=true` positions inside the nearest positioned ancestor
 	 *   (.app-body) instead of the viewport — needs that ancestor to span
 	 *   exactly the drawer area; `data-drawer` lets parents measure geometry
 	 * - `footer` optional actions row (dashed top border)
-	 * - a11y: Escape closes, focus is trapped while open and returned on close
 	 */
 	let {
 		open = $bindable(false),
@@ -37,91 +43,120 @@
 		footer?: Snippet;
 	} = $props();
 
+	const DURATION = 450; // --duration-slow
+
 	let previousFocus: Element | null = null;
 
-	function close() {
-		if (!open) return;
-		open = false;
-		onClosed?.();
-		if (previousFocus instanceof HTMLElement) previousFocus.focus();
-		previousFocus = null;
-	}
-
-	function handleBackdropKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			close();
-			return;
-		}
-		if (e.key !== 'Tab') return;
-		const backdrop = e.currentTarget as HTMLElement | null;
-		if (!backdrop) return;
-		const focusable = backdrop.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
-		if (focusable.length === 0) return;
-		const first = focusable[0] as HTMLElement;
-		const last = focusable[focusable.length - 1] as HTMLElement;
-		if (e.shiftKey && document.activeElement === first) {
-			e.preventDefault();
-			last.focus();
-		} else if (!e.shiftKey && document.activeElement === last) {
-			e.preventDefault();
-			first.focus();
-		}
-	}
-
+	// onClosed for every close path — internal (X/Escape/click-away via the
+	// bind:open round-trip) and consumer-driven alike
+	let wasOpen = false;
 	$effect(() => {
-		if (open && overlay) {
-			previousFocus = document.activeElement;
-			document.body.style.overflow = 'hidden';
-			return () => {
-				document.body.style.overflow = '';
-			};
-		}
+		if (wasOpen && !open) onClosed?.();
+		wasOpen = open;
+	});
+
+	// non-modal Escape (modal Escape is bits-ui's)
+	$effect(() => {
+		if (overlay || !open) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') open = false;
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
 	});
 </script>
 
-<!-- dim backdrop only in overlay mode — the drawer itself must NEVER sit inside
-     the overlay: opacity:0 on the overlay hides its whole subtree -->
 {#if overlay}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="drawer-overlay"
-		class:drawer-overlay-visible={open}
-		class:drawer-overlay-contained={contained}
-		onclick={close}
-		onkeydown={handleBackdropKeydown}
-		role="dialog"
-		aria-modal="true"
+	<Dialog.Root bind:open>
+		<Dialog.Overlay forceMount>
+			{#snippet child({ props, open: isOpen })}
+				{#if isOpen}
+					<div
+						{...props}
+						class="drawer-overlay"
+						class:drawer-overlay-contained={contained}
+						transition:fade={{ duration: DURATION }}
+					></div>
+				{/if}
+			{/snippet}
+		</Dialog.Overlay>
+		<Dialog.Content
+			forceMount
+			aria-label={title}
+			onOpenAutoFocus={() => {
+				// capture before bits-ui moves focus — returned on close
+				previousFocus = document.activeElement;
+			}}
+			onCloseAutoFocus={(e) => {
+				e.preventDefault();
+				if (previousFocus instanceof HTMLElement) previousFocus.focus();
+				previousFocus = null;
+			}}
+		>
+			{#snippet child({ props, open: isOpen })}
+				{#if isOpen}
+					<section
+						{...props}
+						class="drawer"
+						class:drawer-open={isOpen}
+						class:drawer-contained={contained}
+						style={`width: ${width};`}
+						use:drawerResize
+						data-drawer
+						transition:fly={{ x: '100%', duration: DURATION, easing: expoOut }}
+					>
+						<div class="drawer-header">
+							<div class="drawer-heading">
+								<Dialog.Title class="drawer-title">{title}</Dialog.Title>
+							</div>
+							<button class="drawer-close" onclick={() => (open = false)} title="Close" aria-label="Close drawer">
+								<X size={16} />
+							</button>
+						</div>
+						<div class="drawer-body">
+							{@render children()}
+						</div>
+						{#if footer}
+							<div class="drawer-footer">
+								{@render footer()}
+							</div>
+						{/if}
+					</section>
+				{/if}
+			{/snippet}
+		</Dialog.Content>
+	</Dialog.Root>
+{:else}
+	<!-- non-modal focused panel: page stays live, no focus trap (correct for
+	     non-modal), closed panel is inert so nothing off-slide is tab-reachable -->
+	<section
+		class="drawer"
+		class:drawer-open={open}
+		class:drawer-contained={contained}
+		style={`width: ${width};`}
+		use:drawerResize
+		data-drawer
+		inert={!open}
 		aria-label={title}
-	></div>
+	>
+		<div class="drawer-header">
+			<div class="drawer-heading">
+				<h2 class="drawer-title">{title}</h2>
+			</div>
+			<button class="drawer-close" onclick={() => (open = false)} title="Close" aria-label="Close drawer">
+				<X size={16} />
+			</button>
+		</div>
+		<div class="drawer-body">
+			{@render children()}
+		</div>
+		{#if footer}
+			<div class="drawer-footer">
+				{@render footer()}
+			</div>
+		{/if}
+	</section>
 {/if}
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<section
-	class="drawer"
-	class:drawer-open={open}
-	class:drawer-contained={contained}
-	style={`width: ${width};`}
-	use:drawerResize
-	onclick={(e) => e.stopPropagation()}
-	onkeydown={handleBackdropKeydown}
-	data-drawer
->
-	<div class="drawer-header">
-		<div class="drawer-heading">
-			<h2 class="drawer-title">{title}</h2>
-		</div>
-		<button class="drawer-close" onclick={close} title="Close" aria-label="Close drawer">
-			<X size={16} />
-		</button>
-	</div>
-	<div class="drawer-body">
-		{@render children()}
-	</div>
-	{#if footer}
-		<div class="drawer-footer">
-			{@render footer()}
-		</div>
-	{/if}
-</section>
 
 <style>
 	.drawer-overlay {
@@ -131,21 +166,10 @@
 		backdrop-filter: blur(4px);
 		-webkit-backdrop-filter: blur(4px);
 		z-index: 200;
-		opacity: 0;
-		transition: opacity var(--duration-slow) var(--ease-out-expo);
-		visibility: hidden;
-		pointer-events: none;
-	}
-
-	.drawer-overlay-visible {
-		opacity: 1;
-		visibility: visible;
-		pointer-events: auto;
 	}
 
 	/* contained mode: fill the positioned ancestor (.app-body) instead of the
-	   viewport — its overflow:hidden also clips the closed off-slide state.
-	   Compound selectors so they beat the base fixed rules regardless of order */
+	   viewport. Compound selectors so they beat the base fixed rules regardless of order */
 	.drawer.drawer-contained {
 		position: absolute;
 		max-width: 100%;
@@ -168,12 +192,17 @@
 		z-index: 201;
 		display: flex;
 		flex-direction: column;
-		transform: translateX(100%);
-		transition: transform var(--duration-slow) var(--ease-out-expo);
 	}
 
+	/* non-modal path: always mounted, slides via transform (the modal path
+	   only renders while open, so this closed state never applies to it) */
 	.drawer-open {
 		transform: translateX(0);
+	}
+
+	.drawer:not(.drawer-open) {
+		transform: translateX(100%);
+		visibility: hidden;
 	}
 
 	.drawer-header {

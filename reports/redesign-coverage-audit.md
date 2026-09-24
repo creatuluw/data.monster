@@ -8,10 +8,11 @@ positioning, `<select>`) → per-file evidence extraction → classification.
 Target: bits-ui owns interactive behavior; utility-first over the app token layer;
 no `zinc-*`/hex outside chart palettes.
 
-> **Status: ALL 6 BEHAVIOR GAPS RESOLVED** (2026-09-24, commits `fd7fac4`..`e80ae6c` on PR #21).
-> Every finding below was re-verified against the working tree. What remains is styling
-> convergence debt only. See [Disposition](#disposition-2026-09-24-commits-b0c21ce0b74f7c-on-pr-21)
-> and the refreshed [styling table](#styling-convergence-debt-no-behavior-change-needed).
+> **Status: AUDIT GAP-FREE** (2026-09-24, commits `fd7fac4`..`5e395dd` on PR #21).
+> All 6 behavior gaps resolved AND the styling-convergence debt closed: 13 surfaces
+> converted to tokens (commits `2129125`..`5e395dd` + the 9-file sweep). Final scan:
+> only ExprEditor (31, deferred with its autocomplete) and chart-palette/axis hex in
+> renderers + labs pages remain — both dispositioned as legitimate.
 
 ---
 
@@ -98,44 +99,48 @@ which was dead code.
 
 ---
 
-## Styling convergence debt (no behavior change needed)
+## Styling convergence debt — CLOSED ✅
 
 Re-scanned 2026-09-24 after the gap fixes (`zinc-[0-9]+` + 6-digit hex per file,
-91 non-demo `.svelte` files; demo files in `lib/demos/` excluded). Delta vs. original audit:
+91 non-demo `.svelte` files), then converged same day. All surfaces below are now at 0:
 
-| File | Audit | Now | Note |
-|---|---|---|---|
-| charts/ExprEditor | 31 | 31 | deferred with the autocomplete |
-| charts/PageGrid | *(missed in audit)* | **30** | largest unconverged surface |
-| ItemEditor | 25 | 25 | |
-| RelationshipEditor | 25 | 25 | |
-| pages/[slug] | 15 | 15 | |
-| SkeletonSetup | 14 | 14 | |
-| renderers/TableRenderer | — | 10 | all `zinc-*` classes, not hex |
-| library/[id] | 11 | 10 | hex are zinc equivalents (`#e4e4e7`…) |
-| ChartCard | 10 | 10 | |
-| pages/+page | 17 | **8** | halved by the Dialog migration |
-| TagInput | 6 hex | **0** | fully converged |
-| agent, library/dev, internal-db, +layout | 2–4 | 2–4 | `+layout`: welcome-gate grays |
+| File | Audit | Converged |
+|---|---|---|
+| charts/PageGrid | *(missed in audit)* | 30 → 0 |
+| ItemEditor | 25 | 25 → 0 |
+| RelationshipEditor | 25 | 25 → 0 |
+| pages/[slug] | 15 | 15 → 0 |
+| SkeletonSetup | 14 | 14 → 0 |
+| renderers/TableRenderer | — | 10 → 0 |
+| library/[id] | 11 | 10 → 0 |
+| ChartCard | 10 | 10 → 0 |
+| pages/+page | 17 | 17 → 0 |
+| TagInput | 6 hex | 6 → 0 |
+| agent, library/dev, +layout, internal-db | 2–4 | all → 0 |
 
-Chart-renderer hex (`#888888`, `#3f3f46`) and labs-page hex are palette colors — legitimate.
+Convergence notes:
+- **+layout**: `--color-surface-hover` was referenced with a live hex fallback but the
+  token never existed — now defined in `app.css` (`oklch(0.93 0.007 150)`).
+- **internal-db**: table headers used `var(--color-bg, #0f0f0f)` — `--color-bg` never
+  existed, so headers rendered near-black under gray text (legacy dark-theme leftover).
+  Now the standard `surface-raised` sticky-header pattern (same as TableViewer).
+- **agent**: two `var()` fallbacks carried wrong bluish hex values (dead weight) — stripped.
 
-Scoped `<style>` blocks remain in showcase demos and BlockInspector/ChartCard —
-converge opportunistically per component as each is touched (Path B policy).
+**Deliberately remaining (dispositioned as legitimate)**: ExprEditor 31 (deferred with
+its autocomplete until a caret-anchored pattern is chosen); chart axis/palette hex in
+renderers + labs pages (`#888888`, `#71717a`, `#3f3f46` — svelteplot mark configs).
 
 Labs placeholders (30 routes), /ui showcase, settings pages: clean or trivial.
 
 ---
 
-## Remaining work (updated order)
+## Remaining work — NONE
 
-1. **Styling convergence only** — PageGrid (30) is now the biggest surface, then
-   ItemEditor/RelationshipEditor (25 each). Rides along per touched component (Path B).
-2. **ExprEditor autocomplete** — stays deferred until a caret-anchored pattern
-   (Popover + customAnchor) is chosen; its 31 zinc/hex converge then.
+The audit is gap-free as of `5e395dd`: bits-ui owns every interactive surface flagged,
+and the styling-debt table is at zero outside dispositioned chart colors.
 
-No behavioral migration work remains — bits-ui owns every interactive surface the
-audit flagged.
+Only standing item: ExprEditor's autocomplete stays deferred until a caret-anchored
+pattern (Popover + customAnchor) is chosen — its 31 zinc/hex converge then.
 
 ---
 
@@ -153,7 +158,9 @@ audit flagged.
 | Styling convergence | ♻️ rides along per touched component; refreshed counts in table above |
 
 Post-disposition follow-ons (same day): `cdb0b4a` /components = truthful showcase of
-the real lib; `e92762d` + `e80ae6c` back links removed — the breadcrumb is the navigation.
+the real lib; `e92762d` + `e80ae6c` back links removed — the breadcrumb is the navigation;
+`2129125` audit resolution pass; styling-convergence sweep (2 commits, 13 surfaces +
+the missing `--color-surface-hover` token).
 
 Single source of truth now enforced: every reusable component lives exactly once in
 `src/lib/components/`; design-system showcase demos live in `src/lib/demos/` (not

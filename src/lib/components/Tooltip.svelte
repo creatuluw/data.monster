@@ -1,47 +1,51 @@
 <script lang="ts">
+	import { Tooltip } from 'bits-ui';
+
 	let {
 		text,
-		position = "top",
+		position = 'top',
 		block = false,
-		children,
+		children
 	}: {
 		text?: string;
-		position?: "top" | "bottom" | "left" | "right";
+		position?: 'top' | 'bottom' | 'left' | 'right';
 		block?: boolean;
-		children?: import("svelte").Snippet;
+		children?: import('svelte').Snippet;
 	} = $props();
-
-	let visible = $state(false);
-	let delayTimer: ReturnType<typeof setTimeout> | null = null;
-
-	function show() {
-		if (!text) return;
-		delayTimer = setTimeout(() => (visible = true), 400);
-	}
-
-	function hide() {
-		if (delayTimer) {
-			clearTimeout(delayTimer);
-			delayTimer = null;
-		}
-		visible = false;
-	}
 </script>
 
-{#if block}
-	<div class="tooltip-wrap tooltip-wrap-block" onmouseenter={show} onmouseleave={hide} role="presentation">
-		{#if children}{@render children()}{/if}
-		{#if visible && text}
-			<span class="tooltip tooltip-{position}" role="tooltip">{text}</span>
-		{/if}
-	</div>
+{#if !text}
+	<!-- nothing to show: render the wrapped content bare, as before -->
+	{#if children}{@render children()}{/if}
 {:else}
-	<span class="tooltip-wrap" onmouseenter={show} onmouseleave={hide} role="presentation">
-		{#if children}{@render children()}{/if}
-		{#if visible && text}
-			<span class="tooltip tooltip-{position}" role="tooltip">{text}</span>
-		{/if}
-	</span>
+	<Tooltip.Provider>
+		<Tooltip.Root delayDuration={400}>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					{#if block}
+						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+						<div {...props} class="tooltip-wrap tooltip-wrap-block" tabindex="0">
+							{#if children}{@render children()}{/if}
+						</div>
+					{:else}
+						<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+						<span {...props} class="tooltip-wrap" tabindex="0">
+							{#if children}{@render children()}{/if}
+						</span>
+					{/if}
+				{/snippet}
+			</Tooltip.Trigger>
+			<Tooltip.Portal>
+				<Tooltip.Content
+					class="tooltip"
+					side={position}
+					sideOffset={6}
+				>
+					{text}
+				</Tooltip.Content>
+			</Tooltip.Portal>
+		</Tooltip.Root>
+	</Tooltip.Provider>
 {/if}
 
 <style>
@@ -56,8 +60,8 @@
 		width: 100%;
 	}
 
-	.tooltip {
-		position: absolute;
+	/* bubble renders in a portal — chrome hangs off a :global rule */
+	:global(.tooltip) {
 		z-index: 200;
 		padding: var(--space-1) var(--space-2);
 		background: var(--color-text);
@@ -70,36 +74,5 @@
 		white-space: nowrap;
 		border-radius: var(--radius-xs);
 		box-shadow: var(--shadow-md);
-		animation: tooltipIn 120ms var(--ease-out-expo) both;
-		pointer-events: none;
-	}
-
-	.tooltip-top {
-		bottom: calc(100% + 6px);
-		left: 50%;
-		transform: translateX(-50%);
-	}
-
-	.tooltip-bottom {
-		top: calc(100% + 6px);
-		left: 50%;
-		transform: translateX(-50%);
-	}
-
-	.tooltip-left {
-		right: calc(100% + 6px);
-		top: 50%;
-		transform: translateY(-50%);
-	}
-
-	.tooltip-right {
-		left: calc(100% + 6px);
-		top: 50%;
-		transform: translateY(-50%);
-	}
-
-	@keyframes tooltipIn {
-		from { opacity: 0; }
-		to { opacity: 1; }
 	}
 </style>

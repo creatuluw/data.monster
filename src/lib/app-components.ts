@@ -25,35 +25,27 @@ export function parseComponent(path: string, source: string): AppComponent {
 	};
 }
 
-const modules = {
-	...import.meta.glob('/src/lib/components/**/*.svelte', {
-		query: '?raw',
-		import: 'default',
-		eager: true
-	}),
-	// design-system showcase demos (/ui sections + some /components catalog entries)
-	...import.meta.glob('/src/lib/demos/**/*.svelte', {
-		query: '?raw',
-		import: 'default',
-		eager: true
-	})
-} as Record<string, string>;
+const modules = import.meta.glob('/src/lib/components/**/*.svelte', {
+	query: '?raw',
+	import: 'default',
+	eager: true
+}) as Record<string, string>;
 
 /** Names that have a live visual demo in ComponentDemo.svelte — the /components
- *  catalog surfaces only these; keep in sync with that component's if/else chain. */
+ *  catalog surfaces only these; keep in sync with that component's if/else chain.
+ *  Every reusable component in lib/components is showcaseable. */
 export const SHOWCASEABLE = new Set([
-	// ds/ self-showcasing components (same set /ui renders)
-	'Accordion', 'Buttons', 'Cards', 'ColorPalette', 'Footer', 'Hero', 'Icons', 'Inputs',
-	'Modal', 'Motion', 'Nav', 'Principles', 'SearchAhead', 'Spacing', 'Tags', 'Toast',
-	'Toggles', 'Typography',
+	// root kit
+	'Badge', 'Breadcrumb', 'ColumnFunctionDrawer', 'Drawer', 'LabsPlaceholder',
+	'ModelManager', 'Pagination', 'PreviewPane', 'TableDrawer', 'TableOverview',
+	'TableViewer', 'Tabs', 'TagInput',
+	// charts
+	'BarChartRenderer', 'BlockInspector', 'ChartCard', 'ChartConfigDrawer', 'ExprEditor',
+	'HeatmapRenderer', 'ItemEditor', 'PageGrid', 'RelationshipEditor', 'RolePickerModal',
+	'SkeletonSetup', 'TableRenderer',
 	// charts/controls form kit
 	'Btn', 'DangerZone', 'Field', 'NumberInput', 'RemoveBtn', 'Section', 'Select',
-	'TextInput', 'Toggle',
-	// root kit with hand-written demos
-	'Badge', 'Breadcrumb', 'Drawer', 'LabsPlaceholder', 'Pagination', 'PreviewPane', 'Tag',
-	'TagInput', 'TableList', 'Tabs', 'Tooltip',
-	// charts
-	'BarChart'
+	'TextInput', 'Toggle'
 ]);
 
 /** Active components with a live visual demo, folder-then-name sorted. */

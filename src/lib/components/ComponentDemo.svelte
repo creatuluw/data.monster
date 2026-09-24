@@ -1,56 +1,80 @@
 <script lang="ts">
 	/**
-	 * /components visual demos: renders a live, standalone demo for every component
-	 * that can run without app data/tauri. ds/ components self-showcase (same as /ui);
-	 * the rest get hand-written dummy-data demos; genuinely app-wired components show
-	 * the honest note instead.
+	 * The demo registry behind the /components detail pages — every entry here
+	 * renders the REAL component from src/lib/components with static fixture
+	 * data, so each card shows the component's actual design.
+	 * Keep in sync with SHOWCASEABLE in $lib/app-components.ts.
 	 */
-	import Accordion from './Accordion.svelte';
-	import Buttons from '$lib/demos/Buttons.svelte';
-	import Cards from '$lib/demos/Cards.svelte';
-	import ColorPalette from '$lib/demos/ColorPalette.svelte';
-	import Footer from '$lib/demos/Footer.svelte';
-	import Hero from '$lib/demos/Hero.svelte';
-	import Icons from '$lib/demos/Icons.svelte';
-	import Inputs from '$lib/demos/Inputs.svelte';
-	import Modal from '$lib/demos/Modal.svelte';
-	import Motion from '$lib/demos/Motion.svelte';
-	import Nav from '$lib/demos/Nav.svelte';
-	import Principles from '$lib/demos/Principles.svelte';
-	import SearchAhead from '$lib/demos/SearchAhead.svelte';
-	import Spacing from '$lib/demos/Spacing.svelte';
-	import Tags from '$lib/demos/Tags.svelte';
-	import Toast from '$lib/demos/Toast.svelte';
-	import Toggles from '$lib/demos/Toggles.svelte';
-	import Typography from '$lib/demos/Typography.svelte';
-
-	import Btn from './charts/controls/Btn.svelte';
-	import Field from './charts/controls/Field.svelte';
-	import Section from './charts/controls/Section.svelte';
-	import Select from './charts/controls/Select.svelte';
-	import TextInput from './charts/controls/TextInput.svelte';
-	import NumberInput from './charts/controls/NumberInput.svelte';
-	import Toggle from './charts/controls/Toggle.svelte';
-	import RemoveBtn from './charts/controls/RemoveBtn.svelte';
-	import DangerZone from './charts/controls/DangerZone.svelte';
-	import BarChart from './charts/BarChart.svelte';
-
-	import Tag from './Tag.svelte';
-	import Tabs from './Tabs.svelte';
-	import Tooltip from './Tooltip.svelte';
-	import Pagination from './Pagination.svelte';
-	import TagInput from './TagInput.svelte';
-	import TableList from './TableList.svelte';
+	import { createPageRuntime } from '$lib/charts/page-runtime.svelte';
+	import type { PageDoc, ChartBlockSpec } from '$lib/charts/spec-types';
+	import type { MasterItem } from '$lib/charts/items';
+	import type { TableSchemas } from '$lib/charts/query/compile';
 	import Badge from './Badge.svelte';
 	import Breadcrumb from './Breadcrumb.svelte';
 	import Drawer from './Drawer.svelte';
 	import LabsPlaceholder from './LabsPlaceholder.svelte';
+	import Pagination from './Pagination.svelte';
 	import PreviewPane from './PreviewPane.svelte';
+	import TagInput from './TagInput.svelte';
+	import Tabs from './Tabs.svelte';
+	import TableDrawer from './TableDrawer.svelte';
+	import TableOverview from './TableOverview.svelte';
+	import TableViewer from './TableViewer.svelte';
+	import ColumnFunctionDrawer from './ColumnFunctionDrawer.svelte';
+	import ModelManager from './ModelManager.svelte';
+	import BlockInspector from './charts/BlockInspector.svelte';
+	import ChartCard from './charts/ChartCard.svelte';
+	import ChartConfigDrawer from './charts/ChartConfigDrawer.svelte';
+	import ExprEditor from './charts/ExprEditor.svelte';
+	import ItemEditor from './charts/ItemEditor.svelte';
+	import PageGrid from './charts/PageGrid.svelte';
+	import RelationshipEditor from './charts/RelationshipEditor.svelte';
+	import RolePickerModal from './charts/RolePickerModal.svelte';
+	import SkeletonSetup from './charts/SkeletonSetup.svelte';
+	import BarChartRenderer from './charts/renderers/BarChartRenderer.svelte';
+	import HeatmapRenderer from './charts/renderers/HeatmapRenderer.svelte';
+	import TableRenderer from './charts/renderers/TableRenderer.svelte';
+	import Btn from './charts/controls/Btn.svelte';
+	import DangerZone from './charts/controls/DangerZone.svelte';
+	import Field from './charts/controls/Field.svelte';
+	import NumberInput from './charts/controls/NumberInput.svelte';
+	import RemoveBtn from './charts/controls/RemoveBtn.svelte';
+	import Section from './charts/controls/Section.svelte';
+	import Select from './charts/controls/Select.svelte';
+	import TextInput from './charts/controls/TextInput.svelte';
+	import Toggle from './charts/controls/Toggle.svelte';
 
-	const DS_SHOWCASE: Record<string, any> = {
-		Accordion, Buttons, Cards, ColorPalette, Footer, Hero, Icons, Inputs, Modal,
-		Motion, Nav, Principles, SearchAhead, Spacing, Tags, Toast, Toggles, Typography
+	// ── static fixtures shared by the chart-family demos ──
+	const demoSchemas: TableSchemas = {
+		orders: ['order_id', 'city', 'region', 'sales'],
+		customers: ['customer_id', 'name', 'segment']
 	};
+	const demoItems: MasterItem[] = [
+		{ id: 'mi-sales', kind: 'measure', table: 'orders', label: 'Total sales', expr: 'sum(sales)' }
+	];
+	const demoRows: Record<string, unknown>[] = [
+		{ city: 'Berlin', region: 'EU', sales: 120 },
+		{ city: 'Tokyo', region: 'APAC', sales: 340 },
+		{ city: 'Oslo', region: 'EU', sales: 90 }
+	];
+	const demoChart: ChartBlockSpec = {
+		type: 'bar',
+		title: 'Sales by city',
+		source: { table: 'orders' },
+		dimensions: [],
+		measures: []
+	};
+	const demoDoc: PageDoc = {
+		slug: 'demo',
+		title: 'Demo page',
+		rows: [{ columns: [{ span: 12, blocks: [{ type: 'chart', chart: { ...demoChart, dimensions: [{ col: 'city' }], measures: [{ expr: 'sum(sales)' }] } }] }] }]
+	};
+	const demoRuntime = createPageRuntime(demoDoc, {
+		schemas: demoSchemas,
+		items: demoItems,
+		relationships: [],
+		runQuery: async () => demoRows
+	});
 
 	let { name }: { name: string } = $props();
 
@@ -64,12 +88,14 @@
 	let toggleVal = $state(true);
 	let drawerOpen = $state(false);
 	let drawerToggle = $state(true);
+	let tableDrawerOpen = $state(false);
+	let colFuncOpen = $state(false);
+	let rolePickerOpen = $state(false);
+	let configOpen = $state(true);
+	let exprVal = $state('sum(sales)');
 </script>
 
-{#if DS_SHOWCASE[name]}
-	{@const Demo = DS_SHOWCASE[name]}
-	<Demo />
-{:else if name === 'Btn'}
+{#if name === 'Btn'}
 	<div class="demo-row">
 		<Btn variant="primary" onclick={noop}>Primary</Btn>
 		<Btn variant="secondary" onclick={noop}>Secondary</Btn>
@@ -142,12 +168,6 @@
 			onconfirm={noop}
 		/>
 	</div>
-{:else if name === 'Tag'}
-	<div class="demo-row">
-		<Tag>default</Tag>
-		<Tag variant="accent">accent</Tag>
-		<Tag variant="success">success</Tag>
-	</div>
 {:else if name === 'Tabs'}
 	{#snippet prevLabel()}Preview{/snippet}
 	{#snippet schemaLabel()}Schema{/snippet}
@@ -163,12 +183,6 @@
 			onchange={noop}
 		/>
 	</div>
-{:else if name === 'Tooltip'}
-	<div class="demo-row">
-		<Tooltip text="Shows on hover">
-			<Btn variant="secondary" onclick={noop}>Hover me</Btn>
-		</Tooltip>
-	</div>
 {:else if name === 'Pagination'}
 	<div class="demo-col">
 		<Pagination currentPage={pageNum} totalItems={87} perPage={20} onchange={(p) => (pageNum = p)} />
@@ -176,32 +190,6 @@
 {:else if name === 'TagInput'}
 	<div class="demo-col">
 		<TagInput bind:tags={tagValue} suggestions={['marketing', 'finance']} placeholder="Add tag…" onchange={noop} />
-	</div>
-{:else if name === 'TableList'}
-	<div class="demo-col">
-		<TableList
-			tables={['superstore_orders', 'superstore_returns', 'customers', 'regions']}
-			selected="superstore_orders"
-			onselect={noop}
-			onconnect={noop}
-		/>
-	</div>
-{:else if name === 'BarChart'}
-	{#snippet barTip(d: { region: string; sales: number })}<span>{d.region}: {d.sales}</span>{/snippet}
-	<div class="chart-stage">
-		<BarChart
-			data={[
-				{ region: 'EU', sales: 340 },
-				{ region: 'Americas', sales: 520 },
-				{ region: 'APAC', sales: 410 },
-				{ region: 'MEA', sales: 180 },
-				{ region: 'Nordics', sales: 260 }
-			]}
-			category={(d) => d.region}
-			value={(d) => d.sales}
-			tooltip={barTip}
-			labelFor={(d) => d.region}
-		/>
 	</div>
 {:else if name === 'Badge'}
 	<div class="demo-row">
@@ -240,8 +228,6 @@
 			onnext={noop}
 		/>
 	</div>
-{:else if name === 'SearchAhead'}
-	<SearchAhead />
 {:else if name === 'Drawer'}
 	{#snippet drawerBody()}
 		<div class="demo-col">
@@ -271,11 +257,166 @@
 		{@render drawerBody()}
 		{@render drawerFooter()}
 	</Drawer>
+{:else if name === 'TableDrawer'}
+	<div class="demo-row">
+		<Btn onclick={() => (tableDrawerOpen = true)}>Open Table settings</Btn>
+	</div>
+	{#if tableDrawerOpen}
+		<TableDrawer tableName="orders" onclose={() => (tableDrawerOpen = false)} />
+	{/if}
+{:else if name === 'ColumnFunctionDrawer'}
+	<div class="demo-row">
+		<Btn onclick={() => (colFuncOpen = true)}>Open Add function</Btn>
+	</div>
+	{#if colFuncOpen}
+		<ColumnFunctionDrawer
+			columnName="sales"
+			columnType="float"
+			fieldFunctions={[{ id: 'f-fmt', label: 'Format thousands', description: '1.2k style', sql_template: 'ROUND({col}/1000, 1)', applies_to: 'numeric', output_type: 'string' }]}
+			activeFunctions={[]}
+			onclose={() => (colFuncOpen = false)}
+			onapply={noop}
+		/>
+	{/if}
+{:else if name === 'ModelManager'}
+	<div class="demo-col">
+		<ModelManager />
+	</div>
+{:else if name === 'TableOverview'}
+	<div class="demo-col">
+		<TableOverview tables={['orders', 'customers', 'regions']} onselect={noop} onopendrawer={noop} />
+	</div>
+{:else if name === 'TableViewer'}
+	<div class="demo-col">
+		<TableViewer
+			tableName="orders"
+			result={{ columns: ['city', 'sales'], rows: demoRows, totalRows: 3 }}
+		/>
+	</div>
+{:else if name === 'ChartCard'}
+	<div class="demo-col">
+		<ChartCard title="Sales by city" subtitle="orders · this year">
+			<p class="demo-note">Chart content renders as the card's children — bars, heatmaps, tables.</p>
+		</ChartCard>
+		<ChartCard title="Unconfigured chart" status="setup" />
+	</div>
+{:else if name === 'ChartConfigDrawer'}
+	{#snippet configFields()}
+		<Field label="Top-N buckets" inline>
+			<NumberInput value={10} min={1} />
+		</Field>
+		<Toggle bind:checked={toggleVal} label="Sort descending" />
+	{/snippet}
+	<div class="demo-row">
+		<Btn onclick={() => (configOpen = !configOpen)}>{configOpen ? 'Hide' : 'Show'} config drawer</Btn>
+	</div>
+	<ChartConfigDrawer bind:open={configOpen} title="Bar chart configuration" width="380px">
+		{@render configFields()}
+	</ChartConfigDrawer>
+{:else if name === 'BlockInspector'}
+	<div class="demo-col">
+		<BlockInspector
+			doc={demoDoc}
+			ri={0}
+			ci={0}
+			bi={0}
+			schemas={demoSchemas}
+			items={demoItems}
+			relationships={[]}
+		/>
+	</div>
+{:else if name === 'ItemEditor'}
+	<div class="demo-col">
+		<ItemEditor
+			kind="measure"
+			schemas={demoSchemas}
+			metas={{ orders: [{ name: 'order_id', type: 'int' }, { name: 'city', type: 'str' }, { name: 'sales', type: 'float' }] }}
+		/>
+	</div>
+{:else if name === 'ExprEditor'}
+	<div class="demo-col">
+		<ExprEditor
+			bind:value={exprVal}
+			kind="measure"
+			table="orders"
+			columns={demoSchemas.orders}
+			masterItems={demoItems.filter((i) => i.kind === 'measure')}
+			placeholder="e.g. sum(amount)"
+			preview={false}
+		/>
+	</div>
+{:else if name === 'PageGrid'}
+	<div class="demo-col" style="max-width: none;">
+		<PageGrid doc={demoDoc} runtime={demoRuntime} schemas={demoSchemas} items={demoItems} relationships={[]} />
+	</div>
+{:else if name === 'RelationshipEditor'}
+	<div class="demo-col">
+		<RelationshipEditor schemas={demoSchemas} />
+	</div>
+{:else if name === 'RolePickerModal'}
+	<div class="demo-row">
+		<Btn onclick={() => (rolePickerOpen = true)}>Open role picker</Btn>
+	</div>
+	{#if rolePickerOpen}
+		<RolePickerModal
+			kind="dimension"
+			chart={demoChart}
+			schemas={demoSchemas}
+			items={demoItems}
+			relationships={[]}
+			onClose={() => (rolePickerOpen = false)}
+		/>
+	{/if}
+{:else if name === 'SkeletonSetup'}
+	<div class="demo-col" style="max-width: 420px;">
+		<SkeletonSetup chart={demoChart} schemas={demoSchemas} items={demoItems} relationships={[]} />
+	</div>
+{:else if name === 'BarChartRenderer'}
+	<div class="chart-stage">
+		<BarChartRenderer
+			rows={demoRows}
+			dimensionAliases={['city']}
+			measureAliases={['sales']}
+			options={{}}
+			annotations={[]}
+			heightVh={0.3}
+			title="Sales by city"
+			selected={null}
+			onSelect={noop}
+			colorScale={demoRuntime.colorScale}
+			fmts={{}}
+		/>
+	</div>
+{:else if name === 'HeatmapRenderer'}
+	<div class="chart-stage">
+		<HeatmapRenderer
+			rows={[
+				{ city: 'Berlin', month: 'Jan', sales: 120 },
+				{ city: 'Berlin', month: 'Feb', sales: 140 },
+				{ city: 'Tokyo', month: 'Jan', sales: 220 },
+				{ city: 'Tokyo', month: 'Feb', sales: 190 },
+				{ city: 'Oslo', month: 'Jan', sales: 80 },
+				{ city: 'Oslo', month: 'Feb', sales: 95 }
+			]}
+			dimensionAliases={['city', 'month']}
+			measureAliases={['sales']}
+			options={{}}
+			annotations={[]}
+			heightVh={0.3}
+			title="Sales heatmap"
+			selected={null}
+			onSelect={noop}
+			colorScale={demoRuntime.colorScale}
+			fmts={{}}
+		/>
+	</div>
+{:else if name === 'TableRenderer'}
+	<div class="demo-col" style="max-width: 560px;">
+		<TableRenderer rows={demoRows} columns={['city', 'region', 'sales']} title="Orders sample" status="ok" error="" />
+	</div>
 {:else}
 	<p class="no-live">
-		This component needs app data/props, so there is no standalone preview — see it
-		working in the app. Components under <code class="font-mono">ds/</code>, the
-		<code class="font-mono">charts/controls</code> kit and a few others render live here.
+		No standalone preview for this entry.
 	</p>
 {/if}
 

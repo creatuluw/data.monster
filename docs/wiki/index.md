@@ -7,7 +7,7 @@ okf_version: "0.1"
 <!-- wiki-nav:start -->
 ## Navigation map
 
-Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 205 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-22T13:16:35.397Z.
+Auto-generated detailed index of every docs/wiki/ concept — the map the LLM uses to locate information. 237 concept(s). Regenerated on init and on wiki_mark_synced. Generated 2026-09-23T05:34:31.499Z.
 
 Each entry: [title](concept-id.md) — description. Links are clickable in /wiki; pass the concept-id (link target minus .md) to wiki_get.
 
@@ -27,6 +27,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Central chart component design](pages/artifacts/central-chart-component-design.md) — What it documents
 - [Central-charts spec &amp; task list](pages/artifacts/central-charts-spec-amp-task-list.md) — The planning document for the central reusable-chart build: report pages composed of chart/block objects on a 12-col grid, with a dual-mode (Design ⇄ Code) edit
 - [Central charts spec & tasks](pages/artifacts/central-charts-spec-tasks.md) — The executable spec + task list for phase 1 of the central chart system: 13 FRs (FR-1..13) broken into 13 TDD tasks across five phases — Core (spec types/valida
+- [Design component reference (docs/design/components/)](pages/artifacts/design-component-reference-docs-design-components.md) — What is it?
 - [Design-component reference set (docs/design/components/)](pages/artifacts/design-component-reference-set.md) — 40 standalone per-component design-reference HTML pages (Button, Modal, Table, Searchahead, …) — static explorations in their own token set, not app components.
 - [Design-system reference doc (docs/design-system-data-monster.html)](pages/artifacts/design-system-reference-doc-docs-design.md) — The standalone design-system documentation deliverable: a single self-contained HTML file rendering the app's current tokens, typography, color ramps, and compo
 - [Feature skill catalog (docs/features/)](pages/artifacts/feature-skill-catalog-docs-features.md) — What it is
@@ -36,6 +37,10 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [LLM Sensitive-Data White Paper — Finance Edition](pages/artifacts/llm-sensitive-data-white-paper-finance-edition.md) — Non-technical (finance-audience) edition of the LLM sensitive-data white paper, in Dutch. Fully rewritten 2026-09-12 around one spine: *"wie traint er mee, en w
 - [OSS value driver trees research report](pages/artifacts/oss-value-driver-trees-research-report.md) — What it documents
 - [Pages E2E feedback report](pages/artifacts/pages-e2e-feedback-report.md) — E2E test report for the /pages report-page flow built on the semantic (master-item) layer: `reports/pages-e2e-feedback.md`, produced 2026-09-22 by driving the r
+- [Workspace-file-first spec & tasks](pages/artifacts/workspace-file-first-spec-tasks.md) — The executable spec + task list for the workspace-file-first build: 13 FRs (FR-1..13) across four phases — A Files-are-canonical (`dm_store` module, pages/maste
+- [Agent docs module (agent_docs.rs)](pages/entities/agent-docs-module-agent-docs-rs.md) — Agent docs module (agent_docs.rs)
+- [Agent docs system](pages/entities/agent-docs-system.md) — The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at `src-tauri/agent-docs/`
+- [Agent prompts page](pages/entities/agent-prompts-page.md) — The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
 - [App tab system (virtual tabs + bottom tab bar)](pages/entities/app-tab-system-virtual-tabs-bottom-tab-bar.md) — The app's browser-like tab system: right-click an internal link → "Open in new tab"; the bottom bar lists the open tabs. Tabs are **virtual** — plain routes tra
 - [BarChart component](pages/entities/barchart-component.md) — What is it?
 - [central-api (frontend invoke client)](pages/entities/central-api-frontend-invoke-client.md) — What is it?
@@ -43,31 +48,42 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Chart fundament](pages/entities/chart-fundament.md) — Shared, tested pure-TS core under every /labs chart component — buildBars aggregation and sameDatum positional selection matching; components stay thin renderers.
 - [Chart page spec (spec-types + validator)](pages/entities/chart-page-spec-spec-types-validator.md) — Central-charts FR-1: the PageDoc data contract (spec-types.ts + validate.ts) - columned rows (PageColumn span/height), blocks, measures/dimensions, rowColumns/normalizePageDoc
 - [ChartConfigDrawer component](pages/entities/chartconfigdrawer-component.md) — A reusable drawer shell for chart configuration panels, hosted **inside each chart component** in `/labs`: a chart accepts an optional `config` snippet and togg
+- [Connections file store (connections.rs)](pages/entities/connections-file-store-connections-rs.md) — The Rust content-command module that backs **saved PostgreSQL connections** — task `files-005` of the workspace-file-first build (commit `fb2f6fb`, 2026-09-22).
 - [Create-in-/data round-trip](pages/entities/create-in-data-round-trip.md) — Deep-link flow from a /pages chart's pick surfaces to the full master-item editor in /data and back: chart → /data?tab=<kind>s&add=1&table=…&return=<slug>&block=<id> → ItemEditor preset form → save → /pages/<slug>?configure=<block>&attach=<itemId> → item attached to the chart + focused drawer reopened.
+- [data/incoming drop folder (incoming.rs)](pages/entities/data-incoming-drop-folder-incoming-rs.md) — data/incoming drop folder (incoming.rs)
 - [database command module](pages/entities/database-command-module.md) — The Rust command module owning DuckDB **lifecycle** in the Tauri backend: initialize, graceful shutdown, and full reset. It is the code that turns a user-select
 - [Design system (app.css tokens + /ui showcase)](pages/entities/design-system-app-css-tokens-ui-showcase.md) — The app-wide styling layer: design tokens in `src/app.css`, the `src/lib/components/` + `src/lib/components/ds/` component libraries, the `/ui` showcase page, a
 - [dev-cdp.cmd (repo-root double-click CDP restart)](pages/entities/dev-cdp-cmd-repo-root-double-click-cdp-restart.md) — `dev-cdp.cmd` is a double-clickable Windows command script at the repo root that restarts the dev app in a CDP-drivable state — the packaged version of the manu
+- [dm-events frontend module](pages/entities/dm-events-frontend-module.md) — `src/lib/dm-events.ts` — the frontend half of the dm/ live-reload loop (workspace-file-first task `files-008`, commit `d7f0fc7`): one Tauri event bus for `dm:ch
+- [dm_store command module](pages/entities/dm-store-command-module.md) — `src-tauri/src/commands/dm_store.rs` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write
+- [dm_watch command module](pages/entities/dm-watch-command-module.md) — `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works
+- [E2E CDP driver](pages/entities/e2e-cdp-driver.md) — `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
 - [ExprEditor component](pages/entities/expreditor-component.md) — Smart DuckDB expression editor for master items (Qlik-Sense-style): autocomplete over bound-table fields, master items and a curated DuckDB function catalog, SQL syntax highlighting, per-kind starter templates, and live validation + result preview against the bound table.
 - [Field Functions library](pages/entities/field-functions-library.md) — A user-extensible library of SQL field functions (e.g. formatting, extraction, math) that can be applied to table columns from the column drawer, backed by the
 - [Heatmap component](pages/entities/heatmap-component.md) — Reusable SveltePlot-based heatmap component (generic `<T>`, cell grid with threshold colors), ported 2026-09-14 from the kees.pippeloi.nl reference. First compo
+- [Incoming drop folder](pages/entities/incoming-drop-folder.md) — The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and 
 - [LabsPlaceholder component](pages/entities/labsplaceholder-component.md) — The shared Svelte 5 placeholder shell that renders a section page with "Placeholder — coming soon." Every not-yet-built chart type in `/labs` shows it, and other not-yet-built sections (e.g. `/library`) reuse it via the `section` prop.
 - [library-component-builder skill (.pi/skills)](pages/entities/library-component-builder-skill-pi-skills.md) — A pi project skill (agentskills.io-spec-conformant) that owns the full path from a user's component idea to a registered, tested library component: interview → 
 - [Library page (/library)](pages/entities/library-page-library.md) — A new top-level route intended to become the **central component library**: every component used in the app's UI shown in one place, where component devs regist
 - [Library registry system (src/lib/library + /library routes)](pages/entities/library-registry-system.md) — The shipped implementation of the library registry: a one-function registration point (`registerLibraryComponent`) that feeds both the `/library` views and the 
 - [LLM prompt button (/library detail)](pages/entities/llm-prompt-button-library-detail.md) — LLM prompt button (/library detail)
+- [Master items & relationships file store (items.rs + relationships.rs)](pages/entities/master-items-relationships-file-store-items-rs.md) — The Rust content-command modules that back master items and the relationship graph as **files in the `dm/` workspace tree** — task `files-003` of the workspace-
 - [PageGrid component](pages/entities/pagegrid-component.md) — The canvas renderer + editing surface of the central-charts page editor: lays out a `PageDoc` as rows of 12-col CSS grids — each row an optional-height shell of
 - [Pages & master-items storage (Rust)](pages/entities/pages-master-items-storage-rust.md) — The Rust-side persistence layer for the central-charts system: three internal DuckDB tables plus the Tauri commands that read/write them. Persists report `PageD
 - [remote_chat command](pages/entities/remote-chat-command.md) — Tauri command that proxies remote LLM chat completions (e.g. z.ai `/chat/completions`) through the Rust backend, streaming tokens back as `local-llm:*` events. 
 - [RolePickerModal component](pages/entities/rolepickermodal-component.md) — The pick/create modal opened from the SkeletonSetup card buttons (new-page-modal pattern): a searchable list over ⭐ master items, source-table fields, and linke
+- [Saved queries file store (saved_queries.rs)](pages/entities/saved-queries-file-store-saved-queries-rs.md) — The Rust content-command module that backs saved queries as **plain `.sql` files in the `dm/saved-queries/` workspace tree** — task `files-004` of the workspace
 - [Shared controls kit (charts/controls)](pages/entities/shared-controls-kit-charts-controls.md) — The shared form-controls kit for every drawer, inspector, and modal surface in the app: nine small Svelte 5 components plus one CSS file, all built on the app's
 - [SkeletonSetup component](pages/entities/skeletonsetup-component.md) — The in-chart setup card rendered inside a `ChartCard` when `needsSetup(chart)` is true: a card button per unmet role opens the RolePickerModal (searchable picks over ⭐ master items | source-table fields | linked-table fields, + New) — the common configuration path never opens the config drawer.
 - [.wiki_ignore staleness policy](pages/entities/wiki-ignore-staleness-policy.md) — Project-level additive ignore config layered on the wiki-context extension's built-in ignores.
 - [Workspace command module (Rust)](pages/entities/workspace-command-module-rust.md) — The Rust command module owning workspace identity — picking, persisting (workspace.json + open history), and resolving the active workspace folder.
 - [Workspaces page (/workspaces)](pages/entities/workspaces-page-workspaces.md) — Dedicated workspace-switcher page at /workspaces — header folder button lands here; every workspace ever opened shows as a chip, and a chip click runs the full portable-workspace reload.
+- [Write-through core (src/lib/write-through.ts)](pages/entities/write-through-core-src-lib-write-through-ts.md) — A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task `files-009`, commit `05d6ea1`, 2026-09-22). All deboun
 - [Page Templates](pages/TEMPLATES.md) — Reference templates for Concept, Entity, and Artifact pages. Follow these when using wiki_note_page.
 
 ### Decisions
 
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace.md) — Context
 - [Agent connection: MCP server embedded in the Rust backend](decisions/agent-connection-mcp-embedded-in-rust-backend.md) — Context
 - [Agent surfaces: one Rust backend serves MCP and loopback REST; ship a dm skill+CLI alongside](decisions/agent-surfaces-rust-backend-mcp-and-rest.md) — Context
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context
@@ -76,6 +92,8 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Central-charts v1 scope: bar + heatmap + table blocks; master items and auto-JOIN deferred](decisions/central-charts-v1-scope-bar-heatmap-table.md) — Context
 - [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context
 - [Consolidate chart engines to Picasso.js + LayerChart, drop echarts/observable/svelteplot](decisions/consolidate-chart-engines-to-picasso-js.md) — Context
+- [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through.md) — Context
+- [dm/ migration: write all, verify, then drop — files win](decisions/dm-migration-write-all-verify-then-drop-files-win.md) — Context
 - [Drawer chrome restyle reverted — control kit stands, lms/kees motifs rejected](decisions/drawer-chrome-restyle-reverted-control-kit-stands.md) — Context
 - [Labs chart catalog mirrors theunspokenpitch.com — scaffolded placeholder-first](decisions/labs-catalog-placeholder-first.md) — Context
 - [Labs reorganized to one card per chart type; heatmap built on ported SveltePlot component](decisions/labs-per-chart-type.md) — Labs goes per-chart-type; first chart (heatmap) built on SveltePlot
@@ -90,6 +108,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Library registry drives editor + /library in one shot (supersedes display-only v1)](decisions/library-registry-drives-editor-and-library.md) — Context
 - [Library registry v1 lives as a TypeScript module under src/lib/library/ with self-contained component folders](decisions/library-registry-ts-module.md) — Context
 - [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events](decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listeners shipped as files-008 (2026-09-22): dm-events bus + six views live-reload; clobber banner shipped as files-009 (write-through core).
 - [Q6 locked: workspace-level master-item library (stable ids) with explicit table binding; Q7 open on binding depth](decisions/master-item-library-table-binding-q6.md) — Context
 - [Master-items amendment: semantic layer moves early into central-charts v1](decisions/master-items-amendment-semantic-layer-moves-early.md) — Context
 - [Measures/dimensions are DuckDB expressions, not column+agg sugar (Q5, settled)](decisions/measures-dimensions-are-duckdb-expressions.md) — Context
@@ -128,6 +147,8 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Typography: Space Grotesk display, Bricolage dropped](decisions/typography-space-grotesk-display-bricolage-dropped.md) — Context
 - [Typography: Squada One headings, Libre Baskerville body, Geist Mono data — Inter dropped](decisions/typography-squada-one-headings-libre-baskerville.md) — Context (superseded by [[typography-calluna-headings-inter-body]])
 - [Typography: Syne display — Space Grotesk dropped](decisions/typography-syne-display-space-grotesk-dropped.md) — Typography: Syne display — Space Grotesk dropped
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity.md) — Context
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author.md) — Context
 - [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switch-reloads.md) — Context
 
 ### Rules
@@ -137,6 +158,7 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Card spacing comes from the grid gap, never per-card margins](rules/card-spacing-from-grid-gap-not-margins.md) — In any grid of chart/component cards (page editor canvas, labs), inter-card
 - [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline
 - ["Demo" means an app-tour-demo UI tour, not eval suites](rules/demo-means-app-tour-demo-not-eval-suites.md) — Guideline
+- [dm/ live-reload wires through dm-events — never a raw listen()](rules/dm-live-reload-wires-through-dm-events.md) — **The rule**: any view or component that renders `dm/`-managed content subscribes to live changes through `src/lib/dm-events.ts` — `onDmChanged(kind, () => void
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline
 - [Drawers reuse the shared drawerResize action](rules/drawers-reuse-the-shared-drawerresize-action.md) — Guideline
 - [Each /labs chart owns its config panel](rules/each-labs-chart-owns-its-config-panel.md) — Guideline
@@ -152,11 +174,16 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Pointer cursor comes from one global rule in app.css](rules/pointer-cursor-from-global-rule-app-css.md) — Guideline
 - [Render markdown via marked + .prose-chat, never a new pipeline](rules/render-markdown-via-marked-prose-chat.md) — When rendering any markdown anywhere in the app (docs tabs, chat, notes), parse with `marked` (already a dependency) and wrap the output in the `.prose-chat` cl
 - [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-existing-size-classes.md) — Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers.
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point.md) — The rule
 - [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline
+- [Rust backend tests live in-module via #[cfg(test)]](rules/rust-backend-tests-live-in-module-via-cfg-test.md) — The rule
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writes into a workspace 
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail loud instead of clobber
 - [Spec-driven features: TDD + Karpathy skills referenced in every todo](rules/spec-driven-features-tdd-karpathy-in-todos.md) — Guideline
 
 ### Learnings
 
+- [A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer](learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md) — Shipped in `files-007` (2026-09-22): the `dm/` watcher skips any path recorded by `dm_watch::mark_self_write` — and the only caller is `dm_store::atomic_write`,
 - [Apparent UI bug after dev-server restarts = stale HMR webview — Ctrl+R before debugging](learnings/apparent-ui-bug-stale-hmr-webview.md) — Discovered 2026-09-15 while verifying the page-editor config drawer (cog → 50vw focused panel).
 - [Auto margins in the flex-column .app-main disable flex stretch — full-bleed pages shrink without width: 100%](learnings/auto-margins-app-main-disable-flex-stretch.md) — Symptom
 - [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17).
@@ -178,9 +205,13 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [CSS text-transform changes innerText, not textContent — probe labels case-insensitively](learnings/css-text-transform-changes-innertext-probes.md) — Symptom: a CDP DOM probe checking for the label `"Rows"` failed on the Page
 - [D2 diagrams are not interactive — tooltip and external link only; base64url shape classes are the DIY hook](learnings/d2-diagrams-not-interactive.md) — Question
 - [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by `textContent.includes('Definitions')` never matched — the
+- [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — Found by the workspace-file-first e2e pass (2026-09-22): the `data/incoming/` ingest correctly emitted `dm:changed {kind:"table"}` via the [[dm-watch-command-mo
+- [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into `dm/pages/` **before** navigating to /page
 - [Drive data.monster's real UI over CDP with --remote-debugging-port for e2e debugging](learnings/drive-data-monster-s-real-ui-over-cdp.md) — The changelog-e2e skill's technique transfers from the changelog.monster app to **data.monster**: launch the Tauri app with `--remote-debugging-port` and drive 
 - [DuckDB app hangs = poisoned connection on Windows (duckdb-rs #209); in-process recovery fix](learnings/duckdb-app-hangs-poisoned-connection-windows.md) — Diagnosed 2026-09-22 while investigating the data.monster app hangs (reports/pages-e2e-feedback.md).
 - [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-bundled-lacks-static-json-extension.md) — Symptom
+- [duckdb-rs lacks Value: FromSql — typed queries, no generic rows](learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md) — Hit in `files-006` while building the `dm_store` export path (2026-09-22): a generic row-deserialization helper over `duckdb-rs` queries is impossible because t
+- [Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss](learnings/empty-pages-queries-lists-after-a-rust-rebuild.md) — **Gotcha (mid-migration window, branch `feature/workspace-file-first`)**: once the Rust backend is rebuilt with the file-backed commands, pages/saved-queries li
 - [Evidence.dev chart architecture: one typed component per chart type over shared machinery, consistency via a standardized prop taxonomy](learnings/evidence-chart-architecture.md) — Distilled 2026-09-15 while planning the central reusable-chart design (interview in progress; user asked to study docs.evidence.dev/components/scatter_chart and
 - [ExprEditor suggestions are computed locally](learnings/expreditor-suggestions-are-computed-locally.md) — While hunting the suspected "per-keystroke autocomplete invoke flood" (bug #4 of the /pages E2E report, 2026-09-22): **no such flood exists — don't chase it aga
 - [Extending docs/features/ requires add-evals-to-skill's name-dir match and case pattern](learnings/extending-docs-features-requires-add-evals.md) — Constraints of add-evals-to-skill (hit while building [[feature-skill-catalog-docs-features]])
@@ -201,11 +232,12 @@ Each entry: [title](concept-id.md) — description. Links are clickable in /wiki
 - [Never tree-scan .archive/ or src-tauri/target/ — du/find stall on the huge trees](learnings/never-tree-scan-archive-or-src-tauri.md) — The repo contains very large generated/historical trees: `.archive/` (entire superseded old app + chart-engine trials) and `src-tauri/target/` (Rust build artif
 - [normalizePageDoc is a field whitelist — new PageDoc fields must be passed through or they're stripped on load](learnings/normalizepagedoc-field-whitelist.md) — Discovered 2026-09-17 fixing the `/pages` row-height persistence bug: user resized a row, revisited the page, height was gone — yet the save path stored it corr
 - [PageDoc has block.title AND chart.title — charts render only chart.title; inspector must write there](learnings/pagedoc-block-title-and-chart-title-rendering.md) — In the central-charts [[chart-page-spec-spec-types-validator]] `PageDoc`, a block carries a **block-level `title`** *and* (for chart blocks) **`chart.title` / `
-- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on `src/routes/pages/[slug]/+page.svelte` (2026-09-18, /pages/revenue): auto-save runs every 60s via `handleSave(true)`, which **skips t
+- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — SUPERSEDED 2026-09-22 by the write-through core (files-009). Historical: user-requested behavior on `src/routes/pages/[slug]/+page.svelte` (2026-09-18, /pages/revenue): auto-save runs every 60s via `handleSave(true)`, which **skips t
 - [Query editor blowup was .app-column min-height:auto — mock-Tauri browser repro technique](learnings/query-editor-blowup-was-app-column-min-height-auto.md) — Symptom: on /query, clicking a Data-source table made the SQL editor pane "huge" (1689px in a 786px window) while the initial page looked fine.
 - [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-mismatch-broke.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md).
 - [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling `docs/design-system-data-monster.html` to 80%.
 - [SearchAhead.svelte is a /ui showcase demo, not prop-driven — build inline searchaheads](learnings/searchahead-svelte-is-a-ui-showcase-demo-not-prop.md) — Discovered 2026-09-17 building the skeleton pick/create modal.
+- [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged `password@` inside the `.env` sample URL (`DM_CONN_PRODUCTION_URL=postgresql:/
 - [Settings-swap for tours must cover .env too, and the app webview must never navigate off-origin](learnings/settings-swap-for-tours-must-cover-env-too.md) — Discovered 2026-09-16 building the settings-tour + analyst-tour (docs/tours/RUNBOOK.md CRITICAL section).
 - [settings-tour and analyst-tour built — honest-beats-staged applied to the chat](learnings/settings-tour-and-analyst-tour-built.md) — Built 2026-09-16 — settings-tour and analyst-tour complete the 8-tour set in docs/tours/ (connect, preview, query, data-tables, pages, labs, settings, analyst).
 - [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (`TableOverview.svelte`, +6 lines).

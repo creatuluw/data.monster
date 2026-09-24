@@ -1,0 +1,67 @@
+[
+  {
+    "task_id": "files-001",
+    "title": "FR-1 dm/ conventions + atomic write (dm_store module)",
+    "summary": "Created src-tauri/src/commands/dm_store.rs (registered in commands/mod.rs): kind-to-path mapping (pages/<slug>.json, master-items/{measure,dimension}/<id>.json, relationships.json, saved-queries/<slug>.sql, connections.json, drafts/), valid_name guard (rejects traversal/leading dots/leading-trailing whitespace, allows interior spaces), atomic_write (temp+rename, temp cleanup on failure), check_json_object parse-level shape check, and path-to-name inverses. 11 tests green; first run caught 2 real bugs (.sql stem fall-through, whitespace contradiction). Known ceiling: crash-between-write-and-rename not unit-testable without fault injection; documented in module doc."
+  },
+  {
+    "task_id": "files-002",
+    "title": "FR-2 Pages file store (commands remap)",
+    "summary": "pages.rs rewritten file-backed: dm/pages/<slug>.json via dm_store, commands take AppHandle + ws_dir() (no DuckDbState), *_in(ws,...) cores for testability. save writes spec verbatim (invalid JSON included - file mirrors editor, watcher classifies); get_page extracts title best-effort + mtime as updatedAt; list_pages skips invalid files into errors[] array, sorts mtime desc, missing dir = empty; delete idempotent; slug guard rejects traversal. Invoke names/params unchanged (central-api.ts untouched, title param accepted-but-vestigial). 8 tests green, full suite 83/83."
+  },
+  {
+    "task_id": "files-003",
+    "title": "FR-3 Master items + relationships file store",
+    "summary": "items.rs file-backed: dm/master-items/{measures,dimensions}/<id>.json (filename=id, folder=kind, no timestamps), get searches both folders, list filters/sorts deterministic + errors[] for invalid files, delete idempotent, save guards kind+id. relationships.rs: single dm/relationships.json doc, upsert-by-id (generated rel-<from>-<to> slug fallback), delete idempotent, and a clobber guard - corrupt existing doc makes list error loudly AND save refuse (never overwrite a hand-edited broken graph). dm_store item folders corrected to plural (measures/dimensions) per spec tree. 13 new tests; full suite 92/92."
+  },
+  {
+    "task_id": "files-004",
+    "title": "FR-4 Saved queries file store",
+    "summary": "saved_queries.rs rewritten file-backed: dm/saved-queries/<slug>.sql, slug=generate_slug(name) (same-name overwrite kept). Optional single-line '-- dm: {json}' header (name/description/tags) - app always writes it, headerless agent files default name=stem; malformed header = reported error (list errors[] + update refuses), never silently treated as SQL. tags = JSON array in file, comma-separated string at invoke boundary (frontend splits on ','). update = partial merge keeping unspecified fields, slug/filename unchanged on rename. No timestamps in files. 7 tests; full suite 95/95."
+  },
+  {
+    "task_id": "files-005",
+    "title": "FR-5 Connections store + /connect saved-connections UI",
+    "summary": "New commands/connections.rs: dm/connections.json = {connections:[{name, urlEnv}]} - NON-secret metadata only; the connection-string URL (contains password) lives in the workspace .env as DM_CONN_<SLUG>_URL (gitignored). ws_env_set appends/replaces the var preserving all other lines via atomic_write; ws_env_value resolves workspace .env then process env; resolve_connection returns the URL or an error naming the var + .env path. Clobber guard (corrupt doc refuses save). /connect database tab gains saved-connections select (Connect/Delete) + save-current-with-name row; $effect loads on tab activation. Invoke names new: list/save/delete/resolve_connection. 7 Rust tests + svelte-check 0 errors; full suite 102/102."
+  },
+  {
+    "task_id": "files-006",
+    "title": "FR-6 Migration + workspace git bootstrap",
+    "summary": "New commands/migration.rs hooked into initialize_duckdb (after initialize_schema): migrate_content_tables exports the four d8a_monster_* content tables to dm/ files by REUSING the store functions (format consistency by construction; write_query_file added to saved_queries for exact-slug writes), write-ALL-then-verify-then-drop ordering, files-win skip-if-exists, idempotent no-op when tables absent, empty relationships graph still materializes its doc (test caught the edge). bootstrap_gitignore writes .env/*.duckdb/*.duckdb.wal when missing, never overwrites. Secret policy in settings.rs: save_settings moves llmApiKey to workspace .env (LLM_API_KEY) and strips it from settings.json when a workspace is open; get_settings env overrides now check workspace .env first. Migration failure = warning (tables intact, next launch retries). 8 new tests; full suite 110/110."
+  },
+  {
+    "task_id": "files-007",
+    "title": "FR-7 File watcher (notify + debounce + echo suppression + events)",
+    "summary": "New commands/dm_watch.rs + notify = 8 dep. Pipeline: notify events on dm/ recursive -> mpsc -> debounced flusher thread (300ms window, removals win over modifies) -> echo check -> classify(ws, path, removed) PURE fn -> emit dm:changed {kind,name,removed} / dm:error {path,reason}. Echo suppression: registry keyed by destination path fed by dm_store::atomic_write (mark after successful rename), 600ms window >= write debounce 400ms. classify handles pages/master-items/relationships/saved-queries/connections with parse-level checks; drafts, docs, README, .env, settings, unknown files ignored (agent scratch safe). Watcher starts on initialize_duckdb, replaced on workspace switch (drop = stop). 5 classification/echo tests; full suite 115/115."
+  },
+  {
+    "task_id": "files-008",
+    "title": "FR-8 Frontend live-reload (dm:changed / dm:error handling)",
+    "summary": "New src/lib/dm-events.ts: onDmChanged(kind, cb) registry + onDmError + pure routeDmEvent routing core (malformed payloads ignored) + initDmEvents() wired once in +layout.svelte (errors -> console.warn + app.globalError banner). Views subscribe in $effect with off() cleanup: /pages list (page), /pages/[slug] editor (page -> reloadDoc when slug matches; measure/dimension/relationships -> refreshItems), /query (saved-query -> loadSavedQueries), ItemEditor (its kind), RelationshipEditor (relationships), /connect (connections -> loadSavedConnections). tests/dm-events.test.ts: routing matrix + registry off() semantics. vitest 125/125; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-009",
+    "title": "FR-9 Pages editor write-through (save flow deleted)",
+    "summary": "New pure core src/lib/write-through.ts (createWriteThrough: markLocal/flush/decideExternal/ackLoad, 7 fake-timer tests - RED first). Editor surgery: save button, saving/saved state, 60s auto-save interval and all handleSave call sites DELETED; write-through via two $effects (Design/Page: deep doc JSON; Code: raw textarea text - invalid JSON written verbatim, watcher classifies dm:error). Conflict handling: dm:changed(own slug) + pendingWrite -> decideExternal -> amber 'Reload / Keep mine' banner (VS Code model; keep-mine = flush, reload = reloadDoc + ackLoad). openInData flushes before goto; /data return-leg attach flow persists via doc effect. central-api savePageSpec writes raw text. vitest 132/132; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-010",
+    "title": "FR-10 Write-through everywhere else (shared helper)",
+    "summary": "ItemEditor (the one true per-document editor surface): editing an EXISTING master item now writes through live via createWriteThrough (every draft field change -> dm/master-items/<id>.json within 400ms); creation keeps the explicit Save (stable id minted there - no half-drafted files); edit button became Done (flush + close). RelationshipEditor and saved-queries/connections UIs verified already mutation-immediate (every add/update/delete command writes files) - zero change needed, documented as scope note. Ceiling: drawer conflicts are last-write-wins (banner reserved for the pages editor). vitest 132/132, cargo 115/115, svelte-check clean."
+  },
+  {
+    "task_id": "files-011",
+    "title": "FR-11 Agent docs layer with progressive disclosure",
+    "summary": "src-tauri/agent-docs/ (README L0 36 lines, INDEX L1 routing table 27, concepts + 5 format docs L2 with Read-when headers + annotated examples, reference/page-doc-fields L3, recipes/common-tasks). commands/agent_docs.rs embeds via include_str! and syncs into the workspace when dm/docs/.version != app version; user README at root never overwritten; same-version no-op preserves user edits. Hooked into initialize_duckdb. Acceptance tests: 4 cargo (sync/no-op/regen/readme) + 4 vitest (line budgets, INDEX targets exist, JSON/SQL examples parse, secret-free connections example)."
+  },
+  {
+    "task_id": "files-012",
+    "title": "FR-12 /agent prompts page",
+    "summary": "Six starter prompts as frontmatter markdown (onboarding, dashboard-interview, add-measure, ingest-csv, cleanup, explain) in src/lib/agent-prompts/*.md; pure parsePrompt + import.meta.glob loader in agent-prompts.ts; /agent route renders cards via marked + .prose-chat with per-card copy button. Content contract tested: every prompt names the workspace placeholder, mandates README-first, interview prompts instruct one-question-at-a-time. Nav: BookOpen button in header + breadcrumb route label. 8 vitest tests; svelte-check 0 errors."
+  },
+  {
+    "task_id": "files-013",
+    "title": "FR-13 data/incoming drop folder auto-ingest",
+    "summary": "commands/incoming.rs: ingest_incoming_file detects csv/parquet/json by extension, table name = filename stem (validated, duplicate-table error), CREATE TABLE AS SELECT via the Connect readers, moves the file into data/main on success / leaves it on failure with a named error. dm_watch::start_incoming watches data/incoming (non-recursive, debounced) and emits dm:changed {kind:table} / dm:error; runs on initialize_duckdb alongside the dm/ watcher. 2 cargo tests; full suite 121/121."
+  }
+]

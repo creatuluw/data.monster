@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { page as pageState } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { getAllTableMeta, extractErrorMessage, type QueryResult } from '$lib/db-operations';
-	import { getPage, savePage, listMasterItems, listRelationships, saveMasterItem } from '$lib/central-api';
+	import { getPage, savePageSpec, listMasterItems, listRelationships, saveMasterItem } from '$lib/central-api';
+	import { createWriteThrough } from '$lib/write-through';
 	import { validatePageDoc } from '$lib/charts/validate';
 import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import { createPageRuntime } from '$lib/charts/page-runtime.svelte';
@@ -22,7 +24,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	import type { MasterItem } from '$lib/charts/items';
 	import type { Relationship } from '$lib/charts/relationships';
 	import { invoke } from '@tauri-apps/api/core';
-	import { Plus, Code, LayoutGrid, Save, Trash2, FileCog, BarChart3, Table, Type, Search } from 'lucide-svelte';
+	import { Plus, Code, LayoutGrid, Trash2, FileCog, BarChart3, Table, Type, Search, TriangleAlert } from 'lucide-svelte';
 	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
 	import { getChartType } from '$lib/charts/registry';
 	import { getLibraryComponents } from '$lib/library/registry';
@@ -48,9 +50,13 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	let mode = $state<'design' | 'code' | 'page'>('design');
 	let codeText = $state('');
 	let codeErrors = $state<{ path: string; message: string }[]>([]);
-	let saveError = $state('');
-	let saving = $state(false);
-	let saved = $state(false);
+	let conflict = $state(false);
+
+	// write-through core: the file IS the save - no save button, no dirty state (FR-9)
+	const wt = createWriteThrough({
+		read: () => (mode === 'code' ? codeText : JSON.stringify(doc, null, '\t')),
+		write: (spec) => savePageSpec(slug, spec)
+	});
 	let loading = $state(true);
 	let loadError = $state('');
 
@@ -151,6 +157,38 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		relationships = rels;
 	}
 
+	// live reload: dm/ files changed (agent, other surface, or this editor's write-through) (FR-8)
+	$effect(() => {
+		const offPage = onDmChanged('page', (name) => {
+			if (name !== null && name !== slug) return;
+			if (wt.decideExternal() === 'conflict') {
+				conflict = true; // local edits pending vs on-disk change -> banner
+			} else {
+				void reloadDoc();
+			}
+		});
+		const offItems = onDmChanged('measure', () => void refreshItems());
+		const offDims = onDmChanged('dimension', () => void refreshItems());
+		const offRels = onDmChanged('relationships', () => void refreshItems());
+		return () => {
+			offPage();
+			offItems();
+			offDims();
+			offRels();
+		};
+	});
+
+	async function reloadDoc() {
+		try {
+			doc = normalizePageDoc(await getPage(slug));
+		} catch {
+			doc = { slug, title: slug.replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase()), rows: [{ columns: [{ span: 12, blocks: [] }] }] };
+		}
+		codeText = JSON.stringify(doc, null, '\t');
+		wt.ackLoad(codeText);
+		conflict = false;
+	}
+
 	onMount(async () => {
 		try {
 			const [metas, its, rels] = await Promise.all([
@@ -167,6 +205,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				doc = { slug, title: slug.replaceAll('-', ' ').replace(/\b\w/g, (c) => c.toUpperCase()), rows: [{ columns: [{ span: 12, blocks: [] }] }] };
 			}
 			codeText = JSON.stringify(doc, null, '\t');
+			wt.ackLoad(codeText);
 		} catch (err) {
 			loadError = extractErrorMessage(err, 'Failed to load workspace data');
 		} finally {
@@ -192,38 +231,27 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		mode = m;
 	}
 
-	async function handleSave(silent = false) {
-		const errors = validatePageDoc(doc);
-		codeErrors = errors;
-		if (errors.length) return;
-		if (!silent) {
-			saving = true;
-			saveError = '';
-			saved = false;
-		}
-		try {
-			await savePage(doc);
-			if (!silent) {
-				saved = true;
-				setTimeout(() => (saved = false), 2000);
-			}
-		} catch (err) {
-			saveError = extractErrorMessage(err, 'Failed to save page');
-		} finally {
-			if (!silent) saving = false;
-		}
-	}
-
-	// auto-save every minute
+	// Design/Page surfaces: any doc mutation writes through (debounced 400ms)
 	$effect(() => {
-		const t = setInterval(() => handleSave(true), 60_000);
-		return () => clearInterval(t);
+		if (loading) return;
+		wt.markLocal(JSON.stringify(doc, null, '	'));
 	});
+
+	// Code surface: the raw textarea text is the file - even mid-edit invalid JSON
+	// (the watcher classifies it dm:error and the banner surfaces the reason)
+	$effect(() => {
+		if (loading || mode !== 'code') return;
+		wt.markLocal(codeText);
+	});
+
+	async function keepMine() {
+		await wt.flush();
+		conflict = wt.conflict;
+	}
 
 	function addRow() {
 		doc.rows = [...(doc.rows ?? []), { columns: [{ span: 12, blocks: [] }], height: 180 }];
-		handleSave(); // spawn = persisted instantly
-	}
+		}
 
 	function removeRow(ri: number) {
 		doc.rows!.splice(ri, 1);
@@ -288,7 +316,8 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 	    to ?configure=<block>&attach=<itemId> and the item is added + preselected */
 	async function openInData(kind: 'dimension' | 'measure', table: string, blockId?: string) {
 		const target = blockId ?? configId ?? undefined;
-		await handleSave(true); // persist in-place edits before navigating away
+		wt.markLocal(JSON.stringify(doc, null, '\t'));
+		await wt.flush(); // persist in-place edits before navigating away
 		const p = new URLSearchParams({
 			tab: kind === 'measure' ? 'measures' : 'dimensions',
 			add: '1',
@@ -313,7 +342,6 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			const roles = item.kind === 'dimension' ? block.chart.dimensions : block.chart.measures;
 			if (!roles.some((r) => 'ref' in r && r.ref === item.id)) {
 				roles.push({ ref: item.id });
-				handleSave(true);
 			}
 			configId = configure; // focused drawer with the new item preselected
 		}
@@ -339,32 +367,29 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			value={doc.title}
 			oninput={(e) => (doc.title = (e.target as HTMLInputElement).value)}
 		/>
-		<div class="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
-			<button class:active={mode === 'design'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'design' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('design')}><LayoutGrid size={14} /> Design</button>
-			<button class:active={mode === 'code'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'code' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('code')}><Code size={14} /> Code</button>
-			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
+		<div class="flex items-center gap-1 bg-surface-sunken rounded-lg p-1">
+			<button class:active={mode === 'design'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'design' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('design')}><LayoutGrid size={14} /> Design</button>
+			<button class:active={mode === 'code'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'code' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('code')}><Code size={14} /> Code</button>
+			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
 		</div>
-		<button
-			class="p-2 rounded-lg text-white inline-flex items-center disabled:opacity-50"
-			style="background: oklch(0.44 0.1 158)"
-			onclick={() => handleSave()}
-			disabled={saving || codeErrors.length > 0}
-			title={saved ? 'Saved' : saving ? 'Saving…' : 'Save'}
-			aria-label={saved ? 'Saved' : 'Save'}
-		>
-			<Save size={14} />
-		</button>
 	</div>
 
-	{#if saveError}<p class="text-sm text-red-500 mb-4">{saveError}</p>{/if}
 	{#if loadError}<p class="text-sm text-red-500 mb-4">{loadError}</p>{/if}
+	{#if conflict}
+		<div class="mb-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm">
+			<TriangleAlert size={16} class="text-amber-600 shrink-0" />
+			<span class="flex-1">{slug}.json changed on disk while you have unwritten edits.</span>
+			<button class="px-3 py-1 rounded-md bg-surface border border-border hover:bg-surface-sunken" onclick={reloadDoc}>Reload</button>
+			<button class="px-3 py-1 rounded-md bg-text text-surface hover:bg-text-secondary" onclick={keepMine}>Keep mine</button>
+		</div>
+	{/if}
 
 	{#if loading}
-		<p class="text-sm text-zinc-400 py-16 text-center">Loading…</p>
+		<p class="text-sm text-text-tertiary py-16 text-center">Loading…</p>
 	{:else if mode === 'code'}
 		<div class="space-y-3">
 			<textarea
-				class="w-full h-[70vh] font-mono text-xs border border-zinc-200 rounded-lg p-4 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+				class="w-full h-[70vh] font-mono text-xs border border-border rounded-lg p-4 focus:outline-none focus:ring-1 focus:ring-border-strong"
 				spellcheck="false"
 				bind:value={codeText}
 				onblur={applyCode}
@@ -376,7 +401,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					{/each}
 				</div>
 			{:else}
-				<p class="text-xs text-zinc-400">Valid — switching to Design applies the document.</p>
+				<p class="text-xs text-text-tertiary">Valid — switching to Design applies the document.</p>
 			{/if}
 		</div>
 	{:else if configBlock && runtime}
@@ -416,11 +441,11 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				{#if doc.rows?.length}
 					{#each doc.rows as _, ri (ri)}
 						<div class="flex items-center justify-between text-sm">
-							<span class="text-zinc-600">Row {ri + 1} · {rowColumns(doc.rows![ri]).length} columns · {rowColumns(doc.rows![ri]).reduce((n, c) => n + c.blocks.length, 0)} blocks</span>
+							<span class="text-text-secondary">Row {ri + 1} · {rowColumns(doc.rows![ri]).length} columns · {rowColumns(doc.rows![ri]).reduce((n, c) => n + c.blocks.length, 0)} blocks</span>
 						</div>
 					{/each}
 				{:else}
-					<p class="text-sm text-zinc-400">No rows yet — add one in Design mode.</p>
+					<p class="text-sm text-text-tertiary">No rows yet — add one in Design mode.</p>
 				{/if}
 			</Section>
 		</div>
@@ -498,7 +523,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					{/each}
 				</div>
 				{#if filteredComponents.length === 0}
-					<p class="text-sm text-zinc-400">No components match &ldquo;{pickerQuery}&rdquo;.</p>
+					<p class="text-sm text-text-tertiary">No components match &ldquo;{pickerQuery}&rdquo;.</p>
 				{/if}
 			</ChartConfigDrawer>
 		{/if}

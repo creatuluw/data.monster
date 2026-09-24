@@ -8,10 +8,13 @@
 		extractErrorMessage
 	} from '$lib/db-operations';
 	import { app } from '$lib/stores/app.svelte';
+	import { onDmChanged } from '$lib/dm-events';
+	import Tabs from '$lib/components/Tabs.svelte';
+	import { invoke } from '@tauri-apps/api/core';
 	import { goto } from '$app/navigation';
 	import { Upload, Link, Database, ChevronRight, Check, LoaderCircle } from 'lucide-svelte';
 
-	let activeTab = $state<'file' | 'remote' | 'database'>('file');
+	let activeTab = $state<string>('file');
 	let loading = $state(false);
 	let urlInput = $state('');
 	let urlLoading = $state(false);
@@ -26,6 +29,58 @@
 	let pgSelectedTables = $state<Set<string>>(new Set());
 	let pgIngesting = $state(false);
 	let pgIngestedTables = $state<string[]>([]);
+
+	// Saved connections (dm/connections.json + workspace .env — FR-5)
+	let savedConnections = $state<{ name: string }[]>([]);
+	let selectedSaved = $state('');
+	let connNameInput = $state('');
+
+	async function loadSavedConnections() {
+		try {
+			const result = await invoke<{ connections: { name: string }[] }>('list_connections');
+			savedConnections = result.connections;
+		} catch {
+			savedConnections = []; // no workspace open etc. — the tab just shows nothing
+		}
+	}
+
+	async function saveCurrentConnection() {
+		if (!pgUrl.trim() || !connNameInput.trim()) return;
+		try {
+			await invoke('save_connection', { name: connNameInput.trim(), url: pgUrl.trim() });
+			connNameInput = '';
+			app.globalError = '';
+			await loadSavedConnections();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to save connection');
+		}
+	}
+
+	async function connectSaved(name: string) {
+		if (!name) return;
+		try {
+			const r = await invoke<{ url: string }>('resolve_connection', { name });
+			pgUrl = r.url;
+			await handlePgConnect();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to connect using saved connection');
+		}
+	}
+
+	async function deleteSavedConnection(name: string) {
+		try {
+			await invoke('delete_connection', { name });
+			if (selectedSaved === name) selectedSaved = '';
+			await loadSavedConnections();
+		} catch (e) {
+			app.globalError = extractErrorMessage(e, 'Failed to delete connection');
+		}
+	}
+
+	$effect(() => {
+		if (activeTab === 'database') void loadSavedConnections();
+	});
+	$effect(() => onDmChanged('connections', () => void loadSavedConnections()));
 
 	async function handleFilePick() {
 		loading = true;
@@ -161,22 +216,17 @@
 		<p class="hero-desc">Load a file, paste a URL, or connect a database.</p>
 
 		<div class="connect-options">
-			<div class="tab-bar" role="tablist">
-				<button class="tab-btn" class:active={activeTab === 'file'} role="tab" aria-selected={activeTab === 'file'} onclick={() => activeTab = 'file'}>
-					<Upload size={14} />
-					File
-				</button>
-				<button class="tab-btn" class:active={activeTab === 'remote'} role="tab" aria-selected={activeTab === 'remote'} onclick={() => activeTab = 'remote'}>
-					<Link size={14} />
-					Remote
-				</button>
-				<button class="tab-btn" class:active={activeTab === 'database'} role="tab" aria-selected={activeTab === 'database'} onclick={() => activeTab = 'database'}>
-					<Database size={14} />
-					Database
-				</button>
-			</div>
+			<Tabs bind:activeKey={activeTab} items={[
+				{ key: 'file', label: tabFile },
+				{ key: 'remote', label: tabRemote },
+				{ key: 'database', label: tabDatabase }
+			]} />
 
-			<div class="tab-content" role="tabpanel">
+			{#snippet tabFile()}<Upload size={14} /> File{/snippet}
+			{#snippet tabRemote()}<Link size={14} /> Remote{/snippet}
+			{#snippet tabDatabase()}<Database size={14} /> Database{/snippet}
+
+			<div class="tab-content">
 				{#if activeTab === 'file'}
 					<div class="connect-section">
 						<button class="btn btn-primary" onclick={handleFilePick} disabled={loading}>
@@ -238,6 +288,41 @@
 							{/if}
 						</div>
 						<span class="connect-hint">Connect to a PostgreSQL database</span>
+
+					{#if savedConnections.length > 0}
+						<div class="url-row">
+							<select class="input" bind:value={selectedSaved} disabled={pgConnecting || pgConnected}>
+								<option value="" disabled>Saved connections</option>
+								{#each savedConnections as c (c.name)}
+									<option value={c.name}>{c.name}</option>
+								{/each}
+							</select>
+							<button
+								class="btn btn-secondary"
+								onclick={() => connectSaved(selectedSaved)}
+								disabled={!selectedSaved || pgConnecting || pgConnected}
+							>
+								<Database size={14} />
+								Connect
+							</button>
+							<button class="btn btn-ghost" onclick={() => deleteSavedConnection(selectedSaved)} disabled={!selectedSaved}>
+								Delete
+							</button>
+						</div>
+					{/if}
+					{#if pgUrl.trim() && !pgConnected}
+						<div class="url-row">
+							<input
+								type="text"
+								bind:value={connNameInput}
+								placeholder="Save this connection as…"
+								class="input"
+							/>
+							<button class="btn btn-secondary" onclick={saveCurrentConnection} disabled={!connNameInput.trim()}>
+								Save
+							</button>
+						</div>
+					{/if}
 
 						{#if pgConnected}
 							<div class="pg-browser">
@@ -367,43 +452,6 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
-	}
-
-	.tab-bar {
-		display: flex;
-		gap: var(--space-1);
-		padding: var(--space-1);
-		background: var(--color-surface-raised);
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.tab-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-1);
-		flex: 1;
-		padding: var(--space-2) var(--space-4);
-		font-family: var(--font-body);
-		font-size: var(--text-sm);
-		font-weight: 500;
-		color: var(--color-text-secondary);
-		background: none;
-		border: none;
-		border-radius: var(--radius-sm);
-		cursor: pointer;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.tab-btn:hover {
-		color: var(--color-text);
-		background: var(--color-surface-sunken);
-	}
-
-	.tab-btn.active {
-		color: var(--color-text);
-		background: var(--color-surface);
-		box-shadow: var(--shadow-sm);
 	}
 
 	.tab-content {

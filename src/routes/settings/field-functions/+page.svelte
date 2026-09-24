@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import {
+		import {
 		listFieldFunctions,
 		createFieldFunction,
 		updateFieldFunction,
@@ -9,7 +8,7 @@
 		extractErrorMessage,
 		type FieldFunction
 	} from '$lib/db-operations';
-	import { ArrowLeft, Plus, Trash2, Pencil, X, Check, XCircle } from 'lucide-svelte';
+	import { Plus, Trash2, Pencil, X, Check, XCircle } from 'lucide-svelte';
 
 	let functions = $state<FieldFunction[]>([]);
 	let loading = $state(true);
@@ -129,10 +128,6 @@
 
 <div class="ff-page">
 	<div class="ff-header">
-		<button class="btn btn-ghost btn-sm" onclick={() => goto('/settings')}>
-			<ArrowLeft size={14} />
-			Settings
-		</button>
 		<h1 class="ff-title">Field Functions</h1>
 		<div style="flex:1"></div>
 		<button class="btn btn-primary btn-sm" onclick={openCreateForm}>

@@ -28,6 +28,27 @@ fn settings_path(app: &tauri::AppHandle, state: &State<'_, DuckDbState>) -> Resu
     Ok(app_data_dir.join("settings.json"))
 }
 
+fn workspace_dir(state: &State<'_, DuckDbState>) -> Option<std::path::PathBuf> {
+    state.workspace_path.lock().clone().map(std::path::PathBuf::from)
+}
+
+/// Secrets never live in committable files (rule: secrets-never-live-in-workspace-content-files):
+/// with a workspace open, `llmApiKey` moves to the workspace `.env` (LLM_API_KEY) and is
+/// stripped from settings.json. Without a workspace the global app-data file is not
+/// version-controlled — legacy behavior stays (reads still prefer env).
+fn apply_secret_policy(settings: &mut Value, ws: Option<&std::path::Path>) -> Result<(), String> {
+    let Some(ws) = ws else { return Ok(()) };
+    if let Some(key) = settings.get("llmApiKey").and_then(|v| v.as_str()) {
+        if !key.trim().is_empty() {
+            crate::commands::connections::ws_env_set(ws, "LLM_API_KEY", key.trim())?;
+        }
+    }
+    if let Some(obj) = settings.as_object_mut() {
+        obj.remove("llmApiKey");
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn get_settings(app: tauri::AppHandle, state: State<'_, DuckDbState>) -> Result<Value, String> {
     let path = settings_path(&app, &state)?;
@@ -51,13 +72,13 @@ pub fn get_settings(app: tauri::AppHandle, state: State<'_, DuckDbState>) -> Res
         serde_json::json!({})
     };
 
-    apply_env_overrides(&mut settings);
+    apply_env_overrides(&mut settings, workspace_dir(&state).as_deref());
     Ok(settings)
 }
 
 // LLM_API_KEY / LLM_API_URL / LLM_MODEL from the real env or a .env file (cwd, then parent)
 // override settings.json — .env is the source of truth in dev.
-fn apply_env_overrides(settings: &mut Value) {
+fn apply_env_overrides(settings: &mut Value, ws: Option<&std::path::Path>) {
     let obj = match settings.as_object_mut() {
         Some(o) => o,
         None => return,
@@ -66,7 +87,12 @@ fn apply_env_overrides(settings: &mut Value) {
     for (env_name, setting_name) in
         [("LLM_API_KEY", "llmApiKey"), ("LLM_API_URL", "llmApiUrl"), ("LLM_MODEL", "llmModel")]
     {
-        if let Some(v) = env_value(env_name) {
+        // workspace .env (gitignored, the secrets home) wins, then process env, then the
+        // legacy cwd-walk .env (dev).
+        let v = ws
+            .and_then(|ws| crate::commands::connections::ws_env_value(ws, env_name))
+            .or_else(|| env_value(env_name));
+        if let Some(v) = v {
             obj.insert(setting_name.to_string(), Value::String(v));
         }
     }
@@ -119,6 +145,8 @@ pub fn save_settings(
     settings: Value,
 ) -> Result<(), String> {
     let path = settings_path(&app, &state)?;
+    let mut settings = settings;
+    apply_secret_policy(&mut settings, workspace_dir(&state).as_deref())?;
 
     let content =
         serde_json::to_string_pretty(&settings).map_err(|e| format!("Failed to serialize settings: {}", e))?;
@@ -126,4 +154,56 @@ pub fn save_settings(
     fs::write(&path, content).map_err(|e| format!("Failed to write settings: {}", e))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp_ws(tag: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("settings-test-{}-{tag}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn secret_policy_moves_key_to_workspace_env_and_strips_it() {
+        let ws = tmp_ws("move");
+        let mut settings = serde_json::json!({
+            "llmApiKey": "sk-test-123",
+            "llmModel": "glm-4",
+            "theme": "dark"
+        });
+        apply_secret_policy(&mut settings, Some(&ws)).unwrap();
+
+        // key landed in the gitignored .env
+        let env = fs::read_to_string(ws.join(".env")).unwrap();
+        assert!(env.contains("LLM_API_KEY=sk-test-123"), "{env}");
+        // and is gone from the (committable) settings doc; the rest survived
+        assert!(settings.get("llmApiKey").is_none());
+        assert_eq!(settings["llmModel"].as_str().unwrap(), "glm-4");
+        assert_eq!(settings["theme"].as_str().unwrap(), "dark");
+
+        // env resolution now finds it via the workspace .env
+        assert_eq!(
+            crate::commands::connections::ws_env_value(&ws, "LLM_API_KEY").as_deref(),
+            Some("sk-test-123")
+        );
+        let _ = fs::remove_dir_all(&ws);
+    }
+
+    #[test]
+    fn secret_policy_noop_without_workspace_and_empty_key() {
+        let ws = tmp_ws("noop");
+        let mut settings = serde_json::json!({ "llmApiKey": "sk-keep" });
+        apply_secret_policy(&mut settings, None).unwrap(); // global file: legacy behavior
+        assert_eq!(settings["llmApiKey"].as_str().unwrap(), "sk-keep");
+
+        let mut settings = serde_json::json!({ "llmApiKey": "" });
+        apply_secret_policy(&mut settings, Some(&ws)).unwrap();
+        assert!(settings.get("llmApiKey").is_none());
+        assert!(!ws.join(".env").exists(), "empty key must not create .env");
+        let _ = fs::remove_dir_all(&ws);
+    }
 }

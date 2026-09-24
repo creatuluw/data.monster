@@ -1,23 +1,23 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import Nav from '$lib/components/ds/Nav.svelte';
-	import Hero from '$lib/components/ds/Hero.svelte';
-	import ColorPalette from '$lib/components/ds/ColorPalette.svelte';
-	import Typography from '$lib/components/ds/Typography.svelte';
-	import Spacing from '$lib/components/ds/Spacing.svelte';
-	import Buttons from '$lib/components/ds/Buttons.svelte';
-	import Tags from '$lib/components/ds/Tags.svelte';
-	import Inputs from '$lib/components/ds/Inputs.svelte';
-	import Toggles from '$lib/components/ds/Toggles.svelte';
-	import Cards from '$lib/components/ds/Cards.svelte';
-	import Accordion from '$lib/components/ds/Accordion.svelte';
-	import Modal from '$lib/components/ds/Modal.svelte';
-	import SearchAhead from '$lib/components/ds/SearchAhead.svelte';
-	import Toast from '$lib/components/ds/Toast.svelte';
-	import Motion from '$lib/components/ds/Motion.svelte';
-	import Icons from '$lib/components/ds/Icons.svelte';
-	import Principles from '$lib/components/ds/Principles.svelte';
-	import Footer from '$lib/components/ds/Footer.svelte';
+	import Nav from '$lib/demos/Nav.svelte';
+	import Hero from '$lib/demos/Hero.svelte';
+	import ColorPalette from '$lib/demos/ColorPalette.svelte';
+	import Typography from '$lib/demos/Typography.svelte';
+	import Spacing from '$lib/demos/Spacing.svelte';
+	import Buttons from '$lib/demos/Buttons.svelte';
+	import Tags from '$lib/demos/Tags.svelte';
+	import Inputs from '$lib/demos/Inputs.svelte';
+	import Toggles from '$lib/demos/Toggles.svelte';
+	import Cards from '$lib/demos/Cards.svelte';
+	import Accordion from '$lib/demos/Accordion.svelte';
+	import Modal from '$lib/demos/Modal.svelte';
+	import SearchAhead from '$lib/demos/SearchAhead.svelte';
+	import Toast from '$lib/demos/Toast.svelte';
+	import Motion from '$lib/demos/Motion.svelte';
+	import Icons from '$lib/demos/Icons.svelte';
+	import Principles from '$lib/demos/Principles.svelte';
+	import Footer from '$lib/demos/Footer.svelte';
 
 	onMount(() => {
 		const observer = new IntersectionObserver(

@@ -1,11 +1,17 @@
+pub mod agent_docs;
+pub mod connections;
 pub mod database;
+pub mod dm_store;
+pub mod dm_watch;
 pub mod field_functions;
 pub mod files;
 pub mod folders;
 pub mod internal_db;
+pub mod incoming;
 pub mod items;
 pub mod labels;
 pub mod local_llm;
+pub mod migration;
 pub mod pages;
 pub mod postgres;
 pub mod queries;

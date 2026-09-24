@@ -58,7 +58,11 @@
 - [Timeout and retry defend against hung IPC](./timeout-and-retry-defend-against-hung-ipc.md) - Context
 - [Workspaces are fully portable — switching reloads data, content, and settings](./workspaces-are-fully-portable-switching-reloads-data-content.md) - Context
 - [Workspace = portable bundle: switch fully reloads the DB and settings live in the workspace](./workspace-portable-bundle-switch-fully-reloads-the-db-and-se.md) - Context
-- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](./agent-authors-app-content-by-editing-workspace-files-the-wor.md) - Context
-- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](./workspace-content-tree-dm-with-path-is-identity-native-forma.md) - Context
-- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](./live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) - Context
-- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](./workspace-files-are-canonical-agents-author-content-by-editi.md) - Context
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](./agent-authors-app-content-by-editing-workspace.md) - Context
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](./workspace-content-tree-dm-with-path-is-identity.md) - Context
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](./live-reload-mechanics-notify-watcher-validate-dm.md) - Context
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](./workspace-files-are-canonical-agents-author.md) - Context
+- [dm/ migration: write all, verify, then drop — files win](./dm-migration-write-all-verify-then-drop-files-win.md) - Context
+- [Creation saves explicitly, editing writes through live (files-010)](./creation-saves-explicitly-editing-writes-through.md) - Context
+- [Agent prompts are interview-first — the LLM gathers every missing variable via one-at-a-time questions before starting](./agent-prompts-are-interview-first-the-llm-gathers-every-miss.md) - Context
+- [Component detail pages are Visual-only — Source sections and highlight machinery removed](./component-detail-pages-are-visual-only-source-sections-and-h.md) - Context

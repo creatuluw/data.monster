@@ -8,14 +8,18 @@ okf_version: "0.1"
 Auto-generated digest of the most recent conventions, decisions, rules and
 development patterns, plus architecture and global patterns — newest first.
 The actual files live in the wiki subfolders; follow the links (clickable in /wiki).
-Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13:41:24.864Z.
+Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-23T07:50:46.302Z.
 
 ## Recent Decisions
 
-- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author-content-by-editi.md) — Context (2026-09-22)
-- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events (proposed)](decisions/live-reload-mechanics-notify-watcher-validate-dm-changed-dm-.md) — Context (2026-09-22)
-- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity-native-forma.md) — Context (2026-09-22)
-- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace-files-the-wor.md) — Context (2026-09-22)
+- [Component detail pages are Visual-only — Source sections and highlight machinery removed](decisions/component-detail-pages-are-visual-only-source-sections-and-h.md) — Context (2026-09-23)
+- [Agent prompts are interview-first — the LLM gathers every missing variable via one-at-a-time questions before starting](decisions/agent-prompts-are-interview-first-the-llm-gathers-every-miss.md) — Context (2026-09-23)
+- [Creation saves explicitly, editing writes through live (files-010)](decisions/creation-saves-explicitly-editing-writes-through.md) — Context (2026-09-22)
+- [dm/ migration: write all, verify, then drop — files win](decisions/dm-migration-write-all-verify-then-drop-files-win.md) — Context (2026-09-22)
+- [Workspace files are canonical — agents author content by editing the dm/ tree in realtime](decisions/workspace-files-are-canonical-agents-author.md) — Context (2026-09-22)
+- [Live-reload mechanics: notify watcher → validate → dm:changed/dm:error events](decisions/live-reload-mechanics-notify-watcher-validate-dm.md) — Shipped as files-007 (2026-09-22): notify watcher + 300ms debounce + writer-fed echo suppression emits dm:changed/dm:error; frontend listene… (2026-09-22)
+- [Workspace content tree: dm/ with path-is-identity, native formats, agent README (proposed)](decisions/workspace-content-tree-dm-with-path-is-identity.md) — Context (2026-09-22)
+- [Agent authors app content by editing workspace files — the workspace folder is the interface (proposed)](decisions/agent-authors-app-content-by-editing-workspace.md) — Context (2026-09-22)
 - [Workspaces are fully portable — switching reloads data, content, and settings](decisions/workspaces-are-fully-portable-switch-reloads.md) — Context (2026-09-22)
 - [Timeout and retry defend against hung IPC](decisions/timeout-and-retry-defend-against-hung-ipc.md) — Context (2026-09-22)
 - [All drawers adopt the /data (TableDrawer) design pattern — DrawerTabs removed](decisions/all-drawers-adopt-the-data-tabledrawer-design.md) — Context (2026-09-18)
@@ -23,14 +27,14 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Tab bar shows only explicitly opened tabs — navigation never creates tabs](decisions/tab-bar-shows-only-explicitly-opened-tabs.md) — Context (2026-09-17)
 - [App gets virtual multi-tab navigation: bottom bar is the tab bar](decisions/app-gets-virtual-multi-tab-navigation-bottom-bar.md) — Context (2026-09-17)
 - [Skeleton pick/create moved from inline dropdowns to card buttons opening a modal (searchahead + New)](decisions/skeleton-pick-create-moved-from-inline-dropdowns.md) — Skeleton role-assignment: card buttons open a pick/create modal (searchahead + New) (2026-09-17)
-- [Skeleton card is the inline role-assignment surface — pick/create in-chart, drawer optional](decisions/skeleton-card-is-the-inline-role-assignment.md) — Context (2026-09-17)
-- [Chart blocks start empty — data renders only when role requirements are met (needsSetup gate)](decisions/chart-blocks-start-empty-needssetup-gate.md) — Context (2026-09-17)
-- [Linked-table raw fields are transient with auto-JOIN — master-item creation stays optional](decisions/linked-table-raw-fields-transient-autojoin.md) — Context (2026-09-17)
-- [Use speed-highlight/core for code highlighting instead of Prism](decisions/speed-highlight-over-prism.md) — Context (2026-09-17)
 
 ## Active Rules
 
-- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point-feature-start-on-p.md) — The rule (2026-09-22)
+- [dm/ live-reload wires through dm-events — never a raw listen()](rules/dm-live-reload-wires-through-dm-events.md) — **The rule**: any view or component that renders `dm/`-managed content subscribes to live changes through `src/lib/dm-events.ts` — `onDmChan… (2026-09-22)
+- [Single-doc stores fail loud, never clobber — corrupt file: list errors, save refuses](rules/single-doc-stores-fail-loud-never-clobber.md) — **The rule**: any store backed by a single agent-editable doc file (e.g. `dm/relationships.json`, later the connections store) must fail lou… (2026-09-22)
+- [Rust backend tests live in-module via #[cfg(test)]](rules/rust-backend-tests-live-in-module-via-cfg-test.md) — The rule (2026-09-22)
+- [Secrets never live in workspace content files — env references only, gitignored .env at all times](rules/secrets-never-live-in-workspace-content-files.md) — The rule (2026-09-22, user-set during the workspace-file-first design): workspaces can be git/version controlled, so every file the app writ… (2026-09-22)
+- [Restore points are git tags restore-point/<feature>-start on pushed master HEAD](rules/restore-points-are-git-tags-restore-point.md) — The rule (2026-09-22)
 - [Resize requests use the app's existing size classes — never ad-hoc multipliers](rules/resize-requests-use-existing-size-classes.md) — Resize requests map onto the app's existing size classes — never invent ad-hoc pixel multipliers. (2026-09-22)
 - [Config drawers are one scrolling column — settings sections, Danger zone last](rules/config-drawers-one-scrolling-column.md) — Guideline (2026-09-18)
 - [Drawer form controls come from the shared controls kit — never hand-roll input chrome](rules/drawer-form-controls-come-from-the-shared-controls.md) — Guideline (2026-09-17)
@@ -51,8 +55,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Pin Tailwind @source scanning to src/ and app.html in app.css](rules/pin-tailwind-source-scanning.md) — Pin Tailwind @source scanning to src/ and app.html in app.css (2026-09-14)
 - [Keep test files and vitest imports out of src/](rules/keep-test-files-and-vitest-imports-out-of-src.md) — Keep test files and vitest imports out of src/ (2026-09-14)
 - [All /labs charts are built on the shared reusable-chart fundament](rules/labs-charts-reusable-fundament.md) — All /labs charts are built on the shared reusable-chart fundament (2026-09-14)
-- [Feature-loop hard rules: PR-only shipping, opt-in worktrees, no force removal](rules/feature-loop-hard-rules.md) — Guideline (2026-09-14)
-- [Route external API calls through Rust commands, never webview fetch](rules/route-external-api-calls-through-rust.md) — Guideline (2026-09-11)
 
 ## Preferences & Conventions
 
@@ -62,6 +64,15 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 
 ## Recent Learnings — development patterns
 
+- [loadAppComponents dedupes by folder preference — 18 root twins are dead code](learnings/loadappcomponents-dedupes-by-folder-preference-18-root-twins.md) — Discovered 2026-09-23 while removing the "Also at:" dup note from /components detail pages (commit `e8e329a`). (2026-09-23)
+- [Svelte 5 snippets can't ride a name-keyed registry — snippet demos are inline markup; BarChart takes accessors](learnings/svelte-5-snippets-can-t-ride-a-name-keyed-registry-snippet-d.md) — Discovered 2026-09-23 building `ComponentDemo.svelte` (the /components visual-demo registry): (2026-09-23)
+- [18 root components duplicate the ds/ showcase set — slug resolution prefers the ds/ twin](learnings/ds-twins-win-slug-collisions.md) — Discovered 2026-09-23 fixing `/components/Accordion` showing no visual (commit `f19dd80`). (2026-09-23)
+- [dm:changed with no subscriber silently no-ops — incoming ingest's kind:"table" had zero listeners](learnings/dm-changed-with-no-subscriber-silently-no-ops.md) — Found by the workspace-file-first e2e pass (2026-09-22): the `data/incoming/` ingest correctly emitted `dm:changed {kind:"table"}` via the [… (2026-09-22)
+- [dm live-reload events don't replay — e2e must navigate first, then write the file](learnings/dm-live-reload-events-don-t-replay-e2e.md) — Hit while e2e-testing the dm:error pipeline (workspace-file-first pass, 2026-09-22): dropping a broken-JSON file into `dm/pages/` **before**… (2026-09-22)
+- [Secret-policy test targets the connections.json example — the .env placeholder password is intentional](learnings/secret-policy-test-targets-the-connections-json.md) — Hit while finishing files-011's secret-policy test (2026-09-22): the test flagged `password@` inside the `.env` sample URL (`DM_CONN_PRODUCT… (2026-09-22)
+- [A dm/ write that bypasses dm_store::atomic_write reload-loops — echo suppression is fed by the writer](learnings/a-dm-write-that-bypasses-dm-store-atomic-write.md) — Shipped in `files-007` (2026-09-22): the `dm/` watcher skips any path recorded by `dm_watch::mark_self_write` — and the only caller is `dm_s… (2026-09-22)
+- [duckdb-rs lacks Value: FromSql — typed queries, no generic rows](learnings/duckdb-rs-lacks-value-fromsql-typed-queries.md) — Hit in `files-006` while building the `dm_store` export path (2026-09-22): a generic row-deserialization helper over `duckdb-rs` queries is … (2026-09-22)
+- [Empty pages/queries lists after a Rust rebuild = dm/ not yet migrated — not data loss](learnings/empty-pages-queries-lists-after-a-rust-rebuild.md) — **Gotcha (mid-migration window, branch `feature/workspace-file-first`)**: once the Rust backend is rebuilt with the file-backed commands, pa… (2026-09-22)
 - [First-run welcome gate renders instead of the router — its actions must act directly, never navigate](learnings/welcome-gate-renders-instead-of-router.md) — In `src/routes/+layout.svelte`, the first-run welcome gate (shown when no workspace is open) renders **instead of** the routed content — the… (2026-09-22)
 - [compile.ts dimension guard: raw flag is the only validation bypass — never blanket-catch checkColumn failures](learnings/compile-ts-dimension-guard-raw-flag-only-bypass.md) — Symptom (2026-09-22)
 - [duckdb plain-bundled lacks static JSON extension — dynamic auto-load heap-corrupts on Windows](learnings/duckdb-bundled-lacks-static-json-extension.md) — Symptom (2026-09-22)
@@ -73,15 +84,6 @@ Regenerated on every wiki write and on wiki_mark_synced. Generated 2026-09-22T13
 - [Ref-based master items: tableName/table mismatch broke all ref charts; expression dims need raw compile](learnings/ref-based-master-items-tablename-mismatch-broke.md) — Discovered 2026-09-22 during the /pages E2E session (reports/pages-e2e-feedback.md). (2026-09-22)
 - [MSYS path conversion mangles /f-style Windows flags — use MSYS_NO_PATHCONV=1 or PowerShell](learnings/msys-path-conversion-mangles-f-style-flags.md) — Discovered 2026-09-22 while running the blessed CDP restart chain from the MSYS/Git-Bash shell (verifying the /data tab URL-sync fix). (2026-09-22)
 - [/data tab keys ≠ labels — "Metadata" writes ?tab=definitions](learnings/data-tab-keys-labels-metadata-writes-definitions.md) — Discovered 2026-09-22 while CDP-verifying the /data tab URL sync (port 9223): a probe matching tabs by `textContent.includes('Definitions')`… (2026-09-22)
-- [CDP e2e failures right after a source save are often HMR races — re-run before debugging](learnings/cdp-e2e-failures-after-source-save-hmr-race.md) — Discovered 2026-09-22 while debugging the /data tab URL-sync bug (verified over CDP, port 9223). (2026-09-22)
-- [SvelteKit page.url is stale after replaceState — never guard write-effects by reading it back](learnings/sveltekit-page-url-stale-after-replacestate.md) — Discovered 2026-09-22 while making /data tab selection URL-addressable (`TableOverview.svelte`, verified over CDP against the live dev app). (2026-09-22)
-- [Shallow URL state in SvelteKit: replaceState from $app/navigation, never goto or window.history](learnings/shallow-url-state-sveltekit-replacestate.md) — Discovered 2026-09-22 making /data tab selection URL-addressable (`TableOverview.svelte`, +6 lines). (2026-09-22)
-- [Pages editor auto-saves silently every 60s — no UI signal is deliberate](learnings/pages-editor-auto-saves-silently-every-60s-no-ui.md) — User-requested behavior on `src/routes/pages/[slug]/+page.svelte` (2026-09-18, /pages/revenue): auto-save runs every 60s via `handleSave(tru… (2026-09-21)
-- [Stale component CSS after an edit can be fixed with touch — no dev-server restart needed](learnings/stale-component-css-after-an-edit-can-be-fixed.md) — Extends [[stale-vite-module-graph-can-survive-reloads-only-arestart]]. (2026-09-18)
-- [Mock-Tauri browser repro harness is gone — verify visually via self-contained routes](learnings/mock-tauri-browser-repro-harness-is-gone-verify.md) — Discovered 2026-09-18 while trying to visually verify the drawer restyle: the CDP port wasn't open, so I reached for the mock-Tauri browser … (2026-09-18)
-- [Scale standalone HTML docs via root font-size + px sweep — zoom breaks fixed overlays](learnings/scale-standalone-html-docs-via-root-font-size-px.md) — Discovered 2026-09-18 scaling `docs/design-system-data-monster.html` to 80%. (2026-09-18)
-- [z.ai GLM Coding Plan keys use the Anthropic endpoint — a valid key still 401s against /paas/v4](learnings/z-ai-glm-coding-plan-keys-use-the-anthropic.md) — Refinement of [[z-ai-401-code-1000-authentication]] — a 401 from z.ai does not always mean the key is bad. Discovered 2026-09-17 while check… (2026-09-17)
-- [Bash heredoc writes mangle non-ASCII — patch with python explicit escapes, and verify bytes before assuming corruption](learnings/bash-heredoc-writes-mangle-non-ascii-patch-with.md) — Hit twice while rewiring the drawers (PR #18, 2026-09-17). (2026-09-17)
 
 ## Architecture
 

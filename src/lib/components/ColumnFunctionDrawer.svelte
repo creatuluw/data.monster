@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { X } from 'lucide-svelte';
-	import { drawerResize } from './drawer-resize';
+	import Drawer from './Drawer.svelte';
 	import type { FieldFunction } from '$lib/db-operations';
 	import { getFunctionsForType } from '$lib/field-functions/library';
 
@@ -31,7 +30,6 @@
 	});
 
 	function handleClose() {
-		drawerOpen = false;
 		setTimeout(() => onclose(), 200);
 	}
 
@@ -60,16 +58,7 @@
 </script>
 
 {#if columnName}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="drawer-overlay" class:drawer-overlay-visible={drawerOpen} onclick={handleClose} onkeydown={() => {}}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="drawer" class:drawer-open={drawerOpen} use:drawerResize onclick={(e) => e.stopPropagation()} onkeydown={() => {}}>
-			<div class="drawer-header">
-				<h2 class="drawer-title">Add function</h2>
-				<button class="drawer-close" onclick={handleClose} title="Close">
-					<X size={16} />
-				</button>
-			</div>
+	<Drawer bind:open={drawerOpen} title={"Add function to " + columnName} onClosed={handleClose}>
 
 			<div class="drawer-body">
 				<div class="drawer-col-info">
@@ -105,92 +94,30 @@
 						{/each}
 					</div>
 				{/if}
-			</div>
-		</div>
-	</div>
+	</Drawer>
 {/if}
 
 <style>
-	.drawer-overlay {
-		position: fixed;
-		inset: 0;
-		background: oklch(0 0 0 / 0.3);
-		z-index: 200;
-		opacity: 0;
-		transition: opacity var(--duration-base) ease;
-		pointer-events: none;
-	}
-
+	
 	.drawer-overlay-visible {
 		opacity: 1;
 		pointer-events: auto;
 	}
 
-	.drawer {
-		position: fixed;
-		top: 0;
-		right: 0;
-		bottom: 0;
-		width: 33vw;
-		max-width: 100vw;
-		background: var(--color-surface);
-		border-left: 1px solid var(--color-border);
-		z-index: 201;
-		display: flex;
-		flex-direction: column;
-		transform: translateX(100%);
-		transition: transform var(--duration-base) var(--ease-out-expo);
-		box-shadow: var(--shadow-lg);
-	}
-
+	
 	.drawer-open {
 		transform: translateX(0);
 	}
 
-	.drawer-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: var(--space-3) var(--space-4);
-		border-bottom: 1px solid var(--color-border);
-		flex-shrink: 0;
-	}
-
-	.drawer-title {
-		font-family: var(--font-display);
-		font-size: var(--text-sm);
-		font-weight: 700;
-		color: var(--color-text);
-		letter-spacing: -0.01em;
-	}
-
-	.drawer-close {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		padding: var(--space-1);
-		border: none;
-		background: none;
-		color: var(--color-text-tertiary);
-		cursor: pointer;
-		border-radius: var(--radius-xs);
-		transition: color var(--duration-fast) ease, background var(--duration-fast) ease;
-	}
-
+	
+	
+	
 	.drawer-close:hover {
 		color: var(--color-text);
 		background: var(--color-surface-sunken);
 	}
 
-	.drawer-body {
-		flex: 1;
-		overflow-y: auto;
-		padding: var(--space-4);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
+	
 	.drawer-col-info {
 		display: flex;
 		align-items: center;

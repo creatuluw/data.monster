@@ -8,8 +8,10 @@
 	 * that chart with the new item attached after saving.
 	 */
 	import { onMount } from 'svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { goto } from '$app/navigation';
 	import { listMasterItems, saveMasterItem, deleteMasterItem } from '$lib/central-api';
+	import { createWriteThrough } from '$lib/write-through';
 	import { extractErrorMessage } from '$lib/db-operations';
 	import type { TableSchemas } from '$lib/charts/query/compile';
 	import type { MasterItem } from '$lib/charts/items';
@@ -46,6 +48,20 @@
 	let adding = $state(false);
 	let draft = $state<MasterItem>({ id: '', kind, table: '', label: '', expr: '' });
 
+	// editing an EXISTING item: the file IS the save (FR-10) — creation keeps the
+	// explicit save (the stable id is minted there; no half-drafted files).
+	// Ceiling: external-change conflicts in the drawer are last-write-wins.
+	const wt = createWriteThrough({
+		read: () => JSON.stringify(draft),
+		write: async (spec) => {
+			await saveMasterItem(JSON.parse(spec) as MasterItem);
+		}
+	});
+	$effect(() => {
+		if (loading || !draft.id) return;
+		wt.markLocal(JSON.stringify(draft));
+	});
+
 	const tables = $derived(Object.keys(schemas));
 	const noun = $derived(kind === 'measure' ? 'measure' : 'dimension');
 	const placeholder = $derived(kind === 'measure' ? "sum(if(type = 'class', hours))" : 'region');
@@ -63,6 +79,8 @@
 		if (preset.table && tables.includes(preset.table)) draft.table = preset.table;
 		adding = true;
 	});
+
+	$effect(() => onDmChanged(kind, () => void refresh()));
 
 	async function refresh() {
 		loading = true;
@@ -82,6 +100,8 @@
 		try {
 			await saveMasterItem({ ...draft, id });
 			adding = false;
+			newDraft();
+			// refresh arrives via the dm/ watcher; keep it for non-watcher fallbacks
 			await refresh();
 			// created from a chart on /pages — hand the new item back to that chart
 			if (preset?.returnTo && preset?.block) {
@@ -90,6 +110,13 @@
 		} catch (err) {
 			error = extractErrorMessage(err, `Failed to save ${noun}`);
 		}
+	}
+
+	/** Done editing an existing item: flush any pending write-through and close. */
+	async function closeEditor() {
+		await wt.flush();
+		adding = false;
+		newDraft();
 	}
 
 	async function handleDelete(id: string) {
@@ -111,26 +138,26 @@
 	{#if error}<p class="text-sm text-red-500">{error}</p>{/if}
 
 	{#if loading}
-		<p class="text-sm text-zinc-400 py-8 text-center">Loading…</p>
+		<p class="text-sm text-text-tertiary py-8 text-center">Loading…</p>
 	{:else if items.length === 0 && !adding}
-		<div class="text-center py-10 border border-dashed border-zinc-300 rounded-lg">
-			<Star size={28} class="mx-auto text-zinc-300 mb-2" />
-			<p class="text-sm text-zinc-500">No master {noun}s yet.</p>
-			<p class="text-xs text-zinc-400 mt-1">Define reusable {noun}s once and add them to any chart.</p>
+		<div class="text-center py-10 border border-dashed border-border rounded-lg">
+			<Star size={28} class="mx-auto text-text-tertiary mb-2" />
+			<p class="text-sm text-text-tertiary">No master {noun}s yet.</p>
+			<p class="text-xs text-text-tertiary mt-1">Define reusable {noun}s once and add them to any chart.</p>
 		</div>
 	{/if}
 
 	{#if items.length}
 		<div class="space-y-2">
 			{#each items as item (item.id)}
-				<div class="flex items-center justify-between bg-white border border-zinc-200 rounded-lg px-4 py-3 text-sm gap-3">
+				<div class="flex items-center justify-between bg-surface border border-border rounded-lg px-4 py-3 text-sm gap-3">
 					<div class="min-w-0">
-						<p class="font-medium text-zinc-900">{item.label} <span class="text-xs text-zinc-400 font-mono">· {item.table}</span></p>
-						<p class="text-xs text-zinc-500 font-mono truncate">{item.expr}{item.fmt ? ` fmt:${item.fmt}` : ''}</p>
+						<p class="font-medium text-text">{item.label} <span class="text-xs text-text-tertiary font-mono">· {item.table}</span></p>
+						<p class="text-xs text-text-tertiary font-mono truncate">{item.expr}{item.fmt ? ` fmt:${item.fmt}` : ''}</p>
 					</div>
 					<div class="flex items-center gap-1 shrink-0">
-						<button class="text-zinc-400 hover:text-zinc-900 text-xs" onclick={() => { draft = { ...item }; adding = true; }}>Edit</button>
-						<button class="text-zinc-300 hover:text-red-500" onclick={() => handleDelete(item.id)} title="Delete">
+						<button class="text-text-tertiary hover:text-text text-xs" onclick={() => { draft = { ...item }; adding = true; }}>Edit</button>
+						<button class="text-text-tertiary hover:text-red-500" onclick={() => handleDelete(item.id)} title="Delete">
 							<Trash2 size={14} />
 						</button>
 					</div>
@@ -140,39 +167,43 @@
 	{/if}
 
 	{#if adding}
-		<div class="bg-white border border-zinc-200 rounded-lg p-4 space-y-3">
+		<div class="bg-surface border border-border rounded-lg p-4 space-y-3">
 			<div class="grid grid-cols-2 gap-3">
 				<label class="space-y-1">
-					<span class="text-xs text-zinc-500">Label</span>
-					<input type="text" class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" bind:value={draft.label} />
+					<span class="text-xs text-text-tertiary">Label</span>
+					<input type="text" class="w-full border border-border rounded px-2 py-1.5 text-sm" bind:value={draft.label} />
 				</label>
 				<label class="space-y-1">
-					<span class="text-xs text-zinc-500">Bound table</span>
-					<select class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" value={draft.table} onchange={(e) => (draft.table = (e.target as HTMLSelectElement).value)}>
+					<span class="text-xs text-text-tertiary">Bound table</span>
+					<select class="w-full border border-border rounded px-2 py-1.5 text-sm" value={draft.table} onchange={(e) => (draft.table = (e.target as HTMLSelectElement).value)}>
 						{#each tables as t (t)}<option value={t}>{t}</option>{/each}
 					</select>
 				</label>
 			</div>
 			<div class="space-y-1">
-				<span class="text-xs text-zinc-500">Expression (DuckDB SQL)</span>
+				<span class="text-xs text-text-tertiary">Expression (DuckDB SQL)</span>
 				<ExprEditor bind:value={draft.expr} {kind} table={draft.table} columns={metas[draft.table] ?? schemas[draft.table] ?? []} masterItems={items} {placeholder} />
 			</div>
 			{#if kind === 'measure'}
 				<label class="block space-y-1 w-40">
-					<span class="text-xs text-zinc-500">Format</span>
-					<select class="w-full border border-zinc-300 rounded px-2 py-1.5 text-sm" value={draft.fmt ?? ''} onchange={(e) => (draft.fmt = (e.target as HTMLSelectElement).value || undefined)}>
+					<span class="text-xs text-text-tertiary">Format</span>
+					<select class="w-full border border-border rounded px-2 py-1.5 text-sm" value={draft.fmt ?? ''} onchange={(e) => (draft.fmt = (e.target as HTMLSelectElement).value || undefined)}>
 						<option value="">(none)</option>
 						{#each ['hours', 'usd', 'pct', 'int'] as f (f)}<option value={f}>{f}</option>{/each}
 					</select>
 				</label>
 			{/if}
 			<div class="flex gap-2 justify-end">
-				<button class="px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-900" onclick={() => (adding = false)}>Cancel</button>
-				<button class="px-3 py-1.5 text-sm text-white rounded-md disabled:opacity-50" style="background: oklch(0.44 0.1 158)" onclick={handleSave} disabled={!draft.label.trim() || !draft.expr.trim()}>Save {noun}</button>
+				<button class="px-3 py-1.5 text-sm text-text-tertiary hover:text-text" onclick={() => (adding = false)}>Cancel</button>
+				{#if draft.id}
+					<button class="px-3 py-1.5 text-sm text-white rounded-md" style="background: oklch(0.44 0.1 158)" onclick={closeEditor}>Done</button>
+				{:else}
+					<button class="px-3 py-1.5 text-sm text-white rounded-md disabled:opacity-50" style="background: oklch(0.44 0.1 158)" onclick={handleSave} disabled={!draft.label.trim() || !draft.expr.trim()}>Save {noun}</button>
+				{/if}
 			</div>
 		</div>
 	{:else}
-		<button class="px-3 py-2 border border-zinc-300 rounded-lg text-sm text-zinc-600 hover:bg-zinc-50 inline-flex items-center gap-1.5" onclick={() => { newDraft(); adding = true; }}>
+		<button class="px-3 py-2 border border-border rounded-lg text-sm text-text-secondary hover:bg-surface-sunken inline-flex items-center gap-1.5" onclick={() => { newDraft(); adding = true; }}>
 			<Plus size={14} /> Add {noun}
 		</button>
 	{/if}

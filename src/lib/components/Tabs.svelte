@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { Tabs } from "bits-ui";
 	import type { Snippet } from "svelte";
 	import Badge from "./Badge.svelte";
 	import { Menu, X } from "lucide-svelte";
@@ -37,61 +38,65 @@
 	}
 </script>
 
-<div class="tabs tabs--{variant}">
-	<div class="tab-bar" role="tablist">
-		<button class="tab-hamburger" onclick={() => mobileMenuOpen = !mobileMenuOpen} aria-label="Menu">
-			{#if mobileMenuOpen}
-				<X size={18} />
-			{:else}
-				<Menu size={18} />
-			{/if}
-		</button>
-		{#each items as item}
-			<button
-				class="tab-btn"
-				class:tab-btn--add={item.key === "nieuw" || item.key === "add"}
-				class:active={activeKey === item.key}
-				role="tab"
-				aria-selected={activeKey === item.key}
-				onclick={() => handleClick(item.key)}
-			>
-				{@render item.label()}
-				{#if item.badge}
-					<span class="tab-badge">
-						<Badge count={item.badge} variant={item.badgeVariant ?? "default"} />
-					</span>
-				{/if}
-			</button>
-		{/each}
-	</div>
-
-	{#if mobileMenuOpen}
-		<div class="tab-mobile-menu">
-			{#each items as item}
+<Tabs.Root bind:value={activeKey} onValueChange={(k) => k && onchange?.(k)}>
+	<div class="tabs tabs--{variant}">
+		<div class="tab-bar-wrap">
+			<Tabs.List class="tab-bar">
 				<button
-					class="tab-mobile-item"
-					class:active={activeKey === item.key}
-					onclick={() => handleClick(item.key)}
+					class="tab-hamburger"
+					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
+					aria-label="Menu"
 				>
-					{@render item.label()}
-					{#if item.badge}
-						<Badge count={item.badge} variant={item.badgeVariant ?? "default"} />
+					{#if mobileMenuOpen}
+						<X size={18} />
+					{:else}
+						<Menu size={18} />
 					{/if}
 				</button>
-			{/each}
+				{#each items as item (item.key)}
+					<Tabs.Trigger
+						value={item.key}
+						class="tab-btn {activeKey === item.key ? 'active' : ''} {item.key === 'nieuw' || item.key === 'add' ? 'tab-btn--add' : ''}"
+					>
+						{@render item.label()}
+						{#if item.badge}
+							<span class="tab-badge">
+								<Badge count={item.badge} variant={item.badgeVariant ?? "default"} />
+							</span>
+						{/if}
+					</Tabs.Trigger>
+				{/each}
+			</Tabs.List>
 		</div>
-	{/if}
 
-	{#if activeKey}
-		{#each items as item}
-			{#if activeKey === item.key && item.content}
-				<div class="tab-panel" role="tabpanel">
-					{@render item.content()}
-				</div>
-			{/if}
-		{/each}
-	{/if}
-</div>
+		{#if mobileMenuOpen}
+			<div class="tab-mobile-menu">
+				{#each items as item (item.key)}
+					<button
+						class="tab-mobile-item"
+						class:active={activeKey === item.key}
+						onclick={() => handleClick(item.key)}
+					>
+						{@render item.label()}
+						{#if item.badge}
+							<Badge count={item.badge} variant={item.badgeVariant ?? "default"} />
+						{/if}
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		{#if activeKey}
+			{#each items as item (item.key)}
+				{#if activeKey === item.key && item.content}
+					<Tabs.Content value={item.key} class="tab-panel">
+						{@render item.content()}
+					</Tabs.Content>
+				{/if}
+			{/each}
+		{/if}
+	</div>
+</Tabs.Root>
 
 <style>
 	.tabs {
@@ -99,7 +104,13 @@
 		flex-direction: column;
 	}
 
-	.tab-bar {
+	.tab-bar-wrap {
+		display: contents;
+	}
+
+	/* bits-ui renders the list and triggers — scoped selectors can't reach them,
+	   so chrome styles hang off our .tabs wrapper via :global() */
+	.tabs :global(.tab-bar) {
 		display: flex;
 		align-items: center;
 	}
@@ -123,7 +134,7 @@
 		border-color: var(--color-accent);
 	}
 
-	.tab-btn {
+	.tabs :global(.tab-btn) {
 		display: inline-flex;
 		align-items: center;
 		gap: var(--space-1);
@@ -138,53 +149,53 @@
 		white-space: nowrap;
 	}
 
-	.tab-btn:hover {
+	.tabs :global(.tab-btn:hover) {
 		color: var(--color-text);
 	}
 
-	.tab-btn.active {
+	.tabs :global(.tab-btn.active) {
 		color: var(--color-text);
 	}
 
-	.tab-panel {
+	.tabs :global(.tab-panel) {
 		margin-top: var(--space-4);
 	}
 
 	/* Default variant: contained tabs with a background track */
-	.tabs--default .tab-bar {
+	.tabs--default :global(.tab-bar) {
 		gap: var(--space-1);
 		padding: var(--space-1);
 		background: var(--color-surface-raised);
 		border-radius: var(--radius-lg);
 	}
 
-	.tabs--default .tab-btn {
+	.tabs--default :global(.tab-btn) {
 		padding: var(--space-2) var(--space-4);
 		border-radius: var(--radius-sm);
 	}
 
-	.tabs--default .tab-btn:hover {
+	.tabs--default :global(.tab-btn:hover) {
 		background: var(--color-surface-sunken);
 	}
 
-	.tabs--default .tab-btn.active {
+	.tabs--default :global(.tab-btn.active) {
 		background: var(--color-surface);
 		box-shadow: var(--shadow-sm);
 	}
 
-	.tab-btn--add {
+	.tabs :global(.tab-btn--add) {
 		font-size: var(--text-base);
 		font-weight: 500;
 		line-height: 1;
 	}
 
-	.tab-badge {
+	.tabs :global(.tab-badge) {
 		position: relative;
 		top: -1px;
 		left: 4px;
 	}
 
-	.tabs--default .tab-panel {
+	.tabs--default :global(.tab-panel) {
 		padding: var(--space-4);
 		background: var(--color-surface-sunken);
 		border-radius: var(--radius-lg);
@@ -192,29 +203,29 @@
 	}
 
 	/* Underline variant: minimal tabs with a bottom border */
-	.tabs--underline .tab-bar {
+	.tabs--underline :global(.tab-bar) {
 		gap: var(--space-6);
 		border-bottom: 1px solid var(--color-border);
 	}
 
-	.tabs--underline .tab-btn {
+	.tabs--underline :global(.tab-btn) {
 		padding: var(--space-2) 0;
 		border-bottom: 2px solid transparent;
 		margin-bottom: -1px;
 		border-radius: 0;
 	}
 
-	.tabs--underline .tab-btn.active {
+	.tabs--underline :global(.tab-btn.active) {
 		border-bottom-color: var(--color-accent);
 		color: var(--color-text);
 	}
 
 	/* Pill variant: rounded floating tabs */
-	.tabs--pill .tab-bar {
+	.tabs--pill :global(.tab-bar) {
 		gap: var(--space-2);
 	}
 
-	.tabs--pill .tab-btn {
+	.tabs--pill :global(.tab-btn) {
 		padding: var(--space-2) var(--space-4);
 		border-radius: var(--radius-full);
 		background: var(--color-surface-raised);
@@ -223,11 +234,11 @@
 		min-height: 32px;
 	}
 
-	.tabs--pill .tab-btn:hover {
+	.tabs--pill :global(.tab-btn:hover) {
 		background: var(--color-surface-sunken);
 	}
 
-	.tabs--pill .tab-btn.active {
+	.tabs--pill :global(.tab-btn.active) {
 		background: var(--color-accent);
 		color: var(--text-on-accent);
 	}
@@ -273,7 +284,7 @@
 	}
 
 	@media (max-width: 768px) {
-		.tab-bar {
+		.tabs :global(.tab-bar) {
 			flex-wrap: wrap;
 			gap: var(--space-1);
 		}
@@ -284,11 +295,11 @@
 			display: flex;
 		}
 
-		.tab-btn {
+		.tabs :global(.tab-btn) {
 			display: none;
 		}
 
-		.tab-bar {
+		.tabs :global(.tab-bar) {
 			flex-wrap: nowrap;
 		}
 

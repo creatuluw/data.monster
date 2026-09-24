@@ -33,6 +33,7 @@
     "@speed-highlight/core": "^2.1.0",
     "@tauri-apps/api": "^2.11.0",
     "@tauri-apps/plugin-dialog": "^2.7.1",
+    "bits-ui": "^2.19.3",
     "lucide-svelte": "^1.0.1",
     "marked": "^18.0.3",
     "svelteplot": "^0.14.2"

@@ -14,7 +14,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 1,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-1"
     },
     {
@@ -29,7 +29,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 2,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-2"
     },
     {
@@ -44,7 +44,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 3,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-3"
     },
     {
@@ -58,7 +58,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 4,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-4"
     },
     {
@@ -72,22 +72,24 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 5,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-5"
     },
     {
       "id": "files-006",
       "phase": "A — Files are canonical",
-      "title": "FR-6 One-time migration (tables → files, crash-safe, idempotent)",
-      "description": "On DuckDB init: content tables exist → export rows → write ALL files → verify read-back → drop tables. Files win when both exist. Labels/field-functions tables untouched.",
+      "title": "FR-6 Migration + workspace git bootstrap",
+      "description": "On DuckDB init: content tables exist → export rows → write ALL files → verify read-back → drop tables (files-win, idempotent). Bootstrap on workspace open: generate .gitignore (.env, *.duckdb, *.duckdb.wal) when missing, never overwrite; llmApiKey stripped from settings.json on save.",
       "acceptanceCriteria": [
         "TDD: cargo tests RED first — full export; crash-point retry (files partial + tables full); idempotent second run; files-win case",
+        "Gitignore: written when missing, NEVER overwritten when present (test both)",
+        "settings save path strips llmApiKey (test); read path still resolves from env",
         "Migration runs before frontend loads pages (init order verified)",
         "Karpathy: single function migrate_content_tables(conn, ws_path), no migration framework",
         "Log completion to tasks-log.json"
       ],
       "priority": 6,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-6"
     },
     {
@@ -101,7 +103,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 7,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-7"
     },
     {
@@ -116,7 +118,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 8,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-8"
     },
     {
@@ -131,7 +133,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 9,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-9"
     },
     {
@@ -146,7 +148,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 10,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-10"
     },
     {
@@ -161,7 +163,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 11,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-11"
     },
     {
@@ -176,7 +178,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 12,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-12"
     },
     {
@@ -190,7 +192,7 @@
         "Log completion to tasks-log.json"
       ],
       "priority": 13,
-      "status": "pending",
+      "status": "done",
       "mapsTo": "FR-13"
     }
   ]

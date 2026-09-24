@@ -5,9 +5,10 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { FolderOpen, Settings, MoreVertical, Link, Check } from 'lucide-svelte';
+	import { FolderOpen, Settings, MoreVertical, Link, Check, BookOpen } from 'lucide-svelte';
 	import Breadcrumb from '$lib/components/Breadcrumb.svelte';
 	import { tabs, ensureActive, openInNewTab, activate, closeTab, pathLabel } from '$lib/tabs.svelte';
+import { initDmEvents, onDmChanged } from '$lib/dm-events';
 
 	let { children } = $props();
 	let showWorkspacePicker = $state(false);
@@ -48,6 +49,12 @@
 	onMount(() => {
 		let destroyed = false;
 		let unlistenFn: (() => void) | null = null;
+
+		void initDmEvents((path, reason) => {
+			app.globalError = `dm/ file problem — ${path}: ${reason}`;
+		});
+		// incoming drop-folder ingest announces new tables (FR-13)
+		onDmChanged('table', () => void app.refreshTables());
 
 		listen<string>('db-init-progress', (event) => {
 			initStatus = event.payload;
@@ -107,6 +114,7 @@
 		query: 'Query',
 		table: 'Data',
 		settings: 'Settings',
+		agent: 'Agent prompts',
 		'internal-db': 'Internal DB',
 		labs: 'Labs',
 		workspaces: 'Workspaces',
@@ -145,6 +153,17 @@
 		e.preventDefault();
 		ctx = { x: e.clientX, y: e.clientY, href: a.getAttribute('href') ?? '' };
 	}
+	// window-level Escape: nothing in the menu is auto-focused, so the overlay
+	// never sees the keydown (kept hand-rolled — bits ContextMenu is area-based
+	// and would swallow the browser's native right-click on non-links)
+	$effect(() => {
+		if (!ctx) return;
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') ctx = null;
+		};
+		window.addEventListener('keydown', onKey);
+		return () => window.removeEventListener('keydown', onKey);
+	});
 </script>
 
 <svelte:window oncontextmenu={handleContext} />
@@ -172,6 +191,9 @@
 				</a>
 				<span class="tag tag-success">Persistent</span>
 				<div class="header-actions">
+					<a href="/agent" class="btn btn-ghost btn-sm" title="Agent prompts">
+						<BookOpen size={12} />
+					</a>
 					<a href="/settings" class="btn btn-ghost btn-sm" title="Settings">
 						<Settings size={12} />
 					</a>
@@ -274,7 +296,7 @@
 </div>
 {#if ctx}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="ctx-overlay" onclick={() => (ctx = null)} onkeydown={() => (ctx = null)} role="presentation">
+	<div class="ctx-overlay" onclick={() => (ctx = null)} role="presentation">
 		<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 		<div class="ctx-menu" style="left: {ctx.x}px; top: {ctx.y}px" role="menu">
 			<button class="ctx-item" role="menuitem" onclick={() => { const h = ctx?.href ?? '/'; ctx = null; openInNewTab(h); }}>
@@ -418,7 +440,7 @@
 	}
 
 	.tab-bar :global(.tab-chip:hover) {
-		background: var(--color-surface-hover, #eceeeb);
+		background: var(--color-surface-hover);
 	}
 
 	.tab-bar :global(.tab-chip.active) {
@@ -475,7 +497,7 @@
 	}
 
 	.ctx-item:hover {
-		background: var(--color-surface-hover, #eceeeb);
+		background: var(--color-surface-hover);
 	}
 
 	.status-bar {
@@ -520,8 +542,8 @@
 	   height */
 	@media (min-width: 1920px) {
 		.app-column {
-			border-left: 1px solid #d4d9d6;
-			border-right: 1px solid #d4d9d6;
+			border-left: 1px solid var(--color-border);
+			border-right: 1px solid var(--color-border);
 		}
 	}
 

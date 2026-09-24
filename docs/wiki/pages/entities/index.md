@@ -24,3 +24,18 @@ _Concrete named things will be listed here._
 - [central-api (frontend invoke client)](./central-api-frontend-invoke-client.md) - What is it?
 - [Workspace command module (Rust)](./workspace-command-module-rust.md) - What is it?
 - [Workspaces page (/workspaces)](./workspaces-page-workspaces.md) - What is it?
+- [dm_store command module](./dm-store-command-module.md) - `src-tauri/src/commands/dm_store.rs` — the Rust foundation module for the workspace-file-first architecture: dm/ path conventions, name validation, atomic write
+- [Master items & relationships file store (items.rs + relationships.rs)](./master-items-relationships-file-store-items-rs.md) - The Rust content-command modules that back master items and the relationship graph as **files in the `dm/` workspace tree** — task `files-003` of the workspace-
+- [Saved queries file store (saved_queries.rs)](./saved-queries-file-store-saved-queries-rs.md) - The Rust content-command module that backs saved queries as **plain `.sql` files in the `dm/saved-queries/` workspace tree** — task `files-004` of the workspace
+- [Connections file store (connections.rs)](./connections-file-store-connections-rs.md) - The Rust content-command module that backs **saved PostgreSQL connections** — task `files-005` of the workspace-file-first build (commit `fb2f6fb`, 2026-09-22).
+- [dm_watch command module](./dm-watch-command-module.md) - `src-tauri/src/commands/dm_watch.rs` — the Rust file watcher for the workspace `dm/` tree (task `files-007`, commit `72bb92e`, 2026-09-22, branch `feature/works
+- [dm-events frontend module](./dm-events-frontend-module.md) - `src/lib/dm-events.ts` — the frontend half of the dm/ live-reload loop (workspace-file-first task `files-008`, commit `d7f0fc7`): one Tauri event bus for `dm:ch
+- [Write-through core (src/lib/write-through.ts)](./write-through-core-src-lib-write-through-ts.md) - A pure, Svelte-free write-through state machine — "the file IS the save" (workspace-file-first FR-9, task `files-009`, commit `05d6ea1`, 2026-09-22). All deboun
+- [Agent docs module (agent_docs.rs)](./agent-docs-module-agent-docs-rs.md) - `src-tauri/src/commands/agent_docs.rs` — embeds the agent-docs markdown and syncs it into the workspace as `dm/docs/` + `README.md` on version change (task `files-011`, 2026-09-22)
+- [Agent docs system](./agent-docs-system.md) - The repo-authored documentation layer that teaches coding agents to operate the app by editing workspace files. Markdown sources live at `src-tauri/agent-docs/`
+- [Incoming drop folder](./incoming-drop-folder.md) - The `data/incoming/` drop folder in the workspace (workspace-file-first FR-13, the "one cuttable piece" that shipped): drop a CSV, Parquet, or JSON file in and
+- [E2E CDP driver](./e2e-cdp-driver.md) - `e2e/cdp.mjs` — the committed CLI driver for e2e-verifying data.monster's real UI over the Chrome DevTools Protocol (port 9223), node >= 21 native WebSocket, no dependencies.
+- [Agent prompts page](./agent-prompts-page.md) - The SvelteKit route `/agent` (`src/routes/agent/+page.svelte`): six curated copy-paste prompts that teach a coding agent to operate data.monster through the wor
+- [Components page (/components)](./components-page-components.md) - Companion page to [[pages/entities/library-page-library]]: a card grid over **every component the app itself uses** — one card per `.svelte` file under `src/lib
+- [Components catalog (/components + app-components.ts)](./components-catalog-components-app-components-ts.md) - The `/components` route pair — a build-time inventory of every Svelte component in the app, next to [[library-page-library]] (which lists registered library com
+- [ComponentDemo](./componentdemo.md) - What is it?

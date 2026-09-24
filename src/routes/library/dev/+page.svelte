@@ -99,10 +99,10 @@ registerLibraryComponent(pie);   // inside setupChartRegistry()
 		gap: var(--space-3);
 		align-items: flex-start;
 		padding: var(--space-3) var(--space-4);
-		border: 1px solid var(--color-accent, oklch(0.44 0.1 158 / 0.35));
+		border: 1px solid var(--color-accent);
 		border-left-width: 3px;
 		border-radius: var(--radius-md, 8px);
-		background: var(--color-surface, #fff);
+		background: var(--color-surface);
 		font-size: var(--text-sm);
 		line-height: var(--leading-relaxed);
 		margin-bottom: var(--space-5);
@@ -134,7 +134,7 @@ registerLibraryComponent(pie);   // inside setupChartRegistry()
 	p,
 	li {
 		font-size: var(--text-sm);
-		color: var(--color-text-secondary, #52525b);
+		color: var(--color-text-secondary);
 		line-height: var(--leading-relaxed);
 	}
 
@@ -149,8 +149,8 @@ registerLibraryComponent(pie);   // inside setupChartRegistry()
 	}
 
 	pre {
-		background: var(--color-bg-inset, #fafafa);
-		border: 1px solid var(--color-border, #e4e4e7);
+		background: var(--color-surface-sunken);
+		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md, 8px);
 		padding: var(--space-3);
 		font-family: var(--font-mono);

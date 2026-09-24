@@ -65,6 +65,29 @@ pub fn initialize_duckdb(
     let _ = app.emit("db-init-progress", "Creating schema...");
     initialize_schema(&conn)?;
 
+    // workspace-file-first: export content tables to dm/ files (one-time, crash-safe,
+    // idempotent) and bootstrap the git-safe workspace (.gitignore when missing).
+    let _ = app.emit("db-init-progress", "Migrating content to dm/ files...");
+    if let Err(e) = crate::commands::migration::migrate_content_tables(&conn, workspace) {
+        eprintln!("[database] Warning: dm/ migration failed: {}", e);
+    }
+    if let Err(e) = crate::commands::migration::bootstrap_gitignore(workspace) {
+        eprintln!("[database] Warning: .gitignore bootstrap failed: {}", e);
+    }
+
+    // agent docs: sync README + dm/docs/ (progressive disclosure) to the app version
+    if let Err(e) = crate::commands::agent_docs::sync_agent_docs(workspace) {
+        eprintln!("[database] Warning: agent docs sync failed: {}", e);
+    }
+
+    // live dm/ watcher — a workspace switch replaces the previous one
+    if let Err(e) = crate::commands::dm_watch::start(workspace.to_path_buf(), app.clone()) {
+        eprintln!("[database] Warning: dm/ watcher failed to start: {}", e);
+    }
+    if let Err(e) = crate::commands::dm_watch::start_incoming(app.clone(), workspace.to_path_buf()) {
+        eprintln!("[database] Warning: data/incoming watcher failed to start: {}", e);
+    }
+
     let _ = app.emit("db-init-progress", "Cleaning up metadata...");
     let _ = cleanup_orphaned_metadata(&conn);
 

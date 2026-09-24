@@ -46,23 +46,23 @@
 	const measLabels = $derived(roleLabels(chart, 'measure', items));
 </script>
 
-<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
+<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-border bg-surface-sunken/60">
 	<div class="flex flex-col gap-1.5 w-full max-w-56" aria-hidden="true">
-		<div class="h-2.5 rounded bg-zinc-200 animate-pulse w-1/3"></div>
-		<div class="h-8 rounded bg-zinc-200/70 animate-pulse"></div>
-		<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
+		<div class="h-2.5 rounded bg-surface-sunken animate-pulse w-1/3"></div>
+		<div class="h-8 rounded bg-surface-sunken/70 animate-pulse"></div>
+		<div class="h-8 rounded bg-surface-sunken/50 animate-pulse"></div>
 	</div>
-	<p class="text-xs text-zinc-500">Pick data to build the chart.</p>
+	<p class="text-xs text-text-tertiary">Pick data to build the chart.</p>
 	{#if dimLabels.length || measLabels.length}
 		<div class="flex flex-wrap gap-1.5 justify-center max-w-full">
 			{#each dimLabels as d, i (i)}
-				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-900/90 text-white" title="dimension">
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-text/90 text-surface" title="dimension">
 					{d.label}
 					<button class="hover:text-red-300" title="Remove" onclick={(e) => { e.stopPropagation(); chart.dimensions.splice(i, 1); }}>×</button>
 				</span>
 			{/each}
 			{#each measLabels as m, i (i)}
-				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-white border border-zinc-300 text-zinc-700" title="measure">
+				<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface border border-border text-text-secondary" title="measure">
 					{m.label}
 					<button class="hover:text-red-500" title="Remove" onclick={(e) => { e.stopPropagation(); chart.measures.splice(i, 1); }}>×</button>
 				</span>
@@ -72,7 +72,7 @@
 	<div class="flex flex-wrap gap-2 justify-center">
 		{#if needDim}
 			<button
-				class="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 inline-flex items-center gap-1"
+				class="px-3 py-1.5 rounded-md text-xs font-medium bg-text text-surface hover:bg-text-secondary inline-flex items-center gap-1"
 				onclick={(e) => { e.stopPropagation(); openKind = 'dimension'; }}
 			>
 				<Plus size={12} /> Add dimension
@@ -80,7 +80,7 @@
 		{/if}
 		{#if needMeas}
 			<button
-				class="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 inline-flex items-center gap-1"
+				class="px-3 py-1.5 rounded-md text-xs font-medium bg-surface border border-border text-text-secondary hover:bg-surface-sunken inline-flex items-center gap-1"
 				onclick={(e) => { e.stopPropagation(); openKind = 'measure'; }}
 			>
 				<Plus size={12} /> Add measure

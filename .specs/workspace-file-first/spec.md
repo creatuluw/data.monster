@@ -23,6 +23,8 @@ phasing. Supersedes the MCP-first connection plan for content authoring (see wik
   files within ~400ms; agent file edits appear in the open app live, with validation
   errors surfaced (toast + inline if the affected doc is open) and nothing breaking.
 - No save button, no dirty-state, no 60s auto-save anywhere — the file IS the save.
+- A workspace folder can be `git init`'d and committed safely: no secrets in any
+  committable file, `.gitignore` guards `.env` + DB files, dm/ diffs stay clean.
 - Existing workspaces migrate losslessly on first launch of the new version; a crash
   mid-migration leaves tables intact and retries cleanly.
 - A fresh agent reading only `README.md` → one `INDEX.md` row → one format doc can
@@ -51,10 +53,17 @@ phasing. Supersedes the MCP-first connection plan for content authoring (see wik
 - Stack unchanged: Svelte 5 runes, SvelteKit, Tauri v2, DuckDB via Rust commands,
   Tailwind 4. No new npm deps. New Rust dep: `notify` (file watcher) — allowed.
 - Test files in `tests/`, never in `src/` (vite dep-optimizer rule). TDD throughout.
-- `settings.json` already workspace-scoped — untouched. Labels + field functions STAY
-  in DuckDB this build (small, app-internal; follow-up).
-- Connections store non-secret fields + optional plaintext `password` (local portable
-  workspace, like a `.env`); warning lives in README + format doc.
+- `settings.json` stays workspace-scoped but holds NO secrets: `llmApiKey` stripped on
+  save, resolved from env on read (existing env-over-settings merge in settings.rs).
+  Labels + field functions STAY in DuckDB this build (small, app-internal; follow-up).
+- **Secret policy (user-set 2026-09-22; wiki rule): workspaces can be git-version controlled.**
+  Secrets live ONLY in the workspace `.env` (gitignored); `dm/` files + `settings.json`
+  carry env-var references, never values. App generates a workspace `.gitignore` when
+  missing (`.env`, `*.duckdb`, `*.duckdb.wal`); committing `data/main/` is the user's call.
+- **Git-safe serialization**: deterministic key order, no volatile timestamps in `dm/`
+  files (clean diffs).
+- Connections: non-secret fields + `passwordEnv` reference; missing var → actionable
+  error naming the var and the `.env` path.
 - Secrets/storage rule "route external API calls through Rust" unaffected.
 
 ## The workspace tree
@@ -62,7 +71,9 @@ phasing. Supersedes the MCP-first connection plan for content authoring (see wik
 ```text
 my-workspace/
 ├── d8a_monster.duckdb          # source tables + query results ONLY
-├── settings.json               # existing — untouched
+├── settings.json               # non-secret config only (API key stripped on save)
+├── .env                        # SECRETS ONLY — LLM_API_KEY, DM_CONN_<NAME>_PASSWORD (gitignored)
+├── .gitignore                  # generated when missing: .env, *.duckdb, *.duckdb.wal
 ├── README.md                   # L0 agent entry point (generated, ≤60 lines)
 ├── data/
 │   ├── main/                   # existing — ingested source files
@@ -74,7 +85,7 @@ my-workspace/
     │   └── dimensions/<id>.json    # filename = item id; kind picks folder
     ├── relationships.json      # whole graph, one doc
     ├── saved-queries/<slug>.sql    # SQL body + optional `-- dm: {json}` meta header
-    ├── connections.json        # Postgres profiles (NEW persistence)
+    ├── connections.json        # Postgres profiles — NO secrets, passwordEnv refs (NEW)
     └── docs/                   # app-owned agent docs (regenerated on version change)
         ├── .version            # app version marker — drives regeneration
         ├── INDEX.md            # L1 wayfinding: intent → file → format doc (≤100 lines)
@@ -124,18 +135,26 @@ agent-editable, absent = defaults); body is the SQL. CRUD remapped. Acceptance: 
 tests — header parse/serialize round-trip (incl. SQL containing `--` comment lines and
 quotes), headerless file → name=slug, tags=[].
 
-**FR-5 Connections store (new persistence).** `dm/connections.json`:
-`[{name, host, port, database, user, password?}]`. `/connect` gains a saved-connections
-list (save current form, load, delete). Acceptance: cargo tests — CRUD + schema
-tolerance (unknown fields preserved); frontend test — save/load round-trip via mocked
-invoke.
+**FR-5 Connections store (new persistence, secret-free).** `dm/connections.json`:
+`[{name, host, port, database, user, passwordEnv}]` — non-secret metadata only; the
+password lives in the workspace `.env` under the referenced var name. Rust: extend the
+existing `.env` parser in `settings.rs` to resolve ARBITRARY vars (workspace `.env` →
+process env), resolve `passwordEnv` at connect time; missing var → error naming the var
+and the `.env` path. `/connect` gains a saved-connections list (save current form minus
+secret, load, delete). Acceptance: cargo tests — CRUD + unknown fields preserved;
+password resolution from workspace `.env`; missing-var error; a scan asserting
+connections.json never contains secret-shaped values. Frontend test — save/load
+round-trip via mocked invoke.
 
-**FR-6 One-time migration.** On DuckDB init: if `d8a_monster_pages` / `_items` /
-`_relationships` / `_saved_queries` exist → export all rows to files (write ALL files
+**FR-6 Migration + workspace git bootstrap.** On DuckDB init: if `d8a_monster_pages` /
+`_items` / `_relationships` / `_saved_queries` exist → export all rows to files (write ALL files
 first) → verify read-back → drop tables. Idempotent (tables absent = no-op). If files
 and rows both exist (crash between write and drop): files win, rows dropped. Missing
-rows for an existing file = no file overwrite. Acceptance: cargo tests — full export,
-crash-point retries (files partial, tables full), idempotent second run, files-win case.
+rows for an existing file = no file overwrite. Bootstrap on workspace open (when missing):
+write `.gitignore` (`.env`, `*.duckdb`, `*.duckdb.wal`) — never overwrite an existing one;
+`llmApiKey` scrubbed from `settings.json` on next save. Acceptance: cargo tests —
+full export, crash-point retries (files partial, tables full), idempotent second run,
+files-win case, gitignore generated only when missing.
 
 ### Phase B — Realtime both ways
 
@@ -171,8 +190,8 @@ manual CDP verify.
 **FR-11 Agent docs layer (progressive disclosure).** Files live in repo at
 `src-tauri/agent-docs/`, embedded via `include_str!`, written into the workspace when
 missing or when `dm/docs/.version` ≠ app version (app-owned; header notes this).
-Structure: `README.md` (L0, ≤60 lines: workspace map + tree + write rules + INDEX
-pointer) → `dm/docs/INDEX.md` (L1, ≤100 lines: intent → file → format-doc table) →
+Structure: `README.md` (L0, ≤60 lines: workspace map + tree + write rules + secret
+policy + INDEX pointer) → `dm/docs/INDEX.md` (L1, ≤100 lines: intent → file → format-doc table) →
 `dm/docs/formats/*.md` + `concepts.md` + `recipes/*.md` (L2, ≤150 lines each, `Read
 when:` header, ONE annotated minimal-valid example, explicit links to L3) →
 `dm/docs/reference/page-doc-fields.md` (L3, exhaustive). Acceptance: `tests/` — line
@@ -185,7 +204,9 @@ markdown files in repo (`src/lib/agent-prompts/*.md` with small frontmatter: tit
 description, tags), rendered with `marked` + `.prose-chat` (house rule — no new
 pipeline), copy-to-clipboard per card. Every prompt: names the workspace folder, says
 "read `README.md` first, then only the INDEX row you need", collaborative ones instruct
-interview-style work (one question at a time). Starters: onboarding (connect data +
+interview-style work (one question at a time). Prompts touching connections or keys
+instruct the agent to write env-var REFERENCES into `dm/` files and tell the USER to put
+the secret in `.env` — agents never handle raw secrets. Starters: onboarding (connect data +
 first page), build a dashboard from table X (interview), add a measure, ingest a CSV,
 clean up the workspace, explain this workspace. Acceptance: `tests/` — frontmatter
 parse; component test — renders cards, copy writes clipboard; manual visual check.

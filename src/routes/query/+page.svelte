@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { RefreshCw, Share, Table, Bookmark, Copy, Upload, Play, FileText, XCircle, PlusCircle, Database, ArrowLeft, Trash2, Tag } from 'lucide-svelte';
+	import { onDmChanged } from '$lib/dm-events';
 	import { app } from '$lib/stores/app.svelte';
 	import { goto } from '$app/navigation';
 	import { runPagedQuery, executeQuery, saveTableSource, saveTableLabels, getTableMeta, getAllTableMeta, type PagedQueryResult, type TableMeta, listSavedQueries, saveQuery, updateSavedQuery, deleteSavedQuery as deleteSavedQueryOp, type SavedQuery as SavedQueryOp, extractErrorMessage, listFieldFunctions, type FieldFunction, type ColumnInfo } from '$lib/db-operations';
@@ -388,6 +389,8 @@
 
 		return lines.join('\n');
 	}
+
+	$effect(() => onDmChanged('saved-query', () => void loadSavedQueries()));
 
 	async function loadSavedQueries() {
 		try {

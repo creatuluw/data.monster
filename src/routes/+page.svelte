@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { app } from '$lib/stores/app.svelte';
-	import { PlusCircle, Code, Database, TrendingUp, FileText } from 'lucide-svelte';
+	import { PlusCircle, Code, Database, TrendingUp, FileText, Sparkles } from 'lucide-svelte';
 </script>
 
 <svelte:head>
@@ -37,10 +37,15 @@
 			{:else}
 				<span class="home-locked">Connect data to unlock Query, Data & Analyst</span>
 			{/if}
+			<a href="/agent" class="action-btn" title="Skills & commands for your coding agent">
+				<Sparkles size={16} />
+				Skills
+			</a>
 		</div>
 		<div class="labs-link">
 			<a href="/labs" class="labs-anchor">/labs →</a>
 			<a href="/library" class="labs-anchor">/library →</a>
+			<a href="/components" class="labs-anchor">/components →</a>
 		</div>
 	</div>
 </div>

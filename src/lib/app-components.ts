@@ -13,23 +13,31 @@ export type AppComponent = {
 };
 
 export function parseComponent(path: string, source: string): AppComponent {
-	const m = path.match(/components\/(.*)\.svelte$/);
-	const rel = m ? m[1] : path;
+	const m = path.match(/\/(components|demos)\/(.*)\.svelte$/);
+	const rel = m ? m[2] : path;
 	const parts = rel.split('/');
 	return {
 		name: parts[parts.length - 1],
 		dir: parts.length > 1 ? parts.slice(0, -1).join('/') : '',
-		path: `src/lib/components/${rel}.svelte`,
+		path: `src/lib/${m ? m[1] : 'components'}/${rel}.svelte`,
 		lines: source.trimEnd().split('\n').length,
 		source
 	};
 }
 
-const modules = import.meta.glob('/src/lib/components/**/*.svelte', {
-	query: '?raw',
-	import: 'default',
-	eager: true
-}) as Record<string, string>;
+const modules = {
+	...import.meta.glob('/src/lib/components/**/*.svelte', {
+		query: '?raw',
+		import: 'default',
+		eager: true
+	}),
+	// design-system showcase demos (/ui sections + some /components catalog entries)
+	...import.meta.glob('/src/lib/demos/**/*.svelte', {
+		query: '?raw',
+		import: 'default',
+		eager: true
+	})
+} as Record<string, string>;
 
 /** Names that have a live visual demo in ComponentDemo.svelte — the /components
  *  catalog surfaces only these; keep in sync with that component's if/else chain. */
@@ -69,4 +77,4 @@ export function loadActiveAppComponents(): AppComponent[] {
 	return [...active.values()].sort((a, b) => `${a.dir}/${a.name}`.localeCompare(`${b.dir}/${b.name}`));
 }
 
-const PREFER = ['ds', 'charts/controls', 'charts', ''];
+const PREFER = ['charts/controls', 'charts', 'demos', ''];

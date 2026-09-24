@@ -5,24 +5,24 @@
 	 * the rest get hand-written dummy-data demos; genuinely app-wired components show
 	 * the honest note instead.
 	 */
-	import Accordion from './ds/Accordion.svelte';
-	import Buttons from './ds/Buttons.svelte';
-	import Cards from './ds/Cards.svelte';
-	import ColorPalette from './ds/ColorPalette.svelte';
-	import Footer from './ds/Footer.svelte';
-	import Hero from './ds/Hero.svelte';
-	import Icons from './ds/Icons.svelte';
-	import Inputs from './ds/Inputs.svelte';
-	import Modal from './ds/Modal.svelte';
-	import Motion from './ds/Motion.svelte';
-	import Nav from './ds/Nav.svelte';
-	import Principles from './ds/Principles.svelte';
-	import SearchAhead from './ds/SearchAhead.svelte';
-	import Spacing from './ds/Spacing.svelte';
-	import Tags from './ds/Tags.svelte';
-	import Toast from './ds/Toast.svelte';
-	import Toggles from './ds/Toggles.svelte';
-	import Typography from './ds/Typography.svelte';
+	import Accordion from './Accordion.svelte';
+	import Buttons from '$lib/demos/Buttons.svelte';
+	import Cards from '$lib/demos/Cards.svelte';
+	import ColorPalette from '$lib/demos/ColorPalette.svelte';
+	import Footer from '$lib/demos/Footer.svelte';
+	import Hero from '$lib/demos/Hero.svelte';
+	import Icons from '$lib/demos/Icons.svelte';
+	import Inputs from '$lib/demos/Inputs.svelte';
+	import Modal from '$lib/demos/Modal.svelte';
+	import Motion from '$lib/demos/Motion.svelte';
+	import Nav from '$lib/demos/Nav.svelte';
+	import Principles from '$lib/demos/Principles.svelte';
+	import SearchAhead from '$lib/demos/SearchAhead.svelte';
+	import Spacing from '$lib/demos/Spacing.svelte';
+	import Tags from '$lib/demos/Tags.svelte';
+	import Toast from '$lib/demos/Toast.svelte';
+	import Toggles from '$lib/demos/Toggles.svelte';
+	import Typography from '$lib/demos/Typography.svelte';
 
 	import Btn from './charts/controls/Btn.svelte';
 	import Field from './charts/controls/Field.svelte';

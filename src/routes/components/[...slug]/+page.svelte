@@ -2,7 +2,7 @@
 	import { page as pageState } from '$app/state';
 	import { loadAppComponents } from '$lib/app-components';
 	import ComponentDemo from '$lib/components/ComponentDemo.svelte';
-	import { ArrowLeft, Box } from 'lucide-svelte';
+	import { Box } from 'lucide-svelte';
 
 	const all = loadAppComponents();
 	const slug = $derived(pageState.params.slug ?? '');
@@ -15,7 +15,6 @@
 </script>
 
 <div class="detail-page">
-	<a href="/components" class="back"><ArrowLeft size={14} /> All components</a>
 
 	{#if component}
 		<header class="page-hero">
@@ -35,7 +34,7 @@
 		</section>
 	{:else}
 		<p class="no-live">
-			Component not found. <a href="/components" class="back">Back to all components</a>
+			Component not found.
 		</p>
 	{/if}
 </div>
@@ -45,19 +44,6 @@
 		flex: 1;
 		overflow-y: auto;
 		padding: var(--space-6) var(--space-8);
-	}
-
-	.back {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-size: var(--text-xs);
-		color: var(--color-text-tertiary);
-		text-decoration: none;
-	}
-
-	.back:hover {
-		color: var(--color-text);
 	}
 
 	/* reference: page-hero */

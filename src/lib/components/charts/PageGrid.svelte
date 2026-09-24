@@ -127,7 +127,7 @@
 {#snippet renderBlock(block: Block, id: string, fillPx = 0)}
 	{@const state = stateFor(id)}
 	{#if block.type === 'text'}
-		<div class="bg-white rounded-lg border border-zinc-200 p-6 text-sm text-zinc-700 whitespace-pre-wrap">
+		<div class="bg-surface rounded-lg border border-border p-6 text-sm text-text-secondary whitespace-pre-wrap">
 			{block.text}
 		</div>
 	{:else if block.type === 'table'}
@@ -167,18 +167,18 @@
 				{#if schemas && items && relationships}
 					<SkeletonSetup chart={block.chart} {schemas} {items} {relationships} {onCreateMasterItem} onExternalCreate={(k, t) => onExternalCreate?.(k, t, id)} />
 				{:else}
-				<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60">
+				<div class="flex flex-col items-center justify-center gap-3 py-6 px-4 rounded-lg border border-dashed border-border bg-surface-sunken/60">
 					<div class="flex flex-col gap-1.5 w-full max-w-56" aria-hidden="true">
-						<div class="h-2.5 rounded bg-zinc-200 animate-pulse w-1/3"></div>
-						<div class="h-8 rounded bg-zinc-200/70 animate-pulse"></div>
-						<div class="h-8 rounded bg-zinc-200/50 animate-pulse"></div>
+						<div class="h-2.5 rounded bg-surface-sunken animate-pulse w-1/3"></div>
+						<div class="h-8 rounded bg-surface-sunken/70 animate-pulse"></div>
+						<div class="h-8 rounded bg-surface-sunken/50 animate-pulse"></div>
 					</div>
-					<p class="text-xs text-zinc-500">Pick a table, then add dimensions and measures.</p>
+					<p class="text-xs text-text-tertiary">Pick a table, then add dimensions and measures.</p>
 					<div class="flex gap-2">
-						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-700 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
+						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-text text-surface hover:bg-text-secondary inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
 							<Plus size={12} /> Add dimension
 						</button>
-						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-zinc-300 text-zinc-700 hover:bg-zinc-100 inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
+						<button class="px-3 py-1.5 rounded-md text-xs font-medium bg-surface border border-border text-text-secondary hover:bg-surface-sunken inline-flex items-center gap-1" onclick={(e) => { e.stopPropagation(); onConfigure?.(id); }}>
 							<Plus size={12} /> Add measure
 						</button>
 					</div>
@@ -241,7 +241,7 @@
 				<div class="grid grid-cols-12 gap-3">
 					{#each rowColumns(row) as col, ci}
 						{@const colH = col.height ?? row.height}
-						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` height: ${colH}px;` : ''}`}>
+						<div class="col-shell" style={`grid-column: span ${col.span ?? 12} / span ${col.span ?? 12};${colH !== undefined ? ` min-height: ${colH}px;` : ''}`}>
 							<button
 							class="edge-btn edge-btn-col"
 							onclick={() => {
@@ -263,7 +263,7 @@
 							>
 								<GripVertical size={13} />
 							</div>
-							<div class="col-inner" class:col-empty={col.blocks.length === 0} style={colH !== undefined ? 'height: 100%; overflow: auto;' : ''}>
+							<div class="col-inner" class:col-empty={col.blocks.length === 0} style={colH !== undefined ? 'min-height: 100%;' : ''}>
 								<div class="space-y-3">
 									{#each col.blocks as block, bi}
 										{@const id = `r${ri}-c${ci}-b${bi}`}
@@ -298,7 +298,7 @@
 	/* row silhouette — thin gray border so an empty row is still visible */
 	.row-shell {
 		position: relative;
-		border: 1px solid #e4e4e7;
+		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md, 8px);
 		padding: 16px 12px 12px;
 		background: transparent;
@@ -316,7 +316,7 @@
 	.col-empty {
 		min-height: 140px;
 		border-radius: var(--radius-sm, 6px);
-		background-image: radial-gradient(circle, #d4d4d8 1.2px, transparent 1.2px);
+		background-image: radial-gradient(circle, var(--color-border-strong) 1.2px, transparent 1.2px);
 		background-size: 16px 16px;
 	}
 
@@ -329,18 +329,18 @@
 		gap: 4px;
 		height: 20px;
 		padding: 0 8px 0 6px;
-		border: 1px solid #e4e4e7;
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		background: white;
-		color: #a1a1aa;
+		color: var(--color-text-tertiary);
 		font-size: 10px;
 		font-weight: 500;
 		cursor: pointer;
 		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
 	}
 	.edge-btn:hover {
-		color: var(--color-text, #18181b);
-		border-color: #d4d4d8;
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 	/* top-left border cluster: [Row settings] [+ Component] */
 	.row-edge-cluster {
@@ -362,17 +362,17 @@
 		gap: 6px;
 		padding: 3px 10px;
 		margin-left: 2px;
-		border: 1px dashed #d4d4d8;
+		border: 1px dashed var(--color-border-strong);
 		border-radius: var(--radius-xs, 6px);
 		background: transparent;
-		color: #a1a1aa;
+		color: var(--color-text-tertiary);
 		font-size: 12px;
 		cursor: pointer;
 		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
 	}
 	.add-row-btn:hover {
-		color: #52525b;
-		border-color: #a1a1aa;
+		color: var(--color-text-secondary);
+		border-color: var(--color-text-tertiary);
 	}
 
 	.edge-btn-col {
@@ -388,18 +388,18 @@
 		align-items: center;
 		justify-content: center;
 		height: 20px;
-		border: 1px solid #e4e4e7;
+		border: 1px solid var(--color-border);
 		border-radius: 999px;
 		background: white;
-		color: #a1a1aa;
+		color: var(--color-text-tertiary);
 		z-index: 20;
 		touch-action: none;
 		user-select: none;
 		transition: color var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
 	}
 	.grip:hover {
-		color: var(--color-text, #18181b);
-		border-color: #d4d4d8;
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 	.grip-row {
 		bottom: -11px;
@@ -434,7 +434,7 @@
 		padding: var(--space-1, 4px);
 		border: 1px solid transparent;
 		background: white;
-		color: #a1a1aa;
+		color: var(--color-text-tertiary);
 		cursor: pointer;
 		border-radius: var(--radius-xs, 4px);
 		transition:
@@ -443,7 +443,7 @@
 	}
 
 	.config-open-btn:hover {
-		color: var(--color-text, #18181b);
-		border-color: #d4d4d8;
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 </style>

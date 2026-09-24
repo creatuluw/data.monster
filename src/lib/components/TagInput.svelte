@@ -78,9 +78,9 @@
     />
   </div>
   {#if showSuggestions && filteredSuggestions.length > 0 && inputValue.length > 0}
-    <div class="tag-suggestions">
+    <div class="tag-suggestions" role="listbox" aria-label="Tag suggestions">
       {#each filteredSuggestions as suggestion}
-        <button type="button" class="tag-suggestion" onclick={() => addTag(suggestion)}>
+        <button type="button" class="tag-suggestion" role="option" aria-selected="false" onclick={() => addTag(suggestion)}>
           {suggestion}
         </button>
       {/each}
@@ -98,16 +98,16 @@
     flex-wrap: wrap;
     gap: var(--space-1);
     padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--color-border-strong, #d1d5db);
-    border-radius: var(--radius-xs, 4px);
-    background: var(--color-surface, #fff);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-xs);
+    background: var(--color-surface);
     min-height: 36px;
     align-items: center;
   }
 
   .tag-input-field:focus-within {
-    border-color: var(--color-accent, #3b82f6);
-    box-shadow: 0 0 0 2px var(--color-accent-muted, rgba(59, 130, 246, 0.2));
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px var(--color-accent-muted);
   }
 
   .tag-chip {
@@ -116,12 +116,12 @@
     gap: 2px;
     padding: 2px var(--space-2);
     background: var(--color-accent-muted, rgba(59, 130, 246, 0.1));
-    color: var(--color-accent-dark, #1d4ed8);
-    border: 1px solid var(--color-accent-muted, rgba(59, 130, 246, 0.3));
-    border-radius: var(--radius-xs, 4px);
-    font-size: var(--text-xs, 12px);
+    color: var(--color-accent-dark);
+    border: 1px solid var(--color-accent-muted);
+    border-radius: var(--radius-xs);
+    font-size: var(--text-xs);
     font-weight: 600;
-    font-family: var(--font-body, system-ui);
+    font-family: var(--font-body);
     line-height: 1.4;
   }
 
@@ -133,12 +133,12 @@
     height: 14px;
     border: none;
     background: transparent;
-    color: var(--color-accent-dark, #1d4ed8);
+    color: var(--color-accent-dark);
     cursor: pointer;
     border-radius: 50%;
     padding: 0;
     opacity: 0.6;
-    transition: opacity var(--duration-fast, 150ms) ease;
+    transition: opacity var(--duration-fast) ease;
   }
 
   .tag-remove:hover {
@@ -151,16 +151,16 @@
     border: none;
     outline: none;
     background: transparent;
-    font-family: var(--font-body, system-ui);
+    font-family: var(--font-body);
     font-size: var(--text-sm, 14px);
-    color: var(--color-text, #111827);
+    color: var(--color-text);
     padding: 0;
     line-height: 1.5;
   }
 
   .tag-text-input::placeholder {
-    color: var(--color-text-placeholder, #9ca3af);
-    font-size: var(--text-xs, 12px);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
     font-weight: 300;
   }
 
@@ -169,9 +169,9 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--color-surface, #fff);
-    border: 1px solid var(--color-border, #e2e8f0);
-    border-radius: 0 0 var(--radius-xs, 4px) var(--radius-xs, 4px);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
     box-shadow: var(--shadow-sm);
     max-height: 150px;
     overflow-y: auto;
@@ -182,17 +182,17 @@
     display: block;
     width: 100%;
     text-align: left;
-    padding: var(--space-1, 4px) var(--space-2, 8px);
+    padding: var(--space-1) var(--space-2);
     border: none;
     background: transparent;
-    color: var(--color-text, #111827);
-    font-family: var(--font-body, system-ui);
-    font-size: var(--text-xs, 12px);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--text-xs);
     cursor: pointer;
-    transition: background var(--duration-fast, 150ms) ease;
+    transition: background var(--duration-fast) ease;
   }
 
   .tag-suggestion:hover {
-    background: var(--color-surface-sunken, #f1f5f9);
+    background: var(--color-surface-sunken);
   }
 </style>

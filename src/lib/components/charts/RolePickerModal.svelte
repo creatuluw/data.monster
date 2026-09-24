@@ -3,7 +3,12 @@
 	 * Role picker modal (new-page-modal pattern): searchable list over ⭐ master
 	 * items + source-table fields + linked-table fields, plus a + New form that
 	 * creates a master item on the spot. Applying pushes into the chart spec.
+	 *
+	 * Path B pilot: bits-ui owns behavior (Dialog = focus trap/Escape/overlay,
+	 * Combobox = search input + listbox keyboard nav), styling is utility-first
+	 * over the app token layer.
 	 */
+	import { Dialog, Combobox } from 'bits-ui';
 	import { availableItems, linkedTables } from '$lib/charts/relationships';
 	import { dimensionFromPick, measureFromPick, roleLabels } from '$lib/charts/pickers';
 	import type { ChartBlockSpec } from '$lib/charts/spec-types';
@@ -57,11 +62,11 @@
 		return out;
 	});
 
-	let query = $state('');
+	let searchValue = $state('');
 	const filtered = $derived(
 		entries.filter((e) => {
-			if (!query.trim()) return true;
-			const q = query.toLowerCase();
+			if (!searchValue.trim()) return true;
+			const q = searchValue.toLowerCase();
 			return e.label.toLowerCase().includes(q) || e.meta.toLowerCase().includes(q);
 		})
 	);
@@ -71,15 +76,12 @@
 		return [...map.entries()];
 	});
 
+	let inputRef = $state<HTMLInputElement | null>(null);
+
 	function apply(value: string) {
 		if (kind === 'dimension') chart.dimensions.push(dimensionFromPick(value, table));
 		else chart.measures.push(measureFromPick(value, table));
 		onClose();
-	}
-
-	function onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') onClose();
-		else if (e.key === 'Enter' && filtered[0]) apply(filtered[0].value);
 	}
 
 	let creating = $state(false);
@@ -104,97 +106,103 @@
 	}
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<Dialog.Root open onOpenChange={(o) => !o && onClose()}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="fixed inset-0 z-50 bg-black/40" />
+		<Dialog.Content
+			class="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl bg-surface p-6 shadow-xl outline-none"
+			onOpenAutoFocus={(e) => {
+				// focus the search input, not the first focusable (the X button)
+				e.preventDefault();
+				inputRef?.focus();
+			}}
+		>
+			<div class="flex items-center justify-between">
+				<Dialog.Title class="text-lg font-semibold text-text" style="font-family: var(--font-display)">Add {noun}</Dialog.Title>
+				<Dialog.Close class="text-text-tertiary hover:text-text" title="Close"><X size={16} /></Dialog.Close>
+			</div>
+			<div class="flex flex-wrap gap-1.5">
+				{#if roleLabels(chart, 'dimension', items).length === 0 && roleLabels(chart, 'measure', items).length === 0}
+					<span class="text-xs text-text-tertiary">Nothing added yet</span>
+				{:else}
+					{#each roleLabels(chart, 'dimension', items) as d (d.label + d.meta)}
+						<span class="rounded-full bg-text px-2 py-0.5 text-[11px] font-medium text-surface" title="dimension">{d.label}</span>
+					{/each}
+					{#each roleLabels(chart, 'measure', items) as m (m.label + m.meta)}
+						<span class="rounded-full border border-border-strong px-2 py-0.5 text-[11px] font-medium text-text-secondary" title="measure">{m.label}</span>
+					{/each}
+				{/if}
+			</div>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-	class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6"
-	onclick={onClose}
-	onkeydown={onKeydown}
-	role="presentation"
->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4"
-		onclick={(e) => e.stopPropagation()}
-		onkeydown={onKeydown}
-		role="presentation"
-	>
-		<div class="flex items-center justify-between">
-			<h2 class="text-lg font-semibold text-zinc-900" style="font-family: var(--font-display)">Add {noun}</h2>
-			<button class="text-zinc-400 hover:text-zinc-900" onclick={onClose} title="Close"><X size={16} /></button>
-		</div>
-		<div class="flex flex-wrap gap-1.5">
-			{#if roleLabels(chart, 'dimension', items).length === 0 && roleLabels(chart, 'measure', items).length === 0}
-				<span class="text-xs text-zinc-400">Nothing added yet</span>
-			{:else}
-				{#each roleLabels(chart, 'dimension', items) as d (d.label + d.meta)}
-				<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-900/90 text-white" title="dimension">{d.label}</span>
-				{/each}
-			{#each roleLabels(chart, 'measure', items) as m (m.label + m.meta)}
-				<span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-white border border-zinc-300 text-zinc-700" title="measure">{m.label}</span>
-				{/each}
-			{/if}
-		</div>
-
-		{#if !creating}
-			<label class="block space-y-1">
-				<span class="text-xs" style="color: var(--color-text-secondary)">Search {noun}s — master items, fields of {table}, linked tables</span>
-				<div class="flex items-center gap-2" style="border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: 0 var(--space-2); height: 30px; background: var(--color-surface)">
-					<Search size={14} style="color: var(--color-text-tertiary)" />
-					<input type="text" autofocus class="flex-1 outline-none text-sm" style="background: none; border: none; color: var(--color-text)" placeholder="Type to filter…" bind:value={query} />
-				</div>
-			</label>
-			<div class="max-h-64 overflow-auto rounded-lg border border-zinc-200 divide-y divide-zinc-100">
-				{#each grouped as [group, list] (group)}
-					<div class="py-1">
-						<p class="px-3 pt-1.5 pb-0.5 text-[11px] font-medium text-zinc-400 uppercase tracking-wide">{group}</p>
-						{#each list as e (e.value)}
-							<button
-								class="w-full text-left px-3 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100 flex items-center justify-between gap-3"
-								onclick={() => apply(e.value)}
-							>
-								<span>{e.label}</span>
-								<span class="text-xs text-zinc-400 font-mono">{e.meta}</span>
-							</button>
-						{/each}
+			{#if !creating}
+				<!-- the pick list is always visible (not a dropdown) — hold the combobox open -->
+					<Combobox.Root type="single" bind:open={() => true, () => {}} onValueChange={(v) => v && apply(v)}>
+					<div class="relative">
+						<Search size={14} class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+						<Combobox.Input
+							bind:ref={inputRef}
+							class="flex h-[30px] w-full items-center rounded-sm border border-border-strong bg-surface pl-8 pr-3 text-sm text-text outline-none placeholder:text-text-tertiary focus:border-accent"
+							placeholder="Type to filter…"
+							aria-label="Search {noun}s — master items, fields of {table}, linked tables"
+							oninput={(e) => (searchValue = e.currentTarget.value)}
+						/>
 					</div>
-				{/each}
-				{#if grouped.length === 0}
-					<p class="px-3 py-4 text-sm text-zinc-400 text-center">No matches.</p>
-				{/if}
-			</div>
-			<div class="flex flex-wrap justify-end gap-2 pt-2">
-				{#if onExternalCreate}
-					<button
-						class="inline-flex items-center gap-1 text-xs px-2.5 rounded-md border border-dashed border-zinc-300 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400"
-						style="height: 30px;"
-						title="Open the measures & dimensions editor in /data"
-						onclick={() => onExternalCreate?.(kind, table)}
+					<Combobox.ContentStatic
+						class="max-h-64 overflow-y-auto rounded-lg border border-border bg-surface"
 					>
-						<SquareArrowOutUpRight size={12} /> Create in /data
-					</button>
-				{/if}
-				<Btn variant="primary" onclick={() => { creating = true; formError = ''; }}>
-					<Plus size={14} /> New master {noun}
-				</Btn>
-			</div>
-		{:else}
-			<label class="block space-y-1">
-				<span class="text-xs" style="color: var(--color-text-secondary)">Label</span>
-				<div class="w-full"><TextInput placeholder={kind === 'dimension' ? 'e.g. Region' : 'e.g. Revenue'} bind:value={newLabel} /></div>
-			</label>
-			<div class="block space-y-1">
-				<span class="text-xs" style="color: var(--color-text-secondary)">Expression (DuckDB)</span>
-				<ExprEditor bind:value={newExpr} {kind} table={table} columns={schemas[table] ?? []} masterItems={availableItems(table, items, relationships).filter((i) => i.kind === kind)} placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} />
-			</div>
-			{#if formError}<p class="text-sm" style="color: var(--color-danger)">{formError}</p>{/if}
-			<div class="flex justify-end gap-2 pt-2">
-				<Btn variant="ghost" onclick={() => (creating = false)}>Back</Btn>
-				<Btn variant="primary" disabled={!newLabel.trim() || !newExpr.trim() || saving} onclick={create}>
-					<Plus size={14} /> {saving ? 'Saving…' : 'Save to library'}
-				</Btn>
-			</div>
-		{/if}
-	</div>
-</div>
+						{#each grouped as [group, list] (group)}
+							<Combobox.Group>
+								<Combobox.GroupHeading class="px-3 pt-1.5 pb-0.5 text-[11px] font-medium uppercase tracking-wide text-text-tertiary">{group}</Combobox.GroupHeading>
+								{#each list as e (e.value)}
+									<Combobox.Item
+										value={e.value}
+										label={e.label}
+										class="flex w-full cursor-pointer items-center justify-between gap-3 px-3 py-1.5 text-left text-sm text-text-secondary data-highlighted:bg-surface-sunken data-highlighted:text-text"
+									>
+										{#snippet children({ selected })}
+											<span>{e.label}</span>
+											<span class="font-mono text-xs text-text-tertiary">{e.meta}{selected ? ' ✓' : ''}</span>
+										{/snippet}
+									</Combobox.Item>
+								{/each}
+							</Combobox.Group>
+						{/each}
+						{#if grouped.length === 0}
+							<p class="px-3 py-4 text-center text-sm text-text-tertiary">No matches.</p>
+						{/if}
+					</Combobox.ContentStatic>
+				</Combobox.Root>
+				<div class="flex flex-wrap justify-end gap-2 pt-2">
+					{#if onExternalCreate}
+						<button
+							class="inline-flex h-[30px] items-center gap-1 rounded-md border border-dashed border-border px-2.5 text-xs text-text-tertiary hover:border-border-strong hover:text-text"
+							title="Open the measures & dimensions editor in /data"
+							onclick={() => onExternalCreate?.(kind, table)}
+						>
+							<SquareArrowOutUpRight size={12} /> Create in /data
+						</button>
+					{/if}
+					<Btn variant="primary" onclick={() => { creating = true; formError = ''; }}>
+						<Plus size={14} /> New master {noun}
+					</Btn>
+				</div>
+			{:else}
+				<label class="block space-y-1">
+					<span class="text-xs text-text-secondary">Label</span>
+					<div class="w-full"><TextInput placeholder={kind === 'dimension' ? 'e.g. Region' : 'e.g. Revenue'} bind:value={newLabel} /></div>
+				</label>
+				<div class="block space-y-1">
+					<span class="text-xs text-text-secondary">Expression (DuckDB)</span>
+					<ExprEditor bind:value={newExpr} {kind} table={table} columns={schemas[table] ?? []} masterItems={availableItems(table, items, relationships).filter((i) => i.kind === kind)} placeholder={kind === 'dimension' ? 'e.g. region' : 'e.g. sum(amount)'} />
+				</div>
+				{#if formError}<p class="text-sm text-danger">{formError}</p>{/if}
+				<div class="flex justify-end gap-2 pt-2">
+					<Btn variant="ghost" onclick={() => (creating = false)}>Back</Btn>
+					<Btn variant="primary" disabled={!newLabel.trim() || !newExpr.trim() || saving} onclick={create}>
+						<Plus size={14} /> {saving ? 'Saving…' : 'Save to library'}
+					</Btn>
+				</div>
+			{/if}
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>

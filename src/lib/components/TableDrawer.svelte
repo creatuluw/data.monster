@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { X, Trash2, RefreshCw } from 'lucide-svelte';
+	import { Dialog } from 'bits-ui';
 	import Drawer from './Drawer.svelte';
 	import {
 		getTableMeta,
@@ -164,16 +165,11 @@
 		editColumnType = '';
 	}
 
-	function handleModalKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') {
-			closeTypeModal();
-		}
-		if (e.key === 'Enter') {
-			const select = (e.target as HTMLElement).closest('.drawer-modal-body')?.querySelector('select');
-			if (select && document.activeElement === select) return;
-			if (editColumn && editColumnType.trim()) {
-				handleTypeChange(editColumn.name, editColumnType.trim().toUpperCase());
-			}
+	let typeSelect = $state<HTMLSelectElement | null>(null);
+
+	function applyTypeChange() {
+		if (editColumn && editColumnType.trim()) {
+			handleTypeChange(editColumn.name, editColumnType.trim().toUpperCase());
 		}
 	}
 
@@ -348,35 +344,47 @@
 
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	{#if editColumn}
-		<div class="drawer-modal-overlay" onclick={closeTypeModal} onkeydown={handleModalKeydown} role="dialog" aria-modal="true">
-			<!-- svelte-ignore a11y_no_static_element_interactions -->
-			<div class="drawer-modal" onclick={(e) => e.stopPropagation()} onkeydown={handleModalKeydown}>
-				<div class="drawer-modal-header">
-					<h3 class="drawer-modal-title">Change type</h3>
-					<button class="drawer-modal-close" onclick={closeTypeModal} aria-label="Close">&times;</button>
-				</div>
-				<div class="drawer-modal-body">
-					<div class="drawer-modal-field">
-						<span class="drawer-modal-field-name">{editColumn.name}</span>
+		<Dialog.Root open onOpenChange={(o) => { if (!o) closeTypeModal(); }}>
+			<Dialog.Portal>
+				<Dialog.Overlay class="drawer-modal-overlay" />
+				<Dialog.Content
+					class="drawer-modal"
+					aria-label="Change type"
+					onkeydown={(e) => {
+						if (e.key === 'Enter' && document.activeElement?.tagName !== 'SELECT') applyTypeChange();
+					}}
+					onOpenAutoFocus={(e) => {
+						e.preventDefault();
+						typeSelect?.focus();
+					}}
+				>
+					<div class="drawer-modal-header">
+						<Dialog.Title class="drawer-modal-title">Change type</Dialog.Title>
+						<Dialog.Close class="drawer-modal-close" aria-label="Close">&times;</Dialog.Close>
 					</div>
-					<select
-						class="drawer-modal-select"
-						bind:value={editColumnType}
-						autofocus
-					>
-						{#each availableTypes as t}
-							<option value={t} selected={t === editColumn.type}>{t}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="drawer-modal-footer">
-					<button class="btn btn-ghost btn-sm" onclick={closeTypeModal}>Cancel</button>
-					<button class="btn btn-primary btn-sm" onclick={() => editColumn && handleTypeChange(editColumn.name, editColumnType)}>
-						Apply
-					</button>
-				</div>
-			</div>
-		</div>
+					<div class="drawer-modal-body">
+						<div class="drawer-modal-field">
+							<span class="drawer-modal-field-name">{editColumn.name}</span>
+						</div>
+						<select
+							class="drawer-modal-select"
+							bind:this={typeSelect}
+							bind:value={editColumnType}
+						>
+							{#each availableTypes as t}
+								<option value={t}>{t}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="drawer-modal-footer">
+						<button class="btn btn-ghost btn-sm" onclick={closeTypeModal}>Cancel</button>
+						<button class="btn btn-primary btn-sm" onclick={applyTypeChange} disabled={!editColumnType.trim()}>
+							Apply
+						</button>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 	{/if}
 {/if}
 
@@ -595,30 +603,27 @@
 		margin-left: var(--space-2);
 	}
 
-	.drawer-modal-overlay {
+	/* bits-rendered overlay/panel — scoped selectors reach them via :global() */
+	:global(.drawer-modal-overlay) {
 		position: fixed;
 		inset: 0;
 		background: oklch(0.14 0.01 250 / 0.6);
 		backdrop-filter: blur(4px);
 		z-index: 300;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 	}
 
-	.drawer-modal {
+	:global(.drawer-modal) {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		z-index: 301;
 		background: var(--color-surface);
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md);
 		box-shadow: var(--shadow-lg);
 		width: 90%;
 		max-width: 360px;
-		animation: drawerModalIn 0.15s var(--ease-out-expo);
-	}
-
-	@keyframes drawerModalIn {
-		from { transform: translateY(8px) scale(0.98); opacity: 0; }
-		to { transform: translateY(0) scale(1); opacity: 1; }
 	}
 
 	.drawer-modal-header {

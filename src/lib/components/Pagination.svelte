@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Pagination } from 'bits-ui';
+
 	let {
 		currentPage = 1,
 		totalItems = 0,
@@ -12,83 +14,48 @@
 	} = $props();
 
 	let totalPages = $derived(Math.max(1, Math.ceil(totalItems / perPage)));
-	let startItem = $derived((currentPage - 1) * perPage + 1);
-	let endItem = $derived(Math.min(currentPage * perPage, totalItems));
-
-	let pages = $derived.by(() => {
-		if (totalPages <= 7) {
-			return Array.from({ length: totalPages }, (_, i) => i + 1);
-		}
-
-		const p: (number | "ellipsis")[] = [];
-		p.push(1);
-
-		let start = Math.max(2, currentPage - 1);
-		let end = Math.min(totalPages - 1, currentPage + 1);
-
-		if (currentPage <= 3) {
-			start = 2;
-			end = Math.min(4, totalPages - 1);
-		} else if (currentPage >= totalPages - 2) {
-			start = Math.max(totalPages - 3, 2);
-			end = totalPages - 1;
-		}
-
-		if (start > 2) p.push("ellipsis");
-		for (let i = start; i <= end; i++) p.push(i);
-		if (end < totalPages - 1) p.push("ellipsis");
-
-		p.push(totalPages);
-		return p;
-	});
-
-	function goTo(p: number) {
-		if (p < 1 || p > totalPages || p === currentPage) return;
-		onchange?.(p);
-	}
 </script>
 
 {#if totalItems > 0 && totalPages > 1}
-	<nav class="pagination" aria-label="Pagination">
-		<div class="pagination-buttons">
-			<button
-				class="pagination-btn pagination-prev"
-				disabled={currentPage <= 1}
-				onclick={() => goTo(currentPage - 1)}
-				aria-label="Previous page"
-			>
-				&lsaquo;
-			</button>
+	<div class="pagination">
+		<Pagination.Root
+			count={totalItems}
+			{perPage}
+			page={currentPage}
+			onPageChange={(p) => onchange?.(p)}
+			aria-label="Pagination"
+		>
+			{#snippet children({ pages, range })}
+				<div class="pagination-buttons">
+					<Pagination.PrevButton class="pagination-btn pagination-prev" aria-label="Previous page">
+						&lsaquo;
+					</Pagination.PrevButton>
 
-			{#each pages as p}
-				{#if p === "ellipsis"}
-					<span class="pagination-ellipsis">&hellip;</span>
-				{:else}
-					<button
-						class="pagination-btn {p === currentPage ? 'pagination-active' : ''}"
-						onclick={() => goTo(p)}
-						aria-label="Page {p}"
-						aria-current={p === currentPage ? "page" : undefined}
-					>
-						{p}
-					</button>
-				{/if}
-			{/each}
+					{#each pages as pg (pg.key)}
+						{#if pg.type === 'ellipsis'}
+							<span class="pagination-ellipsis">&hellip;</span>
+						{:else}
+							<Pagination.Page
+								page={pg}
+								class="pagination-btn {pg.value === currentPage ? 'pagination-active' : ''}"
+								aria-label="Page {pg.value}"
+							>
+								{pg.value}
+							</Pagination.Page>
+						{/if}
+					{/each}
 
-			<button
-				class="pagination-btn pagination-next"
-				disabled={currentPage >= totalPages}
-				onclick={() => goTo(currentPage + 1)}
-				aria-label="Next page"
-			>
-				&rsaquo;
-			</button>
-		</div>
+					<Pagination.NextButton class="pagination-btn pagination-next" aria-label="Next page">
+						&rsaquo;
+					</Pagination.NextButton>
+				</div>
 
-		<span class="pagination-info">
-			{startItem}–{endItem} of {totalItems}
-		</span>
-	</nav>
+				<span class="pagination-info">
+					{range.start}–{range.end} of {totalItems}
+				</span>
+			{/snippet}
+		</Pagination.Root>
+	</div>
 {/if}
 
 <style>
@@ -99,13 +66,14 @@
 		gap: var(--space-3);
 	}
 
-	.pagination-buttons {
+	/* bits-ui renders the buttons — scoped selectors reach them via :global() */
+	.pagination :global(.pagination-buttons) {
 		display: flex;
 		align-items: center;
 		gap: var(--space-1);
 	}
 
-	.pagination-btn {
+	.pagination :global(.pagination-btn) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -126,34 +94,34 @@
 			border-color var(--duration-fast) ease;
 	}
 
-	.pagination-btn:hover:not(:disabled):not(.pagination-active) {
+	.pagination :global(.pagination-btn:hover:not(:disabled):not(.pagination-active)) {
 		border-color: var(--color-accent);
 		color: var(--color-accent);
 	}
 
-	.pagination-btn:focus-visible {
+	.pagination :global(.pagination-btn:focus-visible) {
 		outline: 2px solid var(--color-accent);
 		outline-offset: 1px;
 	}
 
-	.pagination-btn:disabled {
+	.pagination :global(.pagination-btn:disabled) {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
 
-	.pagination-active {
+	.pagination :global(.pagination-active) {
 		background: var(--color-accent);
 		color: var(--color-text-on-accent);
 		border-color: var(--color-accent);
 	}
 
-	.pagination-prev,
-	.pagination-next {
+	.pagination :global(.pagination-prev),
+	.pagination :global(.pagination-next) {
 		font-size: var(--text-sm);
 		padding: 0 var(--space-1);
 	}
 
-	.pagination-ellipsis {
+	.pagination :global(.pagination-ellipsis) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;

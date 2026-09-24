@@ -118,10 +118,6 @@
 		background: var(--color-surface);
 	}
 
-	.viewer-table-wrap table {
-		flex: 1;
-	}
-
 	.viewer-table-wrap thead th {
 		position: sticky;
 		top: 0;
@@ -130,6 +126,7 @@
 	}
 
 	.viewer-footer-bar {
+		margin-top: auto;
 		padding: var(--space-2) var(--space-4);
 		background: var(--color-surface-raised);
 		border-top: 1px solid var(--color-border);

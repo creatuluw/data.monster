@@ -367,10 +367,10 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 			value={doc.title}
 			oninput={(e) => (doc.title = (e.target as HTMLInputElement).value)}
 		/>
-		<div class="flex items-center gap-1 bg-zinc-100 rounded-lg p-1">
-			<button class:active={mode === 'design'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'design' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('design')}><LayoutGrid size={14} /> Design</button>
-			<button class:active={mode === 'code'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'code' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('code')}><Code size={14} /> Code</button>
-			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-white shadow-sm font-medium' : 'text-zinc-500'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
+		<div class="flex items-center gap-1 bg-surface-sunken rounded-lg p-1">
+			<button class:active={mode === 'design'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'design' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('design')}><LayoutGrid size={14} /> Design</button>
+			<button class:active={mode === 'code'} class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'code' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('code')}><Code size={14} /> Code</button>
+			<button class="px-3 py-1.5 rounded-md text-sm inline-flex items-center gap-1.5 {mode === 'page' ? 'bg-surface shadow-sm font-medium' : 'text-text-tertiary'}" onclick={() => switchMode('page')}><FileCog size={14} /> Page</button>
 		</div>
 	</div>
 
@@ -379,17 +379,17 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 		<div class="mb-4 flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm">
 			<TriangleAlert size={16} class="text-amber-600 shrink-0" />
 			<span class="flex-1">{slug}.json changed on disk while you have unwritten edits.</span>
-			<button class="px-3 py-1 rounded-md bg-white border border-zinc-300 hover:bg-zinc-50" onclick={reloadDoc}>Reload</button>
-			<button class="px-3 py-1 rounded-md bg-zinc-900 text-white hover:bg-zinc-700" onclick={keepMine}>Keep mine</button>
+			<button class="px-3 py-1 rounded-md bg-surface border border-border hover:bg-surface-sunken" onclick={reloadDoc}>Reload</button>
+			<button class="px-3 py-1 rounded-md bg-text text-surface hover:bg-text-secondary" onclick={keepMine}>Keep mine</button>
 		</div>
 	{/if}
 
 	{#if loading}
-		<p class="text-sm text-zinc-400 py-16 text-center">Loading…</p>
+		<p class="text-sm text-text-tertiary py-16 text-center">Loading…</p>
 	{:else if mode === 'code'}
 		<div class="space-y-3">
 			<textarea
-				class="w-full h-[70vh] font-mono text-xs border border-zinc-200 rounded-lg p-4 focus:outline-none focus:ring-1 focus:ring-zinc-300"
+				class="w-full h-[70vh] font-mono text-xs border border-border rounded-lg p-4 focus:outline-none focus:ring-1 focus:ring-border-strong"
 				spellcheck="false"
 				bind:value={codeText}
 				onblur={applyCode}
@@ -401,7 +401,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					{/each}
 				</div>
 			{:else}
-				<p class="text-xs text-zinc-400">Valid — switching to Design applies the document.</p>
+				<p class="text-xs text-text-tertiary">Valid — switching to Design applies the document.</p>
 			{/if}
 		</div>
 	{:else if configBlock && runtime}
@@ -441,11 +441,11 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 				{#if doc.rows?.length}
 					{#each doc.rows as _, ri (ri)}
 						<div class="flex items-center justify-between text-sm">
-							<span class="text-zinc-600">Row {ri + 1} · {rowColumns(doc.rows![ri]).length} columns · {rowColumns(doc.rows![ri]).reduce((n, c) => n + c.blocks.length, 0)} blocks</span>
+							<span class="text-text-secondary">Row {ri + 1} · {rowColumns(doc.rows![ri]).length} columns · {rowColumns(doc.rows![ri]).reduce((n, c) => n + c.blocks.length, 0)} blocks</span>
 						</div>
 					{/each}
 				{:else}
-					<p class="text-sm text-zinc-400">No rows yet — add one in Design mode.</p>
+					<p class="text-sm text-text-tertiary">No rows yet — add one in Design mode.</p>
 				{/if}
 			</Section>
 		</div>
@@ -523,7 +523,7 @@ import { normalizePageDoc, rowColumns } from '$lib/charts/spec-types';
 					{/each}
 				</div>
 				{#if filteredComponents.length === 0}
-					<p class="text-sm text-zinc-400">No components match &ldquo;{pickerQuery}&rdquo;.</p>
+					<p class="text-sm text-text-tertiary">No components match &ldquo;{pickerQuery}&rdquo;.</p>
 				{/if}
 			</ChartConfigDrawer>
 		{/if}

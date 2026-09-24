@@ -9,7 +9,7 @@
 		type InternalTable,
 		type InternalTableData
 	} from '$lib/db-operations';
-	import { Database, ArrowLeft, Trash2, Edit3, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
+	import { Database, Trash2, Edit3, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
 
 	let tables = $state<InternalTable[]>([]);
 	let selectedTable = $state<string | null>(null);
@@ -143,10 +143,6 @@
 
 <div class="idb-page">
 	<div class="idb-header">
-		<a href="/settings" class="btn btn-ghost btn-sm">
-			<ArrowLeft size={14} />
-			Settings
-		</a>
 		<Database size={18} />
 		<h1 class="idb-title">Internal Database</h1>
 		<span class="idb-subtitle">all tables</span>
@@ -500,7 +496,7 @@
 	.idb-grid th {
 		position: sticky;
 		top: 0;
-		background: var(--color-bg, #0f0f0f);
+		background: var(--color-surface-raised);
 		padding: var(--space-2) var(--space-3);
 		text-align: left;
 		font-size: 9px;
@@ -540,7 +536,7 @@
 	}
 
 	.idb-grid th.idb-grid-actions {
-		background: var(--color-bg, #0f0f0f);
+		background: var(--color-surface-raised);
 	}
 
 	.idb-grid td.idb-grid-actions {

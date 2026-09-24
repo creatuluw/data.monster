@@ -8,7 +8,7 @@
 		extractErrorMessage,
 		type FieldFunction
 	} from '$lib/db-operations';
-	import { ArrowLeft, Plus, Trash2, Pencil, X, Check, XCircle } from 'lucide-svelte';
+	import { Plus, Trash2, Pencil, X, Check, XCircle } from 'lucide-svelte';
 
 	let functions = $state<FieldFunction[]>([]);
 	let loading = $state(true);

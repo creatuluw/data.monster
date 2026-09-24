@@ -9,7 +9,7 @@
 		type InternalTable,
 		type InternalTableData
 	} from '$lib/db-operations';
-	import { Database, ArrowLeft, Trash2, Edit3, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
+	import { Database, Trash2, Edit3, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-svelte';
 
 	let tables = $state<InternalTable[]>([]);
 	let selectedTable = $state<string | null>(null);

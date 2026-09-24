@@ -143,10 +143,6 @@
 
 <div class="idb-page">
 	<div class="idb-header">
-		<a href="/settings" class="btn btn-ghost btn-sm">
-			<ArrowLeft size={14} />
-			Settings
-		</a>
 		<Database size={18} />
 		<h1 class="idb-title">Internal Database</h1>
 		<span class="idb-subtitle">all tables</span>

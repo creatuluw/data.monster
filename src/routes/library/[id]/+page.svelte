@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page as pageState } from '$app/state';
 	import { setupChartRegistry } from '$lib/charts/registry-setup.svelte';
+	import Tabs from '$lib/components/Tabs.svelte';
 	import { getLibraryComponent } from '$lib/library/registry';
 	import { marked } from 'marked';
 	import TableRenderer from '$lib/components/charts/renderers/TableRenderer.svelte';
@@ -17,7 +18,7 @@
 
 	const id = $derived(pageState.params.id ?? '');
 	const entry = $derived(getLibraryComponent(id));
-	let tab = $state<'preview' | 'schema' | 'code' | 'docs'>('preview');
+	let tab = $state<string>('preview');
 
 	// demo selection — same transient shape /pages uses ({dimension, value})
 	let selected = $state<{ dimension: string; value: string } | null>(null);
@@ -129,12 +130,17 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 		</div>
 		<p class="desc">{entry.description}</p>
 
-		<div class="tabs" role="tablist">
-			<button class:active={tab === 'preview'} onclick={() => (tab = 'preview')}>Preview</button>
-			<button class:active={tab === 'schema'} onclick={() => (tab = 'schema')}>Schema</button>
-			<button class:active={tab === 'code'} onclick={() => (tab = 'code')}>Code</button>
-			<button class:active={tab === 'docs'} onclick={() => (tab = 'docs')}>Docs</button>
-		</div>
+		<Tabs bind:activeKey={tab} variant="underline" items={[
+			{ key: 'preview', label: tabPreview },
+			{ key: 'schema', label: tabSchema },
+			{ key: 'code', label: tabCode },
+			{ key: 'docs', label: tabDocs }
+		]} />
+
+		{#snippet tabPreview()}Preview{/snippet}
+		{#snippet tabSchema()}Schema{/snippet}
+		{#snippet tabCode()}Code{/snippet}
+		{#snippet tabDocs()}Docs{/snippet}
 
 		{#if tab === 'preview'}
 			<div class="tab-content">
@@ -278,33 +284,10 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 		line-height: var(--leading-relaxed);
 	}
 
-	.tabs {
-		display: flex;
-		gap: var(--space-1);
-		border-bottom: 1px solid var(--color-border, #e4e4e7);
-		margin-bottom: var(--space-6);
-	}
-
-	.tabs button {
-		padding: var(--space-2) var(--space-3);
-		font-size: var(--text-sm);
-		border: none;
-		background: none;
-		color: var(--color-text-tertiary);
-		cursor: pointer;
-		border-radius: var(--radius-xs) var(--radius-xs) 0 0;
-		border-bottom: 2px solid transparent;
-	}
-
-	.tabs button.active {
-		color: var(--color-text);
-		font-weight: 600;
-		border-bottom-color: var(--color-accent);
-	}
-
 	/* one uniform pad around tab content */
 	.tab-content {
 		padding: var(--space-4);
+		margin-top: var(--space-6);
 	}
 
 	/* text block — same card PageGrid renders */

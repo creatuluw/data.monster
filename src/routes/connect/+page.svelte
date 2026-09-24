@@ -9,11 +9,12 @@
 	} from '$lib/db-operations';
 	import { app } from '$lib/stores/app.svelte';
 	import { onDmChanged } from '$lib/dm-events';
+	import Tabs from '$lib/components/Tabs.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { goto } from '$app/navigation';
 	import { Upload, Link, Database, ChevronRight, Check, LoaderCircle } from 'lucide-svelte';
 
-	let activeTab = $state<'file' | 'remote' | 'database'>('file');
+	let activeTab = $state<string>('file');
 	let loading = $state(false);
 	let urlInput = $state('');
 	let urlLoading = $state(false);
@@ -215,22 +216,17 @@
 		<p class="hero-desc">Load a file, paste a URL, or connect a database.</p>
 
 		<div class="connect-options">
-			<div class="tab-bar" role="tablist">
-				<button class="tab-btn" class:active={activeTab === 'file'} role="tab" aria-selected={activeTab === 'file'} onclick={() => activeTab = 'file'}>
-					<Upload size={14} />
-					File
-				</button>
-				<button class="tab-btn" class:active={activeTab === 'remote'} role="tab" aria-selected={activeTab === 'remote'} onclick={() => activeTab = 'remote'}>
-					<Link size={14} />
-					Remote
-				</button>
-				<button class="tab-btn" class:active={activeTab === 'database'} role="tab" aria-selected={activeTab === 'database'} onclick={() => activeTab = 'database'}>
-					<Database size={14} />
-					Database
-				</button>
-			</div>
+			<Tabs bind:activeKey={activeTab} items={[
+				{ key: 'file', label: tabFile },
+				{ key: 'remote', label: tabRemote },
+				{ key: 'database', label: tabDatabase }
+			]} />
 
-			<div class="tab-content" role="tabpanel">
+			{#snippet tabFile()}<Upload size={14} /> File{/snippet}
+			{#snippet tabRemote()}<Link size={14} /> Remote{/snippet}
+			{#snippet tabDatabase()}<Database size={14} /> Database{/snippet}
+
+			<div class="tab-content">
 				{#if activeTab === 'file'}
 					<div class="connect-section">
 						<button class="btn btn-primary" onclick={handleFilePick} disabled={loading}>
@@ -456,43 +452,6 @@
 		border: 1px solid var(--color-border);
 		border-radius: var(--radius-lg);
 		overflow: hidden;
-	}
-
-	.tab-bar {
-		display: flex;
-		gap: var(--space-1);
-		padding: var(--space-1);
-		background: var(--color-surface-raised);
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.tab-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: var(--space-1);
-		flex: 1;
-		padding: var(--space-2) var(--space-4);
-		font-family: var(--font-body);
-		font-size: var(--text-sm);
-		font-weight: 500;
-		color: var(--color-text-secondary);
-		background: none;
-		border: none;
-		border-radius: var(--radius-sm);
-		cursor: pointer;
-		transition: all var(--duration-fast) ease;
-	}
-
-	.tab-btn:hover {
-		color: var(--color-text);
-		background: var(--color-surface-sunken);
-	}
-
-	.tab-btn.active {
-		color: var(--color-text);
-		background: var(--color-surface);
-		box-shadow: var(--shadow-sm);
 	}
 
 	.tab-content {

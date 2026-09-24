@@ -164,7 +164,7 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 					subtitle={entry.demo.subtitle}
 					selected={selected}
 					onSelect={(s: { dimension: string; value: string } | null) => (selected = s)}
-					colorScale={{ colorOf: () => '#888888' }}
+					colorScale={{ colorOf: () => 'var(--color-text-tertiary)' }}
 					fmts={{} }
 					heightVh={0.35}
 				>
@@ -258,8 +258,8 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 	}
 
 	.llm-btn:hover {
-		color: var(--color-text, #18181b);
-		border-color: var(--color-border-strong, #d4d4d8);
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 
 	.section-title {
@@ -292,12 +292,12 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 
 	/* text block — same card PageGrid renders */
 	.text-block {
-		background: #fff;
-		border: 1px solid #e4e4e7;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md, 8px);
 		padding: var(--space-6);
 		font-size: var(--text-sm);
-		color: #3f3f46;
+		color: var(--color-text-secondary);
 		white-space: pre-wrap;
 	}
 
@@ -364,13 +364,13 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 	}
 
 	.copy-btn:hover {
-		color: var(--color-text, #18181b);
-		border-color: var(--color-border-strong, #d4d4d8);
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 
 	pre {
-		background: var(--color-bg-inset, #fafafa);
-		border: 1px solid var(--color-border, #e4e4e7);
+		background: var(--color-surface-sunken);
+		border: 1px solid var(--color-border);
 		border-radius: var(--radius-md, 8px);
 		padding: var(--space-3);
 		font-family: var(--font-mono);
@@ -388,7 +388,7 @@ The skill enforces: interview when anything is unclear, build test-first (red-gr
 		font-size: var(--text-xs);
 		line-height: 1.6;
 		border-radius: var(--radius-md, 8px);
-		border-color: var(--color-border, #e4e4e7);
+		border-color: var(--color-border);
 		white-space: pre-wrap;
 		word-break: break-word;
 	}

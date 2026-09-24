@@ -29,16 +29,16 @@
 <!-- card frame shared by every registry chart (FR-5). No vertical margin:
      spacing comes from the page grid gap; tooltip overflow room lives on the
      grid container (PageGrid pb-16 / labs page padding). -->
-<div class="chart-card relative bg-white rounded-lg border border-zinc-200 p-6" role="presentation">
+<div class="chart-card relative bg-surface rounded-lg border border-border p-6" role="presentation">
 	<div class="mb-4">
 		<div class="flex items-center gap-2 flex-wrap">
-			<h2 class="chart-card-title text-lg font-semibold text-zinc-900 tracking-tight">{title}</h2>
+			<h2 class="chart-card-title text-lg font-semibold text-text tracking-tight">{title}</h2>
 			{#if selectionLabel}
-				<span class="chart-card-dot text-zinc-300" aria-hidden="true">&middot;</span>
+				<span class="chart-card-dot text-text-tertiary" aria-hidden="true">&middot;</span>
 				<span class="chart-card-sel text-xs">{selectionLabel}</span>
 			{/if}
 		</div>
-		<p class="text-sm text-zinc-500 mt-0.5">{subtitle}</p>
+		<p class="text-sm text-text-tertiary mt-0.5">{subtitle}</p>
 	</div>
 	{#if config}
 		<button
@@ -52,7 +52,7 @@
 	{/if}
 	<div>
 		{#if status === 'loading'}
-			<div class="py-16 text-center text-sm text-zinc-400">Loading…</div>
+			<div class="py-16 text-center text-sm text-text-tertiary">Loading…</div>
 		{:else if status === 'missing'}
 			<div class="py-16 text-center text-sm text-amber-600">
 				Missing master item: <span class="font-mono">{missing}</span>
@@ -61,7 +61,7 @@
 			<div class="py-16 text-center text-sm text-red-500 break-words">{error}</div>
 		{:else if status === 'empty'}
 			<!-- empty data poisons svelteplot scales (NaN transforms) -->
-			<div class="py-16 text-center text-sm text-zinc-400">No data</div>
+			<div class="py-16 text-center text-sm text-text-tertiary">No data</div>
 		{:else}
 			{@render children?.()}
 		{/if}
@@ -83,7 +83,7 @@
 	/* selection readout inline after the title, mono data detail */
 	.chart-card-sel {
 		font-family: var(--font-mono);
-		color: #71717a;
+		color: var(--color-text-tertiary);
 		letter-spacing: 0.02em;
 	}
 
@@ -94,7 +94,7 @@
 		padding: var(--space-1);
 		border: 1px solid transparent;
 		background: none;
-		color: #a1a1aa;
+		color: var(--color-text-tertiary);
 		cursor: pointer;
 		border-radius: var(--radius-xs);
 		transition:
@@ -103,8 +103,8 @@
 	}
 
 	.config-btn:hover {
-		color: var(--color-text, #18181b);
-		border-color: #d4d4d8;
+		color: var(--color-text);
+		border-color: var(--color-border-strong);
 	}
 
 	/* chart labels are data detail — mono, and never swallow mark clicks */

@@ -82,7 +82,7 @@ import { extractErrorMessage } from '$lib/db-operations';
 	<div class="flex items-end justify-between mb-6">
 		<div>
 			<h1 class="page-title">Report pages</h1>
-			<p class="text-sm text-zinc-500 mt-1">Build insight pages from your data — charts, tables and text on one grid.</p>
+			<p class="text-sm text-text-tertiary mt-1">Build insight pages from your data — charts, tables and text on one grid.</p>
 		</div>
 		<button
 			class="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2"
@@ -96,12 +96,12 @@ import { extractErrorMessage } from '$lib/db-operations';
 	{#if error}<p class="text-sm text-red-500 mb-4">{error}</p>{/if}
 
 	{#if loading}
-		<p class="text-sm text-zinc-400 py-16 text-center">Loading…</p>
+		<p class="text-sm text-text-tertiary py-16 text-center">Loading…</p>
 	{:else if pages.length === 0}
-		<div class="text-center py-20 border border-dashed border-zinc-300 rounded-xl">
-			<LayoutTemplate size={36} class="mx-auto text-zinc-300 mb-3" />
-			<h2 class="text-lg font-medium text-zinc-700">No pages yet</h2>
-			<p class="text-sm text-zinc-400 mt-1">Create your first report page.</p>
+		<div class="text-center py-20 border border-dashed border-border rounded-xl">
+			<LayoutTemplate size={36} class="mx-auto text-text-tertiary mb-3" />
+			<h2 class="text-lg font-medium text-text-secondary">No pages yet</h2>
+			<p class="text-sm text-text-tertiary mt-1">Create your first report page.</p>
 		</div>
 	{:else}
 		<div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr))">
@@ -113,12 +113,12 @@ import { extractErrorMessage } from '$lib/db-operations';
 						<span class="text-sm font-semibold text-[var(--color-text)] leading-snug truncate pr-6" style="font-family: var(--font-display)">{p.title}</span>
 						<span class="text-xs text-[var(--color-text-tertiary)] leading-snug font-mono truncate">/{p.slug}{p.updatedAt ? ' · ' + new Date(p.updatedAt).toLocaleDateString() : ''}</span>
 					</div>
-					<button class="absolute top-3.5 right-3.5 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page"><Trash2 size={13} /></button>
+					<button class="absolute top-3.5 right-3.5 text-text-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" onclick={(e) => { e.stopPropagation(); confirmDelete = p.slug; }} title="Delete page"><Trash2 size={13} /></button>
 					{#if confirmDelete === p.slug}
 						<span class="absolute bottom-3 right-3 flex items-center gap-2 text-xs">
 							<span class="text-red-500">Delete?</span>
 							<button class="text-red-500 font-medium hover:underline" onclick={(e) => { e.stopPropagation(); handleDelete(p.slug); }}>Yes</button>
-							<button class="text-zinc-400 hover:underline" onclick={(e) => { e.stopPropagation(); confirmDelete = null; }}>No</button>
+							<button class="text-text-tertiary hover:underline" onclick={(e) => { e.stopPropagation(); confirmDelete = null; }}>No</button>
 						</span>
 					{/if}
 				</div>

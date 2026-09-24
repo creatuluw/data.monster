@@ -496,7 +496,7 @@
 	.idb-grid th {
 		position: sticky;
 		top: 0;
-		background: var(--color-bg, #0f0f0f);
+		background: var(--color-surface-raised);
 		padding: var(--space-2) var(--space-3);
 		text-align: left;
 		font-size: 9px;
@@ -536,7 +536,7 @@
 	}
 
 	.idb-grid th.idb-grid-actions {
-		background: var(--color-bg, #0f0f0f);
+		background: var(--color-surface-raised);
 	}
 
 	.idb-grid td.idb-grid-actions {

@@ -440,7 +440,7 @@ import { initDmEvents, onDmChanged } from '$lib/dm-events';
 	}
 
 	.tab-bar :global(.tab-chip:hover) {
-		background: var(--color-surface-hover, #eceeeb);
+		background: var(--color-surface-hover);
 	}
 
 	.tab-bar :global(.tab-chip.active) {
@@ -497,7 +497,7 @@ import { initDmEvents, onDmChanged } from '$lib/dm-events';
 	}
 
 	.ctx-item:hover {
-		background: var(--color-surface-hover, #eceeeb);
+		background: var(--color-surface-hover);
 	}
 
 	.status-bar {
@@ -542,8 +542,8 @@ import { initDmEvents, onDmChanged } from '$lib/dm-events';
 	   height */
 	@media (min-width: 1920px) {
 		.app-column {
-			border-left: 1px solid #d4d9d6;
-			border-right: 1px solid #d4d9d6;
+			border-left: 1px solid var(--color-border);
+			border-right: 1px solid var(--color-border);
 		}
 	}
 

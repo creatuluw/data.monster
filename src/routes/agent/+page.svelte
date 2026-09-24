@@ -75,7 +75,7 @@
 					<span class="skill-desc">{p.description}</span>
 					<div class="flex gap-1 flex-wrap">
 						{#each [GOAL_LABELS[p.goal], ...p.tags].filter(Boolean).slice(0, 3) as tag (tag)}
-							<span class="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-500">{tag}</span>
+							<span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-sunken text-text-tertiary">{tag}</span>
 						{/each}
 					</div>
 				</div>
@@ -222,12 +222,12 @@
 	}
 
 	.copy-btn:hover {
-		background: var(--color-accent, #d7e6f5);
+		background: var(--color-accent);
 	}
 
 	
 	.close-btn:hover {
-		background: var(--color-accent-muted, #eef4fa);
+		background: var(--color-accent-muted);
 		color: var(--color-text);
 	}
 

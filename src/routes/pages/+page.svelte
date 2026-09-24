@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { Dialog } from 'bits-ui';
 	import { listPages, savePage, deletePage, type PageMeta } from '$lib/central-api';
 	import { onDmChanged } from '$lib/dm-events';
 import { extractErrorMessage } from '$lib/db-operations';
@@ -70,17 +71,12 @@ import { extractErrorMessage } from '$lib/db-operations';
 		}
 	}
 
-	function handleModalKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape') modalOpen = false;
-		if (e.key === 'Enter') handleCreate();
-	}
+	let titleInput = $state<HTMLInputElement | null>(null);
 
 	onMount(refresh);
 </script>
 
 <svelte:head><title>Pages — data.monster</title></svelte:head>
-
-<svelte:window onkeydown={(e) => { if (e.key === 'Escape' && modalOpen) modalOpen = false; }} />
 
 <div style="padding: var(--space-6);">
 	<div class="flex items-end justify-between mb-6">
@@ -132,32 +128,49 @@ import { extractErrorMessage } from '$lib/db-operations';
 </div>
 
 {#if modalOpen}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6" onclick={() => (modalOpen = false)} onkeydown={handleModalKeydown}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" onclick={(e) => e.stopPropagation()} onkeydown={handleModalKeydown}>
-			<div class="flex items-center justify-between">
-				<h2 class="text-lg font-semibold text-zinc-900" style="font-family: var(--font-display)">New page</h2>
-				<button class="text-zinc-400 hover:text-zinc-900" onclick={() => (modalOpen = false)} title="Close"><X size={16} /></button>
-			</div>
-			<label class="block space-y-1">
-				<span class="text-xs text-zinc-500">Title</span>
-				<input type="text" autofocus class="w-full border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-400" placeholder="e.g. Monthly utilization" bind:value={newTitle} onkeydown={handleModalKeydown} />
-				{#if newTitle.trim()}
-					<span class="text-xs text-zinc-400 font-mono">/pages/{newSlug || '…'}</span>
-				{/if}
-			</label>
-			<div class="flex justify-end gap-2 pt-2">
-				<button class="px-3 py-2 text-sm text-zinc-500 hover:text-zinc-900" onclick={() => (modalOpen = false)}>Cancel</button>
-				<button
-					class="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 inline-flex items-center gap-2"
-					style="background: oklch(0.44 0.1 158)"
-					onclick={handleCreate}
-					disabled={!newTitle.trim() || creating}
+	<Dialog.Root
+			open={modalOpen}
+			onOpenChange={(o) => (modalOpen = o)}
+		>
+			<Dialog.Portal>
+				<Dialog.Overlay class="fixed inset-0 z-50 bg-black/40" />
+				<Dialog.Content
+					class="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 space-y-4 rounded-xl bg-surface p-6 shadow-xl outline-none"
+					onOpenAutoFocus={(e) => {
+						e.preventDefault();
+						titleInput?.focus();
+					}}
 				>
-					<Plus size={14} /> {creating ? 'Creating…' : 'Create page'}
-				</button>
-			</div>
-		</div>
-	</div>
+					<div class="flex items-center justify-between">
+						<Dialog.Title class="text-lg font-semibold text-text" style="font-family: var(--font-display)">New page</Dialog.Title>
+						<Dialog.Close class="text-text-tertiary hover:text-text" title="Close"><X size={16} /></Dialog.Close>
+					</div>
+					<label class="block space-y-1">
+						<span class="text-xs text-text-secondary">Title</span>
+						<input
+							type="text"
+							bind:this={titleInput}
+							class="w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-text outline-none focus:border-accent"
+							placeholder="e.g. Monthly utilization"
+							bind:value={newTitle}
+							onkeydown={(e) => e.key === 'Enter' && handleCreate()}
+						/>
+						{#if newTitle.trim()}
+							<span class="font-mono text-xs text-text-tertiary">/pages/{newSlug || '…'}</span>
+						{/if}
+					</label>
+					<div class="flex justify-end gap-2 pt-2">
+						<button class="px-3 py-2 text-sm text-text-tertiary hover:text-text" onclick={() => (modalOpen = false)}>Cancel</button>
+						<button
+							class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+							style="background: oklch(0.44 0.1 158)"
+							onclick={handleCreate}
+							disabled={!newTitle.trim() || creating}
+						>
+							<Plus size={14} /> {creating ? 'Creating…' : 'Create page'}
+						</button>
+					</div>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 {/if}
